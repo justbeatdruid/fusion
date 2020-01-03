@@ -1,0 +1,26 @@
+# permissions to do edit apigateways.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: apigateway-editor-role
+rules:
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - apigateways
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - apigateways/status
+  verbs:
+  - get
+  - patch
+  - update

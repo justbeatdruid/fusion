@@ -1,0 +1,7 @@
+domain: cmcc.com
+repo: github.com/chinamobile/nlpt/application-controller
+resources:
+- group: nlpt
+  kind: Application
+  version: v1
+version: "2"

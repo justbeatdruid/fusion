@@ -1,0 +1,20 @@
+# permissions to do viewer apigateways.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: apigateway-viewer-role
+rules:
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - apigateways
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - apigateways/status
+  verbs:
+  - get
