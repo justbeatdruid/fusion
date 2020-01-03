@@ -1,0 +1,20 @@
+# permissions to do viewer kafkas.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kafka-viewer-role
+rules:
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - kafkas
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - kafkas/status
+  verbs:
+  - get
