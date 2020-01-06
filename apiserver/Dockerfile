@@ -11,7 +11,7 @@ WORKDIR /go/src/github.com/chinamobile/nlpt/
 
 # Copy the go source
 COPY apiserver/ apiserver/
-COPY application-controller/api/v1 application-controller/api/v1
+COPY application/api/v1 application/api/v1
 COPY kafka-controller/api/v1 kafka-controller/api/v1
 COPY apigateway-controller/api/v1 apigateway-controller/api/v1
 COPY pkg/ pkg/

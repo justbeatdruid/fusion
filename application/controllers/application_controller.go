@@ -23,7 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	nlptv1 "github.com/chinamobile/nlpt/application-controller/api/v1"
+	nlptv1 "github.com/chinamobile/nlpt/application/api/v1"
 )
 
 // ApplicationReconciler reconciles a Application object

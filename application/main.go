@@ -19,8 +19,8 @@ import (
 	"flag"
 	"os"
 
-	nlptv1 "github.com/chinamobile/nlpt/application-controller/api/v1"
-	"github.com/chinamobile/nlpt/application-controller/controllers"
+	nlptv1 "github.com/chinamobile/nlpt/application/api/v1"
+	"github.com/chinamobile/nlpt/application/controllers"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"

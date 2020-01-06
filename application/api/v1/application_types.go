@@ -28,14 +28,13 @@ type ApplicationSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Application. Edit Application_types.go to remove/update
-	Type string `json:"type,omitempty"`
+	Name string `json:"name,omitempty"`
 }
 
 // ApplicationStatus defines the observed state of Application
 type ApplicationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status string `json:"status"`
 }
 
 // +kubebuilder:object:root=true
@@ -61,9 +60,3 @@ type ApplicationList struct {
 func init() {
 	SchemeBuilder.Register(&Application{}, &ApplicationList{})
 }
-
-var (
-	Created string = "created"
-	Error   string = "error"
-	Running string = "running"
-)

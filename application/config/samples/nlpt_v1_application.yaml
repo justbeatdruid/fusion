@@ -1,7 +1,7 @@
 apiVersion: nlpt.cmcc.com/v1
 kind: Application
 metadata:
-  name: application-sample
+  name: id123456
 spec:
   # Add fields here
-  foo: bar
+  name: test
