@@ -16,6 +16,8 @@ limitations under the License.
 package v1
 
 import (
+	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -28,13 +30,25 @@ type ApplicationSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Application. Edit Application_types.go to remove/update
-	Name string `json:"name,omitempty"`
+	Name            string          `json:"name"`
+	Group           Group           `json:"group"`
+	Users           []apiv1.User    `json:"users"`
+	AccessKey       string          `json:"accessKey"`
+	AccessSecretKey string          `json:"accessSecretKey"`
+	BoundAPIs       []apiv1.ApiSpec `json:"boundApis"`
+}
+
+type Group struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 // ApplicationStatus defines the observed state of Application
 type ApplicationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	UserCount int `json:"userCount"`
+	APICount  int `json:"apiCount"`
 }
 
 // +kubebuilder:object:root=true

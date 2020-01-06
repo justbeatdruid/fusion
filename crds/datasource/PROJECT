@@ -1,0 +1,7 @@
+domain: cmcc.com
+repo: github.com/chinamobile/nlpt/crds/datasource
+resources:
+- group: nlpt
+  kind: Datasource
+  version: v1
+version: "2"

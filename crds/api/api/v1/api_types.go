@@ -18,6 +18,8 @@ package v1
 import (
 	"time"
 
+	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -79,21 +81,12 @@ const (
 )
 
 type Parameter struct {
-	Name        string        `json:"name"`
-	Type        ParameterType `json:"type"`
-	Description string        `json:"description"`
-	Example     string        `json:"example"`
-	Required    bool          `json:"required"`
+	Name        string               `json:"name"`
+	Type        datav1.ParameterType `json:"type"`
+	Description string               `json:"description"`
+	Example     string               `json:"example"`
+	Required    bool                 `json:"required"`
 }
-
-type ParameterType string
-
-const (
-	Int    ParameterType = "int"
-	Bool   ParameterType = "bool"
-	Float  ParameterType = "float"
-	String ParameterType = "string"
-)
 
 // ApiStatus defines the observed state of Api
 type ApiStatus struct {

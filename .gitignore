@@ -1,1 +1,8 @@
 bin
+
+config/certmanager
+config/default
+config/manager
+config/prometheus
+config/rbac
+config/webhook

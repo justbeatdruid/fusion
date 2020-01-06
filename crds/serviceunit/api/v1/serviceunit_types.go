@@ -16,6 +16,11 @@ limitations under the License.
 package v1
 
 import (
+	"time"
+
+	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
+	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -27,14 +32,34 @@ type ServiceunitSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Serviceunit. Edit Serviceunit_types.go to remove/update
-	Name string `json:"name,omitempty"`
+	Name             string                 `json:"name"`
+	Group            Group                  `json:"group"`
+	Type             ServiceType            `json:"type"`
+	SingleDatasource *datav1.DatasourceSpec `json:"singleDatasource"`
+	MultiDatasource  *datav1.DatasourceSpec `json:"multiDatasource"`
+	Users            []apiv1.User           `json:"users"`
+	Description      string                 `json:"description"`
 }
+
+type Group struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+type ServiceType string
+
+const (
+	Single ServiceType = "single"
+	Multi  ServiceType = "multi"
+)
 
 // ServiceunitStatus defines the observed state of Serviceunit
 type ServiceunitStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	UpdatedAt time.Time `json:"time.Time"`
+	APICount  int       `json:"apiCount"`
+	Published bool      `json:"published"`
 }
 
 // +kubebuilder:object:root=true
