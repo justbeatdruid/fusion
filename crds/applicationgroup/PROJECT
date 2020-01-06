@@ -1,0 +1,7 @@
+domain: cmcc.com
+repo: github.com/chinamobile/nlpt/crds/applicationgroup
+resources:
+- group: nlpt
+  kind: ApplicationGroup
+  version: v1
+version: "2"

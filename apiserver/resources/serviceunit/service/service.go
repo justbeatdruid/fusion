@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 
-	"github.com/chinamobile/nlpt/crds/application/api/v1"
+	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -18,7 +18,7 @@ var crdNamespace = "default"
 var oofsGVR = schema.GroupVersionResource{
 	Group:    v1.GroupVersion.Group,
 	Version:  v1.GroupVersion.Version,
-	Resource: "applications",
+	Resource: "serviceunits",
 }
 
 type Service struct {
@@ -29,39 +29,39 @@ func NewService(client dynamic.Interface) *Service {
 	return &Service{client: client.Resource(oofsGVR)}
 }
 
-func (s *Service) CreateApplication(model *Application) (*Application, error) {
+func (s *Service) CreateServiceunit(model *Serviceunit) (*Serviceunit, error) {
 	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
-	app, err := s.Create(ToAPI(model))
+	su, err := s.Create(ToAPI(model))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
 	}
-	return ToModel(app), nil
+	return ToModel(su), nil
 }
 
-func (s *Service) ListApplication() ([]*Application, error) {
-	apps, err := s.List()
+func (s *Service) ListServiceunit() ([]*Serviceunit, error) {
+	sus, err := s.List()
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	return ToListModel(apps), nil
+	return ToListModel(sus), nil
 }
 
-func (s *Service) GetApplication(id string) (*Application, error) {
-	app, err := s.Get(id)
+func (s *Service) GetServiceunit(id string) (*Serviceunit, error) {
+	su, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
-	return ToModel(app), nil
+	return ToModel(su), nil
 }
 
-func (s *Service) DeleteApplication(id string) error {
+func (s *Service) DeleteServiceunit(id string) error {
 	return s.Delete(id)
 }
 
-func (s *Service) Create(app *v1.Application) (*v1.Application, error) {
-	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(app)
+func (s *Service) Create(su *v1.Serviceunit) (*v1.Serviceunit, error) {
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(su)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
 	}
@@ -73,37 +73,37 @@ func (s *Service) Create(app *v1.Application) (*v1.Application, error) {
 		return nil, fmt.Errorf("error creating crd: %+v", err)
 	}
 
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), app); err != nil {
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), su); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.application of creating: %+v", app)
-	return app, nil
+	klog.V(5).Infof("get v1.serviceunit of creating: %+v", su)
+	return su, nil
 }
 
-func (s *Service) List() (*v1.ApplicationList, error) {
+func (s *Service) List() (*v1.ServiceunitList, error) {
 	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
-	apps := &v1.ApplicationList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apps); err != nil {
+	sus := &v1.ServiceunitList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), sus); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.applicationList: %+v", apps)
-	return apps, nil
+	klog.V(5).Infof("get v1.serviceunitList: %+v", sus)
+	return sus, nil
 }
 
-func (s *Service) Get(id string) (*v1.Application, error) {
+func (s *Service) Get(id string) (*v1.Serviceunit, error) {
 	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
-	app := &v1.Application{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), app); err != nil {
+	su := &v1.Serviceunit{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), su); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.application: %+v", app)
-	return app, nil
+	klog.V(5).Infof("get v1.serviceunit: %+v", su)
+	return su, nil
 }
 
 func (s *Service) Delete(id string) error {

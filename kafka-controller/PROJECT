@@ -1,7 +1,0 @@
-domain: cmcc.com
-repo: github.com/chinamobile/nlpt/kafka-controller
-resources:
-- group: nlpt
-  kind: Kafka
-  version: v1
-version: "2"

@@ -1,0 +1,7 @@
+domain: cmcc.com
+repo: github.com/chinamobile/nlpt/crds/serviceunit
+resources:
+- group: nlpt
+  kind: Serviceunit
+  version: v1
+version: "2"

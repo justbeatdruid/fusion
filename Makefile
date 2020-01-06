@@ -21,11 +21,8 @@ test: fmt vet
 
 apiserver: fmt vet
 	go build -o bin/apiserver apiserver/main.go
-	#docker build . -f apiserver/Dockerfile -t ${APIIMG}
-	#docker push ${APIIMG}
-
-application-controller:
-	go build -o bin/application-controller application-controller/main.go
+	docker build . -f apiserver/Dockerfile -t ${APIIMG}
+	docker push ${APIIMG}
 
 # Run go fmt against code
 fmt:

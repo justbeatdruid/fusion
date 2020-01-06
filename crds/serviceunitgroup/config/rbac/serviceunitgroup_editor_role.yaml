@@ -1,0 +1,26 @@
+# permissions to do edit serviceunitgroups.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: serviceunitgroup-editor-role
+rules:
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - serviceunitgroups
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - serviceunitgroups/status
+  verbs:
+  - get
+  - patch
+  - update
