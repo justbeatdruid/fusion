@@ -7,6 +7,7 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/apiserver/handler/filter"
+	"github.com/chinamobile/nlpt/apiserver/resources/api"
 	"github.com/chinamobile/nlpt/apiserver/resources/application"
 	"github.com/chinamobile/nlpt/apiserver/resources/applicationgroup"
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit"
@@ -45,6 +46,7 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 	wsContainer.Add(apiV1Ws)
 
 	handlers := []installer{
+		api.NewRouter(h.config),
 		application.NewRouter(h.config),
 		applicationgroup.NewRouter(h.config),
 		serviceunit.NewRouter(h.config),
@@ -57,14 +59,6 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 
 	applicationgroupHandler := applicationgroup.NewRouter(h.config)
 	applicationgroupHandler.Install(apiV1Ws)
-
-	/*
-		kafkaHandler, err := kafka.NewHandler()
-		if err != nil {
-			return fmt.Errorf("cannot create kafka handler: %+v", err)
-		}
-		kafkaHandler.Install(apiV1Ws)
-	*/
 
 	return wsContainer, nil
 }

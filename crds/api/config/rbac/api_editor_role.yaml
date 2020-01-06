@@ -1,0 +1,26 @@
+# permissions to do edit apis.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: api-editor-role
+rules:
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - apis
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - apis/status
+  verbs:
+  - get
+  - patch
+  - update

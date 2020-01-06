@@ -1,0 +1,20 @@
+# permissions to do viewer apis.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: api-viewer-role
+rules:
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - apis
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - apis/status
+  verbs:
+  - get
