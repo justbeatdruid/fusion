@@ -8,6 +8,9 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/apiserver/handler/filter"
 	"github.com/chinamobile/nlpt/apiserver/resources/application"
+	"github.com/chinamobile/nlpt/apiserver/resources/applicationgroup"
+	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit"
+	"github.com/chinamobile/nlpt/apiserver/resources/serviceunitgroup"
 
 	"k8s.io/apiserver/pkg/server/healthz"
 )
@@ -41,8 +44,19 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 		Produces(restful.MIME_JSON)
 	wsContainer.Add(apiV1Ws)
 
-	applicationHandler := application.NewRouter(h.config)
-	applicationHandler.Install(apiV1Ws)
+	handlers := []installer{
+		application.NewRouter(h.config),
+		applicationgroup.NewRouter(h.config),
+		serviceunit.NewRouter(h.config),
+		serviceunitgroup.NewRouter(h.config),
+	}
+
+	for _, routerHandler := range handlers {
+		routerHandler.Install(apiV1Ws)
+	}
+
+	applicationgroupHandler := applicationgroup.NewRouter(h.config)
+	applicationgroupHandler.Install(apiV1Ws)
 
 	/*
 		kafkaHandler, err := kafka.NewHandler()

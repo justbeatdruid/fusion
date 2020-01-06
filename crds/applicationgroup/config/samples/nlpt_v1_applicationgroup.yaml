@@ -1,0 +1,7 @@
+apiVersion: nlpt.cmcc.com/v1
+kind: ApplicationGroup
+metadata:
+  name: applicationgroup-sample
+spec:
+  # Add fields here
+  foo: bar

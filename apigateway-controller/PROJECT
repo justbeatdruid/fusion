@@ -1,7 +1,0 @@
-domain: cmcc.com
-repo: github.com/chinamobile/nlpt/apigateway-controller
-resources:
-- group: nlpt
-  kind: ApiGateway
-  version: v1
-version: "2"
