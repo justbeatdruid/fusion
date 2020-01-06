@@ -1,5 +1,5 @@
 domain: cmcc.com
-repo: github.com/chinamobile/nlpt/application-controller
+repo: github.com/chinamobile/nlpt/application
 resources:
 - group: nlpt
   kind: Application

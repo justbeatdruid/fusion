@@ -48,9 +48,15 @@ func (c *controller) CreateApplication(req *restful.Request) (int, *CreateRespon
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
-	if db, err := c.service.CreateApplication(body.Data); err != nil {
+	if body.Data == nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,
+			Message: "read entity error: data is null",
+		}
+	}
+	if db, err := c.service.CreateApplication(body.Data); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    2,
 			Message: fmt.Errorf("create database error: %+v", err).Error(),
 		}
 	} else {
