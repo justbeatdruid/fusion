@@ -3,6 +3,8 @@ package service
 import (
 	"fmt"
 
+	dssvc "github.com/chinamobile/nlpt/apiserver/resources/datasource/service"
+	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,15 +24,19 @@ var oofsGVR = schema.GroupVersionResource{
 }
 
 type Service struct {
-	client dynamic.NamespaceableResourceInterface
+	client           dynamic.NamespaceableResourceInterface
+	datasourceClient dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface) *Service {
-	return &Service{client: client.Resource(oofsGVR)}
+	return &Service{
+		client:           client.Resource(oofsGVR),
+		datasourceClient: client.Resource(dssvc.OOFSGVR()),
+	}
 }
 
 func (s *Service) CreateServiceunit(model *Serviceunit) (*Serviceunit, error) {
-	if err := model.Validate(); err != nil {
+	if err := s.Validate(model); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
 	su, err := s.Create(ToAPI(model))
@@ -112,4 +118,17 @@ func (s *Service) Delete(id string) error {
 		return fmt.Errorf("error delete crd: %+v", err)
 	}
 	return nil
+}
+
+func (s *Service) getDatasource(id string) (*datav1.DatasourceSpec, error) {
+	crd, err := s.datasourceClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	ds := &datav1.Datasource{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), ds); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.datasource: %+v", ds)
+	return &ds.Spec, nil
 }

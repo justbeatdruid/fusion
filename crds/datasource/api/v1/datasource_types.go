@@ -16,6 +16,8 @@ limitations under the License.
 package v1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,7 +31,7 @@ type DatasourceSpec struct {
 
 	// Foo is an example field of Datasource. Edit Datasource_types.go to remove/update
 	Name     string  `json:"name"`
-	Type     string  `json:"foo"`
+	Type     string  `json:"type"`
 	Database string  `json:"database"`
 	Schema   string  `json:"schema,omitempty"`
 	Table    string  `json:"table"`
@@ -59,6 +61,28 @@ type ConnectInfo struct {
 	Port     int    `json:"port"`
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+func (f Field) Validate() error {
+	for k, v := range map[string]string{
+		"origin field":  f.OriginField,
+		"service field": f.ServiceField,
+	} {
+		if len(v) == 0 {
+			return fmt.Errorf("%s is null", k)
+		}
+	}
+	for k, v := range map[string]ParameterType{
+		"origin type":  f.OriginType,
+		"service type": f.ServiceType,
+	} {
+		switch v {
+		case Int, Bool, Float, String:
+		default:
+			return fmt.Errorf("%s type is unknown: %s", k, v)
+		}
+	}
+	return nil
 }
 
 // DatasourceStatus defines the observed state of Datasource

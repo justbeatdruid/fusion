@@ -21,6 +21,10 @@ var oofsGVR = schema.GroupVersionResource{
 	Resource: "datasources",
 }
 
+func OOFSGVR() schema.GroupVersionResource {
+	return oofsGVR
+}
+
 type Service struct {
 	client dynamic.NamespaceableResourceInterface
 }

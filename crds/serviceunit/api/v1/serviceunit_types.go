@@ -32,13 +32,13 @@ type ServiceunitSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Name             string                 `json:"name"`
-	Group            Group                  `json:"group"`
-	Type             ServiceType            `json:"type"`
-	SingleDatasource *datav1.DatasourceSpec `json:"singleDatasource"`
-	MultiDatasource  *datav1.DatasourceSpec `json:"multiDatasource"`
-	Users            []apiv1.User           `json:"users"`
-	Description      string                 `json:"description"`
+	Name             string                   `json:"name"`
+	Group            Group                    `json:"group"`
+	Type             ServiceType              `json:"type"`
+	SingleDatasource *datav1.DatasourceSpec   `json:"singleDatasource"`
+	MultiDatasource  []*datav1.DatasourceSpec `json:"multiDatasource"`
+	Users            []apiv1.User             `json:"users"`
+	Description      string                   `json:"description"`
 }
 
 type Group struct {
@@ -57,10 +57,22 @@ const (
 type ServiceunitStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Status    Status    `json:"status"`
 	UpdatedAt time.Time `json:"time.Time"`
 	APICount  int       `json:"apiCount"`
 	Published bool      `json:"published"`
 }
+
+type Status string
+
+const (
+	Init     Status = "init"
+	Creating Status = "creating"
+	Created  Status = "created"
+	Delete   Status = "delete"
+	Deleting Status = "deleting"
+	Error    Status = "error"
+)
 
 // +kubebuilder:object:root=true
 
