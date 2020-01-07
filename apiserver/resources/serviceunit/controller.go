@@ -84,7 +84,7 @@ func (c *controller) GetServiceunit(req *restful.Request) (int, *GetResponse) {
 
 func (c *controller) DeleteServiceunit(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if err := c.service.DeleteServiceunit(id); err != nil {
+	if _, err := c.service.DeleteServiceunit(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("delete database error: %+v", err).Error(),
