@@ -41,6 +41,12 @@ type ServiceunitSpec struct {
 	MultiDatasource    []datav1.DatasourceSpec `json:"multiDatasource"`
 	Users              []apiv1.User            `json:"users"`
 	Description        string                  `json:"description"`
+	//Kong
+	Host string `json:"host"`
+	ID string `json:"id"`
+	Protocol string `json:"protocol"`
+	Port int `json:"port"`
+	Path string `json:"path"`
 }
 
 type Datasource struct {
@@ -68,6 +74,7 @@ type ServiceunitStatus struct {
 	UpdatedAt time.Time `json:"time.Time"`
 	APICount  int       `json:"apiCount"`
 	Published bool      `json:"published"`
+	Message string       `json:"message"`
 }
 
 type Status string

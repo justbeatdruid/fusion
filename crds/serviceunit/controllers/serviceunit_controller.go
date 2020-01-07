@@ -17,6 +17,7 @@ package controllers
 
 import (
 	"context"
+	"k8s.io/klog"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,14 +32,36 @@ type ServiceunitReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	//初始化kong信息
+	Operator *Operator
 }
 
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=serviceunits,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=serviceunits/status,verbs=get;update;patch
 
+
 func (r *ServiceunitReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+	ctx := context.Background()
 	_ = r.Log.WithValues("serviceunit", req.NamespacedName)
+
+	//
+	serviceunit := &nlptv1.Serviceunit{}
+	if err := r.Get(ctx, req.NamespacedName, serviceunit); err != nil {
+		klog.Errorf("cannot get serviceunit of ctrl req: %+v", err)
+		return ctrl.Result{}, nil
+	}
+	klog.Infof("get new serviceunit event: %+v", *serviceunit)
+	if serviceunit.Status.Status == nlptv1.Init {
+		// call kong api
+		serviceunit.Status.Status = nlptv1.Creating
+		if err := r.Operator.CreateServiceByKong(serviceunit); err != nil {
+			serviceunit.Status.Status = nlptv1.Error
+			serviceunit.Status.Message = err.Error()
+		} else {
+			serviceunit.Status.Status = nlptv1.Created
+		}
+		r.Update(ctx, serviceunit)
+	}
 
 	// your logic here
 
