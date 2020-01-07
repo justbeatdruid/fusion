@@ -32,13 +32,20 @@ type ServiceunitSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Name             string                   `json:"name"`
-	Group            Group                    `json:"group"`
-	Type             ServiceType              `json:"type"`
-	SingleDatasource *datav1.DatasourceSpec   `json:"singleDatasource"`
-	MultiDatasource  []*datav1.DatasourceSpec `json:"multiDatasource"`
-	Users            []apiv1.User             `json:"users"`
-	Description      string                   `json:"description"`
+	Name               string                  `json:"name"`
+	Group              Group                   `json:"group"`
+	Type               ServiceType             `json:"type"`
+	SingleDatasourceID *Datasource             `json:"singleDatasourceID"`
+	MultiDatasourceID  []Datasource            `json:"multiDatasourceID"`
+	SingleDatasource   *datav1.DatasourceSpec  `json:"singleDatasource"`
+	MultiDatasource    []datav1.DatasourceSpec `json:"multiDatasource"`
+	Users              []apiv1.User            `json:"users"`
+	Description        string                  `json:"description"`
+}
+
+type Datasource struct {
+	ID     string         `json:"id"`
+	Fields []datav1.Field `json:"fields"`
 }
 
 type Group struct {
