@@ -10,6 +10,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/api"
 	"github.com/chinamobile/nlpt/apiserver/resources/application"
 	"github.com/chinamobile/nlpt/apiserver/resources/applicationgroup"
+	"github.com/chinamobile/nlpt/apiserver/resources/datasource"
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit"
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunitgroup"
 
@@ -51,6 +52,7 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 		applicationgroup.NewRouter(h.config),
 		serviceunit.NewRouter(h.config),
 		serviceunitgroup.NewRouter(h.config),
+		datasource.NewRouter(h.config),
 	}
 
 	for _, routerHandler := range handlers {
