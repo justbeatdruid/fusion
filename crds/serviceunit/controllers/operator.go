@@ -116,7 +116,7 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 }
 
 func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
-	klog.Infof("sync database %s:%d", db.Spec.Name)
+	klog.Infof("create service %s", db.Spec.Name)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, r.Host, r.Port, path))
@@ -134,11 +134,11 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	responseBody := &ResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
-		return fmt.Errorf("request for syncing database error: %+v", errs)
+		return fmt.Errorf("request for create service error: %+v", errs)
 	}
-	klog.V(5).Infof("creation response body: %s", string(body))
+	klog.V(5).Infof("create service response body: %s", string(body))
 	if response.StatusCode != 201 {
-		return fmt.Errorf("request for syncing database error: receive wrong status code: %s", string(body))
+		return fmt.Errorf("request for create service error: receive wrong status code: %s", string(body))
 	}
 
 	(*db).Spec.Host = responseBody.Host
@@ -147,6 +147,31 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	(*db).Spec.ID = responseBody.ID
 	return nil
 }
+
+func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
+	klog.Infof("delete service %s", db.Spec.Name)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	var id string = (*db).Spec.ID
+	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id)).End()
+	request = request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, (*db).Spec.ID))
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+
+	if len(errs) > 0 {
+		return fmt.Errorf("request for delete service error: %+v", errs)
+	}
+
+	klog.V(5).Infof("delete service response code: %d%s", response.StatusCode, string(body))
+	if response.StatusCode != 204 {
+		//return fmt.Errorf("request for syncing database error: receive wrong status code: %d", response.StatusCode)
+		return fmt.Errorf("request for delete service error: receive wrong status code: %d", response.StatusCode)
+	}
+	return nil
+}
+
 
 
 

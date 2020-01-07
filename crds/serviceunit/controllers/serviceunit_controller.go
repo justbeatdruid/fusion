@@ -32,7 +32,7 @@ type ServiceunitReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
-	//��ʼ��kong��Ϣ
+	//初始化kong信息
 	Operator *Operator
 }
 
@@ -52,7 +52,7 @@ func (r *ServiceunitReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	}
 	klog.Infof("get new serviceunit event: %+v", *serviceunit)
 	if serviceunit.Status.Status == nlptv1.Init {
-		// call kong api
+		// call kong api create
 		serviceunit.Status.Status = nlptv1.Creating
 		if err := r.Operator.CreateServiceByKong(serviceunit); err != nil {
 			serviceunit.Status.Status = nlptv1.Error
@@ -61,6 +61,16 @@ func (r *ServiceunitReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 			serviceunit.Status.Status = nlptv1.Created
 		}
 		r.Update(ctx, serviceunit)
+	}
+	if serviceunit.Status.Status == nlptv1.Delete {
+		// call kong api delete
+		serviceunit.Status.Status = nlptv1.Deleting
+		if err := r.Operator.DeleteServiceByKong(serviceunit); err != nil {
+			serviceunit.Status.Status = nlptv1.Error
+			serviceunit.Status.Message = err.Error()
+		}
+		//TODO error 状态是否需要处理
+		r.Delete(ctx, serviceunit)
 	}
 
 	// your logic here
