@@ -54,11 +54,13 @@ func (r *ServiceunitReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	if serviceunit.Status.Status == nlptv1.Init {
 		// call kong api create
 		serviceunit.Status.Status = nlptv1.Creating
+		klog.Infof("new service", r.Operator.Host, r.Operator.Port, r.Operator.CAFile)
 		if err := r.Operator.CreateServiceByKong(serviceunit); err != nil {
 			serviceunit.Status.Status = nlptv1.Error
 			serviceunit.Status.Message = err.Error()
 		} else {
 			serviceunit.Status.Status = nlptv1.Created
+			serviceunit.Status.Message = "success"
 		}
 		r.Update(ctx, serviceunit)
 	}
@@ -69,8 +71,21 @@ func (r *ServiceunitReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 			serviceunit.Status.Status = nlptv1.Error
 			serviceunit.Status.Message = err.Error()
 		}
-		//TODO error 状态是否需要处理
 		r.Delete(ctx, serviceunit)
+	}
+
+	//TODO 后续处理异常 或者更新状态
+	if serviceunit.Status.Status == nlptv1.Error {
+		// call kong api create
+		serviceunit.Status.Status = nlptv1.Creating
+		klog.Infof("new service", r.Operator.Host, r.Operator.Port, r.Operator.CAFile)
+		if err := r.Operator.CreateServiceByKong(serviceunit); err != nil {
+			serviceunit.Status.Status = nlptv1.Error
+			serviceunit.Status.Message = err.Error()
+		} else {
+			serviceunit.Status.Status = nlptv1.Created
+		}
+		r.Update(ctx, serviceunit)
 	}
 
 	// your logic here

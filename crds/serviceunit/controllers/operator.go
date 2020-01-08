@@ -108,6 +108,7 @@ func (r *requestLogger) Println(v ...interface{}) {
 }
 
 func NewOperator(host string, port int, cafile string) (*Operator, error) {
+	klog.Infof("NewOperator  event:%s %d %s", host, port, cafile)
 	return &Operator{
 		Host:   host,
 		Port:   port,
@@ -116,7 +117,7 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 }
 
 func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
-	klog.Infof("create service %s", db.Spec.Name)
+	klog.Infof("Enter CreateServiceByKong name:%s, Host:%s, Port:%d", db.Spec.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, r.Host, r.Port, path))
@@ -124,7 +125,7 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		request = request.Set(k, v)
 	}
 	request = request.Retry(3, 5*time.Second, retryStatus...)
-
+	//TODO 服务的地址信息
 	requestBody := &RequestBody{
 		Name:     db.Spec.Name,
 		Protocol:      "http",
@@ -166,7 +167,6 @@ func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
 
 	klog.V(5).Infof("delete service response code: %d%s", response.StatusCode, string(body))
 	if response.StatusCode != 204 {
-		//return fmt.Errorf("request for syncing database error: receive wrong status code: %d", response.StatusCode)
 		return fmt.Errorf("request for delete service error: receive wrong status code: %d", response.StatusCode)
 	}
 	return nil
