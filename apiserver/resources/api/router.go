@@ -47,22 +47,27 @@ func (r *router) Install(ws *restful.WebService) {
 		Do(returns200, returns500))
 }
 
-func (r *router) createApi(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.CreateApi(request)
+func process(f func(*restful.Request) (int, interface{}), request *restful.Request, response *restful.Response) {
+	code, result := f(request)
 	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) createApi(request *restful.Request, response *restful.Response) {
+	process(r.controller.CreateApi, request, response)
 }
 
 func (r *router) getApi(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.GetApi(request)
-	response.WriteHeaderAndEntity(code, result)
+	process(r.controller.GetApi, request, response)
 }
 
 func (r *router) deleteApi(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.DeleteApi(request)
-	response.WriteHeaderAndEntity(code, result)
+	process(r.controller.DeleteApi, request, response)
 }
 
 func (r *router) listApi(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.ListApi(request)
-	response.WriteHeaderAndEntity(code, result)
+	process(r.controller.ListApi, request, response)
+}
+
+func (r *router) bindApi(request *restful.Request, response *restful.Response) {
+	process(r.controller.BindApi, request, response)
 }

@@ -30,12 +30,17 @@ type ApplicationSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Application. Edit Application_types.go to remove/update
-	Name            string          `json:"name"`
-	Group           Group           `json:"group"`
-	Users           []apiv1.User    `json:"users"`
-	AccessKey       string          `json:"accessKey"`
-	AccessSecretKey string          `json:"accessSecretKey"`
-	BoundAPIs       []apiv1.ApiSpec `json:"boundApis"`
+	Name            string       `json:"name"`
+	Group           Group        `json:"group"`
+	Users           []apiv1.User `json:"users"`
+	AccessKey       string       `json:"accessKey"`
+	AccessSecretKey string       `json:"accessSecretKey"`
+	APIs            []Api        `json:"apis"`
+}
+
+type Api struct {
+	ID   string
+	Name string
 }
 
 type Group struct {
@@ -47,9 +52,10 @@ type Group struct {
 type ApplicationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	UserCount int `json:"userCount"`
-	APICount  int `json:"apiCount"`
+	Status Status `json:"status"`
 }
+
+type Status string
 
 // +kubebuilder:object:root=true
 
