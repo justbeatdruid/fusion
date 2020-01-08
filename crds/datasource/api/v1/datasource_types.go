@@ -101,8 +101,8 @@ type DatasourceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	Status    Status    `json:"status"`
-	UpdatedAt time.Time `json:"time.updatedTime"`
-	CreateAt  time.Time `json:"time.createTime"`
+	UpdatedAt time.Time `json:"UpdatedAt"`
+	CreatedAt time.Time `json:"CreatedAt"`
 }
 type Status string
 

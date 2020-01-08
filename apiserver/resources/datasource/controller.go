@@ -78,13 +78,13 @@ func (c *controller) UpdateDatasource(req *restful.Request) (int, *UpdateRespons
 		}
 	}
 	if body.Data == nil {
-		return http.StatusInternalServerError, &CreateResponse{
+		return http.StatusInternalServerError, &UpdateResponse{
 			Code:    1,
 			Message: "read entity error: data is null",
 		}
 	}
 	if db, err := c.service.UpdateDatasource(body.Data); err != nil {
-		return http.StatusInternalServerError, &CreateResponse{
+		return http.StatusInternalServerError, &UpdateResponse{
 			Code:    2,
 			Message: fmt.Errorf("update database error: %+v", err).Error(),
 		}

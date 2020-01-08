@@ -17,8 +17,8 @@ type Datasource struct {
 	Schema    string     `json:"schema,omitempty"`
 	Table     string     `json:"table"`
 	Status    v1.Status  `json:"status"`
-	UpdatedAt time.Time  `json:"time.updatedTime"`
-	CreateAt  time.Time  `json:"time.createTime"`
+	UpdatedAt time.Time  `json:"UpdatedAt"`
+	CreatedAt time.Time  `json:"CreatedAt"`
 	Fields    []v1.Field `json:"fields"`
 
 	CreateUser v1.CreateUser `json:"createUser"`
@@ -53,7 +53,7 @@ func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 	if dealType == "create" {
 		crd.Status = v1.DatasourceStatus{
 			Status:   status,
-			CreateAt: time.Now(),
+			CreatedAt: time.Now(),
 		}
 	} else if dealType == "update" {
 		crd.Status = v1.DatasourceStatus{
@@ -76,7 +76,7 @@ func ToModel(obj *v1.Datasource) *Datasource {
 
 		Status:    obj.Status.Status,
 		UpdatedAt: obj.Status.UpdatedAt,
-		CreateAt:  obj.Status.CreateAt,
+		CreatedAt:  obj.Status.CreatedAt,
 
 		Fields: obj.Spec.Fields,
 
