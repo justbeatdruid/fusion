@@ -27,7 +27,9 @@ type Wrapped struct {
 }
 
 type CreateResponse = Wrapped
+type UpdateResponse = Wrapped
 type CreateRequest = Wrapped
+type UpdateRequest = Wrapped
 type DeleteResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -39,6 +41,7 @@ type ListResponse = struct {
 	Data    []*service.Datasource `json:"data"`
 }
 type PingResponse = DeleteResponse
+
 
 func (c *controller) CreateDatasource(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
@@ -66,7 +69,32 @@ func (c *controller) CreateDatasource(req *restful.Request) (int, *CreateRespons
 		}
 	}
 }
-
+func (c *controller) UpdateDatasource(req *restful.Request) (int, *UpdateResponse) {
+	body := &UpdateRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &UpdateResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &UpdateResponse{
+			Code:    1,
+			Message: "read entity error: data is null",
+		}
+	}
+	if db, err := c.service.UpdateDatasource(body.Data); err != nil {
+		return http.StatusInternalServerError, &UpdateResponse{
+			Code:    2,
+			Message: fmt.Errorf("update database error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &UpdateResponse{
+			Code: 0,
+			Data: db,
+		}
+	}
+}
 func (c *controller) GetDatasource(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
 	if db, err := c.service.GetDatasource(id); err != nil {
