@@ -117,7 +117,7 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 }
 
 func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
-	klog.Infof("Enter CreateServiceByKong name:%s, Host:%s, Port:%d", db.Spec.Name, r.Host, r.Port)
+	klog.Infof("Enter CreateServiceByKong name:%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, r.Host, r.Port, path))
@@ -127,7 +127,7 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 	//TODO 服务的地址信息
 	requestBody := &RequestBody{
-		Name:     db.Spec.Name,
+		Name:     db.ObjectMeta.Name,
 		Protocol:      "http",
 		Host:     "127.0.0.1",
 		Port:      80,
@@ -150,15 +150,17 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 }
 
 func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
-	klog.Infof("delete service %s", db.Spec.Name)
+	klog.Infof("delete service %s %s", db.ObjectMeta.Name, db.Spec.ID)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
-	var id string = (*db).Spec.ID
+	id := db.Spec.ID
+	klog.Infof("delete service id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
 	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id)).End()
-	request = request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, (*db).Spec.ID))
+	klog.Infof("end delete service id = %s", id)
+	klog.Infof("delete service response code: %d %s", response.StatusCode, string(body))
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 
 	if len(errs) > 0 {
