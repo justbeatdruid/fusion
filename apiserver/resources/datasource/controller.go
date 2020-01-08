@@ -42,6 +42,7 @@ type ListResponse = struct {
 }
 type PingResponse = DeleteResponse
 
+
 func (c *controller) CreateDatasource(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
