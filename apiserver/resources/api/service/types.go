@@ -133,14 +133,14 @@ func (s *Service) Validate(a *Api) error {
 		switch p.Type {
 		case datav1.String, datav1.Int, datav1.Bool, datav1.Float:
 		default:
-			return fmt.Errorf("%dth parameter type is wrong: %s", p.Type)
+			return fmt.Errorf("%dth parameter type is wrong: %s", i, p.Type)
 		}
 		p.Operator = v1.Equal
 		if len(p.Example) == 0 {
-			return fmt.Errorf("%dth parameter example is null")
+			return fmt.Errorf("%dth parameter example is null", i)
 		}
 		if len(p.Description) == 0 {
-			return fmt.Errorf("%dth parameter description is null")
+			return fmt.Errorf("%dth parameter description is null", i)
 		}
 	}
 	a.UpdatedAt = time.Now()

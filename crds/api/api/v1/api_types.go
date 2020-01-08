@@ -54,7 +54,7 @@ type Serviceunit struct {
 }
 
 type Application struct {
-	ID    string `json:"name"`
+	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Group string `json:"group"`
 }
