@@ -28,10 +28,7 @@ type Wrapped struct {
 
 type CreateResponse = Wrapped
 type CreateRequest = Wrapped
-type DeleteResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
+type DeleteResponse = Wrapped
 type GetResponse = Wrapped
 type ListResponse = struct {
 	Code    int                    `json:"code"`
@@ -57,7 +54,7 @@ func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateRespon
 	if db, err := c.service.CreateServiceunit(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
-			Message: fmt.Errorf("create database error: %+v", err).Error(),
+			Message: fmt.Errorf("create serviceunit error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -72,7 +69,7 @@ func (c *controller) GetServiceunit(req *restful.Request) (int, *GetResponse) {
 	if db, err := c.service.GetServiceunit(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
-			Message: fmt.Errorf("get database error: %+v", err).Error(),
+			Message: fmt.Errorf("get serviceunit error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -84,15 +81,15 @@ func (c *controller) GetServiceunit(req *restful.Request) (int, *GetResponse) {
 
 func (c *controller) DeleteServiceunit(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if err := c.service.DeleteServiceunit(id); err != nil {
+	if data, err := c.service.DeleteServiceunit(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
-			Message: fmt.Errorf("delete database error: %+v", err).Error(),
+			Message: fmt.Errorf("delete serviceunit error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
-			Code:    0,
-			Message: "",
+			Code: 0,
+			Data: data,
 		}
 	}
 }
@@ -101,12 +98,39 @@ func (c *controller) ListServiceunit(req *restful.Request) (int, *ListResponse) 
 	if db, err := c.service.ListServiceunit(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
-			Message: fmt.Errorf("list database error: %+v", err).Error(),
+			Message: fmt.Errorf("list serviceunit error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &ListResponse{
 			Code: 0,
 			Data: db,
+		}
+	}
+}
+
+func (c *controller) PublishServiceunit(req *restful.Request) (int, *CreateResponse) {
+	body := &CreateRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "read entity error: data is null",
+		}
+	}
+	if su, err := c.service.PublishServiceunit(body.Data.ID); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    2,
+			Message: fmt.Errorf("create serviceunit error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
+			Code: 0,
+			Data: su,
 		}
 	}
 }

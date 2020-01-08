@@ -32,13 +32,27 @@ type ServiceunitSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Name             string                   `json:"name"`
-	Group            Group                    `json:"group"`
-	Type             ServiceType              `json:"type"`
-	SingleDatasource *datav1.DatasourceSpec   `json:"singleDatasource"`
-	MultiDatasource  []*datav1.DatasourceSpec `json:"multiDatasource"`
-	Users            []apiv1.User             `json:"users"`
-	Description      string                   `json:"description"`
+	Name               string                  `json:"name"`
+	Group              Group                   `json:"group"`
+	Type               ServiceType             `json:"type"`
+	SingleDatasourceID *Datasource             `json:"singleDatasourceID"`
+	MultiDatasourceID  []Datasource            `json:"multiDatasourceID"`
+	SingleDatasource   *datav1.DatasourceSpec  `json:"singleDatasource"`
+	MultiDatasource    []datav1.DatasourceSpec `json:"multiDatasource"`
+	Users              []apiv1.User            `json:"users"`
+	APIs               []Api                   `json:"apis"`
+	Description        string                  `json:"description"`
+	//Kong
+	Host string `json:"host"`
+	ID string `json:"id"`
+	Protocol string `json:"protocol"`
+	Port int `json:"port"`
+	Path string `json:"path"`
+}
+
+type Datasource struct {
+	ID     string         `json:"id"`
+	Fields []datav1.Field `json:"fields"`
 }
 
 type Group struct {
@@ -53,6 +67,11 @@ const (
 	Multi  ServiceType = "multi"
 )
 
+type Api struct {
+	ID   string
+	Name string
+}
+
 // ServiceunitStatus defines the observed state of Serviceunit
 type ServiceunitStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -61,6 +80,7 @@ type ServiceunitStatus struct {
 	UpdatedAt time.Time `json:"time.Time"`
 	APICount  int       `json:"apiCount"`
 	Published bool      `json:"published"`
+	Message string       `json:"message"`
 }
 
 type Status string

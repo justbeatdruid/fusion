@@ -115,6 +115,7 @@ metadata:
     app: fusion-apiserver
     version: v0.1-alpha
 EOF
+kubectl delete -f ${tf}
 kubectl create -f ${tf}
 
 rm -rf ${tf}
