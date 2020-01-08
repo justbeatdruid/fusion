@@ -4,6 +4,7 @@ curl localhost:8001/api/v1/api/create -H 'content-type:application/json' \
   "data": {
     "name": "xuxutest",
     "serviceunit": {
+      "id": "ab092b4dfd9e205",
       "name": "test",
       "group": "testgroup"
     },
@@ -14,13 +15,14 @@ curl localhost:8001/api/v1/api/create -H 'content-type:application/json' \
       }
     ],
     "frequency": 10,
-    "method": "POST",
+    "method": "GET",
     "protocol": "HTTP",
     "returnType": "json",
     "parameters": [
       {
         "name": "para1",
 	"type": "int",
+	"operator": "equal",
 	"description": "this is first parameter",
 	"example": "0",
 	"required": true
@@ -28,6 +30,7 @@ curl localhost:8001/api/v1/api/create -H 'content-type:application/json' \
       {
         "name": "para2",
 	"type": "string",
+	"operator": "equal",
 	"description": "this is second parameter",
 	"example": "hello",
 	"required": false
