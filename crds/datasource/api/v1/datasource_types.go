@@ -17,6 +17,7 @@ package v1
 
 import (
 	"fmt"
+	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -38,6 +39,9 @@ type DatasourceSpec struct {
 	Fields   []Field `json:"fields"`
 
 	Connect ConnectInfo `json:"connect"`
+
+	CreateUser CreateUser `json:"createUser"`
+	UpdateUser UpdateUser `json:"updateUser"`
 }
 
 type Field struct {
@@ -46,7 +50,14 @@ type Field struct {
 	ServiceType  ParameterType `json:"serviceType"`
 	ServiceField string        `json:"serviceField"`
 }
-
+type CreateUser struct {
+	UserId   string
+	UserName string
+}
+type UpdateUser struct {
+	UserId   string
+	UserName string
+}
 type ParameterType string
 
 const (
@@ -89,7 +100,20 @@ func (f Field) Validate() error {
 type DatasourceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Status    Status    `json:"status"`
+	UpdatedAt time.Time `json:"time.updatedTime"`
+	CreateAt  time.Time `json:"time.createTime"`
 }
+type Status string
+
+const (
+	Init     Status = "init"
+	Creating Status = "creating"
+	Created  Status = "created"
+	Delete   Status = "delete"
+	Deleting Status = "deleting"
+	Error    Status = "error"
+)
 
 // +kubebuilder:object:root=true
 
