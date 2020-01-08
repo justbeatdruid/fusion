@@ -23,6 +23,10 @@ var oofsGVR = schema.GroupVersionResource{
 	Resource: "serviceunits",
 }
 
+func GetOOFSGVR() schema.GroupVersionResource {
+	return oofsGVR
+}
+
 type Service struct {
 	client           dynamic.NamespaceableResourceInterface
 	datasourceClient dynamic.NamespaceableResourceInterface
@@ -68,6 +72,19 @@ func (s *Service) DeleteServiceunit(id string) (*Serviceunit, error) {
 		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
 	}
 	return ToModel(su), nil
+}
+
+func (s *Service) PublishServiceunit(id string) (*Serviceunit, error) {
+	su, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("get crd by id error: %+v", err)
+	}
+	if su.Status.Published {
+		return nil, fmt.Errorf("serviceunit already published")
+	}
+	su.Status.Published = true
+	su, err = s.UpdateStatus(su)
+	return ToModel(su), err
 }
 
 func (s *Service) Create(su *v1.Serviceunit) (*v1.Serviceunit, error) {
@@ -116,17 +133,29 @@ func (s *Service) Get(id string) (*v1.Serviceunit, error) {
 	return su, nil
 }
 
+func (s *Service) ForceDelete(id string) error {
+	err := s.client.Namespace(crdNamespace).Delete(id, &metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("error delete crd: %+v", err)
+	}
+	return nil
+}
+
 func (s *Service) Delete(id string) (*v1.Serviceunit, error) {
-	//err := s.client.Namespace(crdNamespace).Delete(id, &metav1.DeleteOptions{})
-	//if err != nil {
-	//	return fmt.Errorf("error delete crd: %+v", err)
-	//}
 	su, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("get crd by id error: %+v", err)
 	}
+	//TODO need check status !!!
 	su.Status.Status = v1.Delete
+	return s.UpdateStatus(su)
+}
 
+func (s *Service) UpdateSpec(su *v1.Serviceunit) (*v1.Serviceunit, error) {
+	return s.UpdateStatus(su)
+}
+
+func (s *Service) UpdateStatus(su *v1.Serviceunit) (*v1.Serviceunit, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(su)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
