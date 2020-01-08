@@ -2,9 +2,10 @@ package service
 
 import (
 	"fmt"
-	"time"
 
+	susvc "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
+	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -23,21 +24,32 @@ var oofsGVR = schema.GroupVersionResource{
 }
 
 type Service struct {
-	client dynamic.NamespaceableResourceInterface
+	client            dynamic.NamespaceableResourceInterface
+	serviceunitClient dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface) *Service {
-	return &Service{client: client.Resource(oofsGVR)}
+	return &Service{
+		client:            client.Resource(oofsGVR),
+		serviceunitClient: client.Resource(susvc.GetOOFSGVR()),
+	}
 }
 
 func (s *Service) CreateApi(model *Api) (*Api, error) {
-	if err := model.Validate(); err != nil {
+	if err := s.Validate(model); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
-	model.UpdatedAt = time.Now()
+	// create api
 	api, err := s.Create(ToAPI(model))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
+	}
+	// update service unit
+	if _, err = s.updateServiceApi(api.Spec.Serviceunit.ID, api.ObjectMeta.Name, api.Spec.Name); err != nil {
+		if e := s.ForceDelete(api.ObjectMeta.Name); e != nil {
+			klog.Errorf("cannot delete error api: %+v", e)
+		}
+		return nil, fmt.Errorf("cannot update related service unit: %+v", err)
 	}
 	return ToModel(api), nil
 }
@@ -58,8 +70,9 @@ func (s *Service) GetApi(id string) (*Api, error) {
 	return ToModel(api), nil
 }
 
-func (s *Service) DeleteApi(id string) error {
-	return s.Delete(id)
+func (s *Service) DeleteApi(id string) (*Api, error) {
+	api, err := s.Delete(id)
+	return ToModel(api), err
 }
 
 func (s *Service) Create(api *v1.Api) (*v1.Api, error) {
@@ -108,10 +121,84 @@ func (s *Service) Get(id string) (*v1.Api, error) {
 	return api, nil
 }
 
-func (s *Service) Delete(id string) error {
+func (s *Service) ForceDelete(id string) error {
 	err := s.client.Namespace(crdNamespace).Delete(id, &metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("error delete crd: %+v", err)
 	}
 	return nil
+}
+
+func (s *Service) Delete(id string) (*v1.Api, error) {
+	api, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("get crd by id error: %+v", err)
+	}
+	//TODO need check status !!!
+	api.Status.Status = v1.Delete
+	return s.UpdateStatus(api)
+}
+
+func (s *Service) UpdateStatus(api *v1.Api) (*v1.Api, error) {
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	klog.V(5).Infof("try to update status for crd: %+v", crd)
+	//TODO method client.Namespace().UpdateStatus() always returns error
+	//     however method Update() can also update status
+	crd, err = s.client.Namespace(api.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd status: %+v", err)
+	}
+	api = &v1.Api{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), api); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.serviceunit: %+v", api)
+
+	return api, nil
+}
+
+func (s *Service) getServiceunit(id string) (*suv1.Serviceunit, error) {
+	crd, err := s.serviceunitClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	su := &suv1.Serviceunit{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), su); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.serviceunit: %+v", su)
+	return su, nil
+}
+
+func (s *Service) updateServiceApi(svcid, apiid, apiname string) (*suv1.Serviceunit, error) {
+	su, err := s.getServiceunit(svcid)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get service unit: %+v", err)
+	}
+	su.Spec.APIs = append(su.Spec.APIs, suv1.Api{
+		ID:   apiid,
+		Name: apiname,
+	})
+
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(su)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	klog.V(5).Infof("try to update status for crd: %+v", crd)
+	crd, err = s.serviceunitClient.Namespace(su.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd status: %+v", err)
+	}
+	su = &suv1.Serviceunit{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), su); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	return su, nil
 }

@@ -10,7 +10,7 @@ import (
 )
 
 func NewID() string {
-	return stringid.GenerateRandomID()
+	return stringid.GenerateRandomID()[0:16]
 }
 
 func NewName(i int) (string, error) {

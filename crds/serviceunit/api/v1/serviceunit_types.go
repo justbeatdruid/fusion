@@ -40,6 +40,7 @@ type ServiceunitSpec struct {
 	SingleDatasource   *datav1.DatasourceSpec  `json:"singleDatasource"`
 	MultiDatasource    []datav1.DatasourceSpec `json:"multiDatasource"`
 	Users              []apiv1.User            `json:"users"`
+	APIs               []Api                   `json:"apis"`
 	Description        string                  `json:"description"`
 	//Kong
 	Host string `json:"host"`
@@ -65,6 +66,11 @@ const (
 	Single ServiceType = "single"
 	Multi  ServiceType = "multi"
 )
+
+type Api struct {
+	ID   string
+	Name string
+}
 
 // ServiceunitStatus defines the observed state of Serviceunit
 type ServiceunitStatus struct {

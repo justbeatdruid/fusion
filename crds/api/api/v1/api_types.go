@@ -16,6 +16,9 @@ limitations under the License.
 package v1
 
 import (
+	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
@@ -25,6 +28,8 @@ import (
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+
+const ServiceunitLabel = "serviceunit"
 
 // ApiSpec defines the desired state of Api
 type ApiSpec struct {
@@ -43,11 +48,13 @@ type ApiSpec struct {
 }
 
 type Serviceunit struct {
+	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Group string `json:"group"`
 }
 
 type Application struct {
+	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Group string `json:"group"`
 }
@@ -65,6 +72,7 @@ const (
 	DELETE Method = "DELETE"
 	PUT    Method = "PUT"
 	OPTION Method = "OPTION"
+	LIST   Method = "LIST"
 )
 
 type Protocol string
@@ -83,20 +91,56 @@ const (
 type Parameter struct {
 	Name        string               `json:"name"`
 	Type        datav1.ParameterType `json:"type"`
-	Description string               `json:"description"`
+	Operator    Operator             `json:"operator"`
 	Example     string               `json:"example"`
+	Description string               `json:"description"`
 	Required    bool                 `json:"required"`
 }
+
+type Operator string
+
+const (
+	Equal Operator = "="
+	More  Operator = ">"
+	Less  Operator = "<"
+	In    Operator = "in"
+	Like  Operator = "like"
+)
 
 // ApiStatus defines the observed state of Api
 type ApiStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	UpdatedAt        time.Time `json:"updatedAt"`
-	ReleasedAt       time.Time `json:"releasedAt"`
-	ApplicationCount int       `json:"applicationCount"`
-	CalledCount      int       `json:"calledCount"`
+	Status           Status     `json:"status"`
+	AccessLink       AccessLink `json:"access"`
+	UpdatedAt        time.Time  `json:"updatedAt"`
+	ReleasedAt       time.Time  `json:"releasedAt"`
+	ApplicationCount int        `json:"applicationCount"`
+	CalledCount      int        `json:"calledCount"`
 }
+
+type AccessLink string
+
+func (a AccessLink) Parse() error {
+	if !(strings.HasPrefix(string(a), "http://") || strings.HasPrefix(string(a), "https://")) {
+		return fmt.Errorf("url should start with a scheme")
+	}
+	if _, err := url.Parse(string(a)); err != nil {
+		return err
+	}
+	return nil
+}
+
+type Status string
+
+const (
+	Init     Status = "init"
+	Creating Status = "creating"
+	Created  Status = "created"
+	Delete   Status = "delete"
+	Deleting Status = "deleting"
+	Error    Status = "error"
+)
 
 // +kubebuilder:object:root=true
 
