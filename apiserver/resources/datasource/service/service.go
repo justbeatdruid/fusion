@@ -5,7 +5,7 @@ import (
 	api "github.com/chinamobile/nlpt/apiserver/resources/api/service"
 	serviceunit "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
-	v12 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
+	serviceunitv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -34,7 +34,11 @@ type Service struct {
 }
 
 func NewService(client dynamic.Interface) *Service {
-	return &Service{client: client.Resource(oofsGVR)}
+	return &Service{
+		client:            client.Resource(oofsGVR),
+		apiService:        api.NewService(client),
+		serverUnitservice: serviceunit.NewService(client),
+	}
 }
 
 func (s *Service) CreateDatasource(model *Datasource) (*Datasource, error) {
@@ -157,7 +161,7 @@ func (s *Service) Delete(id string) error {
 	return nil
 }
 
-func (s *Service) GetDataSourceByApiId(apiId string) (map[string]interface{}, error) {
+func (s *Service) GetDataSourceByApiId(apiId string, parames string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 	//get api by apiID
 	api, err := s.apiService.Get(apiId)
@@ -172,7 +176,7 @@ func (s *Service) GetDataSourceByApiId(apiId string) (map[string]interface{}, er
 		return nil, fmt.Errorf("error query serverUnit: %+v", err)
 	}
 	//check unit type (single or multi)
-	if serverUnit.Spec.Type == v12.Single {
+	if serverUnit.Spec.Type == serviceunitv1.Single {
 		//get dataSource by singleDateSourceId
 		dataSource, err := s.Get(serverUnit.Spec.SingleDatasourceID.ID)
 		if err != nil {
@@ -180,7 +184,7 @@ func (s *Service) GetDataSourceByApiId(apiId string) (map[string]interface{}, er
 		}
 		//TODO The remaining operation after the query to the data source
 		result["Fields"] = dataSource.Spec.Fields
-	} else if serverUnit.Spec.Type == v12.Multi {
+	} else if serverUnit.Spec.Type == serviceunitv1.Multi {
 		//get dataSources by  multiDateSourceId
 		for _, v := range serverUnit.Spec.MultiDatasourceID {
 			datasource, err := s.Get(v.ID)
