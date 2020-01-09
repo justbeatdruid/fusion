@@ -23,6 +23,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.POST("/dataSource/update").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("update a dataSource").
+		To(r.updateDatasource).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.GET("/datasource/{id}/get").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -51,7 +59,10 @@ func (r *router) createDatasource(request *restful.Request, response *restful.Re
 	code, result := r.controller.CreateDatasource(request)
 	response.WriteHeaderAndEntity(code, result)
 }
-
+func (r *router) updateDatasource(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.UpdateDatasource(request)
+	response.WriteHeaderAndEntity(code, result)
+}
 func (r *router) getDatasource(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.GetDatasource(request)
 	response.WriteHeaderAndEntity(code, result)
