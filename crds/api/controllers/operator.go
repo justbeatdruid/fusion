@@ -125,8 +125,8 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	paths:= []string{}
 	paths = append(paths, "/apiquery")
 	//TODO 替换ID
-	//id := db.Spec.Serviceunit.KongID
-	id := "ce5e6f95-611b-4feb-96f1-f3b025876424"
+	id := db.Spec.Serviceunit.KongID
+	//id := "ce5e6f95-611b-4feb-96f1-f3b025876424"
 	requestBody := &RequestBody{
 		Service:     ServiceID{id},
 		Protocols:      protocols,
