@@ -86,7 +86,7 @@ type ServiceunitStatus struct {
 	UpdatedAt time.Time `json:"time.Time"`
 	APICount  int       `json:"apiCount"`
 	Published bool      `json:"published"`
-	Message string       `json:"message"`
+	Message   string    `json:"message"`
 }
 
 type Status string
