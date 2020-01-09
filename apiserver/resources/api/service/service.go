@@ -25,6 +25,10 @@ var oofsGVR = schema.GroupVersionResource{
 	Resource: "apis",
 }
 
+func GetOOFSGVR() schema.GroupVersionResource {
+	return oofsGVR
+}
+
 type Service struct {
 	client            dynamic.NamespaceableResourceInterface
 	serviceunitClient dynamic.NamespaceableResourceInterface
@@ -196,7 +200,7 @@ func (s *Service) getApplication(id string) (*appv1.Application, error) {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), app); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.serviceunit: %+v", app)
+	klog.V(5).Infof("get v1.application: %+v", app)
 	return app, nil
 }
 

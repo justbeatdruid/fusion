@@ -1,0 +1,7 @@
+apiVersion: nlpt.cmcc.com/v1
+kind: Apply
+metadata:
+  name: apply-sample
+spec:
+  # Add fields here
+  foo: bar
