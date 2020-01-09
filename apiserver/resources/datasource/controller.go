@@ -143,7 +143,7 @@ func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 }
 func (c *controller) getDataByApi(req *restful.Request) (int, *QueryDataResponse) {
 	apiId := req.PathParameter("apiId")
-	//todo Acquisition parameters in the request body（Provisional use this method, it may be wrong!!!）
+	//todo Acquisition parameters in the request body（Provisional use this method）
 	parameters, err := req.BodyParameter("params")
 	if err != nil {
 		return http.StatusInternalServerError, &QueryDataResponse{
