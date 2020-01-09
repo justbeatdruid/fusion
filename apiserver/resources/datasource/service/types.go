@@ -52,7 +52,7 @@ func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 	}
 	if dealType == "create" {
 		crd.Status = v1.DatasourceStatus{
-			Status:   status,
+			Status:    status,
 			CreatedAt: time.Now(),
 		}
 	} else if dealType == "update" {
@@ -76,7 +76,7 @@ func ToModel(obj *v1.Datasource) *Datasource {
 
 		Status:    obj.Status.Status,
 		UpdatedAt: obj.Status.UpdatedAt,
-		CreatedAt:  obj.Status.CreatedAt,
+		CreatedAt: obj.Status.CreatedAt,
 
 		Fields: obj.Spec.Fields,
 
@@ -90,7 +90,7 @@ func ToModel(obj *v1.Datasource) *Datasource {
 func ToListModel(items *v1.DatasourceList) []*Datasource {
 	var ds []*Datasource = make([]*Datasource, len(items.Items))
 	for i := range items.Items {
-		ds[i] = ToModel(&items.Items [i])
+		ds[i] = ToModel(&items.Items[i])
 	}
 	return ds
 }

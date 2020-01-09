@@ -43,11 +43,11 @@ type ServiceunitSpec struct {
 	APIs               []Api                   `json:"apis"`
 	Description        string                  `json:"description"`
 	//Kong
-	Host string `json:"host"`
-	ID string `json:"id"`
+	Host     string `json:"host"`
+	ID       string `json:"id"`
 	Protocol string `json:"protocol"`
-	Port int `json:"port"`
-	Path string `json:"path"`
+	Port     int    `json:"port"`
+	Path     string `json:"path"`
 }
 
 type Datasource struct {
@@ -80,7 +80,7 @@ type ServiceunitStatus struct {
 	UpdatedAt time.Time `json:"time.Time"`
 	APICount  int       `json:"apiCount"`
 	Published bool      `json:"published"`
-	Message string       `json:"message"`
+	Message   string    `json:"message"`
 }
 
 type Status string

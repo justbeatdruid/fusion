@@ -37,7 +37,7 @@ func (s *Service) CreateDatasource(model *Datasource) (*Datasource, error) {
 	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
-	ds, err := s.Create(ToAPI(model,dealType))
+	ds, err := s.Create(ToAPI(model, dealType))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
 	}
@@ -54,7 +54,7 @@ func (s *Service) UpdateDatasource(model *Datasource) (*Datasource, error) {
 	if len(model.UpdateUser.UserId) == 0 {
 		return nil, fmt.Errorf("UpdateUseriD is null")
 	}
-	ds, err := s.Update(ToAPI(model,dealType))
+	ds, err := s.Update(ToAPI(model, dealType))
 	if err != nil {
 		return nil, fmt.Errorf("cannot update object: %+v", err)
 	}
