@@ -45,12 +45,30 @@ type ApiSpec struct {
 	Protocol     Protocol      `json:"protocol"`
 	ReturnType   ReturnType    `json:"returnType"`
 	Parameters   []Parameter   `json:"parameter"`
+    KongApi   KongApiInfo      `json:"kong_api"`
+
+}
+
+type KongApiInfo struct {
+	//Kong变量
+	//A list of domain names that match this Route. With form-encoded, the notation is hosts[]=example.com&hosts[]=foo.test. With JSON, use an Array.
+	Hosts []string  `json:"hosts"`
+	Paths  []string  `json:"paths"`
+	Headers []string  `json:"Headers"`
+	HttpsCode int `json:"https_redirect_status_code"`
+	RegexPriority int `json:"regex_priority"`
+	StripPath bool `json:"strip_path"`
+	PreserveHost bool `json:"preserve_host"`
+	Snis []string `json:"snis"`
+	Protocols []string `json:"protocols"`
+	KongID string `json:"kong_id"`
 }
 
 type Serviceunit struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Group string `json:"group"`
+	KongID string `json:"kongID"`
 }
 
 type Application struct {
@@ -117,6 +135,7 @@ type ApiStatus struct {
 	ReleasedAt       time.Time  `json:"releasedAt"`
 	ApplicationCount int        `json:"applicationCount"`
 	CalledCount      int        `json:"calledCount"`
+	Message   string  `json:"msg"`
 }
 
 type AccessLink string

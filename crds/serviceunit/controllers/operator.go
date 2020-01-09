@@ -142,24 +142,23 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		return fmt.Errorf("request for create service error: receive wrong status code: %s", string(body))
 	}
 
-	(*db).Spec.Host = responseBody.Host
-	(*db).Spec.Protocol = responseBody.Protocol
-	(*db).Spec.Port = responseBody.Port
-	(*db).Spec.ID = responseBody.ID
+	(*db).Spec.KongService.Host = responseBody.Host
+	(*db).Spec.KongService.Protocol = responseBody.Protocol
+	(*db).Spec.KongService.Port = responseBody.Port
+	(*db).Spec.KongService.ID = responseBody.ID
 	return nil
 }
 
 func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
-	klog.Infof("delete service %s %s", db.ObjectMeta.Name, db.Spec.ID)
+	klog.Infof("delete service %s %s", db.ObjectMeta.Name, db.Spec.KongService.ID)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
-	id := db.Spec.ID
+	id := db.Spec.KongService.ID
 	klog.Infof("delete service id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
 	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id)).End()
-	klog.Infof("end delete service id = %s", id)
 	klog.Infof("delete service response code: %d %s", response.StatusCode, string(body))
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 

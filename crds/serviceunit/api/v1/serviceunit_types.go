@@ -42,7 +42,13 @@ type ServiceunitSpec struct {
 	Users              []apiv1.User            `json:"users"`
 	APIs               []Api                   `json:"apis"`
 	Description        string                  `json:"description"`
-	//Kong
+	//KongInfo
+	KongService    KongServiceInfo             `json:"kongServiceInfo"`
+
+
+}
+
+type KongServiceInfo struct {
 	Host string `json:"host"`
 	ID string `json:"id"`
 	Protocol string `json:"protocol"`

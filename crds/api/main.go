@@ -44,9 +44,17 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+	var operatorHost string
+	var operatorPort int
+	var operatorCAFile string
+	var portalPort int
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&operatorHost, "operator-host", "127.0.0.1", "Host of kong service.")
+	flag.IntVar(&operatorPort, "operator-port", 800, "Port of kong admin service.")
+	flag.IntVar(&portalPort, "portal-port", 8443, "Port of kong portal service.")
+	flag.StringVar(&operatorCAFile, "operator-cafile", "", "Certificate for TLS communication with database warehose service.")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(func(o *zap.Options) {
@@ -64,10 +72,17 @@ func main() {
 		os.Exit(1)
 	}
 
+	operator, err := controllers.NewOperator(operatorHost, operatorPort, portalPort, operatorCAFile)
+	if err != nil {
+		setupLog.Error(err, "unable to create operator")
+		os.Exit(1)
+	}
+
 	if err = (&controllers.ApiReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Api"),
 		Scheme: mgr.GetScheme(),
+		Operator: operator,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Api")
 		os.Exit(1)
