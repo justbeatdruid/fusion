@@ -32,6 +32,10 @@ import (
 const ServiceunitLabel = "serviceunit"
 const applicationLabel = "application"
 
+func ApplicationLabel(id string) string {
+	return strings.Join([]string{applicationLabel, id}, "/")
+}
+
 // ApiSpec defines the desired state of Api
 type ApiSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
