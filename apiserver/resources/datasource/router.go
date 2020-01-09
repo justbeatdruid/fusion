@@ -23,7 +23,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.POST("/dataSource/update").
+	ws.Route(ws.POST("/datasource/update").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("update a dataSource").
@@ -54,7 +54,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.GET("/getData/{apiId}").
+	ws.Route(ws.GET("/getdata/{apiId}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("query data by api").
