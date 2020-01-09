@@ -30,6 +30,11 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 const ServiceunitLabel = "serviceunit"
+const applicationLabel = "application"
+
+func ApplicationLabel(id string) string {
+	return strings.Join([]string{applicationLabel, id}, "/")
+}
 
 // ApiSpec defines the desired state of Api
 type ApiSpec struct {

@@ -26,8 +26,8 @@ type Wrapped struct {
 	Data    *service.Application `json:"data,omitempty"`
 }
 
-type CreateResponse = Wrapped
 type CreateRequest = Wrapped
+type CreateResponse = Wrapped
 type DeleteResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -54,7 +54,7 @@ func (c *controller) CreateApplication(req *restful.Request) (int, *CreateRespon
 			Message: "read entity error: data is null",
 		}
 	}
-	if db, err := c.service.CreateApplication(body.Data); err != nil {
+	if app, err := c.service.CreateApplication(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
 			Message: fmt.Errorf("create database error: %+v", err).Error(),
@@ -62,14 +62,14 @@ func (c *controller) CreateApplication(req *restful.Request) (int, *CreateRespon
 	} else {
 		return http.StatusOK, &CreateResponse{
 			Code: 0,
-			Data: db,
+			Data: app,
 		}
 	}
 }
 
 func (c *controller) GetApplication(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
-	if db, err := c.service.GetApplication(id); err != nil {
+	if app, err := c.service.GetApplication(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
 			Message: fmt.Errorf("get database error: %+v", err).Error(),
@@ -77,7 +77,7 @@ func (c *controller) GetApplication(req *restful.Request) (int, *GetResponse) {
 	} else {
 		return http.StatusOK, &GetResponse{
 			Code: 0,
-			Data: db,
+			Data: app,
 		}
 	}
 }
@@ -98,7 +98,7 @@ func (c *controller) DeleteApplication(req *restful.Request) (int, *DeleteRespon
 }
 
 func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) {
-	if db, err := c.service.ListApplication(); err != nil {
+	if app, err := c.service.ListApplication(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
@@ -106,7 +106,7 @@ func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) 
 	} else {
 		return http.StatusOK, &ListResponse{
 			Code: 0,
-			Data: db,
+			Data: app,
 		}
 	}
 }

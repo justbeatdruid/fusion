@@ -20,12 +20,26 @@ func newController(cfg *config.Config) *controller {
 	}
 }
 
+const (
+	serviceunit = "serviceunit"
+	application = "application"
+)
+
 type Wrapped struct {
 	Code    int          `json:"code"`
 	Message string       `json:"message"`
 	Data    *service.Api `json:"data,omitempty"`
 }
 
+type BindRequest struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		AppID string `json:"appID"`
+		ApiID string `json:"apiID"`
+	} `json:"data,omitempty"`
+}
+type BindResponse = Wrapped
 type CreateResponse = Wrapped
 type CreateRequest = Wrapped
 type DeleteResponse = Wrapped
@@ -37,7 +51,7 @@ type ListResponse = struct {
 }
 type PingResponse = DeleteResponse
 
-func (c *controller) CreateApi(req *restful.Request) (int, *CreateResponse) {
+func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
@@ -51,7 +65,7 @@ func (c *controller) CreateApi(req *restful.Request) (int, *CreateResponse) {
 			Message: "read entity error: data is null",
 		}
 	}
-	if db, err := c.service.CreateApi(body.Data); err != nil {
+	if api, err := c.service.CreateApi(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
 			Message: fmt.Errorf("create api error: %+v", err).Error(),
@@ -59,14 +73,14 @@ func (c *controller) CreateApi(req *restful.Request) (int, *CreateResponse) {
 	} else {
 		return http.StatusOK, &CreateResponse{
 			Code: 0,
-			Data: db,
+			Data: api,
 		}
 	}
 }
 
-func (c *controller) GetApi(req *restful.Request) (int, *GetResponse) {
+func (c *controller) GetApi(req *restful.Request) (int, interface{}) {
 	id := req.PathParameter("id")
-	if db, err := c.service.GetApi(id); err != nil {
+	if api, err := c.service.GetApi(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
 			Message: fmt.Errorf("get api error: %+v", err).Error(),
@@ -74,12 +88,12 @@ func (c *controller) GetApi(req *restful.Request) (int, *GetResponse) {
 	} else {
 		return http.StatusOK, &GetResponse{
 			Code: 0,
-			Data: db,
+			Data: api,
 		}
 	}
 }
 
-func (c *controller) DeleteApi(req *restful.Request) (int, *DeleteResponse) {
+func (c *controller) DeleteApi(req *restful.Request) (int, interface{}) {
 	id := req.PathParameter("id")
 	if data, err := c.service.DeleteApi(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
@@ -94,8 +108,8 @@ func (c *controller) DeleteApi(req *restful.Request) (int, *DeleteResponse) {
 	}
 }
 
-func (c *controller) ListApi(req *restful.Request) (int, *ListResponse) {
-	if db, err := c.service.ListApi(); err != nil {
+func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
+	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list api error: %+v", err).Error(),
@@ -103,7 +117,49 @@ func (c *controller) ListApi(req *restful.Request) (int, *ListResponse) {
 	} else {
 		return http.StatusOK, &ListResponse{
 			Code: 0,
-			Data: db,
+			Data: api,
+		}
+	}
+}
+
+func (c *controller) BindApi(req *restful.Request) (int, interface{}) {
+	body := &BindRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if api, err := c.service.BindApi(body.Data.ApiID, body.Data.AppID); err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:    2,
+			Message: fmt.Errorf("bind api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &BindResponse{
+			Code: 0,
+			Data: api,
+		}
+	}
+}
+
+func (c *controller) ReleaseApi(req *restful.Request) (int, interface{}) {
+	body := &BindRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if api, err := c.service.ReleaseApi(body.Data.ApiID, body.Data.AppID); err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:    2,
+			Message: fmt.Errorf("release api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &BindResponse{
+			Code: 0,
+			Data: api,
 		}
 	}
 }

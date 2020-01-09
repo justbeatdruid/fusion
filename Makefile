@@ -24,6 +24,10 @@ apiserver: fmt vet
 	docker build . -f apiserver/Dockerfile -t ${APIIMG}
 	docker push ${APIIMG}
 
+serviceunit: fmt vet
+	docker build . -f crds/serviceunit/Dockerfile -t ${APIIMG}
+	docker push ${APIIMG}
+
 # Run go fmt against code
 fmt:
 	go fmt ./...

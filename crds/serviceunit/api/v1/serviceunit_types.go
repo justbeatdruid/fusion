@@ -52,8 +52,8 @@ type KongServiceInfo struct {
 	Host string `json:"host"`
 	ID string `json:"id"`
 	Protocol string `json:"protocol"`
-	Port int `json:"port"`
-	Path string `json:"path"`
+	Port     int    `json:"port"`
+	Path     string `json:"path"`
 }
 
 type Datasource struct {

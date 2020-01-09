@@ -6,3 +6,4 @@ config/manager
 config/prometheus
 config/rbac
 config/webhook
+.idea

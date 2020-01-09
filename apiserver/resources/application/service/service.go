@@ -21,6 +21,10 @@ var oofsGVR = schema.GroupVersionResource{
 	Resource: "applications",
 }
 
+func GetOOFSGVR() schema.GroupVersionResource {
+	return oofsGVR
+}
+
 type Service struct {
 	client dynamic.NamespaceableResourceInterface
 }
@@ -30,7 +34,7 @@ func NewService(client dynamic.Interface) *Service {
 }
 
 func (s *Service) CreateApplication(model *Application) (*Application, error) {
-	if err := model.Validate(); err != nil {
+	if err := s.Validate(model); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
 	app, err := s.Create(ToAPI(model))

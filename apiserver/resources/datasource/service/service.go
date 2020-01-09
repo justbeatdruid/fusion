@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -34,16 +33,33 @@ func NewService(client dynamic.Interface) *Service {
 }
 
 func (s *Service) CreateDatasource(model *Datasource) (*Datasource, error) {
+	dealType := "create"
 	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
-	ds, err := s.Create(ToAPI(model))
+	ds, err := s.Create(ToAPI(model, dealType))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
 	}
 	return ToModel(ds), nil
 }
-
+func (s *Service) UpdateDatasource(model *Datasource) (*Datasource, error) {
+	dealType := "update"
+	if err := model.Validate(); err != nil {
+		return nil, fmt.Errorf("bad request: %+v", err)
+	}
+	if len(model.UpdateUser.UserName) == 0 {
+		return nil, fmt.Errorf("UpdateUserName is null")
+	}
+	if len(model.UpdateUser.UserId) == 0 {
+		return nil, fmt.Errorf("UpdateUseriD is null")
+	}
+	ds, err := s.Update(ToAPI(model, dealType))
+	if err != nil {
+		return nil, fmt.Errorf("cannot update object: %+v", err)
+	}
+	return ToModel(ds), nil
+}
 func (s *Service) ListDatasource() ([]*Datasource, error) {
 	dss, err := s.List()
 	if err != nil {
@@ -83,7 +99,25 @@ func (s *Service) Create(ds *v1.Datasource) (*v1.Datasource, error) {
 	klog.V(5).Infof("get v1.datasource of creating: %+v", ds)
 	return ds, nil
 }
+func (s *Service) Update(ds *v1.Datasource) (*v1.Datasource, error) {
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ds)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
 
+	crd, err = s.client.Namespace(crdNamespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error updateing crd: %+v", err)
+	}
+
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), ds); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.datasource of creating: %+v", ds)
+	return ds, nil
+}
 func (s *Service) List() (*v1.DatasourceList, error) {
 	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
 	if err != nil {
