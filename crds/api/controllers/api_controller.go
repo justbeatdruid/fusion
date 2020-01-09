@@ -17,6 +17,9 @@ package controllers
 
 import (
 	"context"
+	"fmt"
+	"strings"
+	"k8s.io/klog"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,14 +34,55 @@ type ApiReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	Operator *Operator
 }
 
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=apis,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=apis/status,verbs=get;update;patch
 
 func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+	ctx := context.Background()
 	_ = r.Log.WithValues("api", req.NamespacedName)
+
+	api := &nlptv1.Api{}
+	if err := r.Get(ctx, req.NamespacedName, api); err != nil {
+		klog.Errorf("cannot get api of ctrl req: %+v", err)
+		return ctrl.Result{}, nil
+	}
+	klog.Infof("get new api event: %+v", *api)
+	if api.Status.Status == nlptv1.Init {
+		// call kong api create
+		api.Status.Status = nlptv1.Creating
+		klog.Infof("new api", r.Operator.Host, r.Operator.Port, r.Operator.CAFile)
+		if err := r.Operator.CreateRouteByKong(api); err != nil {
+			api.Status.Status = nlptv1.Error
+			api.Status.Message = err.Error()
+		} else {
+			api.Status.Status = nlptv1.Created
+			api.Status.AccessLink = nlptv1.AccessLink(fmt.Sprintf("%s://%s:%d%s/%s",
+				strings.ToLower(string(api.Spec.Protocol)),
+				r.Operator.Host, r.Operator.KongPortalPort, api.Spec.KongApi.Paths[0], api.ObjectMeta.Name))
+			api.Status.Message = "success"
+		}
+		r.Update(ctx, api)
+	}
+
+	if api.Status.Status == nlptv1.Error {
+		// call kong api create
+		api.Status.Status = nlptv1.Creating
+		klog.Infof("error create new api", r.Operator.Host, r.Operator.Port, r.Operator.CAFile)
+		if err := r.Operator.CreateRouteByKong(api); err != nil {
+			api.Status.Status = nlptv1.Error
+			api.Status.Message = err.Error()
+		} else {
+			api.Status.Status = nlptv1.Created
+			api.Status.AccessLink = nlptv1.AccessLink(fmt.Sprintf("%s://%s:%d%s/%s",
+				strings.ToLower(string(api.Spec.Protocol)),
+				r.Operator.Host, r.Operator.KongPortalPort, api.Spec.KongApi.Paths[0], api.ObjectMeta.Name))
+			api.Status.Message = "success"
+		}
+		r.Update(ctx, api)
+	}
 
 	// your logic here
 
