@@ -86,7 +86,7 @@ func (r *router) listDatasource(request *restful.Request, response *restful.Resp
 	response.WriteHeaderAndEntity(code, result)
 }
 
-func  (r *router)getDataByApi(request *restful.Request, response *restful.Response)  {
+func (r *router) getDataByApi(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.getDataByApi(request)
 	response.WriteHeaderAndEntity(code, result)
 }

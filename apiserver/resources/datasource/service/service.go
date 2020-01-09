@@ -192,5 +192,5 @@ func (s *Service) GetDataSourceByApiId(apiId string) (map[string]interface{}, er
 		}
 
 	}
-	return  result,nil
+	return result, nil
 }
