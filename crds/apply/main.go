@@ -17,11 +17,10 @@ package main
 
 import (
 	"flag"
-	"k8s.io/klog"
 	"os"
 
-	nlptv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
-	"github.com/chinamobile/nlpt/crds/serviceunit/controllers"
+	nlptv1 "github.com/chinamobile/nlpt/crds/apply/api/v1"
+	"github.com/chinamobile/nlpt/crds/apply/controllers"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -45,15 +44,9 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
-	var operatorHost string
-	var operatorPort int
-	var operatorCAFile string
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
-	flag.StringVar(&operatorHost, "operator-host", "127.0.0.1", "Host of database warehose service.")
-	flag.IntVar(&operatorPort, "operator-port", 800, "Port of database warehose service.")
-	flag.StringVar(&operatorCAFile, "operator-cafile", "", "Certificate for TLS communication with database warehose service.")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(func(o *zap.Options) {
@@ -71,20 +64,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	operator, err := controllers.NewOperator(operatorHost, operatorPort, operatorCAFile)
-	if err != nil {
-		setupLog.Error(err, "unable to create operator")
-		os.Exit(1)
-	}
-	klog.Infof("kong params is %s %d %s", operatorHost, operatorPort, operatorCAFile)
-
-	if err = (&controllers.ServiceunitReconciler{
-		Client:   mgr.GetClient(),
-		Log:      ctrl.Log.WithName("controllers").WithName("Serviceunit"),
-		Scheme:   mgr.GetScheme(),
-		Operator: operator,
+	if err = (&controllers.ApplyReconciler{
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Apply"),
+		Scheme: mgr.GetScheme(),
 	}).SetupWithManager(mgr); err != nil {
-		setupLog.Error(err, "unable to create controller", "controller", "Serviceunit")
+		setupLog.Error(err, "unable to create controller", "controller", "Apply")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
