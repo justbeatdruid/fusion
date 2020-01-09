@@ -3,8 +3,8 @@ package service
 import (
 	"fmt"
 
-	susvc "github.com/chinamobile/nlpt/apiserver/resources/application/service"
-	appsvc "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
+	appsvc "github.com/chinamobile/nlpt/apiserver/resources/application/service"
+	susvc "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
@@ -42,6 +42,10 @@ func NewService(client dynamic.Interface) *Service {
 func (s *Service) CreateApi(model *Api) (*Api, error) {
 	if err := s.Validate(model); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
+	}
+	// check serviceunit
+	if _, err := s.getServiceunit(model.Serviceunit.ID); err != nil {
+		return nil, fmt.Errorf("get serviceunit error: %+v", err)
 	}
 	// create api
 	api, err := s.Create(ToAPI(model))
@@ -257,9 +261,44 @@ func (s *Service) BindApi(apiid, appid string) (*Api, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get api error: %+v", err)
 	}
+	if _, err = s.getApplication(appid); err != nil {
+		return nil, fmt.Errorf("get application error: %+v", err)
+	}
+	for _, existedapp := range api.Spec.Applications {
+		if existedapp.ID == appid {
+			return nil, fmt.Errorf("application alrady bound to api")
+		}
+	}
 	api.Spec.Applications = append(api.Spec.Applications, v1.Application{
 		ID: appid,
 	})
+	api, err = s.UpdateSpec(api)
+	//if _, err = s.updateApplicationApi(appid, api.ObjectMeta.Name, api.Spec.Name); err != nil {
+	//	return fmt.Errorf("cannot update")
+	//}
+	return ToModel(api), err
+}
+
+func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
+	api, err := s.Get(apiid)
+	if err != nil {
+		return nil, fmt.Errorf("get api error: %+v", err)
+	}
+	if _, err = s.getApplication(appid); err != nil {
+		return nil, fmt.Errorf("get application error: %+v", err)
+	}
+	exist := false
+	index := 0
+	for i, existedapp := range api.Spec.Applications {
+		if existedapp.ID == appid {
+			exist = true
+			index = i
+		}
+	}
+	if !exist {
+		return nil, fmt.Errorf("application not bound to api")
+	}
+	api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
 	api, err = s.UpdateSpec(api)
 	//if _, err = s.updateApplicationApi(appid, api.ObjectMeta.Name, api.Spec.Name); err != nil {
 	//	return fmt.Errorf("cannot update")

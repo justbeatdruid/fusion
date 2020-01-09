@@ -138,6 +138,27 @@ func (c *controller) BindApi(req *restful.Request) (int, interface{}) {
 	}
 }
 
+func (c *controller) ReleaseApi(req *restful.Request) (int, interface{}) {
+	body := &BindRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if api, err := c.service.ReleaseApi(body.Data.ApiID, body.Data.AppID); err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:    2,
+			Message: fmt.Errorf("release api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &BindResponse{
+			Code: 0,
+			Data: api,
+		}
+	}
+}
+
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
 }
