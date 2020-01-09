@@ -39,7 +39,6 @@ type ServiceunitReconciler struct {
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=serviceunits,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=serviceunits/status,verbs=get;update;patch
 
-
 func (r *ServiceunitReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	_ = r.Log.WithValues("serviceunit", req.NamespacedName)

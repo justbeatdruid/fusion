@@ -13,6 +13,7 @@ import (
 )
 
 const path string = "/services"
+
 var headers = map[string]string{
 	"Content-Type": "application/json",
 }
@@ -26,31 +27,32 @@ type Operator struct {
 
 type RequestBody struct {
 	Name     string `json:"name"`
-	Protocol       string `json:"protocol"`
-	Host   string `json:"host"`
-	Port   int `json:"port"`
+	Protocol string `json:"protocol"`
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
 }
 
 // {"success":true,"code":200,"message":"请求成功","data":{"targetDbType":"MySQL","targetDbIp":"192.168.100.103","targetDbPort":"3306","targetDbUser":"root","targetDbPass":"Pass1234","targetDbName":["POSTGRESQL_public","POSTGRESQL_testschema"]},"pageInfo":null,"ext":null}
 type ResponseBody struct {
-	Host string `json:"host"`
-	CreatedAt int `json:"created_at"`
-	ConnectTimeout int `json:"connect_timeout"`
-	ID string `json:"id"`
-	Protocol string `json:"protocol"`
-	Name string `json:"name"`
-	ReadTimeout int `json:"read_timeout"`
-	Port int `json:"port"`
-	Path string `json:"path"`
-	UpdatedAt int `json:"updated_at"`
-	Retries int `json:"retries"`
-	WriteTimeout int `json:"write_timeout"`
-	Tags []string `json:"tags"`
+	Host              string      `json:"host"`
+	CreatedAt         int         `json:"created_at"`
+	ConnectTimeout    int         `json:"connect_timeout"`
+	ID                string      `json:"id"`
+	Protocol          string      `json:"protocol"`
+	Name              string      `json:"name"`
+	ReadTimeout       int         `json:"read_timeout"`
+	Port              int         `json:"port"`
+	Path              string      `json:"path"`
+	UpdatedAt         int         `json:"updated_at"`
+	Retries           int         `json:"retries"`
+	WriteTimeout      int         `json:"write_timeout"`
+	Tags              []string    `json:"tags"`
 	ClientCertificate interface{} `json:"client_certificate"`
-	Message string `json:"message"`
-	Fields interface{} `json:"fields"`
-	Code int `json:"code"`
+	Message           string      `json:"message"`
+	Fields            interface{} `json:"fields"`
+	Code              int         `json:"code"`
 }
+
 /*
 {"host":"apps",
 "created_at":1578378841,
@@ -59,29 +61,30 @@ type ResponseBody struct {
 "protocol":"http","name":"apps","read_timeout":60000,"port":80,"path":null,"updated_at":1578378841,"retries":5,"write_timeout":60000,"tags":null,"client_certificate":null}r
 */
 type ServiceData struct {
-	Host string `json:"host"`
-	CreatedAt int `json:"created_at"`
-	ConnectTimeout int `json:"connect_timeout"`
-	ID string `json:"id"`
-	Protocol string `json:"protocol"`
-	Name string `json:"name"`
-	ReadTimeout int `json:"read_timeout"`
-	Port int `json:"port"`
-	Path string `json:"path"`
-	UpdatedAt int `json:"updated_at"`
-	Retries int `json:"retries"`
-	WriteTimeout int `json:"write_timeout"`
-	Tags []string `json:"tags"`
+	Host              string      `json:"host"`
+	CreatedAt         int         `json:"created_at"`
+	ConnectTimeout    int         `json:"connect_timeout"`
+	ID                string      `json:"id"`
+	Protocol          string      `json:"protocol"`
+	Name              string      `json:"name"`
+	ReadTimeout       int         `json:"read_timeout"`
+	Port              int         `json:"port"`
+	Path              string      `json:"path"`
+	UpdatedAt         int         `json:"updated_at"`
+	Retries           int         `json:"retries"`
+	WriteTimeout      int         `json:"write_timeout"`
+	Tags              []string    `json:"tags"`
 	ClientCertificate interface{} `json:"client_certificate"`
 }
+
 /*
 {"message":"UNIQUE violation detected on '{name=\"app-manager\"}'","name":"unique constraint violation","fields":{"name":"app-manager"},"code":5}
 */
 type FailMsg struct {
-	Message string `json:"message"`
-	Name string `json:"name"`
-	Fields interface{} `json:"fields"`
-	Code int `json:"code"`
+	Message string      `json:"message"`
+	Name    string      `json:"name"`
+	Fields  interface{} `json:"fields"`
+	Code    int         `json:"code"`
 }
 
 type DataOrFailMsg struct {
@@ -128,9 +131,9 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	//TODO 服务的地址信息
 	requestBody := &RequestBody{
 		Name:     db.ObjectMeta.Name,
-		Protocol:      "http",
+		Protocol: "http",
 		Host:     "127.0.0.1",
-		Port:      80,
+		Port:     80,
 	}
 	responseBody := &ResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
@@ -173,7 +176,3 @@ func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	}
 	return nil
 }
-
-
-
-
