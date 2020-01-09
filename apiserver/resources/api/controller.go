@@ -20,6 +20,11 @@ func newController(cfg *config.Config) *controller {
 	}
 }
 
+const (
+	serviceunit = "serviceunit"
+	application = "application"
+)
+
 type Wrapped struct {
 	Code    int          `json:"code"`
 	Message string       `json:"message"`
@@ -104,7 +109,7 @@ func (c *controller) DeleteApi(req *restful.Request) (int, interface{}) {
 }
 
 func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
-	if api, err := c.service.ListApi(); err != nil {
+	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list api error: %+v", err).Error(),

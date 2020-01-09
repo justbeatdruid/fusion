@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strings"
 
 	appsvc "github.com/chinamobile/nlpt/apiserver/resources/application/service"
 	susvc "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
@@ -66,8 +67,8 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	return ToModel(api), nil
 }
 
-func (s *Service) ListApi() ([]*Api, error) {
-	apis, err := s.List()
+func (s *Service) ListApi(suid, appid string) ([]*Api, error) {
+	apis, err := s.List(suid, appid)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
@@ -107,8 +108,17 @@ func (s *Service) Create(api *v1.Api) (*v1.Api, error) {
 	return api, nil
 }
 
-func (s *Service) List() (*v1.ApiList, error) {
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
+func (s *Service) List(suid, appid string) (*v1.ApiList, error) {
+	conditions := []string{}
+	if len(suid) > 0 {
+		conditions = append(conditions, fmt.Sprintf("%s=%s", v1.ServiceunitLabel, suid))
+	}
+	if len(appid) > 0 {
+		conditions = append(conditions, fmt.Sprintf("%s=%s", v1.ApplicationLabel(appid), "true"))
+	}
+	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{
+		LabelSelector: strings.Join(conditions, ","),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
@@ -273,6 +283,7 @@ func (s *Service) BindApi(apiid, appid string) (*Api, error) {
 			return nil, fmt.Errorf("application alrady bound to api")
 		}
 	}
+	api.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "true"
 	api.Spec.Applications = append(api.Spec.Applications, v1.Application{
 		ID: appid,
 	})
@@ -303,6 +314,7 @@ func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
 		return nil, fmt.Errorf("application not bound to api")
 	}
 	api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
+	delete(api.ObjectMeta.Labels, v1.ApplicationLabel(appid))
 	api, err = s.UpdateSpec(api)
 	//if _, err = s.updateApplicationApi(appid, api.ObjectMeta.Name, api.Spec.Name); err != nil {
 	//	return fmt.Errorf("cannot update")
