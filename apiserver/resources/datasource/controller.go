@@ -25,7 +25,11 @@ type Wrapped struct {
 	Message string              `json:"message"`
 	Data    *service.Datasource `json:"data,omitempty"`
 }
-
+type QueryDataResponse struct {
+	Code    int                    `json:"code"`
+	Message string                 `json:"message"`
+	Data    map[string]interface{} `json:"queryData"`
+}
 type CreateResponse = Wrapped
 type UpdateResponse = Wrapped
 type CreateRequest = Wrapped
@@ -137,7 +141,28 @@ func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 		}
 	}
 }
-
+func (c *controller) getDataByApi(req *restful.Request) (int, *QueryDataResponse) {
+	apiId := req.PathParameter("apiId")
+	//todo Acquisition parameters in the request body（Provisional use this method）
+	parameters, err := req.BodyParameter("params")
+	if err != nil {
+		return http.StatusInternalServerError, &QueryDataResponse{
+			Code:    1,
+			Message: fmt.Errorf("get parameters error: %+v", err).Error(),
+		}
+	}
+	result, err := c.service.GetDataSourceByApiId(apiId, parameters)
+	if err != nil {
+		return http.StatusInternalServerError, &QueryDataResponse{
+			Code:    1,
+			Message: fmt.Errorf("query data error: %+v", err).Error(),
+		}
+	}
+	return http.StatusOK, &QueryDataResponse{
+		Code: 0,
+		Data: result,
+	}
+}
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
 }
