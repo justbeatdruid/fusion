@@ -3,8 +3,8 @@ package controllers
 import (
 	"fmt"
 	"net/http"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/parnurzeal/gorequest"
 
@@ -14,52 +14,53 @@ import (
 )
 
 const path string = "/routes"
+
 var headers = map[string]string{
 	"Content-Type": "application/json",
 }
 var retryStatus = []int{http.StatusBadRequest, http.StatusInternalServerError}
 
 type Operator struct {
-	Host   string
-	Port   int
+	Host           string
+	Port           int
 	KongPortalPort int
-	CAFile string
+	CAFile         string
 }
 
 type RequestBody struct {
-	Service     ServiceID `json:"service"`
-	Protocols       []string `json:"protocols"`
-	Paths   []string `json:"paths"`
+	Service   ServiceID `json:"service"`
+	Protocols []string  `json:"protocols"`
+	Paths     []string  `json:"paths"`
 }
 
 // {"success":true,"code":200,"message":"请求成功","data":{"targetDbType":"MySQL","targetDbIp":"192.168.100.103","targetDbPort":"3306","targetDbUser":"root","targetDbPass":"Pass1234","targetDbName":["POSTGRESQL_public","POSTGRESQL_testschema"]},"pageInfo":null,"ext":null}
 //{"id":"c128437c-6f9c-4978-8dc6-a1323b51a39e","tags":null,"updated_at":1578534015,"destinations":null,"headers":null,"protocols":["http","https"],"created_at":1578534015,"snis":null,"service":{"id":"8915796c-c401-4889-a2ed-8a69708f987f"},"name":null,"preserve_host":false,"regex_priority":0,"strip_path":true,"sources":null,"paths":["\/application"],"https_redirect_status_code":426,"hosts":null,"methods":null}
 type ResponseBody struct {
-	ID string `json:"id"`
-	Tags interface{} `json:"tags"`
-	UpdatedAt int `json:"updated_at"`
-	Destinations interface{} `json:"destinations"`
-	Headers []string `json:"headers"`
-	Protocols []string `json:"protocols"`
-	CreatedAt int `json:"created_at"`
-	Snis interface{} `json:"snis"`
-	Service ServiceID `json:"service"`
-	Name interface{} `json:"name"`
-	PreserveHost bool `json:"preserve_host"`
-	RegexPriority int `json:"regex_priority"`
-	StripPath bool `json:"strip_path"`
-	Sources interface{} `json:"sources"`
-	Paths []string `json:"paths"`
-	HTTPSRedirectStatusCode int `json:"https_redirect_status_code"`
-	Hosts []string `json:"hosts"`
-	Methods interface{} `json:"methods"`
-	Message string `json:"message"`
-	Fields interface{} `json:"fields"`
-	Code int `json:"code"`
+	ID                      string      `json:"id"`
+	Tags                    interface{} `json:"tags"`
+	UpdatedAt               int         `json:"updated_at"`
+	Destinations            interface{} `json:"destinations"`
+	Headers                 []string    `json:"headers"`
+	Protocols               []string    `json:"protocols"`
+	CreatedAt               int         `json:"created_at"`
+	Snis                    interface{} `json:"snis"`
+	Service                 ServiceID   `json:"service"`
+	Name                    interface{} `json:"name"`
+	PreserveHost            bool        `json:"preserve_host"`
+	RegexPriority           int         `json:"regex_priority"`
+	StripPath               bool        `json:"strip_path"`
+	Sources                 interface{} `json:"sources"`
+	Paths                   []string    `json:"paths"`
+	HTTPSRedirectStatusCode int         `json:"https_redirect_status_code"`
+	Hosts                   []string    `json:"hosts"`
+	Methods                 interface{} `json:"methods"`
+	Message                 string      `json:"message"`
+	Fields                  interface{} `json:"fields"`
+	Code                    int         `json:"code"`
 }
 
 type ServiceID struct {
-ID string `json:"id"`
+	ID string `json:"id"`
 }
 
 /*
@@ -74,13 +75,11 @@ ID string `json:"id"`
 {"message":"UNIQUE violation detected on '{name=\"app-manager\"}'","name":"unique constraint violation","fields":{"name":"app-manager"},"code":5}
 */
 type FailMsg struct {
-	Message string `json:"message"`
-	Name string `json:"name"`
-	Fields interface{} `json:"fields"`
-	Code int `json:"code"`
+	Message string      `json:"message"`
+	Name    string      `json:"name"`
+	Fields  interface{} `json:"fields"`
+	Code    int         `json:"code"`
 }
-
-
 
 type requestLogger struct {
 	prefix string
@@ -103,15 +102,15 @@ func (r *requestLogger) Println(v ...interface{}) {
 func NewOperator(host string, port int, portal int, cafile string) (*Operator, error) {
 	klog.Infof("NewOperator  event:%s %d %s", host, port, cafile)
 	return &Operator{
-		Host:   host,
-		Port:   port,
+		Host:           host,
+		Port:           port,
 		KongPortalPort: portal,
-		CAFile: cafile,
+		CAFile:         cafile,
 	}, nil
 }
 
 func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
-	klog.Infof("Enter CreateRouteByKong name:%s, Host:%s, Port:%d",  db.Name, r.Host, r.Port)
+	klog.Infof("Enter CreateRouteByKong name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, r.Host, r.Port, path))
@@ -122,19 +121,18 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	//TODO API创建时路由信息 /apiquery
 	protocols := []string{}
 	protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
-	paths:= []string{}
+	paths := []string{}
 	paths = append(paths, "/apiquery")
 	//TODO 替换ID
 	id := db.Spec.Serviceunit.KongID
 	//id := "ce5e6f95-611b-4feb-96f1-f3b025876424"
 	requestBody := &RequestBody{
-		Service:     ServiceID{id},
-		Protocols:      protocols,
+		Service:   ServiceID{id},
+		Protocols: protocols,
 		Paths:     paths,
-
 	}
 	responseBody := &ResponseBody{}
-	klog.Infof("begin send create route requeset body:%s", responseBody)
+	klog.Infof("begin send create route requeset body: %+v", responseBody)
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	klog.Infof("end send create route response body:%d %s", response.StatusCode, string(body))
 	if len(errs) > 0 {
@@ -150,9 +148,3 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	(*db).Spec.KongApi.KongID = responseBody.ID
 	return nil
 }
-
-
-
-
-
-

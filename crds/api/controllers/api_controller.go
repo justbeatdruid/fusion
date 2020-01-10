@@ -18,8 +18,8 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"strings"
 	"k8s.io/klog"
+	"strings"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -32,8 +32,8 @@ import (
 // ApiReconciler reconciles a Api object
 type ApiReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
 	Operator *Operator
 }
 
@@ -53,7 +53,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if api.Status.Status == nlptv1.Init {
 		// call kong api create
 		api.Status.Status = nlptv1.Creating
-		klog.Infof("new api", r.Operator.Host, r.Operator.Port, r.Operator.CAFile)
+		klog.Infof("new api: %s:%d, cafile: %s", r.Operator.Host, r.Operator.Port, r.Operator.CAFile)
 		if err := r.Operator.CreateRouteByKong(api); err != nil {
 			api.Status.Status = nlptv1.Error
 			api.Status.Message = err.Error()
@@ -70,7 +70,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if api.Status.Status == nlptv1.Error {
 		// call kong api create
 		api.Status.Status = nlptv1.Creating
-		klog.Infof("error create new api", r.Operator.Host, r.Operator.Port, r.Operator.CAFile)
+		klog.Infof("error create new api: %s:%d, cafile: %s", r.Operator.Host, r.Operator.Port, r.Operator.CAFile)
 		if err := r.Operator.CreateRouteByKong(api); err != nil {
 			api.Status.Status = nlptv1.Error
 			api.Status.Message = err.Error()
