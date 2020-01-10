@@ -14,13 +14,13 @@ type Serviceunit struct {
 	ID            string                  `json:"id"`
 	Name          string                  `json:"name"`
 	Namespace     string                  `json:"namespace"`
-	DatasourcesID []v1.Datasource         `json:"multiDatasource"`
+	DatasourcesID []v1.Datasource         `json:"datasources,omitempty"`
 	Datasources   []datav1.DatasourceSpec `json:"-"`
 	Users         []apiv1.User            `json:"users"`
 	Description   string                  `json:"description"`
 
 	Status    v1.Status `json:"status"`
-	UpdatedAt time.Time `json:"time.Time"`
+	UpdatedAt time.Time `json:"time"`
 	APICount  int       `json:"apiCount"`
 	Published bool      `json:"published"`
 }

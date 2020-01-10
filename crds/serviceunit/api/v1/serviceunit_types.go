@@ -34,8 +34,8 @@ type ServiceunitSpec struct {
 
 	Name          string                  `json:"name"`
 	Group         Group                   `json:"group"`
-	DatasourcesID []Datasource            `json:"multiDatasourceID"`
-	Datasources   []datav1.DatasourceSpec `json:"multiDatasource"`
+	DatasourcesID []Datasource            `json:"datasourcesID"`
+	Datasources   []datav1.DatasourceSpec `json:"datasources"`
 	Users         []apiv1.User            `json:"users"`
 	APIs          []Api                   `json:"apis"`
 	Description   string                  `json:"description"`
