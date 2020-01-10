@@ -3,9 +3,6 @@ package service
 import (
 	"fmt"
 
-	apisvc "github.com/chinamobile/nlpt/apiserver/resources/api/service"
-	appsvc "github.com/chinamobile/nlpt/apiserver/resources/application/service"
-	susvc "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"github.com/chinamobile/nlpt/crds/apply/api/v1"
@@ -14,18 +11,11 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 )
 
 var crdNamespace = "default"
-
-var oofsGVR = schema.GroupVersionResource{
-	Group:    v1.GroupVersion.Group,
-	Version:  v1.GroupVersion.Version,
-	Resource: "applies",
-}
 
 type Service struct {
 	client            dynamic.NamespaceableResourceInterface
@@ -36,10 +26,10 @@ type Service struct {
 
 func NewService(client dynamic.Interface) *Service {
 	return &Service{
-		client:            client.Resource(oofsGVR),
-		apiClient:         client.Resource(apisvc.GetOOFSGVR()),
-		serviceunitClient: client.Resource(susvc.GetOOFSGVR()),
-		applicationClient: client.Resource(appsvc.GetOOFSGVR()),
+		client:            client.Resource(v1.GetOOFSGVR()),
+		apiClient:         client.Resource(apiv1.GetOOFSGVR()),
+		serviceunitClient: client.Resource(suv1.GetOOFSGVR()),
+		applicationClient: client.Resource(appv1.GetOOFSGVR()),
 	}
 }
 
