@@ -1,6 +1,8 @@
 package api
 
 import (
+	"fmt"
+
 	"github.com/chinamobile/nlpt/apiserver/cmd/apiserver/app/config"
 
 	"github.com/emicklei/go-restful"
@@ -13,6 +15,10 @@ type router struct {
 func NewRouter(cfg *config.Config) *router {
 	return &router{newController(cfg)}
 }
+
+const (
+	apiidPath = "apiid"
+)
 
 func (r *router) Install(ws *restful.WebService) {
 	ws.Route(ws.POST("/api/create").
@@ -61,6 +67,14 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.releaseApi).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	ws.Route(ws.GET(fmt.Sprintf("/apiquery/{%s}", apiidPath)).
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("query api data").
+		To(r.query).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func process(f func(*restful.Request) (int, interface{}), request *restful.Request, response *restful.Response) {
@@ -90,4 +104,8 @@ func (r *router) bindApi(request *restful.Request, response *restful.Response) {
 
 func (r *router) releaseApi(request *restful.Request, response *restful.Response) {
 	process(r.controller.ReleaseApi, request, response)
+}
+
+func (r *router) query(request *restful.Request, response *restful.Response) {
+	process(r.controller.Query, request, response)
 }
