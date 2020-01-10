@@ -36,9 +36,14 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
 	// check serviceunit
-	if _, err := s.getServiceunit(model.Serviceunit.ID); err != nil {
+	//get serviceunit kongID
+	var su *suv1.Serviceunit
+	su, err := s.getServiceunit(model.Serviceunit.ID)
+	if err != nil {
 		return nil, fmt.Errorf("get serviceunit error: %+v", err)
 	}
+	model.Serviceunit.KongID = su.Spec.KongService.ID
+
 	// create api
 	api, err := s.Create(ToAPI(model))
 	if err != nil {
