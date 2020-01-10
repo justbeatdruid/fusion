@@ -11,16 +11,13 @@ import (
 )
 
 type Serviceunit struct {
-	ID                 string                  `json:"id"`
-	Name               string                  `json:"name"`
-	Namespace          string                  `json:"namespace"`
-	Type               v1.ServiceType          `json:"type"`
-	SingleDatasourceID *v1.Datasource          `json:"singleDatasource"`
-	MultiDatasourceID  []v1.Datasource         `json:"multiDatasource"`
-	SingleDatasource   *datav1.DatasourceSpec  `json:"-"`
-	MultiDatasource    []datav1.DatasourceSpec `json:"-"`
-	Users              []apiv1.User            `json:"users"`
-	Description        string                  `json:"description"`
+	ID            string                  `json:"id"`
+	Name          string                  `json:"name"`
+	Namespace     string                  `json:"namespace"`
+	DatasourcesID []v1.Datasource         `json:"multiDatasource"`
+	Datasources   []datav1.DatasourceSpec `json:"-"`
+	Users         []apiv1.User            `json:"users"`
+	Description   string                  `json:"description"`
 
 	Status    v1.Status `json:"status"`
 	UpdatedAt time.Time `json:"time.Time"`
@@ -37,14 +34,11 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 	crd.ObjectMeta.Name = app.ID
 	crd.ObjectMeta.Namespace = crdNamespace
 	crd.Spec = v1.ServiceunitSpec{
-		Name:               app.Name,
-		Type:               app.Type,
-		SingleDatasourceID: app.SingleDatasourceID,
-		MultiDatasourceID:  app.MultiDatasourceID,
-		SingleDatasource:   app.SingleDatasource,
-		MultiDatasource:    app.MultiDatasource,
-		Users:              app.Users,
-		Description:        app.Description,
+		Name:          app.Name,
+		DatasourcesID: app.DatasourcesID,
+		Datasources:   app.Datasources,
+		Users:         app.Users,
+		Description:   app.Description,
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -61,14 +55,12 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 
 func ToModel(obj *v1.Serviceunit) *Serviceunit {
 	return &Serviceunit{
-		ID:                 obj.ObjectMeta.Name,
-		Name:               obj.Spec.Name,
-		Namespace:          obj.ObjectMeta.Namespace,
-		Type:               obj.Spec.Type,
-		SingleDatasourceID: obj.Spec.SingleDatasourceID,
-		MultiDatasourceID:  obj.Spec.MultiDatasourceID,
-		Users:              obj.Spec.Users,
-		Description:        obj.Spec.Description,
+		ID:            obj.ObjectMeta.Name,
+		Name:          obj.Spec.Name,
+		Namespace:     obj.ObjectMeta.Namespace,
+		DatasourcesID: obj.Spec.DatasourcesID,
+		Users:         obj.Spec.Users,
+		Description:   obj.Spec.Description,
 
 		Status:    obj.Status.Status,
 		UpdatedAt: obj.Status.UpdatedAt,
@@ -96,27 +88,15 @@ func (s *Service) Validate(a *Serviceunit) error {
 		}
 	}
 
-	switch a.Type {
-	case v1.Single:
-		if ds, err := s.checkDatasource(a.SingleDatasourceID); err != nil {
-			return fmt.Errorf("datasource error: %+v", err)
-		} else {
-			a.SingleDatasource = ds
-		}
-	case v1.Multi:
-		if len(a.MultiDatasourceID) == 0 {
-			return fmt.Errorf("datasources is length is 0")
-		}
-		a.MultiDatasource = make([]datav1.DatasourceSpec, len(a.MultiDatasourceID))
-		for i, dsid := range a.MultiDatasourceID {
+	if len(a.DatasourcesID) > 0 {
+		a.Datasources = make([]datav1.DatasourceSpec, len(a.DatasourcesID))
+		for i, dsid := range a.DatasourcesID {
 			if ds, err := s.checkDatasource(&dsid); err != nil {
 				return fmt.Errorf("%dth datasource error: %+v", i, err)
 			} else {
-				a.MultiDatasource[i] = *ds
+				a.Datasources[i] = *ds
 			}
 		}
-	default:
-		return fmt.Errorf("unknown datasource type: %s", a.Type)
 	}
 
 	a.ID = names.NewID()
@@ -132,12 +112,8 @@ func (s *Service) checkDatasource(d *v1.Datasource) (*datav1.DatasourceSpec, err
 		return nil, fmt.Errorf("cannot get datasource: %+v", err)
 	}
 
-	//TODO check fileds match
-	ds.Fields = d.Fields
-
 	for k, v := range map[string]string{
 		"name":     ds.Name,
-		"type":     ds.Type,
 		"database": ds.Database,
 		"table":    ds.Table,
 

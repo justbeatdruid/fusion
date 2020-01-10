@@ -33,3 +33,13 @@ var (
 	// AddToScheme adds the types in this group-version to the given scheme.
 	AddToScheme = SchemeBuilder.AddToScheme
 )
+
+var oofsGVR = schema.GroupVersionResource{
+	Group:    GroupVersion.Group,
+	Version:  GroupVersion.Version,
+	Resource: "apis",
+}
+
+func GetOOFSGVR() schema.GroupVersionResource {
+	return oofsGVR
+}

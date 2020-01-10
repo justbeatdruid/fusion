@@ -8,29 +8,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 )
 
 var crdNamespace = "default"
 
-var oofsGVR = schema.GroupVersionResource{
-	Group:    v1.GroupVersion.Group,
-	Version:  v1.GroupVersion.Version,
-	Resource: "applications",
-}
-
-func GetOOFSGVR() schema.GroupVersionResource {
-	return oofsGVR
-}
-
 type Service struct {
 	client dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface) *Service {
-	return &Service{client: client.Resource(oofsGVR)}
+	return &Service{client: client.Resource(v1.GetOOFSGVR())}
 }
 
 func (s *Service) CreateApplication(model *Application) (*Application, error) {

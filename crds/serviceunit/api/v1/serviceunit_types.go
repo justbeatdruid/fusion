@@ -32,46 +32,34 @@ type ServiceunitSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Name               string                  `json:"name"`
-	Group              Group                   `json:"group"`
-	Type               ServiceType             `json:"type"`
-	SingleDatasourceID *Datasource             `json:"singleDatasourceID"`
-	MultiDatasourceID  []Datasource            `json:"multiDatasourceID"`
-	SingleDatasource   *datav1.DatasourceSpec  `json:"singleDatasource"`
-	MultiDatasource    []datav1.DatasourceSpec `json:"multiDatasource"`
-	Users              []apiv1.User            `json:"users"`
-	APIs               []Api                   `json:"apis"`
-	Description        string                  `json:"description"`
+	Name          string                  `json:"name"`
+	Group         Group                   `json:"group"`
+	DatasourcesID []Datasource            `json:"multiDatasourceID"`
+	Datasources   []datav1.DatasourceSpec `json:"multiDatasource"`
+	Users         []apiv1.User            `json:"users"`
+	APIs          []Api                   `json:"apis"`
+	Description   string                  `json:"description"`
 	//KongInfo
-	KongService    KongServiceInfo             `json:"kongServiceInfo"`
-
-
+	KongService KongServiceInfo `json:"kongServiceInfo"`
 }
 
 type KongServiceInfo struct {
-	Host string `json:"host"`
-	ID string `json:"id"`
+	Host     string `json:"host"`
+	ID       string `json:"id"`
 	Protocol string `json:"protocol"`
 	Port     int    `json:"port"`
 	Path     string `json:"path"`
 }
 
 type Datasource struct {
-	ID     string         `json:"id"`
-	Fields []datav1.Field `json:"fields"`
+	ID      string `json:"id"`
+	GroupID string `json:"groupId"`
 }
 
 type Group struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
-
-type ServiceType string
-
-const (
-	Single ServiceType = "single"
-	Multi  ServiceType = "multi"
-)
 
 type Api struct {
 	ID   string

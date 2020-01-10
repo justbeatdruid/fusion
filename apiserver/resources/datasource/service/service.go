@@ -5,39 +5,27 @@ import (
 	api "github.com/chinamobile/nlpt/apiserver/resources/api/service"
 	serviceunit "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
-	serviceunitv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 )
 
 var crdNamespace = "default"
 
-var oofsGVR = schema.GroupVersionResource{
-	Group:    v1.GroupVersion.Group,
-	Version:  v1.GroupVersion.Version,
-	Resource: "datasources",
-}
-
-func OOFSGVR() schema.GroupVersionResource {
-	return oofsGVR
-}
-
 type Service struct {
-	client            dynamic.NamespaceableResourceInterface
-	apiService        *api.Service
-	serverUnitservice *serviceunit.Service
+	client     dynamic.NamespaceableResourceInterface
+	apiService *api.Service
+	suService  *serviceunit.Service
 }
 
 func NewService(client dynamic.Interface) *Service {
 	return &Service{
-		client:            client.Resource(oofsGVR),
-		apiService:        api.NewService(client),
-		serverUnitservice: serviceunit.NewService(client),
+		client:     client.Resource(v1.GetOOFSGVR()),
+		apiService: api.NewService(client),
+		suService:  serviceunit.NewService(client),
 	}
 }
 
@@ -171,30 +159,19 @@ func (s *Service) GetDataSourceByApiId(apiId string, parames string) (map[string
 	//get serviceunitId by api
 	serverUnitID := api.Spec.Serviceunit.ID
 	//get serviceunit by serviceunitId
-	serverUnit, err := s.serverUnitservice.Get(serverUnitID)
+	serverUnit, err := s.suService.Get(serverUnitID)
 	if err != nil {
 		return nil, fmt.Errorf("error query serverUnit: %+v", err)
 	}
 	//check unit type (single or multi)
-	if serverUnit.Spec.Type == serviceunitv1.Single {
-		//get dataSource by singleDateSourceId
-		dataSource, err := s.Get(serverUnit.Spec.SingleDatasourceID.ID)
+	//get dataSources by  multiDateSourceId
+	for _, v := range serverUnit.Spec.DatasourcesID {
+		datasource, err := s.Get(v.ID)
 		if err != nil {
 			return nil, fmt.Errorf("error query singleDateSourceId: %+v", err)
 		}
 		//TODO The remaining operation after the query to the data source
-		result["Fields"] = dataSource.Spec.Fields
-	} else if serverUnit.Spec.Type == serviceunitv1.Multi {
-		//get dataSources by  multiDateSourceId
-		for _, v := range serverUnit.Spec.MultiDatasourceID {
-			datasource, err := s.Get(v.ID)
-			if err != nil {
-				return nil, fmt.Errorf("error query singleDateSourceId: %+v", err)
-			}
-			//TODO The remaining operation after the query to the data source
-			result["Fields"] = datasource.Spec.Fields
-		}
-
+		result["Fields"] = datasource.Spec.Fields
 	}
 	return result, nil
 }

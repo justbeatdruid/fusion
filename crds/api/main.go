@@ -79,9 +79,9 @@ func main() {
 	}
 
 	if err = (&controllers.ApiReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Api"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Api"),
+		Scheme:   mgr.GetScheme(),
 		Operator: operator,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Api")
