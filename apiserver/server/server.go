@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"os"
 
-	"github.com/chinamobile/nlpt/apiserver/cmd/apiserver/app/config"
-	"github.com/chinamobile/nlpt/apiserver/cmd/apiserver/app/options"
 	"github.com/chinamobile/nlpt/apiserver/handler"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/options"
 
 	"github.com/coreos/go-systemd/daemon"
 

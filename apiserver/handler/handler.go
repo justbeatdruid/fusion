@@ -5,7 +5,6 @@ import (
 
 	"github.com/emicklei/go-restful"
 
-	"github.com/chinamobile/nlpt/apiserver/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/apiserver/handler/filter"
 	"github.com/chinamobile/nlpt/apiserver/resources/api"
 	"github.com/chinamobile/nlpt/apiserver/resources/application"
@@ -15,6 +14,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit"
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunitgroup"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 
 	"k8s.io/apiserver/pkg/server/healthz"
 )

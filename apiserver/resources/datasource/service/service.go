@@ -15,13 +15,16 @@ import (
 
 var crdNamespace = "default"
 
+var Supported = []string{}
+
 type Service struct {
 	client     dynamic.NamespaceableResourceInterface
 	apiService *api.Service
 	suService  *serviceunit.Service
 }
 
-func NewService(client dynamic.Interface) *Service {
+func NewService(client dynamic.Interface, supported []string) *Service {
+	Supported = supported
 	return &Service{
 		client:     client.Resource(v1.GetOOFSGVR()),
 		apiService: api.NewService(client),

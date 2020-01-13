@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/chinamobile/nlpt/apiserver/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/service"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 
 	"github.com/emicklei/go-restful"
 )
@@ -16,7 +16,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient()),
+		service.NewService(cfg.GetDynamicClient(), cfg.DatasourceConfig.Supported),
 	}
 }
 
