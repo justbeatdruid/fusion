@@ -150,25 +150,25 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 }
 
 func (r *Operator) DeleteRouteByKong(db *nlptv1.Api) (err error) {
-        klog.Infof("delete api %s %s", db.ObjectMeta.Name, db.Spec.KongApi.KongID)
-        request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-        schema := "http"
-        for k, v := range headers {
-                request = request.Set(k, v)
-        }
-        id := db.Spec.KongApi.KongID
-        klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
-        response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id)).End()
-        klog.Infof("delete api response code: %d %s", response.StatusCode, string(body))
-        request = request.Retry(3, 5*time.Second, retryStatus...)
+	klog.Infof("delete api %s %s", db.ObjectMeta.Name, db.Spec.KongApi.KongID)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	id := db.Spec.KongApi.KongID
+	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
+	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id)).End()
+	klog.Infof("delete api response code: %d %s", response.StatusCode, string(body))
+	request = request.Retry(3, 5*time.Second, retryStatus...)
 
-        if len(errs) > 0 {
-                return fmt.Errorf("request for delete api error: %+v", errs)
-        }
+	if len(errs) > 0 {
+		return fmt.Errorf("request for delete api error: %+v", errs)
+	}
 
-        klog.V(5).Infof("delete api response code: %d%s", response.StatusCode, string(body))
-        if response.StatusCode != 204 {
-                return fmt.Errorf("request for delete api error: receive wrong status code: %d", response.StatusCode)
-        }
-        return nil
+	klog.V(5).Infof("delete api response code: %d%s", response.StatusCode, string(body))
+	if response.StatusCode != 204 {
+		return fmt.Errorf("request for delete api error: receive wrong status code: %d", response.StatusCode)
+	}
+	return nil
 }

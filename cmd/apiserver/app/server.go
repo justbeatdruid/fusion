@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/chinamobile/nlpt/apiserver/cmd/apiserver/app/options"
 	"github.com/chinamobile/nlpt/apiserver/server"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/options"
 	"github.com/chinamobile/nlpt/pkg/version"
 
 	"github.com/spf13/cobra"

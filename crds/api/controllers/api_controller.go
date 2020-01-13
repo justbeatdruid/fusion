@@ -68,14 +68,14 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	if api.Status.Status == nlptv1.Delete {
-                // call kong api delete
-                api.Status.Status = nlptv1.Deleting
-                if err := r.Operator.DeleteRouteByKong(api); err != nil {
-                        api.Status.Status = nlptv1.Error
-                        api.Status.Message = err.Error()
-                }
-                r.Delete(ctx, api)
-        }
+		// call kong api delete
+		api.Status.Status = nlptv1.Deleting
+		if err := r.Operator.DeleteRouteByKong(api); err != nil {
+			api.Status.Status = nlptv1.Error
+			api.Status.Message = err.Error()
+		}
+		r.Delete(ctx, api)
+	}
 
 	if api.Status.Status == nlptv1.Error {
 		// call kong api create

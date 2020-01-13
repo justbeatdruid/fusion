@@ -1,7 +1,7 @@
 package applicationgroup
 
 import (
-	"github.com/chinamobile/nlpt/apiserver/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 
 	"github.com/emicklei/go-restful"
 )
