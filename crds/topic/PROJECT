@@ -1,0 +1,7 @@
+domain: cmcc.com
+repo: github.com/chinamobile/nlpt/crds/topic
+resources:
+- group: nlpt
+  kind: Topic
+  version: v1
+version: "2"

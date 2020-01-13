@@ -1,0 +1,26 @@
+# permissions to do edit topics.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: topic-editor-role
+rules:
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - topics
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - topics/status
+  verbs:
+  - get
+  - patch
+  - update
