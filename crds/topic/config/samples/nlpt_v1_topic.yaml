@@ -1,0 +1,7 @@
+apiVersion: nlpt.cmcc.com/v1
+kind: Topic
+metadata:
+  name: topic-sample
+spec:
+  # Add fields here
+  foo: bar

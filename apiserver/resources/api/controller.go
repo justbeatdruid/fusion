@@ -164,6 +164,19 @@ func (c *controller) ReleaseApi(req *restful.Request) (int, interface{}) {
 	}
 }
 
+func (c *controller) Query(req *restful.Request) (int, interface{}) {
+	apiid := req.PathParameter(apiidPath)
+	form := req.Request.Form
+	header := req.Request.Header
+	return http.StatusOK, struct {
+		Code    int    `json:"code"`
+		Message string `json:"message"`
+	}{
+		Code:    0,
+		Message: fmt.Sprintf("get your request with api %s, form: %+v, Header: %+v", apiid, form, header),
+	}
+}
+
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
 }
