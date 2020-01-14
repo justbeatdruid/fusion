@@ -139,6 +139,9 @@ func (a *Datasource) ValidateForUpdate() error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
+	if !support(a.Type) {
+		return fmt.Errorf("type %s not supported", a.Type)
+	}
 	return nil
 }
 
