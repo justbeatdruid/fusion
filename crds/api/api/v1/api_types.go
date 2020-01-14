@@ -22,7 +22,6 @@ import (
 	"time"
 
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -50,7 +49,9 @@ type ApiSpec struct {
 	Protocol     Protocol      `json:"protocol"`
 	ReturnType   ReturnType    `json:"returnType"`
 	Parameters   []Parameter   `json:"parameter"`
-	KongApi      KongApiInfo   `json:"kong_api"`
+	WebParams    []WebParams   `json:"webParams"`
+	KongApi      KongApiInfo   `json:"kongApi"`
+	PublishInfo  PublishInfo   `json:"publishInfo"`
 }
 
 type KongApiInfo struct {
@@ -68,11 +69,26 @@ type KongApiInfo struct {
 	KongID        string   `json:"kong_id"`
 }
 
+type ServiceType string
+
+const (
+	DataService ServiceType = "data"
+	WebService  ServiceType = "web"
+)
+
 type Serviceunit struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
-	Group  string `json:"group"`
-	KongID string `json:"kongID"`
+	ID     string                `json:"id"`
+	Name   string                `json:"name"`
+	Group  string                `json:"group"`
+	KongID string                `json:"kongID"`
+	Type   string                `json:"Type"`
+	Host   string                `json:"Host"`
+	Port   int                   `json:"Port"`
+}
+
+type PublishInfo struct {
+	Version string `json:"version"`
+	Host    string `json:"host"`
 }
 
 type Application struct {
@@ -119,6 +135,31 @@ type Parameter struct {
 	Required    bool                 `json:"required"`
 }
 
+type WebParams struct {
+	Name        string               `json:"name"`         //必须
+	Type        datav1.ParameterType `json:"type"`         //必须
+	Location    LocationType         `json:"location"`     //必须
+	Required    bool                 `json:"required"`    //必须
+	DefValue    interface{}          `json:"valueDefault"`
+	Example     interface{}          `json:"example"`
+	Description string               `json:"description"`
+	ValidEnable int                  `json:"alidEnable"`
+	MinNum      int                  `json:"minNum"`
+	MaxNum      int                  `json:"maxNum"`
+	MinSize     int                  `json:"minSize"`
+	MaxSize     int                  `json:"maxSize"`
+}
+
+
+
+type LocationType string
+
+const (
+	Path      LocationType = "path"
+	Query     LocationType = "query"
+	Header    LocationType = "header"
+)
+
 type Operator string
 
 const (
@@ -160,9 +201,18 @@ const (
 	Init     Status = "init"
 	Creating Status = "creating"
 	Created  Status = "created"
+	Offing   Status = "offing"
+	Offline  Status = "offline"
 	Delete   Status = "delete"
 	Deleting Status = "deleting"
 	Error    Status = "error"
+)
+
+type Publish string
+const (
+	UnPublished   Publish = "unPublished"
+	Published     Publish = "published"
+	//Offline       Publish = "offline"
 )
 
 // +kubebuilder:object:root=true

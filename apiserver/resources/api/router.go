@@ -45,6 +45,22 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.POST("/api/publish").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("publish an api by id").
+		To(r.publishApi).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	ws.Route(ws.POST("/api/offline").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("offline an api by id").
+		To(r.offlineApi).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.GET("/api/list").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all apis").
@@ -92,6 +108,14 @@ func (r *router) getApi(request *restful.Request, response *restful.Response) {
 
 func (r *router) deleteApi(request *restful.Request, response *restful.Response) {
 	process(r.controller.DeleteApi, request, response)
+}
+
+func (r *router) publishApi(request *restful.Request, response *restful.Response) {
+	process(r.controller.PublishApi, request, response)
+}
+
+func (r *router) offlineApi(request *restful.Request, response *restful.Response) {
+	process(r.controller.OfflineApi, request, response)
 }
 
 func (r *router) listApi(request *restful.Request, response *restful.Response) {

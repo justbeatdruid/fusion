@@ -108,6 +108,60 @@ func (c *controller) DeleteApi(req *restful.Request) (int, interface{}) {
 	}
 }
 
+func (c *controller) PublishApi(req *restful.Request) (int, interface{}) {
+	body := &CreateRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "read entity error: data is null",
+		}
+	}
+	if su, err := c.service.PublishApi(body.Data.ID); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    2,
+			Message: fmt.Errorf("publish api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
+			Code: 0,
+			Data: su,
+		}
+	}
+}
+
+func (c *controller) OfflineApi(req *restful.Request) (int, interface{}) {
+	body := &CreateRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "read entity error: data is null",
+		}
+	}
+	if su, err := c.service.OfflineApi(body.Data.ID); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    2,
+			Message: fmt.Errorf("publish api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
+			Code: 0,
+			Data: su,
+		}
+	}
+}
+
 func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
