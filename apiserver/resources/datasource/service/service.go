@@ -42,14 +42,8 @@ func (s *Service) CreateDatasource(model *Datasource) (*Datasource, error) {
 }
 func (s *Service) UpdateDatasource(model *Datasource) (*Datasource, error) {
 	dealType := "update"
-	if err := model.Validate(); err != nil {
+	if err := model.ValidateForUpdate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
-	}
-	if len(model.UpdateUser.UserName) == 0 {
-		return nil, fmt.Errorf("UpdateUserName is null")
-	}
-	if len(model.UpdateUser.UserId) == 0 {
-		return nil, fmt.Errorf("UpdateUseriD is null")
 	}
 	ds, err := s.Update(ToAPI(model, dealType))
 	if err != nil {
