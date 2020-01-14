@@ -34,13 +34,14 @@ type ServiceunitSpec struct {
 
 	Name          string                  `json:"name"`
 	Group         Group                   `json:"group"`
+	Type          ServiceType             `json:"type"`
 	DatasourcesID []Datasource            `json:"datasourcesID"`
 	Datasources   []datav1.DatasourceSpec `json:"datasources"`
 	Users         []apiv1.User            `json:"users"`
 	APIs          []Api                   `json:"apis"`
 	Description   string                  `json:"description"`
 	//KongInfo
-	KongService KongServiceInfo `json:"kongServiceInfo"`
+	KongService   KongServiceInfo         `json:"kongServiceInfo"`
 }
 
 type KongServiceInfo struct {
@@ -65,6 +66,14 @@ type Api struct {
 	ID   string
 	Name string
 }
+
+type ServiceType string
+
+const (
+	DataService ServiceType = "data"
+	WebService  ServiceType = "web"
+)
+
 
 // ServiceunitStatus defines the observed state of Serviceunit
 type ServiceunitStatus struct {
