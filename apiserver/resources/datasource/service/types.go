@@ -119,6 +119,31 @@ func (a *Datasource) Validate() error {
 	a.ID = names.NewID()
 	return nil
 }
+func (a *Datasource) ValidateForUpdate() error {
+	for k, v := range map[string]string{
+		"id":             a.ID,
+		"name":           a.Name,
+		"type":           a.Type,
+		"database":       a.Database,
+		"table":          a.Table,
+		"createUserId":   a.CreateUser.UserId,
+		"createUserName": a.CreateUser.UserName,
+		"host":           a.Connect.Host,
+		"port":           string(a.Connect.Port),
+		"username":       a.Connect.Username,
+		"password":       a.Connect.Password,
+		"updateUserId":   a.UpdateUser.UserId,
+		"updateUserName": a.UpdateUser.UserName,
+	} {
+		if len(v) == 0 {
+			return fmt.Errorf("%s is null", k)
+		}
+	}
+	if !support(a.Type) {
+		return fmt.Errorf("type %s not supported", a.Type)
+	}
+	return nil
+}
 
 func support(tp string) bool {
 	for _, t := range Supported {
