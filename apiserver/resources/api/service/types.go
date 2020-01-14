@@ -6,6 +6,7 @@ import (
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
+	//suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
 )
 
@@ -13,22 +14,27 @@ type Api struct {
 	ID        string `json:"id"`
 	Namespace string `json:"namespace"`
 
-	Name         string           `json:"name"`
-	Serviceunit  v1.Serviceunit   `json:"serviceunit"`
-	Applications []v1.Application `json:"applications"`
-	Users        []v1.User        `json:"users"`
-	Frequency    int              `json:"frequency"`
-	Method       v1.Method        `json:"method"`
-	Protocol     v1.Protocol      `json:"protocol"`
-	ReturnType   v1.ReturnType    `json:"returnType"`
-	Parameters   []v1.Parameter   `json:"parameter"`
+	Name         string            `json:"name"`
+	Serviceunit  v1.Serviceunit    `json:"serviceunit"`
+	Applications []v1.Application  `json:"applications"`
+	Users        []v1.User         `json:"users"`
+	Frequency    int               `json:"frequency"`
+	Method       v1.Method         `json:"method"`
+	Protocol     v1.Protocol       `json:"protocol"`
+	ReturnType   v1.ReturnType     `json:"returnType"`
+	Parameters   []v1.Parameter    `json:"parameter"`
+	WebParams    []v1.WebParams    `json:"webParams"`
+	AuthType     string            `json:"authType"`
+	KongApi      v1.KongApiInfo    `json:"KongApi"`
 
 	Status           v1.Status     `json:"status"`
+	//Publish          v1.Publish    `json:"publish"`
 	AccessLink       v1.AccessLink `json:"access"`
 	UpdatedAt        time.Time     `json:"updatedAt"`
 	ReleasedAt       time.Time     `json:"releasedAt"`
 	ApplicationCount int           `json:"applicationCount"`
 	CalledCount      int           `json:"calledCount"`
+	PublishInfo      v1.PublishInfo
 }
 
 // only used in creation
@@ -51,6 +57,8 @@ func ToAPI(api *Api) *v1.Api {
 		Protocol:     api.Protocol,
 		ReturnType:   api.ReturnType,
 		Parameters:   api.Parameters,
+		WebParams:    api.WebParams,
+		KongApi:      api.KongApi,
 	}
 	crd.Status = v1.ApiStatus{
 		Status:           v1.Init,
@@ -77,6 +85,8 @@ func ToModel(obj *v1.Api) *Api {
 		Protocol:     obj.Spec.Protocol,
 		ReturnType:   obj.Spec.ReturnType,
 		Parameters:   obj.Spec.Parameters,
+		WebParams:    obj.Spec.WebParams,
+		KongApi:      obj.Spec.KongApi,
 
 		Status:           obj.Status.Status,
 		AccessLink:       obj.Status.AccessLink,
@@ -90,6 +100,9 @@ func ToModel(obj *v1.Api) *Api {
 	}
 	if model.Parameters == nil {
 		model.Parameters = []v1.Parameter{}
+	}
+	if model.WebParams == nil {
+		model.WebParams = []v1.WebParams{}
 	}
 	return model
 }
@@ -123,31 +136,55 @@ func (s *Service) Validate(a *Api) error {
 	}
 	a.ReturnType = v1.Json
 
-	for i, p := range a.Parameters {
-		if len(p.Name) == 0 {
-			return fmt.Errorf("%dth parameter name is null", i)
-		}
-		if len(p.Type) == 0 {
-			p.Type = datav1.ParameterType("null")
-		}
-		switch p.Type {
-		case datav1.String, datav1.Int, datav1.Bool, datav1.Float:
-		default:
-			return fmt.Errorf("%dth parameter type is wrong: %s", i, p.Type)
-		}
-		p.Operator = v1.Equal
-		if len(p.Example) == 0 {
-			return fmt.Errorf("%dth parameter example is null", i)
-		}
-		if len(p.Description) == 0 {
-			return fmt.Errorf("%dth parameter description is null", i)
-		}
-	}
-	a.UpdatedAt = time.Now()
 	su, err := s.getServiceunit(a.Serviceunit.ID)
 	if err != nil {
 		return fmt.Errorf("cannot get serviceunit: %+v", err)
 	}
+	if su.Spec.Type == "data"{
+		for i, p := range a.Parameters {
+			if len(p.Name) == 0 {
+				return fmt.Errorf("%dth parameter name is null", i)
+			}
+			if len(p.Type) == 0 {
+				p.Type = datav1.ParameterType("null")
+			}
+			switch p.Type {
+			case datav1.String, datav1.Int, datav1.Bool, datav1.Float:
+			default:
+				return fmt.Errorf("%dth parameter type is wrong: %s", i, p.Type)
+			}
+			p.Operator = v1.Equal
+			if len(p.Example) == 0 {
+				return fmt.Errorf("%dth parameter example is null", i)
+			}
+			if len(p.Description) == 0 {
+				return fmt.Errorf("%dth parameter description is null", i)
+			}
+		}
+	}
+	//参数校验
+	if su.Spec.Type == "web" {
+		for i, p := range a.WebParams {
+			if len(p.Name) == 0 {
+				return fmt.Errorf("%dth parameter name is null", i)
+			}
+			if len(p.Type) == 0 {
+				p.Type = datav1.ParameterType("null")
+			}
+			switch p.Type {
+			case datav1.String, datav1.Int:
+			default:
+				return fmt.Errorf("%dth parameter type is wrong: %s", i, p.Type)
+			}
+			switch p.Location{
+			case v1.Path, v1.Header, v1.Query:
+			default:
+				return fmt.Errorf("%dth parameter location is wrong: %s", i, p.Location)
+			}
+		}
+	}
+	a.UpdatedAt = time.Now()
+
 	if !su.Status.Published {
 		return fmt.Errorf("serviceunit %s is unpublished", a.Serviceunit.ID)
 	}

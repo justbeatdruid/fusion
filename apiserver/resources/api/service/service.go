@@ -43,6 +43,9 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 		return nil, fmt.Errorf("get serviceunit error: %+v", err)
 	}
 	model.Serviceunit.KongID = su.Spec.KongService.ID
+	model.Serviceunit.Port = su.Spec.KongService.Port
+	model.Serviceunit.Host = su.Spec.KongService.Host
+	model.Serviceunit.Type = string(su.Spec.Type)
 
 	// create api
 	api, err := s.Create(ToAPI(model))
@@ -77,6 +80,48 @@ func (s *Service) GetApi(id string) (*Api, error) {
 
 func (s *Service) DeleteApi(id string) (*Api, error) {
 	api, err := s.Delete(id)
+	return ToModel(api), err
+}
+
+func (s *Service) PublishApi(id string) (*Api, error) {
+	api, err := s.Get(id)
+    //发布API时将API的状态修改为
+	api.Status.Status = v1.Creating
+	//TODO version随机生成
+	api.Spec.PublishInfo.Version = "11111"
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	crd, err = s.client.Namespace(crdNamespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd: %+v", err)
+	}
+	return ToModel(api), err
+}
+
+func (s *Service) OfflineApi(id string) (*Api, error) {
+	api, err := s.Get(id)
+	//下线API时将API的状态修改为
+	api.Status.Status = v1.Offing
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	crd, err = s.client.Namespace(crdNamespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error offline crd: %+v", err)
+	}
 	return ToModel(api), err
 }
 

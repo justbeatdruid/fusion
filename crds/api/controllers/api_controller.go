@@ -50,9 +50,8 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, nil
 	}
 	klog.Infof("get new api event: %+v", *api)
-	if api.Status.Status == nlptv1.Init {
+	if api.Status.Status == nlptv1.Creating {
 		// call kong api create
-		api.Status.Status = nlptv1.Creating
 		klog.Infof("new api: %s:%d, cafile: %s", r.Operator.Host, r.Operator.Port, r.Operator.CAFile)
 		if err := r.Operator.CreateRouteByKong(api); err != nil {
 			api.Status.Status = nlptv1.Error
@@ -67,9 +66,19 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		r.Update(ctx, api)
 	}
 
+	if  api.Status.Status == nlptv1.Offing {
+		// call kong api delete
+		if err := r.Operator.DeleteRouteByKong(api); err != nil {
+			//TODO 异常处理
+			api.Status.Status = nlptv1.Error
+			api.Status.Message = err.Error()
+		}
+		api.Status.Status = nlptv1.Offline
+		r.Update(ctx, api)
+	}
+
 	if api.Status.Status == nlptv1.Delete {
 		// call kong api delete
-		api.Status.Status = nlptv1.Deleting
 		if err := r.Operator.DeleteRouteByKong(api); err != nil {
 			api.Status.Status = nlptv1.Error
 			api.Status.Message = err.Error()
@@ -77,7 +86,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		r.Delete(ctx, api)
 	}
 
-	if api.Status.Status == nlptv1.Error {
+	/*if api.Status.Status == nlptv1.Error {
 		// call kong api create
 		api.Status.Status = nlptv1.Creating
 		klog.Infof("error create new api: %s:%d, cafile: %s", r.Operator.Host, r.Operator.Port, r.Operator.CAFile)
@@ -92,7 +101,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			api.Status.Message = "success"
 		}
 		r.Update(ctx, api)
-	}
+	}*/
 
 	// your logic here
 

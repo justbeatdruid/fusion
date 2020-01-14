@@ -118,11 +118,11 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 		request = request.Set(k, v)
 	}
 	request = request.Retry(3, 5*time.Second, retryStatus...)
-	//TODO API创建时路由信息 /apiquery
+	//TODO API创建时路由信息 数据后端使用 /api/v1/apiquery web后端使用传入参数
 	protocols := []string{}
 	protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
 	paths := []string{}
-	paths = append(paths, "/apiquery")
+	paths = append(paths, "/api/v1/apiquery")
 	//TODO 替换ID
 	id := db.Spec.Serviceunit.KongID
 	//id := "ce5e6f95-611b-4feb-96f1-f3b025876424"
