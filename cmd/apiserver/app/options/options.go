@@ -13,7 +13,7 @@ import (
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog"
 
-	appconfig "github.com/chinamobile/nlpt/apiserver/cmd/apiserver/app/config"
+	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 )
 
 const userAgent = "nlpt"
@@ -26,12 +26,16 @@ type ServerRunOptions struct {
 
 	ConfigPath  string
 	LocalConfig struct{}
+
+	Datasource *DatasourceOptions
 }
 
 func NewServerRunOptions() *ServerRunOptions {
 	s := &ServerRunOptions{
 		ListenAddress: ":8001",
 		CrdNamespace:  os.Getenv("MY_POD_NAMESPACE"),
+
+		Datasource: DefaultDatasourceOptions(),
 	}
 	if len(s.CrdNamespace) == 0 {
 		klog.Infof("cannot find environmnent MY_POD_NAMESPACE, use default")
@@ -42,6 +46,7 @@ func NewServerRunOptions() *ServerRunOptions {
 
 func (s *ServerRunOptions) Flags() cliflag.NamedFlagSets {
 	fss := cliflag.NamedFlagSets{}
+	s.Datasource.AddFlags(fss.FlagSet("data source"))
 	kfset := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(kfset)
 	fss.FlagSet("klog").AddGoFlagSet(kfset)
@@ -94,6 +99,8 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		Client:     client,
 		Dynamic:    dynClient,
 		Kubeconfig: kubeconfig,
+
+		DatasourceConfig: appconfig.NewDatasourceConfig(s.Datasource.Supported),
 	}
 	return c, nil
 }

@@ -112,6 +112,10 @@ func (a *Datasource) Validate() error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
+
+	if !support(a.Type) {
+		return fmt.Errorf("type %s not supported", a.Type)
+	}
 	a.ID = names.NewID()
 	return nil
 }
@@ -136,4 +140,16 @@ func (a *Datasource) ValidateForUpdate() error {
 		}
 	}
 	return nil
+}
+
+func support(tp string) bool {
+	for _, t := range Supported {
+		if t == "*" {
+			return true
+		}
+		if tp == t {
+			return true
+		}
+	}
+	return false
 }

@@ -5,7 +5,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/chinamobile/nlpt/apiserver/cmd/apiserver/app"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app"
 
 	"k8s.io/component-base/logs"
 )

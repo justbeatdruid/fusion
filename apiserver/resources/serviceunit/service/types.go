@@ -14,8 +14,10 @@ type Serviceunit struct {
 	ID            string                  `json:"id"`
 	Name          string                  `json:"name"`
 	Namespace     string                  `json:"namespace"`
+	Type          v1.ServiceType          `json:"type"`
 	DatasourcesID []v1.Datasource         `json:"datasources,omitempty"`
 	Datasources   []datav1.DatasourceSpec `json:"-"`
+	KongSevice    v1.KongServiceInfo      `json:"kongService"`
 	Users         []apiv1.User            `json:"users"`
 	Description   string                  `json:"description"`
 
@@ -24,6 +26,7 @@ type Serviceunit struct {
 	APICount  int       `json:"apiCount"`
 	Published bool      `json:"published"`
 }
+
 
 // only used in creation options
 func ToAPI(app *Serviceunit) *v1.Serviceunit {
@@ -35,8 +38,10 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 	crd.ObjectMeta.Namespace = crdNamespace
 	crd.Spec = v1.ServiceunitSpec{
 		Name:          app.Name,
+		Type:          app.Type,
 		DatasourcesID: app.DatasourcesID,
 		Datasources:   app.Datasources,
+		KongService:   app.KongSevice,
 		Users:         app.Users,
 		Description:   app.Description,
 	}
@@ -58,7 +63,9 @@ func ToModel(obj *v1.Serviceunit) *Serviceunit {
 		ID:            obj.ObjectMeta.Name,
 		Name:          obj.Spec.Name,
 		Namespace:     obj.ObjectMeta.Namespace,
+		Type:          obj.Spec.Type,
 		DatasourcesID: obj.Spec.DatasourcesID,
+		KongSevice:    obj.Spec.KongService,
 		Users:         obj.Spec.Users,
 		Description:   obj.Spec.Description,
 
@@ -88,14 +95,25 @@ func (s *Service) Validate(a *Serviceunit) error {
 		}
 	}
 
-	if len(a.DatasourcesID) > 0 {
-		a.Datasources = make([]datav1.DatasourceSpec, len(a.DatasourcesID))
-		for i, dsid := range a.DatasourcesID {
-			if ds, err := s.checkDatasource(&dsid); err != nil {
-				return fmt.Errorf("%dth datasource error: %+v", i, err)
-			} else {
-				a.Datasources[i] = *ds
+	switch a.Type {
+	case v1.DataService:
+		if len(a.DatasourcesID) == 0 {
+			return fmt.Errorf("datasource is null")
+		} else {
+			if len(a.DatasourcesID) > 0 {
+				a.Datasources = make([]datav1.DatasourceSpec, len(a.DatasourcesID))
+				for i, dsid := range a.DatasourcesID {
+					if ds, err := s.checkDatasource(&dsid); err != nil {
+						return fmt.Errorf("%dth datasource error: %+v", i, err)
+					} else {
+						a.Datasources[i] = *ds
+					}
+				}
 			}
+		}
+	case v1.WebService:
+		if len(a.KongSevice.Host) == 0 || len(a.KongSevice.Protocol) == 0 {
+			return fmt.Errorf("webservice is null")
 		}
 	}
 
