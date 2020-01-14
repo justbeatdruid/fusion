@@ -128,12 +128,25 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		request = request.Set(k, v)
 	}
 	request = request.Retry(3, 5*time.Second, retryStatus...)
-	//TODO 服务的地址信息
+	//TODO 服务的地址信息 : 数据服务使用fusion-apiserver web后端使用传入的值
 	requestBody := &RequestBody{
 		Name:     db.ObjectMeta.Name,
 		Protocol: "http",
-		Host:     "127.0.0.1",
-		Port:     80,
+		Host:     "fusion-apiserver",
+		Port:     8001,
+	}
+	if db.Spec.Type == nlptv1.WebService {
+
+		requestBody = &RequestBody{
+			Name:     db.ObjectMeta.Name,
+			Protocol: db.Spec.KongService.Protocol,
+			Host:     db.Spec.KongService.Host,
+			Port:     db.Spec.KongService.Port,
+		}
+		if requestBody.Port == 0{
+			requestBody.Port = 80
+		}
+
 	}
 	responseBody := &ResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
@@ -144,10 +157,11 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	if response.StatusCode != 201 {
 		return fmt.Errorf("request for create service error: receive wrong status code: %s", string(body))
 	}
-
-	(*db).Spec.KongService.Host = responseBody.Host
-	(*db).Spec.KongService.Protocol = responseBody.Protocol
-	(*db).Spec.KongService.Port = responseBody.Port
+	if db.Spec.Type == nlptv1.DataService {
+		(*db).Spec.KongService.Host = responseBody.Host
+		(*db).Spec.KongService.Protocol = responseBody.Protocol
+		(*db).Spec.KongService.Port = responseBody.Port
+	}
 	(*db).Spec.KongService.ID = responseBody.ID
 	return nil
 }
