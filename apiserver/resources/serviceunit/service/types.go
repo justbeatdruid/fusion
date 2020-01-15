@@ -27,7 +27,6 @@ type Serviceunit struct {
 	Published bool      `json:"published"`
 }
 
-
 // only used in creation options
 func ToAPI(app *Serviceunit) *v1.Serviceunit {
 	crd := &v1.Serviceunit{}
