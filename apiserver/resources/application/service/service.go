@@ -49,8 +49,9 @@ func (s *Service) GetApplication(id string) (*Application, error) {
 	return ToModel(app), nil
 }
 
-func (s *Service) DeleteApplication(id string) error {
-	return s.Delete(id)
+func (s *Service) DeleteApplication(id string) (*Application, error) {
+	app, err := s.Delete(id)
+	return ToModel(app), err
 }
 
 func (s *Service) Create(app *v1.Application) (*v1.Application, error) {
@@ -99,10 +100,45 @@ func (s *Service) Get(id string) (*v1.Application, error) {
 	return app, nil
 }
 
-func (s *Service) Delete(id string) error {
+func (s *Service) ForceDelete(id string) error {
 	err := s.client.Namespace(crdNamespace).Delete(id, &metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("error delete crd: %+v", err)
 	}
 	return nil
+}
+
+func (s *Service) Delete(id string) (*v1.Application, error) {
+	app, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("get crd by id error: %+v", err)
+	}
+	//TODO need check status !!!
+	app.Status.Status = v1.Delete
+	return s.UpdateStatus(app)
+}
+
+func (s *Service) UpdateSpec(app *v1.Application) (*v1.Application, error) {
+	return s.UpdateStatus(app)
+}
+
+func (s *Service) UpdateStatus(app *v1.Application) (*v1.Application, error) {
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(app)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	klog.V(5).Infof("try to update status for crd: %+v", crd)
+	crd, err = s.client.Namespace(app.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd status: %+v", err)
+	}
+	app = &v1.Application{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), app); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.serviceunit: %+v", app)
+
+	return app, nil
 }
