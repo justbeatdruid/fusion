@@ -21,7 +21,7 @@ const (
 )
 
 func (r *router) Install(ws *restful.WebService) {
-	ws.Route(ws.POST("/api/create").
+	ws.Route(ws.POST("/apis").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("create new api").
@@ -29,7 +29,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.GET("/api/{id}/get").
+	ws.Route(ws.GET("/apis/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("get an api by id").
@@ -37,7 +37,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.DELETE("/api/{id}/delete").
+	ws.Route(ws.DELETE("/apis/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("delete an api by id").
@@ -45,7 +45,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.POST("/api/publish").
+	ws.Route(ws.POST("/apis/{id}/release").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("publish an api by id").
@@ -53,7 +53,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.POST("/api/offline").
+	ws.Route(ws.DELETE("/apis/{id}/release").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("offline an api by id").
@@ -61,14 +61,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.GET("/api/list").Consumes(restful.MIME_JSON).
+	ws.Route(ws.GET("/apis").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all apis").
 		To(r.listApi).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.POST("/api/bind").
+	ws.Route(ws.POST("/apis/{id}/applications").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("bind an api to application").
@@ -76,7 +76,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.POST("/api/release").
+	ws.Route(ws.DELETE("/apis/{id}/applications").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("bind an api to application").

@@ -143,7 +143,7 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 			Host:     db.Spec.KongService.Host,
 			Port:     db.Spec.KongService.Port,
 		}
-		if requestBody.Port == 0{
+		if requestBody.Port == 0 {
 			requestBody.Port = 80
 		}
 

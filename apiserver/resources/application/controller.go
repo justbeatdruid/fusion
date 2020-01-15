@@ -6,6 +6,7 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/application/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/emicklei/go-restful"
 )
@@ -28,15 +29,12 @@ type Wrapped struct {
 
 type CreateRequest = Wrapped
 type CreateResponse = Wrapped
-type DeleteResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
+type DeleteResponse = Wrapped
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int                    `json:"code"`
-	Message string                 `json:"message"`
-	Data    []*service.Application `json:"data"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
 }
 type PingResponse = DeleteResponse
 
@@ -84,31 +82,54 @@ func (c *controller) GetApplication(req *restful.Request) (int, *GetResponse) {
 
 func (c *controller) DeleteApplication(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if err := c.service.DeleteApplication(id); err != nil {
+	if app, err := c.service.DeleteApplication(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("delete database error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
-			Code:    0,
-			Message: "",
+			Code: 0,
+			Data: app,
 		}
 	}
 }
 
 func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
 	if app, err := c.service.ListApplication(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
+		var apps ApplicationList = app
+		data, err := util.PageWrap(apps, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:    1,
+				Message: fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
 		return http.StatusOK, &ListResponse{
 			Code: 0,
-			Data: app,
+			Data: data,
 		}
 	}
+}
+
+type ApplicationList []*service.Application
+
+func (apps ApplicationList) Length() int {
+	return len(apps)
+}
+
+func (apps ApplicationList) GetItem(i int) (interface{}, error) {
+	if i >= len(apps) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return apps[i], nil
 }
 
 func returns200(b *restful.RouteBuilder) {

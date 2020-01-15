@@ -109,20 +109,7 @@ func (c *controller) DeleteApi(req *restful.Request) (int, interface{}) {
 }
 
 func (c *controller) PublishApi(req *restful.Request) (int, interface{}) {
-	body := &CreateRequest{}
-	if err := req.ReadEntity(body); err != nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
-		}
-	}
-	if body.Data == nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: "read entity error: data is null",
-		}
-	}
-	if su, err := c.service.PublishApi(body.Data.ID); err != nil {
+	if su, err := c.service.PublishApi(req.PathParameter("id")); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
 			Message: fmt.Errorf("publish api error: %+v", err).Error(),
@@ -136,20 +123,7 @@ func (c *controller) PublishApi(req *restful.Request) (int, interface{}) {
 }
 
 func (c *controller) OfflineApi(req *restful.Request) (int, interface{}) {
-	body := &CreateRequest{}
-	if err := req.ReadEntity(body); err != nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
-		}
-	}
-	if body.Data == nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: "read entity error: data is null",
-		}
-	}
-	if su, err := c.service.OfflineApi(body.Data.ID); err != nil {
+	if su, err := c.service.OfflineApi(req.PathParameter("id")); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
 			Message: fmt.Errorf("publish api error: %+v", err).Error(),
@@ -184,6 +158,7 @@ func (c *controller) BindApi(req *restful.Request) (int, interface{}) {
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
+	body.Data.ApiID = req.PathParameter("id")
 	if api, err := c.service.BindApi(body.Data.ApiID, body.Data.AppID); err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:    2,
@@ -205,6 +180,7 @@ func (c *controller) ReleaseApi(req *restful.Request) (int, interface{}) {
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
+	body.Data.ApiID = req.PathParameter("id")
 	if api, err := c.service.ReleaseApi(body.Data.ApiID, body.Data.AppID); err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:    2,

@@ -15,7 +15,7 @@ func NewRouter(cfg *config.Config) *router {
 }
 
 func (r *router) Install(ws *restful.WebService) {
-	ws.Route(ws.POST("/application/create").
+	ws.Route(ws.POST("/applications").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("create new app").
@@ -23,7 +23,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.GET("/application/{id}/get").
+	ws.Route(ws.GET("/applications/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("get an app by id").
@@ -31,7 +31,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.DELETE("/application/{id}/delete").
+	ws.Route(ws.DELETE("/applications/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("delete an app by id").
@@ -39,7 +39,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.GET("/application/list").Consumes(restful.MIME_JSON).
+	ws.Route(ws.GET("/applications").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all apps").
 		To(r.listApplication).
