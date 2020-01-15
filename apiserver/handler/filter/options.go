@@ -32,12 +32,12 @@ func (o *OptionsFilter) Filter(req *restful.Request, resp *restful.Response, cha
 	archs := req.Request.Header.Get(restful.HEADER_AccessControlRequestHeaders)
 	//methods := strings.Join(o.getContainer().ComputeAllowedMethods(req), ",")
 	origin := req.Request.Header.Get(restful.HEADER_Origin)
-	//if len(origin) == 0 {
-	//	origin = "*"
-	//}
+	if len(origin) == 0 {
+		origin = "*"
+	}
 	log.Printf("request >> origin：%s\n", origin)
 	resp.AddHeader(restful.HEADER_Allow, "*")
-	resp.AddHeader(restful.HEADER_AccessControlAllowOrigin, "*")
+	resp.AddHeader(restful.HEADER_AccessControlAllowOrigin, origin)
 	resp.AddHeader(restful.HEADER_AccessControlAllowHeaders, archs)
 	resp.AddHeader(restful.HEADER_AccessControlAllowMethods, "*")
 	resp.AddHeader(restful.HEADER_AccessControlAllowCredentials, "true")
