@@ -41,7 +41,7 @@ type ServiceunitSpec struct {
 	APIs          []Api                   `json:"apis"`
 	Description   string                  `json:"description"`
 	//KongInfo
-	KongService   KongServiceInfo         `json:"kongServiceInfo"`
+	KongService KongServiceInfo `json:"kongServiceInfo"`
 }
 
 type KongServiceInfo struct {
@@ -73,7 +73,6 @@ const (
 	DataService ServiceType = "data"
 	WebService  ServiceType = "web"
 )
-
 
 // ServiceunitStatus defines the observed state of Serviceunit
 type ServiceunitStatus struct {

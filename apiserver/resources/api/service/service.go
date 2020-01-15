@@ -85,7 +85,7 @@ func (s *Service) DeleteApi(id string) (*Api, error) {
 
 func (s *Service) PublishApi(id string) (*Api, error) {
 	api, err := s.Get(id)
-    //发布API时将API的状态修改为
+	//发布API时将API的状态修改为
 	api.Status.Status = v1.Creating
 	//TODO version随机生成
 	api.Spec.PublishInfo.Version = "11111"

@@ -77,13 +77,13 @@ const (
 )
 
 type Serviceunit struct {
-	ID     string                `json:"id"`
-	Name   string                `json:"name"`
-	Group  string                `json:"group"`
-	KongID string                `json:"kongID"`
-	Type   string                `json:"Type"`
-	Host   string                `json:"Host"`
-	Port   int                   `json:"Port"`
+	ID     string `json:"id"`
+	Name   string `json:"name"`
+	Group  string `json:"group"`
+	KongID string `json:"kongID"`
+	Type   string `json:"Type"`
+	Host   string `json:"Host"`
+	Port   int    `json:"Port"`
 }
 
 type PublishInfo struct {
@@ -136,10 +136,10 @@ type Parameter struct {
 }
 
 type WebParams struct {
-	Name        string               `json:"name"`         //必须
-	Type        datav1.ParameterType `json:"type"`         //必须
-	Location    LocationType         `json:"location"`     //必须
-	Required    bool                 `json:"required"`    //必须
+	Name        string               `json:"name"`     //必须
+	Type        datav1.ParameterType `json:"type"`     //必须
+	Location    LocationType         `json:"location"` //必须
+	Required    bool                 `json:"required"` //必须
 	DefValue    interface{}          `json:"valueDefault"`
 	Example     interface{}          `json:"example"`
 	Description string               `json:"description"`
@@ -150,14 +150,12 @@ type WebParams struct {
 	MaxSize     int                  `json:"maxSize"`
 }
 
-
-
 type LocationType string
 
 const (
-	Path      LocationType = "path"
-	Query     LocationType = "query"
-	Header    LocationType = "header"
+	Path   LocationType = "path"
+	Query  LocationType = "query"
+	Header LocationType = "header"
 )
 
 type Operator string
@@ -209,9 +207,10 @@ const (
 )
 
 type Publish string
+
 const (
-	UnPublished   Publish = "unPublished"
-	Published     Publish = "published"
+	UnPublished Publish = "unPublished"
+	Published   Publish = "published"
 	//Offline       Publish = "offline"
 )
 

@@ -14,20 +14,20 @@ type Api struct {
 	ID        string `json:"id"`
 	Namespace string `json:"namespace"`
 
-	Name         string            `json:"name"`
-	Serviceunit  v1.Serviceunit    `json:"serviceunit"`
-	Applications []v1.Application  `json:"applications"`
-	Users        []v1.User         `json:"users"`
-	Frequency    int               `json:"frequency"`
-	Method       v1.Method         `json:"method"`
-	Protocol     v1.Protocol       `json:"protocol"`
-	ReturnType   v1.ReturnType     `json:"returnType"`
-	Parameters   []v1.Parameter    `json:"parameter"`
-	WebParams    []v1.WebParams    `json:"webParams"`
-	AuthType     string            `json:"authType"`
-	KongApi      v1.KongApiInfo    `json:"KongApi"`
+	Name         string           `json:"name"`
+	Serviceunit  v1.Serviceunit   `json:"serviceunit"`
+	Applications []v1.Application `json:"applications"`
+	Users        []v1.User        `json:"users"`
+	Frequency    int              `json:"frequency"`
+	Method       v1.Method        `json:"method"`
+	Protocol     v1.Protocol      `json:"protocol"`
+	ReturnType   v1.ReturnType    `json:"returnType"`
+	Parameters   []v1.Parameter   `json:"parameter"`
+	WebParams    []v1.WebParams   `json:"webParams"`
+	AuthType     string           `json:"authType"`
+	KongApi      v1.KongApiInfo   `json:"KongApi"`
 
-	Status           v1.Status     `json:"status"`
+	Status v1.Status `json:"status"`
 	//Publish          v1.Publish    `json:"publish"`
 	AccessLink       v1.AccessLink `json:"access"`
 	UpdatedAt        time.Time     `json:"updatedAt"`
@@ -140,7 +140,7 @@ func (s *Service) Validate(a *Api) error {
 	if err != nil {
 		return fmt.Errorf("cannot get serviceunit: %+v", err)
 	}
-	if su.Spec.Type == "data"{
+	if su.Spec.Type == "data" {
 		for i, p := range a.Parameters {
 			if len(p.Name) == 0 {
 				return fmt.Errorf("%dth parameter name is null", i)
@@ -176,7 +176,7 @@ func (s *Service) Validate(a *Api) error {
 			default:
 				return fmt.Errorf("%dth parameter type is wrong: %s", i, p.Type)
 			}
-			switch p.Location{
+			switch p.Location {
 			case v1.Path, v1.Header, v1.Query:
 			default:
 				return fmt.Errorf("%dth parameter location is wrong: %s", i, p.Location)
