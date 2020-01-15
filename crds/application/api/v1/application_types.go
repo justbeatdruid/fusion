@@ -57,6 +57,13 @@ type ApplicationStatus struct {
 
 type Status string
 
+const (
+	Init    Status = "init"
+	Created Status = "created"
+	Delete  Status = "delete"
+	Error   Status = "error"
+)
+
 // +kubebuilder:object:root=true
 
 // Application is the Schema for the applications API

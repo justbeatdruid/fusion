@@ -29,10 +29,7 @@ type Wrapped struct {
 
 type CreateRequest = Wrapped
 type CreateResponse = Wrapped
-type DeleteResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-}
+type DeleteResponse = Wrapped
 type GetResponse = Wrapped
 type ListResponse = struct {
 	Code    int         `json:"code"`
@@ -85,15 +82,15 @@ func (c *controller) GetApplication(req *restful.Request) (int, *GetResponse) {
 
 func (c *controller) DeleteApplication(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if err := c.service.DeleteApplication(id); err != nil {
+	if app, err := c.service.DeleteApplication(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("delete database error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
-			Code:    0,
-			Message: "",
+			Code: 0,
+			Data: app,
 		}
 	}
 }
