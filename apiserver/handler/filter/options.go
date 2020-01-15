@@ -35,7 +35,7 @@ func (o *OptionsFilter) Filter(req *restful.Request, resp *restful.Response, cha
 	//if len(origin) == 0 {
 	//	origin = "*"
 	//}
-	log.Printf("request >> origin：%s\n",origin)
+	log.Printf("request >> origin：%s\n", origin)
 	resp.AddHeader(restful.HEADER_Allow, "*")
 	resp.AddHeader(restful.HEADER_AccessControlAllowOrigin, "*")
 	resp.AddHeader(restful.HEADER_AccessControlAllowHeaders, archs)
