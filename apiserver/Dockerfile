@@ -10,13 +10,14 @@ WORKDIR /go/src/github.com/chinamobile/nlpt/
 #RUN go mod download
 
 # Copy the go source
+COPY cmd/ cmd/
 COPY apiserver/ apiserver/
 COPY crds/ crds/
 COPY pkg/ pkg/
 COPY vendor/ vendor/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=off go build -a -o /go/bin/fusion-apiserver apiserver/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=off go build -a -o /go/bin/fusion-apiserver cmd/apiserver/apiserver.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details

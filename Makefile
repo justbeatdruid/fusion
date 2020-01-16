@@ -20,7 +20,6 @@ test: fmt vet
 	go test ./... -coverprofile cover.out
 
 apiserver: fmt vet
-	go build -o bin/apiserver apiserver/main.go
 	docker build . -f apiserver/Dockerfile -t ${APIIMG}
 	docker push ${APIIMG}
 

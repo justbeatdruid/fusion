@@ -159,9 +159,9 @@ func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 			}
 		}
 		return http.StatusOK, &ListResponse{
-			Code: 0,
-			Message:"success",
-			Data: pageStruct,
+			Code:    0,
+			Message: "success",
+			Data:    pageStruct,
 		}
 	}
 }

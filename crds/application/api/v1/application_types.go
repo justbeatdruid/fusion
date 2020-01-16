@@ -31,6 +31,7 @@ type ApplicationSpec struct {
 
 	// Foo is an example field of Application. Edit Application_types.go to remove/update
 	Name            string       `json:"name"`
+	Description     string       `json:"description"`
 	Group           Group        `json:"group"`
 	Users           []apiv1.User `json:"users"`
 	AccessKey       string       `json:"accessKey"`
