@@ -2,6 +2,7 @@ package datasource
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/service"
@@ -40,9 +41,9 @@ type DeleteResponse struct {
 }
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int                   `json:"code"`
-	Message string                `json:"message"`
-	Data    []*service.Datasource `json:"data"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
 
@@ -128,16 +129,39 @@ func (c *controller) DeleteDatasource(req *restful.Request) (int, *DeleteRespons
 	}
 }
 
+type DataSourceList []*service.Datasource
+
+func (dsl DataSourceList) Length() int {
+	return len(dsl)
+}
+
+func (dsl DataSourceList) GetItem(i int) (interface{}, error) {
+	if i >= len(dsl) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return dsl[i], nil
+}
 func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
 	if db, err := c.service.ListDatasource(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
+		var dbs DataSourceList = db
+		pageStruct, err := util.PageWrap(dbs, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:    1,
+				Message: fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
 		return http.StatusOK, &ListResponse{
 			Code: 0,
-			Data: db,
+			Message:"success",
+			Data: pageStruct,
 		}
 	}
 }
