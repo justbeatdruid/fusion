@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"time"
 
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	"github.com/chinamobile/nlpt/crds/application/api/v1"
@@ -13,6 +14,7 @@ type Application struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 
+	Description     string       `json:"description"`
 	Users           []apiv1.User `json:"users"`
 	AccessKey       string       `json:"accessKey"`
 	AccessSecretKey string       `json:"accessSecretKey"`
@@ -21,6 +23,8 @@ type Application struct {
 	Status    v1.Status `json:"status"`
 	UserCount int       `json:"userCount"`
 	APICount  int       `json:"apiCount"`
+
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // only used in creation options
@@ -34,6 +38,7 @@ func ToAPI(app *Application) *v1.Application {
 	crd.Spec = v1.ApplicationSpec{
 		Name:            app.Name,
 		Users:           app.Users,
+		Description:     app.Description,
 		AccessKey:       app.AccessKey,
 		AccessSecretKey: app.AccessSecretKey,
 		APIs:            []v1.Api{},
@@ -47,6 +52,7 @@ func ToModel(obj *v1.Application) *Application {
 		Name:      obj.Spec.Name,
 		Namespace: obj.ObjectMeta.Namespace,
 
+		Description:     obj.Spec.Description,
 		Users:           obj.Spec.Users,
 		AccessKey:       obj.Spec.AccessKey,
 		AccessSecretKey: obj.Spec.AccessSecretKey,
@@ -55,6 +61,8 @@ func ToModel(obj *v1.Application) *Application {
 		Status:    obj.Status.Status,
 		UserCount: len(obj.Spec.Users),
 		APICount:  len(obj.Spec.APIs),
+
+		CreatedAt: obj.ObjectMeta.CreationTimestamp.Time,
 	}
 }
 
