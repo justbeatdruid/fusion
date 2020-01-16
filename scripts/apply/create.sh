@@ -1,4 +1,4 @@
-curl localhost:8001/api/v1/apply/create -H 'content-type:application/json' -v \
+curl localhost:8001/api/v1/applies/create -H 'content-type:application/json' -v \
   -d'
 {
   "data": {

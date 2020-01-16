@@ -15,7 +15,7 @@ func NewRouter(cfg *config.Config) *router {
 }
 
 func (r *router) Install(ws *restful.WebService) {
-	ws.Route(ws.POST("/topic/create").
+	ws.Route(ws.POST("/topics").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("create new topic").
@@ -23,7 +23,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.GET("/topic/{id}/get").
+	ws.Route(ws.GET("/topics/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("get an topic by id").
@@ -31,7 +31,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.DELETE("/topic/{id}/delete").
+	ws.Route(ws.DELETE("/topics/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("delete an topic by id").
@@ -39,7 +39,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.GET("/topic/list").Consumes(restful.MIME_JSON).
+	ws.Route(ws.GET("/topics").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all topics").
 		To(r.listTopic).

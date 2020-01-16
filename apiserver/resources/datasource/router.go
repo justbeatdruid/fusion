@@ -15,7 +15,7 @@ func NewRouter(cfg *config.Config) *router {
 }
 
 func (r *router) Install(ws *restful.WebService) {
-	ws.Route(ws.POST("/datasource/create").
+	ws.Route(ws.POST("/datasources").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("create new datasource").
@@ -23,7 +23,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.POST("/datasource/update").
+	ws.Route(ws.PUT("/datasources").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("update a dataSource").
@@ -31,7 +31,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.GET("/datasource/{id}/get").
+	ws.Route(ws.GET("/datasources/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("get an datasource by id").
@@ -39,7 +39,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.DELETE("/datasource/{id}/delete").
+	ws.Route(ws.DELETE("/datasources/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("delete an datasource by id").
@@ -47,14 +47,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.GET("/datasource/list").Consumes(restful.MIME_JSON).
+	ws.Route(ws.GET("/datasources").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all datasources").
 		To(r.listDatasource).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.GET("/getdata/{apiId}").
+	ws.Route(ws.GET("/datasources/{apiId}/data").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("query data by api").

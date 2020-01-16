@@ -3,4 +3,4 @@ if ! test $1;then
   exit 1
 fi
 
-curl localhost:8001/api/v1/datasource/$1/get -v
+curl localhost:8001/api/v1/datasources/$1 -v
