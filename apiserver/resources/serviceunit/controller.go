@@ -109,20 +109,8 @@ func (c *controller) ListServiceunit(req *restful.Request) (int, *ListResponse) 
 }
 
 func (c *controller) PublishServiceunit(req *restful.Request) (int, *CreateResponse) {
-	body := &CreateRequest{}
-	if err := req.ReadEntity(body); err != nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
-		}
-	}
-	if body.Data == nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: "read entity error: data is null",
-		}
-	}
-	if su, err := c.service.PublishServiceunit(body.Data.ID); err != nil {
+	id := req.PathParameter("id")
+	if su, err := c.service.PublishServiceunit(id); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
 			Message: fmt.Errorf("create serviceunit error: %+v", err).Error(),

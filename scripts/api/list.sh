@@ -1,1 +1,1 @@
-curl localhost:8001/api/v1/api/list?$* -v
+curl localhost:8001/api/v1/apis?$* -v

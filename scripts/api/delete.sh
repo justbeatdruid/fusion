@@ -3,4 +3,4 @@ if ! test $1;then
   exit 1
 fi
 
-curl -XDELETE localhost:8001/api/v1/api/$1/delete -v
+curl -XDELETE localhost:8001/api/v1/apis/$1 -v
