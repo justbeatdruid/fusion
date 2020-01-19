@@ -31,6 +31,8 @@ type RequestBody struct {
 	Service   ServiceID `json:"service"`
 	Protocols []string  `json:"protocols"`
 	Paths     []string  `json:"paths"`
+	StripPath bool      `json:"strip_path"`
+
 }
 
 // {"success":true,"code":200,"message":"请求成功","data":{"targetDbType":"MySQL","targetDbIp":"192.168.100.103","targetDbPort":"3306","targetDbUser":"root","targetDbPass":"Pass1234","targetDbName":["POSTGRESQL_public","POSTGRESQL_testschema"]},"pageInfo":null,"ext":null}
@@ -130,6 +132,9 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 		Service:   ServiceID{id},
 		Protocols: protocols,
 		Paths:     paths,
+		//设置为true会删除前缀route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
+		StripPath: false,
+
 	}
 	responseBody := &ResponseBody{}
 	klog.Infof("begin send create route requeset body: %+v", responseBody)
