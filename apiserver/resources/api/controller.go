@@ -26,9 +26,9 @@ const (
 )
 
 type Wrapped struct {
-	Code    int          `json:"code"`
-	Message string       `json:"message"`
-	Data    *service.Api `json:"data,omitempty"`
+	Code       int          `json:"code"`
+	Message    string       `json:"message"`
+	Data       *service.Api `json:"data,omitempty"`
 }
 
 type BindRequest struct {
@@ -50,6 +50,12 @@ type ListResponse = struct {
 	Data    []*service.Api `json:"data"`
 }
 type PingResponse = DeleteResponse
+
+type TestApiResponse = struct {
+	Code       int         `json:"code"`
+	Message    string      `json:"message"`
+	TestResult interface{} `json:"data,omitempty"`
+}
 
 func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 	body := &CreateRequest{}
@@ -204,6 +210,33 @@ func (c *controller) Query(req *restful.Request) (int, interface{}) {
 	}{
 		Code:    0,
 		Message: fmt.Sprintf("get your request with api %s, form: %+v, Header: %+v", apiid, form, header),
+	}
+}
+
+func (c *controller) TestApi(req *restful.Request) (int, interface{}) {
+	body := &CreateRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &TestApiResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &TestApiResponse{
+			Code:    1,
+			Message: "read entity error: data is null",
+		}
+	}
+	if resp, err := c.service.TestApi(body.Data); err != nil {
+		return http.StatusInternalServerError, &TestApiResponse{
+			Code:    2,
+			Message: fmt.Errorf("Test api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
+			Code:       0,
+			TestResult: resp,
+		}
 	}
 }
 
