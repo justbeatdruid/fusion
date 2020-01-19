@@ -91,6 +91,14 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.query).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	ws.Route(ws.POST("/api/test").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("test an api function").
+		To(r.testApi).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func process(f func(*restful.Request) (int, interface{}), request *restful.Request, response *restful.Response) {
@@ -132,4 +140,8 @@ func (r *router) releaseApi(request *restful.Request, response *restful.Response
 
 func (r *router) query(request *restful.Request, response *restful.Response) {
 	process(r.controller.Query, request, response)
+}
+
+func (r *router) testApi(request *restful.Request, response *restful.Response) {
+	process(r.controller.TestApi, request, response)
 }

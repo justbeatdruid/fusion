@@ -1,7 +1,12 @@
 package service
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
@@ -357,4 +362,40 @@ func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
 	//	return fmt.Errorf("cannot update")
 	//}
 	return ToModel(api), err
+}
+
+//TestApi ...
+func (s *Service) TestApi(model *Api) (interface{}, error) {
+	client := &http.Client{}
+	remoteUrl := strings.ToLower(string(model.Protocol)) + "://" + model.Serviceunit.Host + ":" + strconv.Itoa(model.Serviceunit.Port)
+	for i := range model.KongApi.Paths {
+		remoteUrl += model.KongApi.Paths[i]
+	}
+
+	body := map[string]interface{}{}
+	for i := range model.WebParams {
+		body[model.WebParams[i].Name] = model.WebParams[i].Example
+	}
+	bytesData, _ := json.Marshal(body)
+
+	reqest, err := http.NewRequest(string(model.Method), remoteUrl, bytes.NewReader(bytesData))
+	for i := range model.Parameters {
+		reqest.Header.Add(model.Parameters[i].Name, model.Parameters[i].Example)
+
+	}
+	response, err := client.Do(reqest)
+	if err != nil {
+		return nil, fmt.Errorf("request failed: %+v", err)
+	}
+	defer response.Body.Close()
+
+	respbody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("ReadAll failed: %+v", err)
+	}
+	respReturn := map[string]interface{}{}
+	if err = json.Unmarshal(respbody, &respReturn); err != nil {
+		return nil, fmt.Errorf("Unmarshal failed: %+v", err)
+	}
+	return respReturn, nil
 }
