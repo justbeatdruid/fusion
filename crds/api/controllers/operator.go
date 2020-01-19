@@ -132,7 +132,7 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 		Service:   ServiceID{id},
 		Protocols: protocols,
 		Paths:     paths,
-		//设置为true会删除前缀route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
+		//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
 		StripPath: false,
 
 	}
