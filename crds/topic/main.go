@@ -44,9 +44,15 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+	var pulsarHost string
+	var pulsarPort int
+
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+
+	flag.StringVar(&pulsarHost, "pulsar-host", "127.0.0.1", "Host of pulsar web service.")
+	flag.IntVar(&pulsarPort, "pulsar-port", 30002, "Port of pulsar web service.")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(func(o *zap.Options) {
@@ -58,7 +64,14 @@ func main() {
 		MetricsBindAddress: metricsAddr,
 		LeaderElection:     enableLeaderElection,
 		Port:               9443,
+
 	})
+
+	operator := &controllers.Operator{
+			Host: pulsarHost,
+			Port: pulsarPort,
+	}
+
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -68,6 +81,7 @@ func main() {
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Topic"),
 		Scheme: mgr.GetScheme(),
+		Operator: operator,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Topic")
 		os.Exit(1)

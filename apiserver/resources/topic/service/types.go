@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
 )
@@ -11,6 +10,10 @@ type Topic struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
+	Tenant string `json:"tenant"`
+	TopicName string `json:"topicName"`
+
+	Status    v1.Status `json:"status"`
 }
 
 // only used in creation options
@@ -23,6 +26,17 @@ func ToAPI(app *Topic) *v1.Topic {
 	crd.ObjectMeta.Namespace = crdNamespace
 	crd.Spec = v1.TopicSpec{
 		Name: app.Name,
+		Tenant: app.Tenant,
+		Namespace: app.Namespace,
+		TopicName: app.TopicName,
+
+	}
+	status := app.Status
+	if len(status) == 0 {
+		status = v1.Init
+	}
+	crd.Status = v1.TopicStatus{
+		Status:    status,
 	}
 	return crd
 }
