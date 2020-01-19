@@ -17,9 +17,9 @@ package controllers
 
 import (
 	"context"
-
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -31,15 +31,40 @@ type TopicReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	Operator *Operator
 }
 
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=topics,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=topics/status,verbs=get;update;patch
 
+//Reconcile topic
 func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+	ctx := context.Background()
 	_ = r.Log.WithValues("topic", req.NamespacedName)
 
+
+	topic := &nlptv1.Topic{}
+	if err := r.Get(ctx, req.NamespacedName, topic); err != nil{
+		klog.Errorf("cannot get topic of ctrl req: %+v", err)
+		return ctrl.Result{}, nil
+	}
+	klog.Infof("get new topic event: %+v", *topic)
+	klog.Infof("Status:%s", topic.Status.Status)
+
+	if topic.Status.Status == nlptv1.Init{
+		klog.Info("Current status is Init")
+		topic.Status.Status = nlptv1.Creating
+		if error := r.Operator.CreateTopic(topic); error != nil{
+			topic.Status.Status = nlptv1.Error
+			topic.Status.Message = error.Error()
+		} else {
+			topic.Status.Status = nlptv1.Created
+			topic.Status.Message = "success"
+		}
+
+
+
+	}
 	/* for example
 	topic = r.Get()
 	if topic.Status == "init" {
@@ -58,6 +83,7 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	return ctrl.Result{}, nil
 }
 
+//SetupWithManager test
 func (r *TopicReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nlptv1.Topic{}).

@@ -28,7 +28,11 @@ type TopicSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Topic. Edit Topic_types.go to remove/update
-	Name string `json:"name"`
+	Name      string `json:"name"`
+	TopicName string `json:"topicName"`
+	Tenant string `json:"tenant"`
+	Namespace string `json:"namespace"`
+	Partition int `json:partition`
 }
 
 // TopicStatus defines the observed state of Topic
@@ -36,13 +40,17 @@ type TopicStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	Status Status `json:"status"`
+	Message string
 }
 
 type Status string
-
 const (
-	Success Status = "success"
-	Error   Status = "error"
+	Init     Status = "init"
+	Creating Status = "creating"
+	Created  Status = "created"
+	//Delete   Status = "delete"
+	//Deleting Status = "deleting"
+	Error    Status = "error"
 )
 
 // +kubebuilder:object:root=true
