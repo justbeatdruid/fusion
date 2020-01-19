@@ -50,6 +50,10 @@ type KongServiceInfo struct {
 	Protocol string `json:"protocol"`
 	Port     int    `json:"port"`
 	Path     string `json:"path"`
+	TimeOut  int    `json:"connect_timeout"`
+	WirteOut int    `json:"write_timeout"`
+	ReadOut  int    `json:"read_timeout"`
+
 }
 
 type Datasource struct {

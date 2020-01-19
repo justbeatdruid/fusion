@@ -30,6 +30,9 @@ type RequestBody struct {
 	Protocol string `json:"protocol"`
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
+	TimeOut  int    `json:"connect_timeout"`
+	WirteOut int    `json:"write_timeout"`
+	ReadOut  int    `json:"read_timeout"`
 }
 
 // {"success":true,"code":200,"message":"请求成功","data":{"targetDbType":"MySQL","targetDbIp":"192.168.100.103","targetDbPort":"3306","targetDbUser":"root","targetDbPass":"Pass1234","targetDbName":["POSTGRESQL_public","POSTGRESQL_testschema"]},"pageInfo":null,"ext":null}
@@ -142,11 +145,22 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 			Protocol: db.Spec.KongService.Protocol,
 			Host:     db.Spec.KongService.Host,
 			Port:     db.Spec.KongService.Port,
+			TimeOut:  db.Spec.KongService.TimeOut,
+			WirteOut: db.Spec.KongService.WirteOut,
+			ReadOut:  db.Spec.KongService.ReadOut,
 		}
 		if requestBody.Port == 0 {
 			requestBody.Port = 80
 		}
-
+		if requestBody.TimeOut == 0 {
+			requestBody.TimeOut = 60000
+		}
+		if requestBody.WirteOut == 0 {
+			requestBody.WirteOut = 60000
+		}
+		if requestBody.ReadOut == 0 {
+			requestBody.ReadOut = 60000
+		}
 	}
 	responseBody := &ResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
