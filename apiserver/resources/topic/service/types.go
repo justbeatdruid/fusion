@@ -8,12 +8,14 @@ import (
 
 type Topic struct {
 	ID        string `json:"id"`
-	Name      string `json:"name"`
+	Name      string `json:"name"`   //topic名称
 	Namespace string `json:"namespace"`
-	Tenant string `json:"tenant"`
-	TopicName string `json:"topicName"`
-
+	Tenant string `json:"tenant"`  //topic的所属租户名称
+	TopicNamespace string `json: "topicNamespace"`
+	Partition int `json:"partition"`    //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
+	IsPersistent bool `json:isPersistent` //topic是否持久化到硬盘，默认为true
 	Status    v1.Status `json:"status"`
+	Message   string  `json:"message"`
 }
 
 // only used in creation options
@@ -28,7 +30,9 @@ func ToAPI(app *Topic) *v1.Topic {
 		Name: app.Name,
 		Tenant: app.Tenant,
 		Namespace: app.Namespace,
-		TopicName: app.TopicName,
+		TopicNamespace:app.TopicNamespace,
+		Partition:app.Partition,
+		IsPersistent: app.IsPersistent,
 
 	}
 	status := app.Status
@@ -37,6 +41,8 @@ func ToAPI(app *Topic) *v1.Topic {
 	}
 	crd.Status = v1.TopicStatus{
 		Status:    status,
+		Message: app.Message,
+
 	}
 	return crd
 }
@@ -46,6 +52,13 @@ func ToModel(obj *v1.Topic) *Topic {
 		ID:        obj.ObjectMeta.Name,
 		Name:      obj.Spec.Name,
 		Namespace: obj.ObjectMeta.Namespace,
+		Tenant:    obj.Spec.Tenant,
+		TopicNamespace: obj.Spec.TopicNamespace,
+		IsPersistent: obj.Spec.IsPersistent,
+		Partition: obj.Spec.Partition,
+		Status: obj.Status.Status,
+		Message: obj.Status.Message,
+
 	}
 }
 
