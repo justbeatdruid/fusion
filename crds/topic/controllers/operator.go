@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	nlptv1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/parnurzeal/gorequest"
@@ -37,8 +38,8 @@ type Operator struct{
 func (r *Operator) CreateTopic (topic *nlptv1.Topic) (err error){
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 
-	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.Namespace, topic.Spec.TopicName)
-	topicUrl := fmt.Sprintf(persistentTopicUrl, topic.Spec.Tenant, topic.Spec.Namespace, topic.Spec.TopicName)
+	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.Namespace, topic.Spec.Name)
+	topicUrl := fmt.Sprintf(persistentTopicUrl, topic.Spec.Tenant, topic.Spec.TopicNamespace, topic.Spec.Name)
 
 	topicUrl = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl )
 	request = request.Put(topicUrl)
@@ -46,5 +47,13 @@ func (r *Operator) CreateTopic (topic *nlptv1.Topic) (err error){
 
 	fmt.Println("URL:", topicUrl )
 	fmt.Print(" Response: ",body, response, errs)
+
+	if response.StatusCode == 204 {
+		return nil
+	}else {
+		errMsg := fmt.Sprintf("Create topic error, url: %s, Error code: %d, Error Message: %s", topicUrl, response.StatusCode, body)
+		klog.Error(errMsg)
+		return errors.New(errMsg)
+	}
 	return err
 }
