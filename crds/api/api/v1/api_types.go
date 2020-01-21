@@ -69,13 +69,6 @@ type KongApiInfo struct {
 	KongID        string   `json:"kong_id"`
 }
 
-type ServiceType string
-
-const (
-	DataService ServiceType = "data"
-	WebService  ServiceType = "web"
-)
-
 type Serviceunit struct {
 	ID     string `json:"id"`
 	Name   string `json:"name"`

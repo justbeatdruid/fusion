@@ -19,11 +19,14 @@ import (
 	"flag"
 	"os"
 
+	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
+	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	nlptv1 "github.com/chinamobile/nlpt/crds/apply/api/v1"
 	"github.com/chinamobile/nlpt/crds/apply/controllers"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	// +kubebuilder:scaffold:imports
@@ -38,7 +41,10 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
 	_ = nlptv1.AddToScheme(scheme)
+	_ = apiv1.AddToScheme(scheme)
+	_ = appv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
+	klog.InitFlags(nil)
 }
 
 func main() {
