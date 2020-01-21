@@ -30,10 +30,10 @@ type TopicSpec struct {
 	// Foo is an example field of Topic. Edit Topic_types.go to remove/update
 	Name      string `json:"name"`
 	Tenant string `json:"tenant"`
-	TopicNamespace string `json: "topicNamespace"`
+	TopicNamespace string `json:"topicNamespace"`
 	Namespace string `json:"namespace"`
 	Partition int `json:"partition"`    //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
-	IsPersistent bool `json:isPersistent` //topic是否持久化到硬盘，默认为true
+	IsNonPersistent bool `json:"isNonPersistent""` //topic是否不持久化
 }
 
 // TopicStatus defines the observed state of Topic

@@ -9,6 +9,7 @@ import (
 )
 
 const persistentTopicUrl = "/admin/v2/persistent/%s/%s/%s"
+const nonPersistentTopicUrl  = "/admin/v2/non-persistent/%s/%s/%s"
 const protocol = "http"
 type requestLogger struct {
 	prefix string
@@ -39,7 +40,16 @@ func (r *Operator) CreateTopic (topic *nlptv1.Topic) (err error){
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 
 	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.Namespace, topic.Spec.Name)
-	topicUrl := fmt.Sprintf(persistentTopicUrl, topic.Spec.Tenant, topic.Spec.TopicNamespace, topic.Spec.Name)
+
+	url := persistentTopicUrl
+	if topic.Spec.IsNonPersistent {
+		url = nonPersistentTopicUrl
+	}
+
+	if topic.Spec.Partition > 1 {
+		url += "/partitions"
+	}
+	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicNamespace, topic.Spec.Name)
 
 	topicUrl = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl )
 	request = request.Put(topicUrl)
