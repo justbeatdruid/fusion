@@ -19,6 +19,9 @@ type Apply struct {
 	AppID      string        `json:"appID"`
 	AppName    string        `json:"appName"`
 	ExpireAt   time.Time     `json:"expireAt"`
+
+	Status v1.Status `json:"status"`
+	Reason string    `json:"reason"`
 }
 
 // only used in creation options
@@ -38,6 +41,9 @@ func ToAPI(app *Apply) *v1.Apply {
 		AppName:    app.AppName,
 		ExpireAt:   app.ExpireAt,
 	}
+	crd.Status = v1.ApplyStatus{
+		Status: v1.Waiting,
+	}
 	return crd
 }
 
@@ -53,6 +59,9 @@ func ToModel(obj *v1.Apply) *Apply {
 		AppID:      obj.Spec.AppID,
 		AppName:    obj.Spec.AppName,
 		ExpireAt:   obj.Spec.ExpireAt,
+
+		Status: obj.Status.Status,
+		Reason: obj.Status.Reason,
 	}
 }
 

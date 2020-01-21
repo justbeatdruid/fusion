@@ -68,6 +68,15 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 
 	}
+
+	if topic.Status.Status == nlptv1.Delete{
+        topic.Status.Status = nlptv1.Deleting
+		if error := r.Operator.DeleteTopic(topic); error !=nil {
+          topic.Status.Status = nlptv1.Error
+          topic.Status.Message = error.Error()
+		}
+		r.Delete(ctx, topic)
+	}
 	/* for example
 	topic = r.Get()
 	if topic.Status == "init" {
