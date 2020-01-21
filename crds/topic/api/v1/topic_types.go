@@ -29,10 +29,11 @@ type TopicSpec struct {
 
 	// Foo is an example field of Topic. Edit Topic_types.go to remove/update
 	Name      string `json:"name"`
-	TopicName string `json:"topicName"`
 	Tenant string `json:"tenant"`
+	TopicNamespace string `json:"topicNamespace"`
 	Namespace string `json:"namespace"`
-	Partition int `json:partition`
+	Partition int `json:"partition"`    //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
+	IsNonPersistent bool `json:"isNonPersistent""` //topic是否不持久化
 }
 
 // TopicStatus defines the observed state of Topic
@@ -40,7 +41,7 @@ type TopicStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	Status Status `json:"status"`
-	Message string
+	Message string `json:"message"`
 }
 
 type Status string

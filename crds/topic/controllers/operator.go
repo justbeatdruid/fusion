@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"errors"
 	"fmt"
 	nlptv1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/parnurzeal/gorequest"
@@ -8,6 +9,7 @@ import (
 )
 
 const persistentTopicUrl = "/admin/v2/persistent/%s/%s/%s"
+const nonPersistentTopicUrl  = "/admin/v2/non-persistent/%s/%s/%s"
 const protocol = "http"
 type requestLogger struct {
 	prefix string
@@ -37,8 +39,17 @@ type Operator struct{
 func (r *Operator) CreateTopic (topic *nlptv1.Topic) (err error){
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 
-	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.Namespace, topic.Spec.TopicName)
-	topicUrl := fmt.Sprintf(persistentTopicUrl, topic.Spec.Tenant, topic.Spec.Namespace, topic.Spec.TopicName)
+	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.Namespace, topic.Spec.Name)
+
+	url := persistentTopicUrl
+	if topic.Spec.IsNonPersistent {
+		url = nonPersistentTopicUrl
+	}
+
+	if topic.Spec.Partition > 1 {
+		url += "/partitions"
+	}
+	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicNamespace, topic.Spec.Name)
 
 	topicUrl = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl )
 	request = request.Put(topicUrl)
@@ -46,6 +57,14 @@ func (r *Operator) CreateTopic (topic *nlptv1.Topic) (err error){
 
 	fmt.Println("URL:", topicUrl )
 	fmt.Print(" Response: ",body, response, errs)
+
+	if response.StatusCode == 204 {
+		return nil
+	}else {
+		errMsg := fmt.Sprintf("Create topic error, url: %s, Error code: %d, Error Message: %s", topicUrl, response.StatusCode, body)
+		klog.Error(errMsg)
+		return errors.New(errMsg)
+	}
 	return err
 }
 
