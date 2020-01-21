@@ -50,7 +50,19 @@ const (
 type ApplyStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Status Status `json:"status"`
+	Reason string `json:"reason"`
 }
+
+type Status string
+
+const (
+	Waiting  Status = "waiting"
+	Admited  Status = "admitted"
+	Finished Status = "finished"
+	Denied   Status = "denied"
+	Error    Status = "error"
+)
 
 // +kubebuilder:object:root=true
 
