@@ -62,6 +62,9 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			topic.Status.Message = "success"
 		}
 
+		//更新数据库的状态
+		klog.Infof("Final Topic: %+v", *topic)
+		r.Update(ctx, topic)
 
 
 	}

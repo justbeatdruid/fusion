@@ -51,10 +51,10 @@ func TestAPIs(t *testing.T) {
 func TestOperator_CreateTopic(t *testing.T) {
 	op = new(Operator)
 	op.Host = "192.168.100.71"
-	op.port = 30002
+	op.Port = 30002
 	topic := new(nlptv1.Topic)
-	topic.Spec.Namespace = "functions"
-	topic.Spec.TopicName = "test0115"
+	topic.Spec.TopicNamespace = "functions"
+	topic.Spec.Name = "test0115"
 	topic.Spec.Tenant = "public"
 
 	op.CreateTopic(topic)
