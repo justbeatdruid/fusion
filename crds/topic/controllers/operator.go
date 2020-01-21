@@ -39,7 +39,7 @@ type Operator struct{
 func (r *Operator) CreateTopic (topic *nlptv1.Topic) (err error){
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 
-	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.Namespace, topic.Spec.Name)
+	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicNamespace, topic.Spec.Name)
 
 	url := persistentTopicUrl
 	if topic.Spec.IsNonPersistent {
@@ -56,7 +56,7 @@ func (r *Operator) CreateTopic (topic *nlptv1.Topic) (err error){
 	response, body, errs := request.Send("").EndStruct("")
 
 	fmt.Println("URL:", topicUrl )
-	fmt.Print(" Response: ",body, response, errs)
+	fmt.Println(" Response: ",body, response, errs)
 
 	if response.StatusCode == 204 {
 		return nil
@@ -65,7 +65,6 @@ func (r *Operator) CreateTopic (topic *nlptv1.Topic) (err error){
 		klog.Error(errMsg)
 		return errors.New(errMsg)
 	}
-	return err
 }
 
 //DeleteTopic 调用Pulsar的Restful Admin API，删除Topic
