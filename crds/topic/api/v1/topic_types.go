@@ -49,8 +49,8 @@ const (
 	Init     Status = "init"
 	Creating Status = "creating"
 	Created  Status = "created"
-	//Delete   Status = "delete"
-	//Deleting Status = "deleting"
+	Delete   Status = "delete"
+	Deleting Status = "deleting"
 	Error    Status = "error"
 )
 

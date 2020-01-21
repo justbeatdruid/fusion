@@ -56,8 +56,12 @@ func (s *Service) GetTopic(id string) (*Topic, error) {
 	return ToModel(tp), nil
 }
 
-func (s *Service) DeleteTopic(id string) error {
-	return s.Delete(id)
+func (s *Service) DeleteTopic(id string) (*Topic, error) {
+	tp, err := s.Delete(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
+	}
+	return ToModel(tp), nil
 }
 
 func (s *Service) Create(tp *v1.Topic) (*v1.Topic, error) {
@@ -106,10 +110,33 @@ func (s *Service) Get(id string) (*v1.Topic, error) {
 	return tp, nil
 }
 
-func (s *Service) Delete(id string) error {
-	err := s.client.Namespace(crdNamespace).Delete(id, &metav1.DeleteOptions{})
+func (s *Service) Delete(id string) (*v1.Topic, error) {
+	tp, err := s.Get(id)
 	if err != nil {
-		return fmt.Errorf("error delete crd: %+v", err)
+		return nil ,fmt.Errorf("error delete crd: %+v", err)
 	}
-	return nil
+	tp.Status.Status = v1.Delete
+	return s.UpdateStatus(tp)
+}
+
+//更新状态
+func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	klog.V(5).Infof("try to update status for crd: %+v", crd)
+	crd, err = s.client.Namespace(tp.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd status: %+v", err)
+	}
+	tp = &v1.Topic{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tp); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.serviceunit: %+v", tp)
+
+	return tp, nil
 }
