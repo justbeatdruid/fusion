@@ -75,7 +75,8 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
           topic.Status.Status = nlptv1.Error
           topic.Status.Message = error.Error()
 		} else {
-			_ = r.Delete(ctx, topic)
+			//更新数据库的状态
+			r.Delete(ctx, topic)
 		}
 
 	}
