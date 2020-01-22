@@ -36,6 +36,9 @@ type ListResponse = struct {
 	Data    []*service.Serviceunit `json:"data"`
 }
 type PingResponse = DeleteResponse
+// + update_sunyu
+type UpdateRequest = Wrapped
+type UpdateResponse = Wrapped
 
 func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
@@ -119,6 +122,35 @@ func (c *controller) PublishServiceunit(req *restful.Request) (int, *CreateRespo
 		return http.StatusOK, &CreateResponse{
 			Code: 0,
 			Data: su,
+		}
+	}
+}
+
+// +update_sunyu
+func (c *controller) UpdateServiceunit(req *restful.Request) (int, *UpdateResponse) {
+	body := &UpdateRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &UpdateResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &UpdateResponse{
+			Code:    1,
+			Message: "read entity error: data is null",
+		}
+	}
+	id := req.PathParameter("id")
+	if db, err := c.service.UpdateServiceunit(body.Data, id); err != nil {
+		return http.StatusInternalServerError, &UpdateResponse{
+			Code:    2,
+			Message: fmt.Errorf("update database error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &UpdateResponse{
+			Code: 0,
+			Data: db,
 		}
 	}
 }

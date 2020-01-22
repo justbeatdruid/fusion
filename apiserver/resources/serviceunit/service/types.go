@@ -57,6 +57,32 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 	return crd
 }
 
+// +update_sunyu
+func ToAPIUpdate(app *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
+	id := crd.Spec.KongService.ID
+	crd.Spec = v1.ServiceunitSpec{
+		Name:          app.Name,
+		Type:          app.Type,
+		DatasourcesID: app.DatasourcesID,
+		Datasources:   app.Datasources,
+		KongService:   app.KongSevice,
+		Users:         app.Users,
+		Description:   app.Description,
+	}
+	crd.Spec.KongService.ID = id
+	status := app.Status
+	if len(status) == 0 {
+		status = v1.Update
+	}
+	crd.Status = v1.ServiceunitStatus{
+		Status:    status,
+		UpdatedAt: time.Now(),
+		APICount:  0,
+		Published: false,
+	}
+	return crd
+}
+
 func ToModel(obj *v1.Serviceunit) *Serviceunit {
 	return &Serviceunit{
 		ID:            obj.ObjectMeta.Name,

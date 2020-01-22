@@ -137,6 +137,9 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		Protocol: "http",
 		Host:     "fusion-apiserver",
 		Port:     8001,
+		TimeOut:  60000,
+		WirteOut: 60000,
+		ReadOut:  60000,
 	}
 	if db.Spec.Type == nlptv1.WebService {
 
@@ -200,6 +203,68 @@ func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	klog.V(5).Infof("delete service response code: %d%s", response.StatusCode, string(body))
 	if response.StatusCode != 204 {
 		return fmt.Errorf("request for delete service error: receive wrong status code: %d", response.StatusCode)
+	}
+	return nil
+}
+
+// + update_sunyu
+func (r *Operator) UpdateServiceByKong(db *nlptv1.Serviceunit) (err error) {
+	klog.Infof("Enter UpdateServiceByKong name:%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	id := db.Spec.KongService.ID
+	klog.Infof("delete service id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
+	request = request.Patch(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	//TODO 服务的地址信息 : 数据服务使用fusion-apiserver web后端使用传入的值
+	requestBody := &RequestBody{
+		Name:     db.ObjectMeta.Name,
+		Protocol: "http",
+		Host:     "fusion-apiserver",
+		Port:     8001,
+		TimeOut:  60000,
+		WirteOut: 60000,
+		ReadOut:  60000,
+	}
+	if db.Spec.Type == nlptv1.WebService {
+		requestBody = &RequestBody{
+			Name:     db.ObjectMeta.Name,
+			Protocol: db.Spec.KongService.Protocol,
+			Host:     db.Spec.KongService.Host,
+			Port:     db.Spec.KongService.Port,
+			TimeOut:  db.Spec.KongService.TimeOut,
+			WirteOut: db.Spec.KongService.WirteOut,
+			ReadOut:  db.Spec.KongService.ReadOut,
+		}
+		if requestBody.TimeOut == 0 {
+			requestBody.TimeOut = 60000
+		}
+		if requestBody.WirteOut == 0 {
+			requestBody.WirteOut = 60000
+		}
+		if requestBody.ReadOut == 0 {
+			requestBody.ReadOut = 60000
+		}
+		if requestBody.Port == 0 {
+			requestBody.Port = 80
+		}
+	}
+	responseBody := &ResponseBody{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return fmt.Errorf("request for update service error: %+v", errs)
+	}
+	klog.V(5).Infof("update service response body: %s", string(body))
+	if response.StatusCode != 201 {
+		return fmt.Errorf("request for update service error: receive wrong status code: %s", string(body))
+	}
+	if db.Spec.Type == nlptv1.DataService {
+		(*db).Spec.KongService.Host = responseBody.Host
+		(*db).Spec.KongService.Protocol = responseBody.Protocol
+		(*db).Spec.KongService.Port = responseBody.Port
 	}
 	return nil
 }

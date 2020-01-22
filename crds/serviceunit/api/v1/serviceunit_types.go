@@ -98,6 +98,11 @@ const (
 	Delete   Status = "delete"
 	Deleting Status = "deleting"
 	Error    Status = "error"
+	// + update_sunyu
+	Update   Status = "update"
+	Updating Status = "updating"
+	Updated  Status = "updated"
+
 )
 
 // +kubebuilder:object:root=true
