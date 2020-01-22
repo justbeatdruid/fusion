@@ -72,6 +72,24 @@ func (r *ServiceunitReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		r.Delete(ctx, serviceunit)
 	}
 
+	// + update_sunyu
+	if serviceunit.Status.Status == nlptv1.Update {
+		klog.Infof("zhuangtai wei update: %+v", *serviceunit)
+		// call kong api update
+		serviceunit.Status.Status = nlptv1.Updating
+		klog.Infof("zhuangtai wei updatinging: %+v", *serviceunit)
+		if err := r.Operator.UpdateServiceByKong(serviceunit); err != nil {
+			klog.Infof("zhuangtai wei updateerror: %+v", *serviceunit)
+			serviceunit.Status.Status = nlptv1.Error
+			serviceunit.Status.Message = err.Error()
+		} else {
+			klog.Infof("zhuangtai wei updateded: %+v", *serviceunit)
+			serviceunit.Status.Status = nlptv1.Updated
+			serviceunit.Status.Message = "success"
+		}
+		r.Update(ctx, serviceunit)
+	}
+
 	//TODO 后续处理异常 或者更新状态
 	/*if serviceunit.Status.Status == nlptv1.Error {
 		// call kong api create

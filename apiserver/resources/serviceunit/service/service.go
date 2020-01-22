@@ -62,6 +62,20 @@ func (s *Service) DeleteServiceunit(id string) (*Serviceunit, error) {
 	return ToModel(su), nil
 }
 
+// + update_sunyu
+func (s *Service) UpdateServiceunit(model *Serviceunit, id string) (*Serviceunit, error) {
+	//db, err := s.GetServiceunit(id)
+	crd, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	su, err := s.Update(ToAPIUpdate(model,crd))  //model是传入的，db是原始的
+	if err != nil {
+		return nil, fmt.Errorf("cannot update status to update: %+v", err)
+	}
+	return ToModel(su), nil
+}
+
 func (s *Service) PublishServiceunit(id string) (*Serviceunit, error) {
 	su, err := s.Get(id)
 	if err != nil {
@@ -136,6 +150,11 @@ func (s *Service) Delete(id string) (*v1.Serviceunit, error) {
 	}
 	//TODO need check status !!!
 	su.Status.Status = v1.Delete
+	return s.UpdateStatus(su)
+}
+
+// + update_sunyu
+func (s *Service) Update(su *v1.Serviceunit) (*v1.Serviceunit, error) {
 	return s.UpdateStatus(su)
 }
 
