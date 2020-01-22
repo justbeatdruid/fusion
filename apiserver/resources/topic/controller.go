@@ -29,6 +29,7 @@ type Wrapped struct {
 type CreateResponse = Wrapped
 type CreateRequest = Wrapped
 type DeleteResponse = Wrapped
+
 /*type DeleteResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -83,17 +84,31 @@ func (c *controller) GetTopic(req *restful.Request) (int, *GetResponse) {
 	}
 }
 
+//删除所有topics
+func (c *controller) DeleteAllTopics(req *restful.Request) (int, *ListResponse) {
+	if tps, err := c.service.DeleteAllTopics(); err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: fmt.Errorf("delete topic error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &ListResponse{
+			Code: 0,
+			Data: tps,
+		}
+	}
+}
 func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if data, err := c.service.DeleteTopic(id); err != nil {
+	if tp, err := c.service.DeleteTopic(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("delete topic error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
-			Code:    0,
-			Data: data,
+			Code: 0,
+			Data: tp,
 		}
 	}
 }

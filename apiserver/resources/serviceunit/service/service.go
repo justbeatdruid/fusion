@@ -69,7 +69,7 @@ func (s *Service) UpdateServiceunit(model *Serviceunit, id string) (*Serviceunit
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
-	su, err := s.Update(ToAPIUpdate(model,crd))  //model是传入的，db是原始的
+	su, err := s.Update(ToAPIUpdate(model, crd)) //model是传入的，db是原始的
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to update: %+v", err)
 	}
