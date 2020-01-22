@@ -235,9 +235,18 @@ func (r *Operator) UpdateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 			Protocol: db.Spec.KongService.Protocol,
 			Host:     db.Spec.KongService.Host,
 			Port:     db.Spec.KongService.Port,
-			TimeOut:  60000,
-			WirteOut: 60000,
-			ReadOut:  60000,
+			TimeOut:  db.Spec.KongService.TimeOut,
+			WirteOut: db.Spec.KongService.WirteOut,
+			ReadOut:  db.Spec.KongService.ReadOut,
+		}
+		if requestBody.TimeOut == 0 {
+			requestBody.TimeOut = 60000
+		}
+		if requestBody.WirteOut == 0 {
+			requestBody.WirteOut = 60000
+		}
+		if requestBody.ReadOut == 0 {
+			requestBody.ReadOut = 60000
 		}
 		if requestBody.Port == 0 {
 			requestBody.Port = 80
