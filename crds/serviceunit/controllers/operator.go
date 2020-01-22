@@ -137,6 +137,9 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		Protocol: "http",
 		Host:     "fusion-apiserver",
 		Port:     8001,
+		TimeOut:  60000,
+		WirteOut: 60000,
+		ReadOut:  60000,
 	}
 	if db.Spec.Type == nlptv1.WebService {
 
