@@ -36,6 +36,7 @@ type ListResponse = struct {
 	Data    []*service.Serviceunit `json:"data"`
 }
 type PingResponse = DeleteResponse
+
 // + update_sunyu
 type UpdateRequest = Wrapped
 type UpdateResponse = Wrapped

@@ -26,9 +26,9 @@ const (
 )
 
 type Wrapped struct {
-	Code       int          `json:"code"`
-	Message    string       `json:"message"`
-	Data       *service.Api `json:"data,omitempty"`
+	Code    int          `json:"code"`
+	Message string       `json:"message"`
+	Data    *service.Api `json:"data,omitempty"`
 }
 
 type BindRequest struct {
