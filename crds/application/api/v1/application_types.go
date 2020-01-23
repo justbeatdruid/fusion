@@ -17,7 +17,6 @@ package v1
 
 import (
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -37,6 +36,7 @@ type ApplicationSpec struct {
 	AccessKey       string       `json:"accessKey"`
 	AccessSecretKey string       `json:"accessSecretKey"`
 	APIs            []Api        `json:"apis"`
+	ConsumerInfo    ConsumerInfo `json:"comsumer"`
 }
 
 type Api struct {
@@ -49,11 +49,19 @@ type Group struct {
 	Name string `json:"name"`
 }
 
+type ConsumerInfo struct {
+	ConsumerID   string `json:"id"`
+	Key          string `json:"key"`
+	Secret       string `json:"secret"`
+	Token        string `json:"jwt"`
+}
+
 // ApplicationStatus defines the observed state of Application
 type ApplicationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status Status `json:"status"`
+	Status Status  `json:"status"`
+	Message string `json:"msg"`
 }
 
 type Status string

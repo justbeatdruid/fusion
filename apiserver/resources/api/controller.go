@@ -233,7 +233,7 @@ func (c *controller) TestApi(req *restful.Request) (int, interface{}) {
 			Message: fmt.Errorf("Test api error: %+v", err).Error(),
 		}
 	} else {
-		return http.StatusOK, &CreateResponse{
+		return http.StatusOK, &TestApiResponse{
 			Code:       0,
 			TestResult: resp,
 		}

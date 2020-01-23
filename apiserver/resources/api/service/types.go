@@ -24,7 +24,8 @@ type Api struct {
 	ReturnType   v1.ReturnType    `json:"returnType"`
 	Parameters   []v1.Parameter   `json:"parameter"`
 	WebParams    []v1.WebParams   `json:"webParams"`
-	AuthType     string           `json:"authType"`
+	ApiType      v1.ApiType       `json:"apiType"`
+	AuthType     v1.AuthType      `json:"authType"`
 	KongApi      v1.KongApiInfo   `json:"KongApi"`
 
 	Status v1.Status `json:"status"`
@@ -59,6 +60,8 @@ func ToAPI(api *Api) *v1.Api {
 		Parameters:   api.Parameters,
 		WebParams:    api.WebParams,
 		KongApi:      api.KongApi,
+		ApiType:      api.ApiType,
+		AuthType:     api.AuthType,
 	}
 	crd.Status = v1.ApiStatus{
 		Status:           v1.Init,
@@ -122,12 +125,14 @@ func (s *Service) Validate(a *Api) error {
 	if len(a.Serviceunit.ID) == 0 {
 		return fmt.Errorf("serviceunit id is null")
 	}
-	a.Applications = []v1.Application{}
-	switch a.Method {
-	case v1.GET, v1.LIST:
-	default:
-		return fmt.Errorf("wrong method type: %s. only %s and %s are allowed", a.Method, v1.GET, v1.LIST)
+	if len(a.ApiType) == 0 {
+		return fmt.Errorf("api type is null")
 	}
+	if len(a.AuthType) == 0 {
+		return fmt.Errorf("api auth type is null")
+	}
+	a.Applications = []v1.Application{}
+
 	if a.Frequency == 0 {
 		return fmt.Errorf("frequency is null")
 	}
@@ -141,6 +146,11 @@ func (s *Service) Validate(a *Api) error {
 		return fmt.Errorf("cannot get serviceunit: %+v", err)
 	}
 	if su.Spec.Type == "data" {
+		switch a.Method {
+		case v1.GET, v1.LIST:
+		default:
+			return fmt.Errorf("wrong method type: %s. only %s and %s are allowed", a.Method, v1.GET, v1.LIST)
+		}
 		for i, p := range a.Parameters {
 			if len(p.Name) == 0 {
 				return fmt.Errorf("%dth parameter name is null", i)
@@ -164,6 +174,11 @@ func (s *Service) Validate(a *Api) error {
 	}
 	//参数校验
 	if su.Spec.Type == "web" {
+		switch a.Method {
+		case v1.GET, v1.POST, v1.PUT, v1.DELETE, v1.PATCH:
+		default:
+			return fmt.Errorf("wrong method type: %s. ", a.Method)
+		}
 		for i, p := range a.WebParams {
 			if len(p.Name) == 0 {
 				return fmt.Errorf("%dth parameter name is null", i)
