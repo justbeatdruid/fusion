@@ -18,15 +18,13 @@ package controllers
 import (
 	"context"
 	"fmt"
-	"k8s.io/klog"
-	"strings"
-
+	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
+	"strings"
 )
 
 // ApiReconciler reconciles a Api object
@@ -56,13 +54,29 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if err := r.Operator.CreateRouteByKong(api); err != nil {
 			api.Status.Status = nlptv1.Error
 			api.Status.Message = err.Error()
-		} else {
-			api.Status.Status = nlptv1.Created
-			api.Status.AccessLink = nlptv1.AccessLink(fmt.Sprintf("%s://%s:%d%s/%s",
-				strings.ToLower(string(api.Spec.Protocol)),
-				r.Operator.Host, r.Operator.KongPortalPort, api.Spec.KongApi.Paths[0], api.ObjectMeta.Name))
-			api.Status.Message = "success"
+			r.Update(ctx, api)
+			return ctrl.Result{}, nil
 		}
+		if api.Spec.AuthType == nlptv1.APPAUTH {
+			//在route上创建jwt及acl插件
+			if err := r.Operator.AddRouteJwtByKong(api); err != nil {
+				api.Status.Status = nlptv1.Error
+				api.Status.Message = err.Error()
+				r.Update(ctx, api)
+				return ctrl.Result{}, nil
+			}
+			if err := r.Operator.AddRouteAclByKong(api); err != nil {
+				api.Status.Status = nlptv1.Error
+				api.Status.Message = err.Error()
+				r.Update(ctx, api)
+				return ctrl.Result{}, nil
+			}
+		}
+		api.Status.Status = nlptv1.Created
+		api.Status.AccessLink = nlptv1.AccessLink(fmt.Sprintf("%s://%s:%d%s/%s",
+			strings.ToLower(string(api.Spec.Protocol)),
+			r.Operator.Host, r.Operator.KongPortalPort, api.Spec.KongApi.Paths[0], api.ObjectMeta.Name))
+		api.Status.Message = "success"
 		r.Update(ctx, api)
 	}
 

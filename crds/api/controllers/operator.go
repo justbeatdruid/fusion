@@ -65,6 +65,91 @@ type ServiceID struct {
 	ID string `json:"id"`
 }
 
+
+type JwtRequestBody struct {
+	Name     string      `json:"name"`
+	Config   ConfigJwt   `json:"config"`
+}
+
+type Config struct {
+	SecretIsBase64 bool `json:"secret_is_base64"`
+	RunOnPreflight bool `json:"run_on_preflight"`
+	URIParamNames []string `json:"uri_param_names"`
+	KeyClaimName string `json:"key_claim_name"`
+	HeaderNames []string `json:"header_names"`
+	MaximumExpiration int `json:"maximum_expiration"`
+	Anonymous interface{} `json:"anonymous"`
+	ClaimsToVerify []string `json:"claims_to_verify"`
+	CookieNames []interface{} `json:"cookie_names"`
+}
+type ConfigJwt struct {
+	ClaimsToVerify []string `json:"claims_to_verify"`
+}
+
+type JwtResponseBody struct {
+	CreatedAt int `json:"created_at"`
+	Config struct {
+		SecretIsBase64 bool `json:"secret_is_base64"`
+		RunOnPreflight bool `json:"run_on_preflight"`
+		URIParamNames []string `json:"uri_param_names"`
+		KeyClaimName string `json:"key_claim_name"`
+		HeaderNames []string `json:"header_names"`
+		MaximumExpiration int `json:"maximum_expiration"`
+		Anonymous interface{} `json:"anonymous"`
+		ClaimsToVerify []string `json:"claims_to_verify"`
+		CookieNames []interface{} `json:"cookie_names"`
+	} `json:"config"`
+	ID string `json:"id"`
+	Service interface{} `json:"service"`
+	Name string `json:"name"`
+	Protocols []string `json:"protocols"`
+	Enabled bool `json:"enabled"`
+	RunOn string `json:"run_on"`
+	Consumer interface{} `json:"consumer"`
+	Route struct {
+		ID string `json:"id"`
+	} `json:"route"`
+	Tags interface{} `json:"tags"`
+	Message    string       `json:"message"`
+	Fields     interface{}  `json:"fields"`
+	Code       int          `json:"code"`
+}
+type AclRequestBody struct {
+	Name     string         `json:"name"`
+	Config   AclReqConfig   `json:"config"`
+}
+
+type AclRspConfig struct {
+	HideGroupsHeader bool `json:"hide_groups_header"`
+	Blacklist interface{} `json:"blacklist"`
+	Whitelist []string `json:"whitelist"`
+}
+
+type AclReqConfig struct {
+	HideGroupsHeader bool        `json:"hide_groups_header"`
+	Whitelist        []string    `json:"whitelist"`
+}
+
+type AclResponseBody struct {
+	CreatedAt int         `json:"created_at"`
+	Config  AclRspConfig  `json:"config"`
+	ID string             `json:"id"`
+	Service interface{}   `json:"service"`
+	Name string           `json:"name"`
+	Protocols []string    `json:"protocols"`
+	Enabled bool          `json:"enabled"`
+	RunOn string          `json:"run_on"`
+	Consumer interface{}  `json:"consumer"`
+	Route struct {
+		ID string `json:"id"`
+	} `json:"route"`
+	Tags interface{}      `json:"tags"`
+	Message    string       `json:"message"`
+	Fields     interface{}  `json:"fields"`
+	Code       int          `json:"code"`
+}
+
+
 /*
 {"host":"apps",
 "created_at":1578378841,
@@ -120,14 +205,14 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 		request = request.Set(k, v)
 	}
 	request = request.Retry(3, 5*time.Second, retryStatus...)
-	//TODO API创建时路由信息 数据后端使用 /api/v1/apiquery web后端使用传入参数
+	//API创建时路由信息 数据后端使用 /api/v1/apiquery web后端使用传入参数
 	protocols := []string{}
 	protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
 	paths := []string{}
-	paths = append(paths, "/api/v1/apiquery")
-	//TODO 替换ID
+	queryPath := fmt.Sprintf("%s%s", "/api/v1/apiquery/", db.ObjectMeta.Name)
+	paths = append(paths, queryPath)
+	//替换ID
 	id := db.Spec.Serviceunit.KongID
-	//id := "ce5e6f95-611b-4feb-96f1-f3b025876424"
 	requestBody := &RequestBody{
 		Service:   ServiceID{id},
 		Protocols: protocols,
@@ -153,6 +238,81 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	(*db).Spec.KongApi.KongID = responseBody.ID
 	return nil
 }
+
+func (r *Operator) AddRouteJwtByKong(db *nlptv1.Api) (err error) {
+	id := db.Spec.KongApi.KongID
+	klog.Infof("begin create jwt %s", id)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema,  r.Host, r.Port, "/routes/", id, "/plugins"))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	verList := [] string {"exp"}
+	configBody := &ConfigJwt{
+		ClaimsToVerify: verList, //校验的参数列表 exp
+	}
+	requestBody := &JwtRequestBody{
+		Name: "jwt", //插件名称
+		Config: *configBody,
+	}
+	responseBody := &JwtResponseBody{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return fmt.Errorf("request for create consumer error: %+v", errs)
+	}
+	klog.V(5).Infof("creation jwt code: %d, body: %s ", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.V(5).Infof("create jwt failed msg: %s\n", responseBody.Message)
+		return fmt.Errorf("request for create jwt error: receive wrong status code: %s", string(body))
+	}
+	(*db).Spec.KongApi.JwtID = responseBody.ID
+
+	if err != nil {
+		return fmt.Errorf("create jwt error %s", responseBody.Message)
+	}
+	return nil
+}
+
+func   (r *Operator) AddRouteAclByKong(db *nlptv1.Api) (err error) {
+	id := db.Spec.KongApi.KongID
+	klog.Infof("begin create acl %s", id)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema,  r.Host, r.Port, "/routes/", id, "/plugins"))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	whiteList := [] string {db.ObjectMeta.Name}
+	configBody := &AclReqConfig{
+		Whitelist:   whiteList, //
+		HideGroupsHeader: true,
+	}
+	requestBody := &AclRequestBody{
+		Name: "acl", //插件名称
+		Config: *configBody,
+	}
+	responseBody := &AclResponseBody{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return fmt.Errorf("request for create acl error: %+v", errs)
+	}
+	klog.V(5).Infof("create acl code: %d, body: %s ", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.V(5).Infof("create acl failed msg: %s\n", responseBody.Message)
+		return fmt.Errorf("request for create acl error: receive wrong status code: %s", string(body))
+	}
+	(*db).Spec.KongApi.AclID = responseBody.ID
+
+	if err != nil {
+		return fmt.Errorf("create acl error %s", responseBody.Message)
+	}
+	return nil
+}
+
+
 
 func (r *Operator) DeleteRouteByKong(db *nlptv1.Api) (err error) {
 	klog.Infof("delete api %s %s", db.ObjectMeta.Name, db.Spec.KongApi.KongID)

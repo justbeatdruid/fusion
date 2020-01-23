@@ -52,6 +52,9 @@ type ApiSpec struct {
 	WebParams    []WebParams   `json:"webParams"`
 	KongApi      KongApiInfo   `json:"kongApi"`
 	PublishInfo  PublishInfo   `json:"publishInfo"`
+	ApiType      ApiType       `json:"apiType"`  //API类型
+	AuthType     AuthType      `json:"authType"`
+
 }
 
 type KongApiInfo struct {
@@ -67,6 +70,8 @@ type KongApiInfo struct {
 	Snis          []string `json:"snis"`
 	Protocols     []string `json:"protocols"`
 	KongID        string   `json:"kong_id"`
+	JwtID         string   `json:"jwt_id"`
+	AclID         string   `json:"acl_id"`
 }
 
 type Serviceunit struct {
@@ -104,6 +109,21 @@ const (
 	PUT    Method = "PUT"
 	OPTION Method = "OPTION"
 	LIST   Method = "LIST"
+	PATCH  Method = "PATCH"
+)
+
+type ApiType string
+
+const (
+	PUBLIC   ApiType = "public"
+	PRIVATE  ApiType = "private"
+)
+
+type AuthType string
+
+const (
+	NOAUTH   AuthType = "NOAUTR"
+	APPAUTH  AuthType = "APPAUTH"
 )
 
 type Protocol string

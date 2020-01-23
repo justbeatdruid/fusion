@@ -17,6 +17,7 @@ package controllers
 
 import (
 	"context"
+	"k8s.io/klog"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -31,16 +32,62 @@ type ApplicationReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	//初始化kong信息
+	Operator *Operator
 }
 
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=applications,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=applications/status,verbs=get;update;patch
 
 func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+	ctx := context.Background()
 	_ = r.Log.WithValues("application", req.NamespacedName)
 
+	//
+	application := &nlptv1.Application{}
+	if err := r.Get(ctx, req.NamespacedName, application); err != nil {
+		klog.Errorf("cannot get application of ctrl req: %+v", err)
+		return ctrl.Result{}, nil
+	}
+	klog.Infof("get new application event: %+v", *application)
+
 	// your logic here
+	if application.Status.Status == nlptv1.Init {
+		// call kong api create
+		if err := r.Operator.CreateConsumerByKong(application); err != nil {
+			application.Status.Status = nlptv1.Error
+			application.Status.Message = err.Error()
+			r.Update(ctx, application)
+			return ctrl.Result{}, nil
+		}
+		if err := r.Operator.CreateConsumerCredentials(application); err != nil {
+			application.Status.Status = nlptv1.Error
+			application.Status.Message = err.Error()
+			r.Update(ctx, application)
+			return ctrl.Result{}, nil
+		}
+		if err := CreateToken(application); err != nil {
+			application.Status.Status = nlptv1.Error
+			application.Status.Message = err.Error()
+			r.Update(ctx, application)
+			return ctrl.Result{}, nil
+		}
+		application.Status.Status = nlptv1.Created
+		application.Status.Message = "success"
+		r.Update(ctx, application)
+		return ctrl.Result{}, nil
+
+	}
+	if application.Status.Status == nlptv1.Delete {
+		// call kong api delete
+		if err := r.Operator.DeleteConsumerByKong(application); err != nil {
+			application.Status.Status = nlptv1.Error
+			application.Status.Message = err.Error()
+			r.Update(ctx, application)
+			return ctrl.Result{}, nil
+		}
+		r.Delete(ctx, application)
+	}
 
 	return ctrl.Result{}, nil
 }
