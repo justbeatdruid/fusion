@@ -53,7 +53,6 @@ type KongServiceInfo struct {
 	TimeOut  int    `json:"connect_timeout"`
 	WirteOut int    `json:"write_timeout"`
 	ReadOut  int    `json:"read_timeout"`
-
 }
 
 type Datasource struct {
@@ -102,7 +101,6 @@ const (
 	Update   Status = "update"
 	Updating Status = "updating"
 	Updated  Status = "updated"
-
 )
 
 // +kubebuilder:object:root=true
