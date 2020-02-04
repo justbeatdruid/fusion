@@ -29,8 +29,8 @@ import (
 // TopicReconciler reconciles a Topic object
 type TopicReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
 	Operator *Operator
 }
 
@@ -42,19 +42,18 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	_ = r.Log.WithValues("topic", req.NamespacedName)
 
-
 	topic := &nlptv1.Topic{}
-	if err := r.Get(ctx, req.NamespacedName, topic); err != nil{
+	if err := r.Get(ctx, req.NamespacedName, topic); err != nil {
 		klog.Errorf("cannot get topic of ctrl req: %+v", err)
 		return ctrl.Result{}, nil
 	}
 	klog.Infof("get new topic event: %+v", *topic)
 	klog.Infof("Status:%s", topic.Status.Status)
 
-	if topic.Status.Status == nlptv1.Init{
+	if topic.Status.Status == nlptv1.Init {
 		klog.Info("Current status is Init")
 		topic.Status.Status = nlptv1.Creating
-		if error := r.Operator.CreateTopic(topic); error != nil{
+		if error := r.Operator.CreateTopic(topic); error != nil {
 			topic.Status.Status = nlptv1.Error
 			topic.Status.Message = error.Error()
 		} else {
@@ -66,14 +65,13 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		klog.Infof("Final Topic: %+v", *topic)
 		r.Update(ctx, topic)
 
-
 	}
 
-	if topic.Status.Status == nlptv1.Delete{
-        topic.Status.Status = nlptv1.Deleting
-		if error := r.Operator.DeleteTopic(topic); error !=nil {
-          topic.Status.Status = nlptv1.Error
-          topic.Status.Message = error.Error()
+	if topic.Status.Status == nlptv1.Delete {
+		topic.Status.Status = nlptv1.Deleting
+		if error := r.Operator.DeleteTopic(topic); error != nil {
+			topic.Status.Status = nlptv1.Error
+			topic.Status.Message = error.Error()
 		} else {
 			//更新数据库的状态
 			r.Delete(ctx, topic)

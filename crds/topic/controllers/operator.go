@@ -9,13 +9,14 @@ import (
 )
 
 const persistentTopicUrl = "/admin/v2/persistent/%s/%s/%s"
-const nonPersistentTopicUrl  = "/admin/v2/non-persistent/%s/%s/%s"
+const nonPersistentTopicUrl = "/admin/v2/non-persistent/%s/%s/%s"
 const protocol = "http"
+
 type requestLogger struct {
 	prefix string
 }
 
-var logger= &requestLogger{}
+var logger = &requestLogger{}
 
 func (r *requestLogger) SetPrefix(prefix string) {
 	r.prefix = prefix
@@ -30,13 +31,13 @@ func (r *requestLogger) Println(v ...interface{}) {
 }
 
 //Operator 定义连接Pulsar所需要的参数
-type Operator struct{
+type Operator struct {
 	Host string
 	Port int
 }
 
 //CreateTopic 调用Pulsar的Restful Admin API，创建Topic
-func (r *Operator) CreateTopic (topic *nlptv1.Topic) (err error){
+func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 
 	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicNamespace, topic.Spec.Name)
@@ -51,16 +52,16 @@ func (r *Operator) CreateTopic (topic *nlptv1.Topic) (err error){
 	}
 	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicNamespace, topic.Spec.Name)
 
-	topicUrl = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl )
+	topicUrl = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl)
 	request = request.Put(topicUrl)
 	response, body, errs := request.Send("").EndStruct("")
 
-	fmt.Println("URL:", topicUrl )
-	fmt.Println(" Response: ",body, response, errs)
+	fmt.Println("URL:", topicUrl)
+	fmt.Println(" Response: ", body, response, errs)
 
 	if response.StatusCode == 204 {
 		return nil
-	}else {
+	} else {
 		errMsg := fmt.Sprintf("Create topic error, url: %s, Error code: %d, Error Message: %s", topicUrl, response.StatusCode, body)
 		klog.Error(errMsg)
 		return errors.New(errMsg)
@@ -68,18 +69,18 @@ func (r *Operator) CreateTopic (topic *nlptv1.Topic) (err error){
 }
 
 //DeleteTopic 调用Pulsar的Restful Admin API，删除Topic
-func (r *Operator) DeleteTopic (topic *nlptv1.Topic) (err error) {
+func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicNamespace, topic.Spec.Name)
-    topicUrl := fmt.Sprintf(persistentTopicUrl, topic.Spec.Tenant, topic.Spec.TopicNamespace, topic.Spec.Name)
-    topicUrl = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl)
-    request = request.Delete(topicUrl)
+	topicUrl := fmt.Sprintf(persistentTopicUrl, topic.Spec.Tenant, topic.Spec.TopicNamespace, topic.Spec.Name)
+	topicUrl = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl)
+	request = request.Delete(topicUrl)
 	response, body, errs := request.Send("").EndStruct("")
-	fmt.Println("URL:", topicUrl )
-	fmt.Print(" Response: ",body, response, errs)
+	fmt.Println("URL:", topicUrl)
+	fmt.Print(" Response: ", body, response, errs)
 	if response.StatusCode == 204 {
 		return nil
-	}else {
+	} else {
 		errMsg := fmt.Sprintf("delete topic error, url: %s, Error code: %d, Error Message: %s", topicUrl, response.StatusCode, body)
 		klog.Error(errMsg)
 		return errors.New(errMsg)

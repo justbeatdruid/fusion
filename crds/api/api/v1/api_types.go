@@ -52,9 +52,8 @@ type ApiSpec struct {
 	WebParams    []WebParams   `json:"webParams"`
 	KongApi      KongApiInfo   `json:"kongApi"`
 	PublishInfo  PublishInfo   `json:"publishInfo"`
-	ApiType      ApiType       `json:"apiType"`  //API类型
+	ApiType      ApiType       `json:"apiType"` //API类型
 	AuthType     AuthType      `json:"authType"`
-
 }
 
 type KongApiInfo struct {
@@ -115,15 +114,15 @@ const (
 type ApiType string
 
 const (
-	PUBLIC   ApiType = "public"
-	PRIVATE  ApiType = "private"
+	PUBLIC  ApiType = "public"
+	PRIVATE ApiType = "private"
 )
 
 type AuthType string
 
 const (
-	NOAUTH   AuthType = "NOAUTR"
-	APPAUTH  AuthType = "APPAUTH"
+	NOAUTH  AuthType = "NOAUTR"
+	APPAUTH AuthType = "APPAUTH"
 )
 
 type Protocol string

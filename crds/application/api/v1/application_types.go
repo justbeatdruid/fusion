@@ -50,17 +50,17 @@ type Group struct {
 }
 
 type ConsumerInfo struct {
-	ConsumerID   string `json:"id"`
-	Key          string `json:"key"`
-	Secret       string `json:"secret"`
-	Token        string `json:"jwt"`
+	ConsumerID string `json:"id"`
+	Key        string `json:"key"`
+	Secret     string `json:"secret"`
+	Token      string `json:"jwt"`
 }
 
 // ApplicationStatus defines the observed state of Application
 type ApplicationStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status Status  `json:"status"`
+	Status  Status `json:"status"`
 	Message string `json:"msg"`
 }
 

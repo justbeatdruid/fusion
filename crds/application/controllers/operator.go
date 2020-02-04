@@ -26,42 +26,41 @@ type Operator struct {
 	CAFile string
 }
 
-
 type ConsumerRequestBody struct {
-	ConsumerName     string   `json:"username"`
-	ConsumerID       string   `json:"custom_id"`
-	Tags             []string `json:"tags"`
+	ConsumerName string   `json:"username"`
+	ConsumerID   string   `json:"custom_id"`
+	Tags         []string `json:"tags"`
 }
 
 type ConsumerCreBody struct {
-	Algorithm     string   `json:"algorithm"`
+	Algorithm string `json:"algorithm"`
 }
 
 type ConsumerResponseBody struct {
-	CustomID   string       `json:"custom_id"`
-	CreatedAt  int          `json:"created_at"`
-	ID         string       `json:"id"`
-	Tags       interface{}  `json:"tags"`
-	Username   string       `json:"username"`
-	Message    string       `json:"message"`
-	Fields     interface{}  `json:"fields"`
-	Code       int          `json:"code"`
+	CustomID  string      `json:"custom_id"`
+	CreatedAt int         `json:"created_at"`
+	ID        string      `json:"id"`
+	Tags      interface{} `json:"tags"`
+	Username  string      `json:"username"`
+	Message   string      `json:"message"`
+	Fields    interface{} `json:"fields"`
+	Code      int         `json:"code"`
 }
 
 type ConsumerCreRspBody struct {
 	RsaPublicKey interface{} `json:"rsa_public_key"`
 	CreatedAt    int         `json:"created_at"`
-	Consumer struct {
+	Consumer     struct {
 		ID string `json:"id"`
 	} `json:"consumer"`
-	ID           string      `json:"id"`
-	Tags         []string    `json:"tags"`
-	Key          string      `json:"key"`
-	Secret       string      `json:"secret"`
-	Algorithm    string      `json:"algorithm"`
-	Message    string        `json:"message"`
-	Fields     interface{}   `json:"fields"`
-	Code       int           `json:"code"`
+	ID        string      `json:"id"`
+	Tags      []string    `json:"tags"`
+	Key       string      `json:"key"`
+	Secret    string      `json:"secret"`
+	Algorithm string      `json:"algorithm"`
+	Message   string      `json:"message"`
+	Fields    interface{} `json:"fields"`
+	Code      int         `json:"code"`
 }
 
 type jwtCustomClaims struct {
@@ -79,7 +78,6 @@ type FailMsg struct {
 	Fields  interface{} `json:"fields"`
 	Code    int         `json:"code"`
 }
-
 
 type requestLogger struct {
 	prefix string
@@ -108,7 +106,7 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 	}, nil
 }
 
-func (r *Operator)  CreateConsumerByKong(db *nlptv1.Application) (err error) {
+func (r *Operator) CreateConsumerByKong(db *nlptv1.Application) (err error) {
 	klog.Infof("Enter CreateConsumerByKong name:%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -142,12 +140,12 @@ func (r *Operator)  CreateConsumerByKong(db *nlptv1.Application) (err error) {
 	return nil
 }
 
-func (r *Operator)  CreateConsumerCredentials(db *nlptv1.Application) (err error) {
+func (r *Operator) CreateConsumerCredentials(db *nlptv1.Application) (err error) {
 	id := db.Spec.ConsumerInfo.ConsumerID
 	klog.Infof("begin create credentials id %s", id)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s/%s/jwt", schema,r.Host, r.Port, path, id))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s/%s/jwt", schema, r.Host, r.Port, path, id))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -174,7 +172,6 @@ func (r *Operator)  CreateConsumerCredentials(db *nlptv1.Application) (err error
 	return nil
 }
 
-
 func CreateToken(db *nlptv1.Application) (err error) {
 	ser := db.Spec.ConsumerInfo.Secret
 	key := db.Spec.ConsumerInfo.Key
@@ -183,8 +180,8 @@ func CreateToken(db *nlptv1.Application) (err error) {
 		jwt.StandardClaims{
 			//1小时超时
 			ExpiresAt: int64(time.Now().Add(time.Hour * 1).Unix()),
-			Issuer: key,
-			IssuedAt: 1516239022,
+			Issuer:    key,
+			IssuedAt:  1516239022,
 		},
 		//uid,
 	}
@@ -193,7 +190,6 @@ func CreateToken(db *nlptv1.Application) (err error) {
 	(*db).Spec.ConsumerInfo.Token = tokenString
 	return err
 }
-
 
 func (r *Operator) DeleteConsumerByKong(db *nlptv1.Application) (err error) {
 	id := db.ObjectMeta.Name

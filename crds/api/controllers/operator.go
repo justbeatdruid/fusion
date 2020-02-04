@@ -32,7 +32,6 @@ type RequestBody struct {
 	Protocols []string  `json:"protocols"`
 	Paths     []string  `json:"paths"`
 	StripPath bool      `json:"strip_path"`
-
 }
 
 // {"success":true,"code":200,"message":"请求成功","data":{"targetDbType":"MySQL","targetDbIp":"192.168.100.103","targetDbPort":"3306","targetDbUser":"root","targetDbPass":"Pass1234","targetDbName":["POSTGRESQL_public","POSTGRESQL_testschema"]},"pageInfo":null,"ext":null}
@@ -65,22 +64,21 @@ type ServiceID struct {
 	ID string `json:"id"`
 }
 
-
 type JwtRequestBody struct {
-	Name     string      `json:"name"`
-	Config   ConfigJwt   `json:"config"`
+	Name   string    `json:"name"`
+	Config ConfigJwt `json:"config"`
 }
 
 type Config struct {
-	SecretIsBase64 bool `json:"secret_is_base64"`
-	RunOnPreflight bool `json:"run_on_preflight"`
-	URIParamNames []string `json:"uri_param_names"`
-	KeyClaimName string `json:"key_claim_name"`
-	HeaderNames []string `json:"header_names"`
-	MaximumExpiration int `json:"maximum_expiration"`
-	Anonymous interface{} `json:"anonymous"`
-	ClaimsToVerify []string `json:"claims_to_verify"`
-	CookieNames []interface{} `json:"cookie_names"`
+	SecretIsBase64    bool          `json:"secret_is_base64"`
+	RunOnPreflight    bool          `json:"run_on_preflight"`
+	URIParamNames     []string      `json:"uri_param_names"`
+	KeyClaimName      string        `json:"key_claim_name"`
+	HeaderNames       []string      `json:"header_names"`
+	MaximumExpiration int           `json:"maximum_expiration"`
+	Anonymous         interface{}   `json:"anonymous"`
+	ClaimsToVerify    []string      `json:"claims_to_verify"`
+	CookieNames       []interface{} `json:"cookie_names"`
 }
 type ConfigJwt struct {
 	ClaimsToVerify []string `json:"claims_to_verify"`
@@ -88,67 +86,66 @@ type ConfigJwt struct {
 
 type JwtResponseBody struct {
 	CreatedAt int `json:"created_at"`
-	Config struct {
-		SecretIsBase64 bool `json:"secret_is_base64"`
-		RunOnPreflight bool `json:"run_on_preflight"`
-		URIParamNames []string `json:"uri_param_names"`
-		KeyClaimName string `json:"key_claim_name"`
-		HeaderNames []string `json:"header_names"`
-		MaximumExpiration int `json:"maximum_expiration"`
-		Anonymous interface{} `json:"anonymous"`
-		ClaimsToVerify []string `json:"claims_to_verify"`
-		CookieNames []interface{} `json:"cookie_names"`
+	Config    struct {
+		SecretIsBase64    bool          `json:"secret_is_base64"`
+		RunOnPreflight    bool          `json:"run_on_preflight"`
+		URIParamNames     []string      `json:"uri_param_names"`
+		KeyClaimName      string        `json:"key_claim_name"`
+		HeaderNames       []string      `json:"header_names"`
+		MaximumExpiration int           `json:"maximum_expiration"`
+		Anonymous         interface{}   `json:"anonymous"`
+		ClaimsToVerify    []string      `json:"claims_to_verify"`
+		CookieNames       []interface{} `json:"cookie_names"`
 	} `json:"config"`
-	ID string `json:"id"`
-	Service interface{} `json:"service"`
-	Name string `json:"name"`
-	Protocols []string `json:"protocols"`
-	Enabled bool `json:"enabled"`
-	RunOn string `json:"run_on"`
-	Consumer interface{} `json:"consumer"`
-	Route struct {
+	ID        string      `json:"id"`
+	Service   interface{} `json:"service"`
+	Name      string      `json:"name"`
+	Protocols []string    `json:"protocols"`
+	Enabled   bool        `json:"enabled"`
+	RunOn     string      `json:"run_on"`
+	Consumer  interface{} `json:"consumer"`
+	Route     struct {
 		ID string `json:"id"`
 	} `json:"route"`
-	Tags interface{} `json:"tags"`
-	Message    string       `json:"message"`
-	Fields     interface{}  `json:"fields"`
-	Code       int          `json:"code"`
+	Tags    interface{} `json:"tags"`
+	Message string      `json:"message"`
+	Fields  interface{} `json:"fields"`
+	Code    int         `json:"code"`
 }
 type AclRequestBody struct {
-	Name     string         `json:"name"`
-	Config   AclReqConfig   `json:"config"`
+	Name   string       `json:"name"`
+	Config AclReqConfig `json:"config"`
 }
 
 type AclRspConfig struct {
-	HideGroupsHeader bool `json:"hide_groups_header"`
-	Blacklist interface{} `json:"blacklist"`
-	Whitelist []string `json:"whitelist"`
-}
-
-type AclReqConfig struct {
 	HideGroupsHeader bool        `json:"hide_groups_header"`
+	Blacklist        interface{} `json:"blacklist"`
 	Whitelist        []string    `json:"whitelist"`
 }
 
-type AclResponseBody struct {
-	CreatedAt int         `json:"created_at"`
-	Config  AclRspConfig  `json:"config"`
-	ID string             `json:"id"`
-	Service interface{}   `json:"service"`
-	Name string           `json:"name"`
-	Protocols []string    `json:"protocols"`
-	Enabled bool          `json:"enabled"`
-	RunOn string          `json:"run_on"`
-	Consumer interface{}  `json:"consumer"`
-	Route struct {
-		ID string `json:"id"`
-	} `json:"route"`
-	Tags interface{}      `json:"tags"`
-	Message    string       `json:"message"`
-	Fields     interface{}  `json:"fields"`
-	Code       int          `json:"code"`
+type AclReqConfig struct {
+	HideGroupsHeader bool     `json:"hide_groups_header"`
+	Whitelist        []string `json:"whitelist"`
 }
 
+type AclResponseBody struct {
+	CreatedAt int          `json:"created_at"`
+	Config    AclRspConfig `json:"config"`
+	ID        string       `json:"id"`
+	Service   interface{}  `json:"service"`
+	Name      string       `json:"name"`
+	Protocols []string     `json:"protocols"`
+	Enabled   bool         `json:"enabled"`
+	RunOn     string       `json:"run_on"`
+	Consumer  interface{}  `json:"consumer"`
+	Route     struct {
+		ID string `json:"id"`
+	} `json:"route"`
+	Tags    interface{} `json:"tags"`
+	Message string      `json:"message"`
+	Fields  interface{} `json:"fields"`
+	Code    int         `json:"code"`
+}
 
 /*
 {"host":"apps",
@@ -219,7 +216,6 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 		Paths:     paths,
 		//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
 		StripPath: false,
-
 	}
 	responseBody := &ResponseBody{}
 	klog.Infof("begin send create route requeset body: %+v", responseBody)
@@ -244,17 +240,17 @@ func (r *Operator) AddRouteJwtByKong(db *nlptv1.Api) (err error) {
 	klog.Infof("begin create jwt %s", id)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema,  r.Host, r.Port, "/routes/", id, "/plugins"))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
 	request = request.Retry(3, 5*time.Second, retryStatus...)
-	verList := [] string {"exp"}
+	verList := []string{"exp"}
 	configBody := &ConfigJwt{
 		ClaimsToVerify: verList, //校验的参数列表 exp
 	}
 	requestBody := &JwtRequestBody{
-		Name: "jwt", //插件名称
+		Name:   "jwt", //插件名称
 		Config: *configBody,
 	}
 	responseBody := &JwtResponseBody{}
@@ -275,23 +271,23 @@ func (r *Operator) AddRouteJwtByKong(db *nlptv1.Api) (err error) {
 	return nil
 }
 
-func   (r *Operator) AddRouteAclByKong(db *nlptv1.Api) (err error) {
+func (r *Operator) AddRouteAclByKong(db *nlptv1.Api) (err error) {
 	id := db.Spec.KongApi.KongID
 	klog.Infof("begin create acl %s", id)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema,  r.Host, r.Port, "/routes/", id, "/plugins"))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
 	request = request.Retry(3, 5*time.Second, retryStatus...)
-	whiteList := [] string {db.ObjectMeta.Name}
+	whiteList := []string{db.ObjectMeta.Name}
 	configBody := &AclReqConfig{
-		Whitelist:   whiteList, //
+		Whitelist:        whiteList, //
 		HideGroupsHeader: true,
 	}
 	requestBody := &AclRequestBody{
-		Name: "acl", //插件名称
+		Name:   "acl", //插件名称
 		Config: *configBody,
 	}
 	responseBody := &AclResponseBody{}
@@ -311,8 +307,6 @@ func   (r *Operator) AddRouteAclByKong(db *nlptv1.Api) (err error) {
 	}
 	return nil
 }
-
-
 
 func (r *Operator) DeleteRouteByKong(db *nlptv1.Api) (err error) {
 	klog.Infof("delete api %s %s", db.ObjectMeta.Name, db.Spec.KongApi.KongID)

@@ -14,12 +14,12 @@ type Application struct {
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 
-	Description     string           `json:"description"`
-	Users           []apiv1.User     `json:"users"`
-	AccessKey       string           `json:"accessKey"`
-	AccessSecretKey string           `json:"accessSecretKey"`
-	APIs            []v1.Api         `json:"apis"`
-	ConsumerInfo    v1.ConsumerInfo  `json:"consumerInfo"`
+	Description     string          `json:"description"`
+	Users           []apiv1.User    `json:"users"`
+	AccessKey       string          `json:"accessKey"`
+	AccessSecretKey string          `json:"accessSecretKey"`
+	APIs            []v1.Api        `json:"apis"`
+	ConsumerInfo    v1.ConsumerInfo `json:"consumerInfo"`
 
 	Status    v1.Status `json:"status"`
 	UserCount int       `json:"userCount"`
@@ -46,7 +46,7 @@ func ToAPI(app *Application) *v1.Application {
 		ConsumerInfo:    app.ConsumerInfo,
 	}
 	crd.Status = v1.ApplicationStatus{
-		Status:    v1.Init,
+		Status: v1.Init,
 	}
 	return crd
 }

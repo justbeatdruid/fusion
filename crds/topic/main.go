@@ -64,12 +64,11 @@ func main() {
 		MetricsBindAddress: metricsAddr,
 		LeaderElection:     enableLeaderElection,
 		Port:               9443,
-
 	})
 
 	operator := &controllers.Operator{
-			Host: pulsarHost,
-			Port: pulsarPort,
+		Host: pulsarHost,
+		Port: pulsarPort,
 	}
 
 	if err != nil {
@@ -78,9 +77,9 @@ func main() {
 	}
 
 	if err = (&controllers.TopicReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Topic"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Topic"),
+		Scheme:   mgr.GetScheme(),
 		Operator: operator,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Topic")

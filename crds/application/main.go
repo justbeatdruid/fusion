@@ -80,9 +80,9 @@ func main() {
 	klog.Infof("kong params is %s %d %s", operatorHost, operatorPort, operatorCAFile)
 
 	if err = (&controllers.ApplicationReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Application"),
-		Scheme: mgr.GetScheme(),
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Application"),
+		Scheme:   mgr.GetScheme(),
 		Operator: operator,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Application")

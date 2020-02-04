@@ -38,7 +38,7 @@ import (
 var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
-var op * Operator
+var op *Operator
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
