@@ -35,6 +35,7 @@ type ApplyReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	Operator *Operator
 }
 
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=applies,verbs=get;list;watch;create;update;patch;delete
@@ -82,9 +83,15 @@ func (r *ApplyReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				return ctrl.Result{}, nil
 			}
 		}
+
+		//application add acl whitelist (api id)
+		if err := r.Operator.AddConsumerToAcl(apply, api); err != nil {
+			r.UpdateApply(ctx, apply, nlptv1.Error, "add consumer to acl error")
+			return ctrl.Result{}, nil
+		}
 		// bind api to application
 		api.Spec.Applications = append(api.Spec.Applications, apiv1.Application{
-			ID: app.ObjectMeta.Name,
+			ID: app.ObjectMeta.Name, AclID: apply.Spec.AclID,
 		})
 		api.ObjectMeta.Labels[apiv1.ApplicationLabel(apply.Spec.AppID)] = "true"
 		if err := r.Update(ctx, api); err != nil {

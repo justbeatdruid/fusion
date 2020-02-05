@@ -38,6 +38,11 @@ type ApiReconciler struct {
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=apis,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=apis/status,verbs=get;update;patch
 
+const applicationLabel = "application"
+
+func ApplicationLabel(id string) string {
+	return strings.Join([]string{applicationLabel, id}, "/")
+}
 func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	_ = r.Log.WithValues("api", req.NamespacedName)
@@ -48,6 +53,22 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, nil
 	}
 	klog.Infof("get new api event: %+v", *api)
+	//遍历解绑api
+	for index, app := range api.Spec.Applications {
+		if api.ObjectMeta.Labels[ApplicationLabel(app.ID)] == "false" {
+			//consumer从acl中删除 TODO 失败后处理
+			if err := r.Operator.DeleteConsumerFromAcl(app.AclID, app.ID); err != nil {
+				api.Status.Status = nlptv1.Error
+				api.Status.Message = err.Error()
+				r.Update(ctx, api)
+				return ctrl.Result{}, nil
+			}
+			//delete application
+			api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
+			delete(api.ObjectMeta.Labels, ApplicationLabel(app.ID))
+		}
+	}
+
 	if api.Status.Status == nlptv1.Creating {
 		// call kong api create
 		klog.Infof("new api: %s:%d, cafile: %s", r.Operator.Host, r.Operator.Port, r.Operator.CAFile)
