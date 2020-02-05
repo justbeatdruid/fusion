@@ -1,4 +1,4 @@
-curl localhost:8001/api/v1/api/bind -H 'content-type:application/json'  -v \
+curl -XPOST localhost:8001/api/v1/apis/eefcc02078a17e82/applications -H 'content-type:application/json'  -v \
   -d'
 {
   "data": {

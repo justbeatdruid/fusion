@@ -55,18 +55,23 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	klog.Infof("get new api event: %+v", *api)
 	//遍历解绑api
-	for index, app := range api.Spec.Applications {
+	for index := 0; index < len(api.Spec.Applications); {
+		app := api.Spec.Applications[index]
 		if api.ObjectMeta.Labels[nlptv1.ApplicationLabel(app.ID)] == "false" {
 			//consumer从acl中删除 TODO 失败后处理
 			if err := r.Operator.DeleteConsumerFromAcl(app.AclID, app.ID); err != nil {
 				api.Status.Status = nlptv1.Error
 				api.Status.Message = err.Error()
 				r.Update(ctx, api)
+				//当前删除失败直接返回
 				return ctrl.Result{}, nil
 			}
 			//delete application
 			api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
 			delete(api.ObjectMeta.Labels, nlptv1.ApplicationLabel(app.ID))
+			r.Update(ctx, api)
+		}else {
+			index ++
 		}
 	}
 
