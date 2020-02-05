@@ -63,6 +63,7 @@ func ApiBindingApply(a *Apply) *Apply {
 	a.Target.Type = v1.Api
 	a.Source.Type = v1.Application
 	a.Action = v1.Bind
+
 	return a
 }
 

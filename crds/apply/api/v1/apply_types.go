@@ -76,7 +76,12 @@ type ApplyStatus struct {
 	Reason     string    `json:"reason"`
 	AppliedAt  time.Time `json:"appliedAt"`
 	ApprovedAt time.Time `json:"approvedAt"`
+
+	OperationDone bool `json:"oprationDone"`
+	Retry         int  `json:"retry"`
 }
+
+const OperationRetry = 3
 
 type Status string
 

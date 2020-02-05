@@ -192,6 +192,8 @@ type ApiStatus struct {
 	ApplicationCount int        `json:"applicationCount"`
 	CalledCount      int        `json:"calledCount"`
 	Message          string     `json:"msg"`
+
+	Applications map[string]ApiApplicationStatus `json:"applications"`
 }
 
 type AccessLink string
@@ -226,6 +228,12 @@ const (
 	Published   Publish = "published"
 	//Offline       Publish = "offline"
 )
+
+type ApiApplicationStatus struct {
+	AppID            string `json:"appID"`
+	BindingSucceeded bool   `json:"bindingSucceeded"`
+	Message          string `json:"message"`
+}
 
 // +kubebuilder:object:root=true
 

@@ -100,6 +100,8 @@ func (s *Service) DeleteApply(id string) error {
 }
 
 func (s *Service) Create(apl *v1.Apply) (*v1.Apply, error) {
+	apl.Status.OperationDone = false
+	apl.Status.Retry = v1.OperationRetry
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(apl)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)

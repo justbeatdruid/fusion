@@ -54,66 +54,83 @@ func (r *ApplyReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	switch apply.Status.Status {
 	case nlptv1.Admited:
 		if apply.Spec.TargetType == nlptv1.Api && apply.Spec.SourceType == nlptv1.Application {
+			if apply.Status.OperationDone {
+				return ctrl.Result{}, nil
+			} else if apply.Status.Retry <= 0 {
+				return ctrl.Result{}, nil
+			}
+
+			appID := apply.Spec.SourceID
 			api := &apiv1.Api{}
 			apiNamespacedName := types.NamespacedName{
 				Namespace: req.NamespacedName.Namespace,
 				Name:      apply.Spec.TargetID,
 			}
-			if err := r.Get(ctx, apiNamespacedName, api); err != nil {
-				klog.Errorf("cannot get api with name %s: %+v", apiNamespacedName, err)
-				r.UpdateApply(ctx, apply, nlptv1.Error, "api not found")
-				return ctrl.Result{}, nil
-			}
-			klog.V(4).Infof("get api %+v", *api)
 
 			app := &appv1.Application{}
 			appNamespacedName := types.NamespacedName{
 				Namespace: req.NamespacedName.Namespace,
 				Name:      apply.Spec.SourceID,
 			}
+
+			if err := r.Get(ctx, apiNamespacedName, api); err != nil {
+				klog.Errorf("cannot get api with name %s: %+v", apiNamespacedName, err)
+				//TODO always retry if get api error?
+				//r.UpdateApply(ctx, apply, nlptv1.Error, "api not found")
+				goto failed
+			}
+			klog.V(4).Infof("get api %+v", *api)
 			if err := r.Get(ctx, appNamespacedName, app); err != nil {
 				klog.Errorf("cannot get api with name %s: %+v", appNamespacedName, err)
-				r.UpdateApply(ctx, apply, nlptv1.Error, "application not found")
-				return ctrl.Result{}, nil
+				r.UpdateApi(ctx, api, appID, false, "application not found")
+				goto failed
 			}
 
 			// check if application already bound to api
 			for _, existedapp := range api.Spec.Applications {
 				if existedapp.ID == apply.Spec.SourceID {
-					r.UpdateApply(ctx, apply, nlptv1.Error, "api already bound to applicatoin")
-					return ctrl.Result{}, nil
+					goto succeeded
 				}
 			}
 
 			//application add acl whitelist (api id)
 			if err := r.Operator.AddConsumerToAcl(apply, api); err != nil {
-				r.UpdateApply(ctx, apply, nlptv1.Error, "add consumer to acl error")
-				return ctrl.Result{}, nil
+				r.UpdateApi(ctx, api, appID, false, "add consumer to acl error")
+				goto failed
 			}
 			// bind api to application
 			api.Spec.Applications = append(api.Spec.Applications, apiv1.Application{
 				ID: app.ObjectMeta.Name, AclID: apply.Spec.AclID,
 			})
 			api.ObjectMeta.Labels[apiv1.ApplicationLabel(apply.Spec.SourceID)] = "true"
-			if err := r.Update(ctx, api); err != nil {
-				klog.Errorf("cannot update api with name %s: %+v", apiNamespacedName, err)
-				r.UpdateApply(ctx, apply, nlptv1.Error, "update api error")
-				return ctrl.Result{}, nil
+			if err := r.UpdateApi(ctx, api, appID, true, ""); err != nil {
+				goto failed
 			}
+
+		succeeded:
+			apply.Status.OperationDone = true
+		failed:
+			apply.Status.Retry = apply.Status.Retry - 1
+			if err := r.Update(ctx, apply); err != nil {
+				klog.Errorf("cannot update apply %s: %+v", apiNamespacedName, err)
+			}
+			return ctrl.Result{}, nil
 		}
 	}
 
 	return ctrl.Result{}, nil
 }
 
-func (r *ApplyReconciler) UpdateApply(ctx context.Context, apply *nlptv1.Apply, status nlptv1.Status, reason string) {
-	apply.Status = nlptv1.ApplyStatus{
-		Status: status,
-		Reason: reason,
+func (r *ApplyReconciler) UpdateApi(ctx context.Context, api *apiv1.Api, appid string, succeeded bool, message string) error {
+	api.Status.Applications[appid] = apiv1.ApiApplicationStatus{
+		BindingSucceeded: succeeded,
+		Message:          message,
 	}
-	if err := r.Update(ctx, apply); err != nil {
-		klog.Errorf("update apply error: %+v", err)
+	if err := r.Update(ctx, api); err != nil {
+		klog.Errorf("update api error: %+v", err)
+		return err
 	}
+	return nil
 }
 
 func (r *ApplyReconciler) SetupWithManager(mgr ctrl.Manager) error {
