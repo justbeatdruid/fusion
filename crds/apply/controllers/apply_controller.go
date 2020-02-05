@@ -72,7 +72,8 @@ func (r *ApplyReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				Namespace: req.NamespacedName.Namespace,
 				Name:      apply.Spec.SourceID,
 			}
-
+            var aclId string
+			var err error
 			if err := r.Get(ctx, apiNamespacedName, api); err != nil {
 				klog.Errorf("cannot get api with name %s: %+v", apiNamespacedName, err)
 				//TODO always retry if get api error?
@@ -94,7 +95,7 @@ func (r *ApplyReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			}
 
 			//application add acl whitelist (api id)
-			aclId, err := r.Operator.AddConsumerToAcl(apply, api);
+			aclId, err = r.Operator.AddConsumerToAcl(apply, api);
 			if err != nil {
 				r.UpdateApi(ctx, api, appID, false, "add consumer to acl error")
 				goto failed
@@ -124,6 +125,7 @@ func (r *ApplyReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 func (r *ApplyReconciler) UpdateApi(ctx context.Context, api *apiv1.Api, appid string, succeeded bool, message string) error {
 	api.Status.Applications[appid] = apiv1.ApiApplicationStatus{
+		AppID: appid,
 		BindingSucceeded: succeeded,
 		Message:          message,
 	}
