@@ -72,7 +72,16 @@ func (s *Service) ListApi(suid, appid string) ([]*Api, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	return ToListModel(apis), nil
+	result := ToListModel(apis)
+	if len(appid) > 0 {
+		for i := range result {
+			appstatus, ok := apis.Items[i].Status.Applications[appid]
+			if ok {
+				result[i].ApplicationBindStatus = &appstatus
+			}
+		}
+	}
+	return result, nil
 }
 
 func (s *Service) GetApi(id string) (*Api, error) {
