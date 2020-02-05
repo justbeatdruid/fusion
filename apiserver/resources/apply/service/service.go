@@ -38,34 +38,45 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
 
-	switch model.TargetType {
-	case v1.Serviceunit:
-		su, err := s.getServiceunit(model.TargetID)
-		if err != nil {
-			return nil, fmt.Errorf("get serviceunit error: %+v", err)
+	check := func(r *Resource) error {
+		switch r.Type {
+		case v1.Serviceunit:
+			su, err := s.getServiceunit(r.ID)
+			if err != nil {
+				return fmt.Errorf("get serviceunit error: %+v", err)
+			}
+			r.Name = su.Spec.Name
+		case v1.Api:
+			api, err := s.getApi(r.ID)
+			if err != nil {
+				return fmt.Errorf("get api error: %+v", err)
+			}
+			r.Name = api.Spec.Name
+		case v1.Application:
+			app, err := s.getApplication(r.ID)
+			if err != nil {
+				return fmt.Errorf("get application error: %+v", err)
+			}
+			r.Name = app.Spec.Name
+		default:
+			return fmt.Errorf("unknown target type: %s", r.Type)
 		}
-		model.TargetName = su.Spec.Name
-	case v1.Api:
-		api, err := s.getApi(model.TargetID)
-		if err != nil {
-			return nil, fmt.Errorf("get api error: %+v", err)
+		return nil
+	}
+	for n, r := range map[string]*Resource{
+		"target": &model.Target,
+		"source": &model.Source,
+	} {
+		if err := check(r); err != nil {
+			return nil, fmt.Errorf("%s resource error: %+v", n, err)
 		}
-		model.TargetName = api.Spec.Name
-
-		app, err := s.getApplication(model.AppID)
-		if err != nil {
-			return nil, fmt.Errorf("get application error: %+v", err)
-		}
-		model.AppName = app.Spec.Name
-	default:
-		return nil, fmt.Errorf("unknown target type: %s", model.TargetType)
 	}
 
 	apl, err := s.Create(ToAPI(model))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
 	}
-	return ToModel(apl), nil
+	return s.ToModel(apl)
 }
 
 func (s *Service) ListApply() ([]*Apply, error) {
@@ -73,7 +84,7 @@ func (s *Service) ListApply() ([]*Apply, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	return ToListModel(apls), nil
+	return s.ToListModel(apls)
 }
 
 func (s *Service) GetApply(id string) (*Apply, error) {
@@ -81,7 +92,7 @@ func (s *Service) GetApply(id string) (*Apply, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
-	return ToModel(apl), nil
+	return s.ToModel(apl)
 }
 
 func (s *Service) DeleteApply(id string) error {
@@ -179,4 +190,43 @@ func (s *Service) getApi(id string) (*apiv1.Api, error) {
 	}
 	klog.V(5).Infof("get v1.api: %+v", api)
 	return api, nil
+}
+
+func (s *Service) ApproveApply(id string, admitted bool, reason string) (*v1.Apply, error) {
+	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	apl := &v1.Apply{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apl); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.apply: %+v", apl)
+	if apl.Status.Status != v1.Waiting {
+		return nil, fmt.Errorf("wrong apply status, expect %s, have %s", v1.Waiting, apl.Status.Status)
+	}
+
+	if admitted {
+		apl.Status.Status = v1.Admited
+	} else {
+		apl.Status.Status = v1.Denied
+	}
+	apl.Status.Reason = reason
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(apl)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd = &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+
+	crd, err = s.client.Namespace(crdNamespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error creating crd: %+v", err)
+	}
+
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apl); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.apply of creating: %+v", apl)
+	return apl, nil
 }

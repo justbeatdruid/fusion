@@ -43,6 +43,7 @@ const applicationLabel = "application"
 func ApplicationLabel(id string) string {
 	return strings.Join([]string{applicationLabel, id}, "/")
 }
+
 func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
 	_ = r.Log.WithValues("api", req.NamespacedName)
@@ -55,7 +56,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	klog.Infof("get new api event: %+v", *api)
 	//遍历解绑api
 	for index, app := range api.Spec.Applications {
-		if api.ObjectMeta.Labels[ApplicationLabel(app.ID)] == "false" {
+		if api.ObjectMeta.Labels[nlptv1.ApplicationLabel(app.ID)] == "false" {
 			//consumer从acl中删除 TODO 失败后处理
 			if err := r.Operator.DeleteConsumerFromAcl(app.AclID, app.ID); err != nil {
 				api.Status.Status = nlptv1.Error
@@ -65,7 +66,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			}
 			//delete application
 			api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
-			delete(api.ObjectMeta.Labels, ApplicationLabel(app.ID))
+			delete(api.ObjectMeta.Labels, nlptv1.ApplicationLabel(app.ID))
 		}
 	}
 

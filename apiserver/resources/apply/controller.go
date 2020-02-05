@@ -39,6 +39,15 @@ type ListResponse = struct {
 	Data    []*service.Apply `json:"data"`
 }
 type PingResponse = DeleteResponse
+type ApproveRequest struct {
+	Data *struct {
+		Admitted bool   `json:"admitted"`
+		Reason   string `json:"reason"`
+	} `json:"data"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+type ApproveResponse = ApproveRequest
 
 func (c *controller) CreateApply(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
@@ -107,6 +116,34 @@ func (c *controller) ListApply(req *restful.Request) (int, *ListResponse) {
 		return http.StatusOK, &ListResponse{
 			Code: 0,
 			Data: apl,
+		}
+	}
+}
+
+func (c *controller) ApproveApply(req *restful.Request) (int, *ApproveResponse) {
+	id := req.PathParameter("id")
+	body := &ApproveRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &ApproveResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &ApproveResponse{
+			Code:    1,
+			Message: "read entity error: data is null",
+		}
+	}
+	if _, err := c.service.ApproveApply(id, body.Data.Admitted, body.Data.Reason); err != nil {
+		return http.StatusInternalServerError, &ApproveResponse{
+			Code:    2,
+			Message: fmt.Errorf("create database error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &ApproveResponse{
+			Code: 0,
+			Data: nil,
 		}
 	}
 }

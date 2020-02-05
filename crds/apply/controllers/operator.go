@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/parnurzeal/gorequest"
-	apiv1  "github.com/chinamobile/nlpt/crds/api/api/v1"
+	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
+	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	nlptv1 "github.com/chinamobile/nlpt/crds/apply/api/v1"
-	appv1  "github.com/chinamobile/nlpt/crds/application/api/v1"
+	"github.com/parnurzeal/gorequest"
 
 	"k8s.io/klog"
 )
@@ -26,27 +26,23 @@ type Operator struct {
 	CAFile string
 }
 
-
 //
 type AddWhiteRequestBody struct {
-	Group     string         `json:"group"`
+	Group string `json:"group"`
 }
-
 
 type AddWhiteResponseBody struct {
-	CreatedAt int           `json:"created_at"`
-	Consumer struct {
+	CreatedAt int `json:"created_at"`
+	Consumer  struct {
 		ID string `json:"id"`
 	} `json:"consumer"`
-	ID string               `json:"id"`
-	Group string            `json:"group"`
-	Tags interface{}        `json:"tags"`
-	Message    string       `json:"message"`
-	Fields     interface{}  `json:"fields"`
-	Code       int          `json:"code"`
+	ID      string      `json:"id"`
+	Group   string      `json:"group"`
+	Tags    interface{} `json:"tags"`
+	Message string      `json:"message"`
+	Fields  interface{} `json:"fields"`
+	Code    int         `json:"code"`
 }
-
-
 
 /*
 {"message":"UNIQUE violation detected on '{name=\"app-manager\"}'","name":"unique constraint violation","fields":{"name":"app-manager"},"code":5}
@@ -57,7 +53,6 @@ type FailMsg struct {
 	Fields  interface{} `json:"fields"`
 	Code    int         `json:"code"`
 }
-
 
 type requestLogger struct {
 	prefix string
@@ -87,12 +82,12 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 }
 
 //acl里面白名单的name为api的id
-func  (r *Operator) AddConsumerToAcl(db *nlptv1.Apply, api *apiv1.Api) (err error) {
+func (r *Operator) AddConsumerToAcl(db *nlptv1.Apply, api *apiv1.Api) (err error) {
 	id := api.ObjectMeta.Name
 	klog.Infof("begin add consumer to acl %s", api.ObjectMeta.Name)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/consumers/", db.Spec.AppID, "/acls"))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/consumers/", db.Spec.SourceID, "/acls"))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -118,6 +113,7 @@ func  (r *Operator) AddConsumerToAcl(db *nlptv1.Apply, api *apiv1.Api) (err erro
 	}
 	return nil
 }
+
 //解绑API
 func (r *Operator) DeleteConsumerFromAcl(db *nlptv1.Apply, app *appv1.Application) (err error) {
 	klog.Infof("delete consumer from acl %s.", db.Spec.AclID)
@@ -143,7 +139,3 @@ func (r *Operator) DeleteConsumerFromAcl(db *nlptv1.Apply, app *appv1.Applicatio
 	}
 	return nil
 }
-
-
-
-
