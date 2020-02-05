@@ -94,13 +94,14 @@ func (r *ApplyReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			}
 
 			//application add acl whitelist (api id)
-			if err := r.Operator.AddConsumerToAcl(apply, api); err != nil {
+			aclId, err := r.Operator.AddConsumerToAcl(apply, api);
+			if err != nil {
 				r.UpdateApi(ctx, api, appID, false, "add consumer to acl error")
 				goto failed
 			}
 			// bind api to application
 			api.Spec.Applications = append(api.Spec.Applications, apiv1.Application{
-				ID: app.ObjectMeta.Name, AclID: apply.Spec.AclID,
+				ID: app.ObjectMeta.Name, AclID: aclId,
 			})
 			api.ObjectMeta.Labels[apiv1.ApplicationLabel(apply.Spec.SourceID)] = "true"
 			if err := r.UpdateApi(ctx, api, appID, true, ""); err != nil {

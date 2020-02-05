@@ -82,12 +82,12 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 }
 
 //acl里面白名单的name为api的id
-func (r *Operator) AddConsumerToAcl(db *nlptv1.Apply, api *apiv1.Api) (err error) {
+func  (r *Operator) AddConsumerToAcl(db *nlptv1.Apply, api *apiv1.Api) (aclId string, err error) {
 	id := api.ObjectMeta.Name
 	klog.Infof("begin add consumer to acl %s", api.ObjectMeta.Name)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/consumers/", db.Spec.SourceID, "/acls"))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/consumers/", db.Spec.AppID, "/acls"))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -98,44 +98,22 @@ func (r *Operator) AddConsumerToAcl(db *nlptv1.Apply, api *apiv1.Api) (err error
 	responseBody := &AddWhiteResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
-		return fmt.Errorf("request for add consumer to acl error: %+v", errs)
+		return "0", fmt.Errorf("request for add consumer to acl error: %+v", errs)
 	}
 	klog.V(5).Infof("add consumer to acl whitelist code: %d, body: %s ", response.StatusCode, string(body))
 	if response.StatusCode != 201 {
 		klog.V(5).Infof("add consumer to acl failed msg: %s\n", responseBody.Message)
-		return fmt.Errorf("request for add consumer to acl error: receive wrong status code: %s", string(body))
+		return "0", fmt.Errorf("request for add consumer to acl error: receive wrong status code: %s", string(body))
 	}
-	(*db).Spec.AclID = responseBody.ID
 	klog.V(5).Infof("acl consumer id: %s\n", responseBody.ID)
 
 	if err != nil {
-		return fmt.Errorf("create acl error %s", responseBody.Message)
+		return "0", fmt.Errorf("create acl error %s", responseBody.Message)
 	}
-	return nil
-}
-
-//解绑API
-func (r *Operator) DeleteConsumerFromAcl(db *nlptv1.Apply, app *appv1.Application) (err error) {
-	klog.Infof("delete consumer from acl %s.", db.Spec.AclID)
-	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-	schema := "http"
-	for k, v := range headers {
-		request = request.Set(k, v)
-	}
-	klog.Infof("delete consumer is %s", fmt.Sprintf("%s://%s:%d%s%s%s%s", schema, r.Host, r.Port,
-		"/consumers/", app.Spec.ConsumerInfo.ConsumerID, "/acls/", db.Spec.AclID))
-	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s%s%s%s", schema, r.Host, r.Port,
-		"/consumers/", app.Spec.ConsumerInfo.ConsumerID, "/acls/", db.Spec.AclID)).End()
-	klog.Infof("delete consumer from acl response code: %d %s", response.StatusCode, string(body))
-	request = request.Retry(3, 5*time.Second, retryStatus...)
-
-	if len(errs) > 0 {
-		return fmt.Errorf("request for delete consumer from acl error: %+v", errs)
+	return responseBody.ID, nil
 	}
 
-	klog.V(5).Infof("delete consumer response code: %d%s", response.StatusCode, string(body))
-	if response.StatusCode != 204 {
-		return fmt.Errorf("request for delete consumer error: receive wrong status code: %d", response.StatusCode)
-	}
-	return nil
-}
+
+
+
+

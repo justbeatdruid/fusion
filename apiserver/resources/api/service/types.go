@@ -92,6 +92,8 @@ func ToModel(obj *v1.Api) *Api {
 		Parameters:   obj.Spec.Parameters,
 		WebParams:    obj.Spec.WebParams,
 		KongApi:      obj.Spec.KongApi,
+		ApiType:      obj.Spec.ApiType,
+		AuthType:     obj.Spec.AuthType,
 
 		Status:           obj.Status.Status,
 		AccessLink:       obj.Status.AccessLink,

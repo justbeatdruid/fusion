@@ -3,6 +3,8 @@ curl localhost:8001/api/v1/apis -H 'content-type:application/json' \
 {
   "data": {
     "name": "xuxutest",
+    "apitype":"public",
+    "authtype":"APPAUTH",
     "serviceunit": {
       "id": "4dadb18b24b7a783",
       "name": "test",

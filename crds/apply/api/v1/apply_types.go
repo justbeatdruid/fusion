@@ -41,7 +41,6 @@ type ApplySpec struct {
 	ExpireAt   time.Time `json:"expireAt"`
 	AppliedBy  string    `json:"appliedBy"`
 	ApprovedBy string    `json:"approvedBy"`
-	AclID      string    `json:"aclID"`
 }
 
 type Type string
