@@ -357,4 +357,3 @@ func (r *Operator) DeleteConsumerFromAcl(aclId string, comId string) (err error)
 	}
 	return nil
 }
-

@@ -30,29 +30,52 @@ type ApplySpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Apply. Edit Apply_types.go to remove/update
-	Name       string     `json:"name,omitempty"`
-	TargetType TargetType `json:"targetType"`
-	TargetID   string     `json:"targetID"`
-	TargetName string     `json:"targetName"`
-	AppID      string     `json:"appID"`
-	AppName    string     `json:"appName"`
-	ExpireAt   time.Time  `json:"expireAt"`
-	AclID      string     `json:"aclID"`
+	Name       string    `json:"name,omitempty"`
+	TargetType Type      `json:"targetType"`
+	TargetID   string    `json:"targetID"`
+	TargetName string    `json:"targetName"`
+	SourceType Type      `json:"sourceType"`
+	SourceID   string    `json:"sourceID"`
+	SourceName string    `json:"sourceName"`
+	Action     Action    `json:"action"`
+	ExpireAt   time.Time `json:"expireAt"`
+	AppliedBy  string    `json:"appliedBy"`
+	ApprovedBy string    `json:"approvedBy"`
+	AclID      string    `json:"aclID"`
 }
 
-type TargetType string
+type Type string
+
+func (t Type) String() string {
+	return string(t)
+}
 
 const (
-	Serviceunit TargetType = "serviceunit"
-	Api         TargetType = "api"
+	Api         Type = "api"
+	Serviceunit Type = "serviceunit"
+	Application Type = "application"
+	None        Type = "none"
+)
+
+type Action string
+
+func (a Action) String() string {
+	return string(a)
+}
+
+const (
+	Bind    Action = "bind"
+	Release Action = "release"
 )
 
 // ApplyStatus defines the observed state of Apply
 type ApplyStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status Status `json:"status"`
-	Reason string `json:"reason"`
+	Status     Status    `json:"status"`
+	Reason     string    `json:"reason"`
+	AppliedAt  time.Time `json:"appliedAt"`
+	ApprovedAt time.Time `json:"approvedAt"`
 }
 
 type Status string

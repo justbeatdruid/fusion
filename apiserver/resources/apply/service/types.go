@@ -10,22 +10,32 @@ import (
 
 type Apply struct {
 	ID        string `json:"id"`
-	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
 
-	TargetType v1.TargetType `json:"targetType"`
-	TargetID   string        `json:"targetID"`
-	TargetName string        `json:"targetName"`
-	AppID      string        `json:"appID"`
-	AppName    string        `json:"appName"`
-	ExpireAt   time.Time     `json:"expireAt"`
+	Target     Resource  `json:"target"`
+	Source     Resource  `json:"source"`
+	Action     v1.Action `json:"action"`
+	ExpireAt   time.Time `json:"expireAt"`
+	AppliedBy  string    `json:"appliedBy"`
+	ApprovedBy string    `json:"approvedBy"`
 
-	Status v1.Status `json:"status"`
-	Reason string    `json:"reason"`
+	Status     v1.Status `json:"status"`
+	Reason     string    `json:"reason"`
+	AppliedAt  time.Time `json:"appliedAt"`
+	ApprovedAt time.Time `json:"approvedAt"`
+}
+
+type Resource struct {
+	Type      v1.Type   `json:"type"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Owner     string    `json:"owner"`
+	CreatedAt time.Time `json:"createdAt"`
 }
 
 // only used in creation options
 func ToAPI(app *Apply) *v1.Apply {
+	app = ApiBindingApply(app)
 	crd := &v1.Apply{}
 	crd.TypeMeta.Kind = "Apply"
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
@@ -33,58 +43,108 @@ func ToAPI(app *Apply) *v1.Apply {
 	crd.ObjectMeta.Name = app.ID
 	crd.ObjectMeta.Namespace = crdNamespace
 	crd.Spec = v1.ApplySpec{
-		Name:       app.Name,
-		TargetType: app.TargetType,
-		TargetID:   app.TargetID,
-		TargetName: app.TargetName,
-		AppID:      app.AppID,
-		AppName:    app.AppName,
+		TargetType: app.Target.Type,
+		TargetID:   app.Target.ID,
+		SourceType: app.Source.Type,
+		SourceID:   app.Source.ID,
+		Action:     app.Action,
 		ExpireAt:   app.ExpireAt,
+		AppliedBy:  app.AppliedBy,
+		ApprovedBy: app.ApprovedBy,
 	}
 	crd.Status = v1.ApplyStatus{
-		Status: v1.Waiting,
+		Status:    v1.Waiting,
+		AppliedAt: time.Now(),
 	}
 	return crd
 }
 
-func ToModel(obj *v1.Apply) *Apply {
-	return &Apply{
-		ID:        obj.ObjectMeta.Name,
-		Name:      obj.Spec.Name,
-		Namespace: obj.ObjectMeta.Namespace,
-
-		TargetType: obj.Spec.TargetType,
-		TargetID:   obj.Spec.TargetID,
-		TargetName: obj.Spec.TargetName,
-		AppID:      obj.Spec.AppID,
-		AppName:    obj.Spec.AppName,
-		ExpireAt:   obj.Spec.ExpireAt,
-
-		Status: obj.Status.Status,
-		Reason: obj.Status.Reason,
-	}
+func ApiBindingApply(a *Apply) *Apply {
+	a.Target.Type = v1.Api
+	a.Source.Type = v1.Application
+	a.Action = v1.Bind
+	return a
 }
 
-func ToListModel(items *v1.ApplyList) []*Apply {
+func (s *Service) ToModel(obj *v1.Apply) (*Apply, error) {
+	a := &Apply{
+		ID:        obj.ObjectMeta.Name,
+		Namespace: obj.ObjectMeta.Namespace,
+
+		Target: Resource{
+			Type: obj.Spec.TargetType,
+			ID:   obj.Spec.TargetID,
+			Name: obj.Spec.TargetName,
+		},
+		Source: Resource{
+			Type: obj.Spec.SourceType,
+			ID:   obj.Spec.SourceID,
+			Name: obj.Spec.SourceName,
+		},
+		Action:   obj.Spec.Action,
+		ExpireAt: obj.Spec.ExpireAt,
+
+		Status:     obj.Status.Status,
+		Reason:     obj.Status.Reason,
+		AppliedAt:  obj.Status.AppliedAt,
+		ApprovedAt: obj.Status.ApprovedAt,
+	}
+	var err error
+	a.Source, err = s.Completion(a.Source)
+	if err != nil {
+		return nil, err
+	}
+	a.Target, err = s.Completion(a.Target)
+	if err != nil {
+		return nil, err
+	}
+	return a, nil
+}
+
+func (s *Service) Completion(r Resource) (Resource, error) {
+	switch r.Type {
+	case v1.Api:
+		api, err := s.getApi(r.ID)
+		if err != nil {
+			return r, fmt.Errorf("get api error: %+v", err)
+		}
+		r.Owner = "TODO"
+		r.Name = api.Spec.Name
+		r.CreatedAt = api.ObjectMeta.CreationTimestamp.Time
+	}
+	return r, nil
+}
+
+func (s *Service) ToListModel(items *v1.ApplyList) ([]*Apply, error) {
 	var app []*Apply = make([]*Apply, len(items.Items))
 	for i := range items.Items {
-		app[i] = ToModel(&items.Items[i])
+		var err error
+		app[i], err = s.ToModel(&items.Items[i])
+		if err != nil {
+			return nil, err
+		}
 	}
-	return app
+	return app, nil
 }
 
 func (a *Apply) Validate() error {
 	for k, v := range map[string]string{
-		"name":        a.Name,
-		"target type": string(a.TargetType),
-		"target ID":   a.TargetID,
-		"target name": a.TargetName,
-		"app ID":      a.AppID,
-		"app name":    a.AppName,
+		//"name":        a.Name,
+		//"target type": a.Target.Type.String(),
+		"target ID": a.Target.ID,
+		//"target name": a.Target.Name,
+		//"source type": a.Source.Type.String(),
+		"source ID": a.Source.ID,
+		//"source name": a.Source.Name,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
 		}
+	}
+	switch a.Action {
+	case v1.Bind, v1.Release:
+	default:
+		return fmt.Errorf("wrong action: %s", a.Action)
 	}
 	if a.ExpireAt.IsZero() {
 		return fmt.Errorf("expire time not set")

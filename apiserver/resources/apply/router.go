@@ -39,10 +39,19 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.GET("/applies").Consumes(restful.MIME_JSON).
+	ws.Route(ws.GET("/applies").
+		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all applys").
 		To(r.listApply).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	ws.Route(ws.PUT("/applies/{id}/approval").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("approve applys").
+		To(r.approveApply).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 }
@@ -64,5 +73,10 @@ func (r *router) deleteApply(request *restful.Request, response *restful.Respons
 
 func (r *router) listApply(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListApply(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) approveApply(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ApproveApply(request)
 	response.WriteHeaderAndEntity(code, result)
 }
