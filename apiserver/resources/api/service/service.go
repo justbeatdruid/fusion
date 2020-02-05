@@ -345,18 +345,17 @@ func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
 		return nil, fmt.Errorf("get application error: %+v", err)
 	}
 	exist := false
-	index := 0
-	for i, existedapp := range api.Spec.Applications {
+	for _, existedapp := range api.Spec.Applications {
 		if existedapp.ID == appid {
 			exist = true
-			index = i
 		}
 	}
 	if !exist {
 		return nil, fmt.Errorf("application not bound to api")
 	}
-	api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
-	delete(api.ObjectMeta.Labels, v1.ApplicationLabel(appid))
+
+	//解绑的时候先设置false TODO 之后controller 里面删除
+	api.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "false"
 	api, err = s.UpdateSpec(api)
 	//if _, err = s.updateApplicationApi(appid, api.ObjectMeta.Name, api.Spec.Name); err != nil {
 	//	return fmt.Errorf("cannot update")

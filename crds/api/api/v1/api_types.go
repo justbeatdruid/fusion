@@ -92,6 +92,7 @@ type Application struct {
 	ID    string `json:"id"`
 	Name  string `json:"name"`
 	Group string `json:"group"`
+	AclID string `json:"aclId"`
 }
 
 type User struct {

@@ -37,6 +37,7 @@ type ApplySpec struct {
 	AppID      string     `json:"appID"`
 	AppName    string     `json:"appName"`
 	ExpireAt   time.Time  `json:"expireAt"`
+	AclID      string     `json:"aclID"`
 }
 
 type TargetType string

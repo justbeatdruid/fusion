@@ -331,3 +331,30 @@ func (r *Operator) DeleteRouteByKong(db *nlptv1.Api) (err error) {
 	}
 	return nil
 }
+
+//解绑API
+func (r *Operator) DeleteConsumerFromAcl(aclId string, comId string) (err error) {
+	klog.Infof("delete consumer from acl %s.", comId)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	klog.Infof("delete consumer is %s", fmt.Sprintf("%s://%s:%d%s%s%s%s", schema, r.Host, r.Port,
+		"/consumers/", comId, "/acls/", aclId))
+	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s%s%s%s", schema, r.Host, r.Port,
+		"/consumers/", comId, "/acls/", aclId)).End()
+	klog.Infof("delete consumer from acl response code: %d %s", response.StatusCode, string(body))
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+
+	if len(errs) > 0 {
+		return fmt.Errorf("request for delete consumer from acl error: %+v", errs)
+	}
+
+	klog.V(5).Infof("delete consumer response code: %d%s", response.StatusCode, string(body))
+	if response.StatusCode != 204 {
+		return fmt.Errorf("request for delete consumer error: receive wrong status code: %d", response.StatusCode)
+	}
+	return nil
+}
+
