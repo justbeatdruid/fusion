@@ -6,7 +6,6 @@ import (
 	"time"
 
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
-	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	nlptv1 "github.com/chinamobile/nlpt/crds/apply/api/v1"
 	"github.com/parnurzeal/gorequest"
 
@@ -87,7 +86,7 @@ func  (r *Operator) AddConsumerToAcl(db *nlptv1.Apply, api *apiv1.Api) (aclId st
 	klog.Infof("begin add consumer to acl %s", api.ObjectMeta.Name)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/consumers/", db.Spec.AppID, "/acls"))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/consumers/", db.Spec.SourceID, "/acls"))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
