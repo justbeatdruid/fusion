@@ -5,8 +5,6 @@ import (
 	"time"
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
-	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
-	//suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
 )
 
@@ -14,19 +12,20 @@ type Api struct {
 	ID        string `json:"id"`
 	Namespace string `json:"namespace"`
 
-	Name         string           `json:"name"`
-	Serviceunit  v1.Serviceunit   `json:"serviceunit"`
-	Applications []v1.Application `json:"applications"`
-	Users        []v1.User        `json:"users"`
-	Frequency    int              `json:"frequency"`
-	Method       v1.Method        `json:"method"`
-	Protocol     v1.Protocol      `json:"protocol"`
-	ReturnType   v1.ReturnType    `json:"returnType"`
-	Parameters   []v1.Parameter   `json:"parameter"`
-	WebParams    []v1.WebParams   `json:"webParams"`
-	ApiType      v1.ApiType       `json:"apiType"`
-	AuthType     v1.AuthType      `json:"authType"`
-	KongApi      v1.KongApiInfo   `json:"KongApi"`
+	Name          string            `json:"name"`
+	Serviceunit   v1.Serviceunit    `json:"serviceunit"`
+	Applications  []v1.Application  `json:"applications"`
+	Users         []v1.User         `json:"users"`
+	Frequency     int               `json:"frequency"`
+	Method        v1.Method         `json:"method"`
+	Protocol      v1.Protocol       `json:"protocol"`
+	ReturnType    v1.ReturnType     `json:"returnType"`
+	ApiFields     []v1.Field        `json:"apiFields"`
+	ApiParameters []v1.ApiParameter `json:"apiParameters"`
+	WebParams     []v1.WebParams    `json:"webParams"`
+	ApiType       v1.ApiType        `json:"apiType"`
+	AuthType      v1.AuthType       `json:"authType"`
+	KongApi       v1.KongApiInfo    `json:"KongApi"`
 
 	Status v1.Status `json:"status"`
 	//Publish          v1.Publish    `json:"publish"`
@@ -59,7 +58,7 @@ func ToAPI(api *Api) *v1.Api {
 		Method:       api.Method,
 		Protocol:     api.Protocol,
 		ReturnType:   api.ReturnType,
-		Parameters:   api.Parameters,
+		ApiFields:    api.ApiFields,
 		WebParams:    api.WebParams,
 		KongApi:      api.KongApi,
 		ApiType:      api.ApiType,
@@ -89,7 +88,7 @@ func ToModel(obj *v1.Api) *Api {
 		Method:       obj.Spec.Method,
 		Protocol:     obj.Spec.Protocol,
 		ReturnType:   obj.Spec.ReturnType,
-		Parameters:   obj.Spec.Parameters,
+		ApiFields:    obj.Spec.ApiFields,
 		WebParams:    obj.Spec.WebParams,
 		KongApi:      obj.Spec.KongApi,
 		ApiType:      obj.Spec.ApiType,
@@ -105,9 +104,16 @@ func ToModel(obj *v1.Api) *Api {
 	if model.Applications == nil {
 		model.Applications = []v1.Application{}
 	}
-	if model.Parameters == nil {
-		model.Parameters = []v1.Parameter{}
+	if model.ApiFields == nil {
+		model.ApiFields = []v1.Field{}
 	}
+	p := []v1.ApiParameter{}
+	for _, f := range model.ApiFields {
+		if f.ParameterInfo != nil {
+			p = append(p, *f.ParameterInfo)
+		}
+	}
+	model.ApiParameters = p
 	if model.WebParams == nil {
 		model.WebParams = []v1.WebParams{}
 	}
@@ -155,15 +161,19 @@ func (s *Service) Validate(a *Api) error {
 		default:
 			return fmt.Errorf("wrong method type: %s. only %s and %s are allowed", a.Method, v1.GET, v1.LIST)
 		}
-		for i, p := range a.Parameters {
+		for i, f := range a.ApiFields {
+			p := f.ParameterInfo
+			if p == nil {
+				continue
+			}
 			if len(p.Name) == 0 {
 				return fmt.Errorf("%dth parameter name is null", i)
 			}
 			if len(p.Type) == 0 {
-				p.Type = datav1.ParameterType("null")
+				p.Type = v1.ParameterType("null")
 			}
 			switch p.Type {
-			case datav1.String, datav1.Int, datav1.Bool, datav1.Float:
+			case v1.String, v1.Int, v1.Bool, v1.Float:
 			default:
 				return fmt.Errorf("%dth parameter type is wrong: %s", i, p.Type)
 			}
@@ -188,10 +198,10 @@ func (s *Service) Validate(a *Api) error {
 				return fmt.Errorf("%dth parameter name is null", i)
 			}
 			if len(p.Type) == 0 {
-				p.Type = datav1.ParameterType("null")
+				p.Type = v1.ParameterType("null")
 			}
 			switch p.Type {
-			case datav1.String, datav1.Int:
+			case v1.String, v1.Int:
 			default:
 				return fmt.Errorf("%dth parameter type is wrong: %s", i, p.Type)
 			}

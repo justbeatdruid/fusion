@@ -14,6 +14,7 @@ type Topic struct {
 	TopicNamespace  string    `json:"topicNamespace"`
 	Partition       int       `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
 	IsNonPersistent bool      `json:"isNonPersistent"` //非持久化，默认为false，非必填topic
+	URL             string    `json:"url"`            //URL
 	Status          v1.Status `json:"status"`
 	Message         string    `json:"message"`
 }
@@ -57,6 +58,7 @@ func ToModel(obj *v1.Topic) *Topic {
 		Partition:       obj.Spec.Partition,
 		Status:          obj.Status.Status,
 		Message:         obj.Status.Message,
+		URL:             obj.Spec.Url,
 	}
 }
 

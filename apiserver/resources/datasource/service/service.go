@@ -148,28 +148,30 @@ func (s *Service) Delete(id string) error {
 
 func (s *Service) GetDataSourceByApiId(apiId string, parames string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
-	//get api by apiID
-	api, err := s.apiService.Get(apiId)
-	if err != nil {
-		return nil, fmt.Errorf("error query api: %+v", err)
-	}
-	//get serviceunitId by api
-	serverUnitID := api.Spec.Serviceunit.ID
-	//get serviceunit by serviceunitId
-	serverUnit, err := s.suService.Get(serverUnitID)
-	if err != nil {
-		return nil, fmt.Errorf("error query serverUnit: %+v", err)
-	}
-	//check unit type (single or multi)
-	//get dataSources by  multiDateSourceId
-	for _, v := range serverUnit.Spec.DatasourcesID {
-		datasource, err := s.Get(v.ID)
+	/*
+		//get api by apiID
+		api, err := s.apiService.Get(apiId)
 		if err != nil {
-			return nil, fmt.Errorf("error query singleDateSourceId: %+v", err)
+			return nil, fmt.Errorf("error query api: %+v", err)
 		}
-		//TODO The remaining operation after the query to the data source
-		result["Fields"] = datasource.Spec.Fields
-	}
+		//get serviceunitId by api
+		serverUnitID := api.Spec.Serviceunit.ID
+		//get serviceunit by serviceunitId
+		serverUnit, err := s.suService.Get(serverUnitID)
+		if err != nil {
+			return nil, fmt.Errorf("error query serverUnit: %+v", err)
+		}
+		//check unit type (single or multi)
+		//get dataSources by  multiDateSourceId
+		for _, v := range serverUnit.Spec.DatasourceID {
+			datasource, err := s.Get(v.ID)
+			if err != nil {
+				return nil, fmt.Errorf("error query singleDateSourceId: %+v", err)
+			}
+			//TODO The remaining operation after the query to the data source
+			result["Fields"] = datasource.Spec.Fields
+		}
+	*/
 	return result, nil
 }
 

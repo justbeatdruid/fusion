@@ -11,15 +11,15 @@ import (
 )
 
 type Serviceunit struct {
-	ID            string                  `json:"id"`
-	Name          string                  `json:"name"`
-	Namespace     string                  `json:"namespace"`
-	Type          v1.ServiceType          `json:"type"`
-	DatasourcesID []v1.Datasource         `json:"datasources,omitempty"`
-	Datasources   []datav1.DatasourceSpec `json:"-"`
-	KongSevice    v1.KongServiceInfo      `json:"kongService"`
-	Users         []apiv1.User            `json:"users"`
-	Description   string                  `json:"description"`
+	ID           string                `json:"id"`
+	Name         string                `json:"name"`
+	Namespace    string                `json:"namespace"`
+	Type         v1.ServiceType        `json:"type"`
+	DatasourceID v1.Datasource         `json:"datasources,omitempty"`
+	Datasource   datav1.DatasourceSpec `json:"-"`
+	KongSevice   v1.KongServiceInfo    `json:"kongService"`
+	Users        []apiv1.User          `json:"users"`
+	Description  string                `json:"description"`
 
 	Status    v1.Status `json:"status"`
 	UpdatedAt time.Time `json:"time"`
@@ -36,13 +36,13 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 	crd.ObjectMeta.Name = app.ID
 	crd.ObjectMeta.Namespace = crdNamespace
 	crd.Spec = v1.ServiceunitSpec{
-		Name:          app.Name,
-		Type:          app.Type,
-		DatasourcesID: app.DatasourcesID,
-		Datasources:   app.Datasources,
-		KongService:   app.KongSevice,
-		Users:         app.Users,
-		Description:   app.Description,
+		Name:         app.Name,
+		Type:         app.Type,
+		DatasourceID: app.DatasourceID,
+		Datasource:   app.Datasource,
+		KongService:  app.KongSevice,
+		Users:        app.Users,
+		Description:  app.Description,
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -61,13 +61,13 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 func ToAPIUpdate(app *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 	id := crd.Spec.KongService.ID
 	crd.Spec = v1.ServiceunitSpec{
-		Name:          app.Name,
-		Type:          app.Type,
-		DatasourcesID: app.DatasourcesID,
-		Datasources:   app.Datasources,
-		KongService:   app.KongSevice,
-		Users:         app.Users,
-		Description:   app.Description,
+		Name:         app.Name,
+		Type:         app.Type,
+		DatasourceID: app.DatasourceID,
+		Datasource:   app.Datasource,
+		KongService:  app.KongSevice,
+		Users:        app.Users,
+		Description:  app.Description,
 	}
 	crd.Spec.KongService.ID = id
 	status := app.Status
@@ -85,14 +85,14 @@ func ToAPIUpdate(app *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 
 func ToModel(obj *v1.Serviceunit) *Serviceunit {
 	return &Serviceunit{
-		ID:            obj.ObjectMeta.Name,
-		Name:          obj.Spec.Name,
-		Namespace:     obj.ObjectMeta.Namespace,
-		Type:          obj.Spec.Type,
-		DatasourcesID: obj.Spec.DatasourcesID,
-		KongSevice:    obj.Spec.KongService,
-		Users:         obj.Spec.Users,
-		Description:   obj.Spec.Description,
+		ID:           obj.ObjectMeta.Name,
+		Name:         obj.Spec.Name,
+		Namespace:    obj.ObjectMeta.Namespace,
+		Type:         obj.Spec.Type,
+		DatasourceID: obj.Spec.DatasourceID,
+		KongSevice:   obj.Spec.KongService,
+		Users:        obj.Spec.Users,
+		Description:  obj.Spec.Description,
 
 		Status:    obj.Status.Status,
 		UpdatedAt: obj.Status.UpdatedAt,
@@ -122,18 +122,13 @@ func (s *Service) Validate(a *Serviceunit) error {
 
 	switch a.Type {
 	case v1.DataService:
-		if len(a.DatasourcesID) == 0 {
+		if len(a.DatasourceID.ID) == 0 {
 			return fmt.Errorf("datasource is null")
 		} else {
-			if len(a.DatasourcesID) > 0 {
-				a.Datasources = make([]datav1.DatasourceSpec, len(a.DatasourcesID))
-				for i, dsid := range a.DatasourcesID {
-					if ds, err := s.checkDatasource(&dsid); err != nil {
-						return fmt.Errorf("%dth datasource error: %+v", i, err)
-					} else {
-						a.Datasources[i] = *ds
-					}
-				}
+			if ds, err := s.checkDatasource(&a.DatasourceID); err != nil {
+				return fmt.Errorf("error datasource: %+v", err)
+			} else {
+				a.Datasource = *ds
 			}
 		}
 	case v1.WebService:
@@ -156,29 +151,30 @@ func (s *Service) checkDatasource(d *v1.Datasource) (*datav1.DatasourceSpec, err
 	}
 
 	for k, v := range map[string]string{
-		"name":     ds.Name,
-		"database": ds.Database,
-		"table":    ds.Table,
-
-		"host":     ds.Connect.Host,
-		"username": ds.Connect.Username,
-		"password": ds.Connect.Password,
+		"name": ds.Name,
+		"type": string(ds.Type),
 	} {
 		if len(v) == 0 {
 			return nil, fmt.Errorf("%s is null", k)
 		}
 	}
-	if ds.Connect.Port < 1 || ds.Connect.Port > 65535 {
-		return nil, fmt.Errorf("invalid port: %d", ds.Connect.Port)
-	}
 
-	if len(ds.Fields) == 0 {
-		return nil, fmt.Errorf("filed length is 0")
-	}
-	for i, field := range ds.Fields {
-		if err := field.Validate(); err != nil {
-			return nil, fmt.Errorf("%dth field invalide: %+v", i, err)
+	if ds.Type == datav1.RDBType {
+		if ds.RDB == nil {
+			return nil, fmt.Errorf("cannot find rdb info")
 		}
+		if ds.RDB.Connect.Port < 1 || ds.RDB.Connect.Port > 65535 {
+			return nil, fmt.Errorf("invalid port: %d", ds.RDB.Connect.Port)
+		}
+
+		// TODO move to api
+		/*
+			for i, field := range ds.Fields {
+				if err := field.Validate(); err != nil {
+					return nil, fmt.Errorf("%dth field invalide: %+v", i, err)
+				}
+			}
+		*/
 	}
 	return ds, nil
 }
