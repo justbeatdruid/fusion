@@ -75,9 +75,11 @@ func (s *Service) ListApi(suid, appid string) ([]*Api, error) {
 	result := ToListModel(apis)
 	if len(appid) > 0 {
 		for i := range result {
-			appstatus, ok := apis.Items[i].Status.Applications[appid]
-			if ok {
-				result[i].ApplicationBindStatus = &appstatus
+			if apis.Items[i].Status.Applications != nil {
+				appstatus, ok := apis.Items[i].Status.Applications[appid]
+				if ok {
+					result[i].ApplicationBindStatus = &appstatus
+				}
 			}
 		}
 	}
