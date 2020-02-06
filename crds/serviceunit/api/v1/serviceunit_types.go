@@ -32,14 +32,14 @@ type ServiceunitSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Name          string                  `json:"name"`
-	Group         Group                   `json:"group"`
-	Type          ServiceType             `json:"type"`
-	DatasourcesID []Datasource            `json:"datasourcesID"`
-	Datasources   []datav1.DatasourceSpec `json:"datasources"`
-	Users         []apiv1.User            `json:"users"`
-	APIs          []Api                   `json:"apis"`
-	Description   string                  `json:"description"`
+	Name         string                `json:"name"`
+	Group        Group                 `json:"group"`
+	Type         ServiceType           `json:"type"`
+	DatasourceID Datasource            `json:"datasourcesID"`
+	Datasource   datav1.DatasourceSpec `json:"datasources"`
+	Users        []apiv1.User          `json:"users"`
+	APIs         []Api                 `json:"apis"`
+	Description  string                `json:"description"`
 	//KongInfo
 	KongService KongServiceInfo `json:"kongServiceInfo"`
 }

@@ -21,7 +21,6 @@ import (
 	"strings"
 	"time"
 
-	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -48,7 +47,7 @@ type ApiSpec struct {
 	Method       Method        `json:"method"`
 	Protocol     Protocol      `json:"protocol"`
 	ReturnType   ReturnType    `json:"returnType"`
-	Parameters   []Parameter   `json:"parameter"`
+	ApiFields    []Field       `json:"apiFields"`
 	WebParams    []WebParams   `json:"webParams"`
 	KongApi      KongApiInfo   `json:"kongApi"`
 	PublishInfo  PublishInfo   `json:"publishInfo"`
@@ -139,28 +138,68 @@ const (
 	Json ReturnType = "json"
 )
 
-type Parameter struct {
-	Name        string               `json:"name"`
-	Type        datav1.ParameterType `json:"type"`
-	Operator    Operator             `json:"operator"`
-	Example     string               `json:"example"`
-	Description string               `json:"description"`
-	Required    bool                 `json:"required"`
+type Field struct {
+	TableName     string        `json:"table"`
+	OriginType    ParameterType `json:"originType"`
+	OriginField   string        `json:"originField"`
+	ServiceType   ParameterType `json:"serviceType"`
+	ServiceField  string        `json:"serviceField"`
+	ParameterInfo *ApiParameter `json:"parameterInfo,omitempty"`
+}
+
+type ApiParameter struct {
+	Name        string        `json:"name"`
+	Type        ParameterType `json:"type"`
+	Operator    Operator      `json:"operator"`
+	Example     string        `json:"example"`
+	Description string        `json:"description"`
+	Required    bool          `json:"required"`
+}
+
+type ParameterType string
+
+const (
+	Int    ParameterType = "int"
+	Bool   ParameterType = "bool"
+	Float  ParameterType = "float"
+	String ParameterType = "string"
+)
+
+func (f Field) Validate() error {
+	for k, v := range map[string]string{
+		"origin field":  f.OriginField,
+		"service field": f.ServiceField,
+	} {
+		if len(v) == 0 {
+			return fmt.Errorf("%s is null", k)
+		}
+	}
+	for k, v := range map[string]ParameterType{
+		"origin type":  f.OriginType,
+		"service type": f.ServiceType,
+	} {
+		switch v {
+		case Int, Bool, Float, String:
+		default:
+			return fmt.Errorf("%s type is unknown: %s", k, v)
+		}
+	}
+	return nil
 }
 
 type WebParams struct {
-	Name        string               `json:"name"`     //必须
-	Type        datav1.ParameterType `json:"type"`     //必须
-	Location    LocationType         `json:"location"` //必须
-	Required    bool                 `json:"required"` //必须
-	DefValue    interface{}          `json:"valueDefault"`
-	Example     interface{}          `json:"example"`
-	Description string               `json:"description"`
-	ValidEnable int                  `json:"alidEnable"`
-	MinNum      int                  `json:"minNum"`
-	MaxNum      int                  `json:"maxNum"`
-	MinSize     int                  `json:"minSize"`
-	MaxSize     int                  `json:"maxSize"`
+	Name        string        `json:"name"`     //必须
+	Type        ParameterType `json:"type"`     //必须
+	Location    LocationType  `json:"location"` //必须
+	Required    bool          `json:"required"` //必须
+	DefValue    interface{}   `json:"valueDefault"`
+	Example     interface{}   `json:"example"`
+	Description string        `json:"description"`
+	ValidEnable int           `json:"alidEnable"`
+	MinNum      int           `json:"minNum"`
+	MaxNum      int           `json:"maxNum"`
+	MinSize     int           `json:"minSize"`
+	MaxSize     int           `json:"maxSize"`
 }
 
 type LocationType string

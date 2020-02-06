@@ -70,8 +70,8 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
 			delete(api.ObjectMeta.Labels, nlptv1.ApplicationLabel(app.ID))
 			r.Update(ctx, api)
-		}else {
-			index ++
+		} else {
+			index++
 		}
 	}
 

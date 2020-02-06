@@ -31,69 +31,66 @@ type DatasourceSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Datasource. Edit Datasource_types.go to remove/update
-	Name     string  `json:"name"`
-	Type     string  `json:"type"`
-	Database string  `json:"database"`
-	Schema   string  `json:"schema,omitempty"`
-	Table    string  `json:"table"`
-	Fields   []Field `json:"fields"`
+	Name string `json:"name"`
+	Type Type   `json:"type"`
+
+	RDB *RDB `json:"rdb,omitempty"`
+
+	Location string `json:"localtion"`
+	AuthType string `json:"authType"`
+}
+
+type Type string
+
+func (t Type) String() string {
+	return string(t)
+}
+
+const (
+	RDBType Type = "rdb"
+)
+
+type RDB struct {
+	Type     string `json:"type"`
+	Database string `json:"database"`
+	Schema   string `json:"schema,omitempty"`
 
 	Connect ConnectInfo `json:"connect"`
 
-	CreateUser CreateUser `json:"createUser"`
-	UpdateUser UpdateUser `json:"updateUser"`
+	CreateUser User `json:"createUser"`
+	UpdateUser User `json:"updateUser"`
 }
 
-type Field struct {
-	OriginType   ParameterType `json:"originType"`
-	OriginField  string        `json:"originField"`
-	ServiceType  ParameterType `json:"serviceType"`
-	ServiceField string        `json:"serviceField"`
+func (r *RDB) Validate() error {
+	if r == nil {
+		return fmt.Errorf("rdb is null")
+	}
+	for k, v := range map[string]string{
+		"database": r.Database,
+		"host":     r.Connect.Host,
+		"username": r.Connect.Username,
+		"password": r.Connect.Password,
+	} {
+		if len(v) == 0 {
+			return fmt.Errorf("%s is null", k)
+		}
+	}
+	if r.Connect.Port < 0 || r.Connect.Port > 65536 {
+		return fmt.Errorf("invalid port %d", r.Connect.Port)
+	}
+	return nil
 }
-type CreateUser struct {
+
+type User struct {
 	UserId   string
 	UserName string
 }
-type UpdateUser struct {
-	UserId   string
-	UserName string
-}
-type ParameterType string
-
-const (
-	Int    ParameterType = "int"
-	Bool   ParameterType = "bool"
-	Float  ParameterType = "float"
-	String ParameterType = "string"
-)
 
 type ConnectInfo struct {
 	Host     string `json:"host"`
 	Port     int    `json:"port"`
 	Username string `json:"username"`
 	Password string `json:"password"`
-}
-
-func (f Field) Validate() error {
-	for k, v := range map[string]string{
-		"origin field":  f.OriginField,
-		"service field": f.ServiceField,
-	} {
-		if len(v) == 0 {
-			return fmt.Errorf("%s is null", k)
-		}
-	}
-	for k, v := range map[string]ParameterType{
-		"origin type":  f.OriginType,
-		"service type": f.ServiceType,
-	} {
-		switch v {
-		case Int, Bool, Float, String:
-		default:
-			return fmt.Errorf("%s type is unknown: %s", k, v)
-		}
-	}
-	return nil
 }
 
 // DatasourceStatus defines the observed state of Datasource
