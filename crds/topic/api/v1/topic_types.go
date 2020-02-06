@@ -17,6 +17,8 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"strings"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -34,6 +36,7 @@ type TopicSpec struct {
 	Namespace       string `json:"namespace"`
 	Partition       int    `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
 	IsNonPersistent bool   `json:"isNonPersistent"` //topic是否不持久化
+	Url             string `json:"url"`            //topic url
 }
 
 // TopicStatus defines the observed state of Topic
@@ -77,4 +80,22 @@ type TopicList struct {
 
 func init() {
 	SchemeBuilder.Register(&Topic{}, &TopicList{})
+}
+
+func (in *Topic) GetUrl(t *Topic) (url string) {
+
+	var build strings.Builder
+	if t.Spec.IsNonPersistent {
+		build.WriteString("non-persistent://")
+	} else {
+		build.WriteString("persistent://")
+	}
+
+	build.WriteString(t.Spec.Tenant)
+	build.WriteString("/")
+	build.WriteString(t.Spec.TopicNamespace)
+	build.WriteString("/")
+	build.WriteString(t.Spec.Name)
+
+	return build.String()
 }
