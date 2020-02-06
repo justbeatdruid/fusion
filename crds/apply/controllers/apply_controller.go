@@ -124,6 +124,9 @@ func (r *ApplyReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *ApplyReconciler) UpdateApi(ctx context.Context, api *apiv1.Api, appid string, succeeded bool, message string) error {
+	if api.Status.Applications == nil {
+		api.Status.Applications = make(map[string]apiv1.ApiApplicationStatus)
+	}
 	api.Status.Applications[appid] = apiv1.ApiApplicationStatus{
 		AppID: appid,
 		BindingSucceeded: succeeded,
