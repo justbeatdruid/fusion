@@ -81,7 +81,7 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 }
 
 //acl里面白名单的name为api的id
-func  (r *Operator) AddConsumerToAcl(db *nlptv1.Apply, api *apiv1.Api) (aclId string, err error) {
+func (r *Operator) AddConsumerToAcl(db *nlptv1.Apply, api *apiv1.Api) (aclId string, err error) {
 	id := api.ObjectMeta.Name
 	klog.Infof("begin add consumer to acl %s", api.ObjectMeta.Name)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
@@ -110,9 +110,4 @@ func  (r *Operator) AddConsumerToAcl(db *nlptv1.Apply, api *apiv1.Api) (aclId st
 		return "0", fmt.Errorf("create acl error %s", responseBody.Message)
 	}
 	return responseBody.ID, nil
-	}
-
-
-
-
-
+}
