@@ -187,6 +187,7 @@ func (c *controller) getDataByApi(req *restful.Request) (int, *QueryDataResponse
 		Data: result,
 	}
 }
+
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
 }
