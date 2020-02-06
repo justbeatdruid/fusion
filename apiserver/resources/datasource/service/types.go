@@ -27,6 +27,18 @@ type Datasource struct {
 	Connect v1.ConnectInfo `json:"connect"`
 }
 
+/**
+mysql 连接
+*/
+type Connect struct {
+	UserName  string
+	Password  string
+	Ip        string
+	Port      string
+	DBName    string
+	TableName string
+}
+
 // only used in creation or update options
 func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 	crd := &v1.Datasource{}

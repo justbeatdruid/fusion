@@ -1,11 +1,11 @@
 package service
 
 import (
+	"database/sql"
 	"fmt"
 	api "github.com/chinamobile/nlpt/apiserver/resources/api/service"
 	serviceunit "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -170,5 +170,41 @@ func (s *Service) GetDataSourceByApiId(apiId string, parames string) (map[string
 		//TODO The remaining operation after the query to the data source
 		result["Fields"] = datasource.Spec.Fields
 	}
+	return result, nil
+}
+
+/**
+golang连接查询mysql
+*/
+func GetMySQLDbData(db *sql.DB, querySql string) ([]map[string]string, error) {
+	rows, err := db.Query(querySql)
+	if err != nil {
+		fmt.Println("Query fail 。。。")
+		return nil, fmt.Errorf("error query api: %+v", err)
+	}
+	//获取列名
+	columns, _ := rows.Columns()
+
+	//定义一个切片,长度是字段的个数,切片里面的元素类型是sql.RawBytes
+	values := make([]sql.RawBytes, len(columns))
+	//定义一个切片,元素类型是interface{} 接口
+	scanArgs := make([]interface{}, len(values))
+	for i := range values {
+		//把sql.RawBytes类型的地址存进去了
+		scanArgs[i] = &values[i]
+	}
+	//获取字段值
+	var result []map[string]string
+	for rows.Next() {
+		res := make(map[string]string)
+		rows.Scan(scanArgs...)
+		for i, col := range values {
+			res[columns[i]] = string(col)
+		}
+		result = append(result, res)
+	}
+
+	fmt.Println("Query success")
+	rows.Close()
 	return result, nil
 }
