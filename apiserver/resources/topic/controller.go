@@ -43,20 +43,14 @@ type ListResponse = struct {
 type PingResponse = DeleteResponse
 
 func (c *controller) CreateTopic(req *restful.Request) (int, *CreateResponse) {
-	body := &CreateRequest{}
+	body := &service.Topic{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
-	if body.Data == nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: "read entity error: data is null",
-		}
-	}
-	if tp, err := c.service.CreateTopic(body.Data); err != nil {
+	if tp, err := c.service.CreateTopic(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
 			Message: fmt.Errorf("create database error: %+v", err).Error(),
