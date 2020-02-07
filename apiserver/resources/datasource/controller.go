@@ -1,9 +1,11 @@
 package datasource
 
 import (
+	"database/sql"
 	"fmt"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
+	"strings"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
@@ -30,6 +32,11 @@ type QueryDataResponse struct {
 	Code    int                    `json:"code"`
 	Message string                 `json:"message"`
 	Data    map[string]interface{} `json:"queryData"`
+}
+type QueryMysqlDataResponse struct {
+	Code    int                 `json:"code"`
+	Message string              `json:"message"`
+	Data    []map[string]string `json:"queryData"`
 }
 type CreateResponse = Wrapped
 type UpdateResponse = Wrapped
@@ -194,4 +201,65 @@ func returns200(b *restful.RouteBuilder) {
 
 func returns500(b *restful.RouteBuilder) {
 	b.Returns(http.StatusInternalServerError, "internal server error", nil)
+}
+
+/**链接MySQL
+ */
+func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
+	connect := &service.Connect{}
+	req.ReadEntity(connect)
+	buildPath := strings.Builder{}
+	buildPath.WriteString(connect.UserName)
+	buildPath.WriteString(":")
+	buildPath.WriteString(connect.Password)
+	buildPath.WriteString("@tcp(")
+	buildPath.WriteString(connect.Ip)
+	buildPath.WriteString(":")
+	buildPath.WriteString(connect.Port)
+	buildPath.WriteString(")/")
+	buildPath.WriteString(connect.DBName)
+	path := buildPath.String()
+	db, err := sql.Open("mysql", path)
+	if err != nil {
+		fmt.Println("open DB err")
+		return http.StatusInternalServerError, &QueryMysqlDataResponse{
+			Code:    1,
+			Message: "open DB err",
+		}
+	}
+	//设置数据库最大连接数
+	db.SetConnMaxLifetime(100)
+	//设置上数据库最大闲置连接数
+	db.SetMaxIdleConns(10)
+	//验证连接
+	if err := db.Ping(); err != nil {
+		fmt.Println("open database fail")
+		return http.StatusInternalServerError, &QueryMysqlDataResponse{
+			Code:    1,
+			Message: "open database fail",
+		}
+	}
+	var querySql string
+	if len(connect.TableName) != 0 {
+		//查询表字段名称，字段描述，字段类型
+		querySql = "select COLUMN_NAME '字段名称',COLUMN_TYPE '字段类型长度',IF(EXTRA='auto_increment',CONCAT(COLUMN_KEY," +
+			"'(', IF(EXTRA='auto_increment','自增长',EXTRA),')'),COLUMN_KEY) '主外键',IS_NULLABLE '空标识',COLUMN_COMMENT " +
+			"'字段说明' from information_schema.columns where table_name='" + connect.TableName + "'" +
+			" and table_schema='" + connect.DbName + "'"
+	} else {
+		//查询数据库所有表名
+		querySql = "SELECT distinct TABLE_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + connect.DbName + "'"
+	}
+	fmt.Println("connnect success")
+	data, err := service.GetMySQLDbData(db, querySql)
+	if err != nil {
+		return http.StatusInternalServerError, &QueryMysqlDataResponse{
+			Code:    1,
+			Message: "deal data fail",
+		}
+	}
+	return http.StatusOK, &QueryMysqlDataResponse{
+		Code: 0,
+		Data: data,
+	}
 }
