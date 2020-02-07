@@ -207,7 +207,14 @@ func returns500(b *restful.RouteBuilder) {
  */
 func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 	connect := &service.Connect{}
-	req.ReadEntity(connect)
+	e := req.ReadEntity(connect)
+	if e != nil {
+		fmt.Println("parameter error")
+		return http.StatusInternalServerError, &QueryMysqlDataResponse{
+			Code:    1,
+			Message: "parameter error",
+		}
+	}
 	buildPath := strings.Builder{}
 	buildPath.WriteString(connect.UserName)
 	buildPath.WriteString(":")
@@ -245,10 +252,10 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 		querySql = "select COLUMN_NAME '字段名称',COLUMN_TYPE '字段类型长度',IF(EXTRA='auto_increment',CONCAT(COLUMN_KEY," +
 			"'(', IF(EXTRA='auto_increment','自增长',EXTRA),')'),COLUMN_KEY) '主外键',IS_NULLABLE '空标识',COLUMN_COMMENT " +
 			"'字段说明' from information_schema.columns where table_name='" + connect.TableName + "'" +
-			" and table_schema='" + connect.DbName + "'"
+			" and table_schema='" + connect.DBName + "'"
 	} else {
 		//查询数据库所有表名
-		querySql = "SELECT distinct TABLE_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + connect.DbName + "'"
+		querySql = "SELECT distinct TABLE_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + connect.DBName + "'"
 	}
 	fmt.Println("connnect success")
 	data, err := service.GetMySQLDbData(db, querySql)
