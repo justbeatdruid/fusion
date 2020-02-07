@@ -1,9 +1,11 @@
 package service
 
 import (
+	"context"
 	"fmt"
-
+	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
+	"log"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -73,6 +75,13 @@ func (s *Service) DeleteAllTopics() ([]*Topic, error) {
 	return ToListModel(tps), nil
 }
 
+func (s *Service) ListMessages(id string) (*Topic, error) {
+	tpc, err := s.ListTopicMessages(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	return ToModel(tpc), nil
+}
 func (s *Service) Create(tp *v1.Topic) (*v1.Topic, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
 	if err != nil {
@@ -181,5 +190,46 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 	}
 	klog.V(5).Infof("get v1.topic: %+v", tp)
 
+	return tp, nil
+}
+
+//查询topic中的所有消息
+func (s *Service) ListTopicMessages(id string) (*v1.Topic, error) {
+	tp, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	topicUrl := tp.Spec.Url
+	fmt.Println(topicUrl)
+	// Instantiate a Pulsar client
+	client, err := pulsar.NewClient(pulsar.ClientOptions{
+		URL: "pulsar://localhost:6650",
+	})
+	if err != nil {
+		log.Fatalf("Could not create client: %v", err)
+	}
+	reader, err := client.CreateReader(pulsar.ReaderOptions{
+		Topic:          topicUrl,
+		StartMessageID: pulsar.EarliestMessage,
+	})
+	if err != nil {
+		log.Fatalf("Could not create reader: %v", err)
+	}
+
+	defer reader.Close()
+
+	ctx := context.Background()
+
+	for {
+		if flag, _ := reader.HasNext(); flag == false {
+			break
+		}
+		msg, err := reader.Next(ctx)
+		if err != nil {
+			log.Fatalf("Error reading from topic: %v", err)
+		}
+		// Process the message
+		fmt.Println(string(msg.Payload()[:]))
+	}
 	return tp, nil
 }
