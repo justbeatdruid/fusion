@@ -148,6 +148,7 @@ func (dsl DataSourceList) GetItem(i int) (interface{}, error) {
 	}
 	return dsl[i], nil
 }
+
 func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
@@ -172,6 +173,21 @@ func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 		}
 	}
 }
+
+func (c *controller) Ping(req *restful.Request) (int, *PingResponse) {
+	id := req.PathParameter("id")
+	_, err := c.service.GetDataSourceByApiId(id, id)
+	if err != nil {
+		return http.StatusInternalServerError, &PingResponse{
+			Code:    1,
+			Message: fmt.Errorf("query data error: %+v", err).Error(),
+		}
+	}
+	return http.StatusOK, &PingResponse{
+		Code: 0,
+	}
+}
+
 func (c *controller) getDataByApi(req *restful.Request) (int, *QueryDataResponse) {
 	apiId := req.PathParameter("apiId")
 	//todo Acquisition parameters in the request body（Provisional use this method）

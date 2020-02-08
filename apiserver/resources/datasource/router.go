@@ -54,6 +54,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.POST("/datasources/{id}/connection").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("test datasource connection").
+		To(r.testConnection).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.GET("/datasources/{apiId}/data").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -61,6 +69,7 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.getDataByApi).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
 	ws.Route(ws.GET("/datasources/ConnectMysql").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -97,6 +106,12 @@ func (r *router) getDataByApi(request *restful.Request, response *restful.Respon
 	code, result := r.controller.getDataByApi(request)
 	response.WriteHeaderAndEntity(code, result)
 }
+
+func (r *router) testConnection(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.Ping(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
 func (r *router) getMysqlData(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ConnectMysql(request)
 	response.WriteHeaderAndEntity(code, result)
