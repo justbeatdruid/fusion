@@ -13,14 +13,21 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: apiserver
+all: 
+
+
+clean:
+
 
 # Run tests
 test: fmt vet
 	go test ./... -coverprofile cover.out
 
-apiserver: fmt vet
-	docker build . -f apiserver/Dockerfile -t ${APIIMG}
+apiserver-binary:
+	CGO_CFLAGS="-I$(shell pwd)/include" CGO_LDFLAGS="-L$(shell pwd)/lib" go build -o bin/fusion-apiserver cmd/apiserver/apiserver.go
+
+apiserver-image: #fmt vet vd
+	docker build . -f apiserver.Dockerfile -t ${APIIMG}
 	docker push ${APIIMG}
 
 serviceunit: fmt vet
@@ -33,7 +40,8 @@ fmt:
 
 # Run go vet against code
 vet:
-	go vet ./...
+	CGO_CFLAGS="-I$(shell pwd)/include" CGO_LDFLAGS="-L$(shell pwd)/lib" go vet ./...
 
-vendor:
+vd:
+	go mod tidy
 	go mod vendor
