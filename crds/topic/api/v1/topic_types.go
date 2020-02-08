@@ -36,7 +36,7 @@ type TopicSpec struct {
 	Namespace       string `json:"namespace"`
 	Partition       int    `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
 	IsNonPersistent bool   `json:"isNonPersistent"` //topic是否不持久化
-	Url             string `json:"url"`            //topic url
+	Url             string `json:"url"`             //topic url
 }
 
 // TopicStatus defines the observed state of Topic
