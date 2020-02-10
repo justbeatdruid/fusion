@@ -45,3 +45,6 @@ vet:
 vd:
 	go mod tidy
 	go mod vendor
+
+alpine:
+	docker build -t alpine:glibc -f alpine.Dockerfile .

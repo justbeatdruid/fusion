@@ -15,7 +15,8 @@ COPY apiserver/ apiserver/
 COPY crds/ crds/
 COPY pkg/ pkg/
 COPY vendor/ vendor/
-COPY lib/libpulsar* /usr/lib/
+COPY lib/libpulsar.so.2.5.0 /usr/lib/
+RUN cd /usr/lib && ln -s libpulsar.so.2.5.0 libpulsar.so
 COPY include/pulsar /usr/include/pulsar
 
 # Build
@@ -23,18 +24,9 @@ RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 GO111MODULE=off go build -a -o /go/bin
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM alpine:latest
-
-RUN apk --no-cache add ca-certificates wget
-RUN wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.30-r0/glibc-2.30-r0.apk && \
-    wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.30-r0/glibc-bin-2.30-r0.apk && \
-    wget https://github.com/sgerrand/alpine-pkg-glibc/releases/download/2.30-r0/glibc-i18n-2.30-r0.apk && \
-    apk add glibc-2.30-r0.apk glibc-bin-2.30-r0.apk glibc-i18n-2.30-r0.apk && \
-    rm glibc-2.30-r0.apk glibc-bin-2.30-r0.apk glibc-i18n-2.30-r0.apk
+FROM alpine:glibc
 
 COPY --from=builder /go/bin/fusion-apiserver /usr/local/bin
-COPY lib/libpulsar.so.2.5.0 /lib/
-RUN cd /lib && ln -s libpulsar.so.2.5.0 libpulsar.so
 
 EXPOSE 8001
 
