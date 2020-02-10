@@ -124,7 +124,7 @@ func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 //查询topic的消息
 func (c *controller) ListMessages(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
-	if tp, err := c.service.ListMessages(id); err != nil {
+	if messages, err := c.service.ListMessages(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
@@ -132,7 +132,7 @@ func (c *controller) ListMessages(req *restful.Request) (int, *GetResponse) {
 	} else {
 		return http.StatusOK, &GetResponse{
 			Code: 0,
-			Data: tp,
+			Message: messages,
 		}
 	}
 }

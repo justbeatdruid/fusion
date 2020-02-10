@@ -75,12 +75,12 @@ func (s *Service) DeleteAllTopics() ([]*Topic, error) {
 	return ToListModel(tps), nil
 }
 
-func (s *Service) ListMessages(id string) (*Topic, error) {
-	tpc, err := s.ListTopicMessages(id)
+func (s *Service) ListMessages(id string) (string, error) {
+	messages, err := s.ListTopicMessages(id)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get object: %+v", err)
+		return "", fmt.Errorf("cannot get object: %+v", err)
 	}
-	return ToModel(tpc), nil
+	return messages, nil
 }
 func (s *Service) Create(tp *v1.Topic) (*v1.Topic, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
@@ -194,10 +194,10 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 }
 
 //查询topic中的所有消息
-func (s *Service) ListTopicMessages(id string) (*v1.Topic, error) {
+func (s *Service) ListTopicMessages(id string) (string, error) {
 	tp, err := s.Get(id)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get object: %+v", err)
+		return "", fmt.Errorf("cannot get object: %+v", err)
 	}
 	topicUrl := tp.Spec.Url
 	fmt.Println(topicUrl)
@@ -217,6 +217,7 @@ func (s *Service) ListTopicMessages(id string) (*v1.Topic, error) {
 	}
 
 	defer reader.Close()
+	var  messages,message string
 
 	ctx := context.Background()
 
@@ -229,7 +230,8 @@ func (s *Service) ListTopicMessages(id string) (*v1.Topic, error) {
 			log.Fatalf("Error reading from topic: %v", err)
 		}
 		// Process the message
-		fmt.Println(string(msg.Payload()[:]))
+		message = string(msg.Payload()[:])
+		messages = message+"\n"+messages
 	}
-	return tp, nil
+	return messages, nil
 }
