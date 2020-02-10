@@ -25,6 +25,8 @@ type Serviceunit struct {
 	UpdatedAt time.Time `json:"time"`
 	APICount  int       `json:"apiCount"`
 	Published bool      `json:"published"`
+
+	Group string `json:"group"`
 }
 
 // only used in creation options
@@ -54,23 +56,26 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 		APICount:  0,
 		Published: false,
 	}
+	if len(app.Group) > 0 {
+		crd.ObjectMeta.Labels[v1.GroupLabel] = app.Group
+	}
 	return crd
 }
 
 // +update_sunyu
-func ToAPIUpdate(app *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
+func ToAPIUpdate(su *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 	id := crd.Spec.KongService.ID
 	crd.Spec = v1.ServiceunitSpec{
-		Name:         app.Name,
-		Type:         app.Type,
-		DatasourceID: app.DatasourceID,
-		Datasource:   app.Datasource,
-		KongService:  app.KongSevice,
-		Users:        app.Users,
-		Description:  app.Description,
+		Name:         su.Name,
+		Type:         su.Type,
+		DatasourceID: su.DatasourceID,
+		Datasource:   su.Datasource,
+		KongService:  su.KongSevice,
+		Users:        su.Users,
+		Description:  su.Description,
 	}
 	crd.Spec.KongService.ID = id
-	status := app.Status
+	status := su.Status
 	if len(status) == 0 {
 		status = v1.Update
 	}
@@ -84,7 +89,7 @@ func ToAPIUpdate(app *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 }
 
 func ToModel(obj *v1.Serviceunit) *Serviceunit {
-	return &Serviceunit{
+	su := &Serviceunit{
 		ID:           obj.ObjectMeta.Name,
 		Name:         obj.Spec.Name,
 		Namespace:    obj.ObjectMeta.Namespace,
@@ -99,6 +104,10 @@ func ToModel(obj *v1.Serviceunit) *Serviceunit {
 		APICount:  obj.Status.APICount,
 		Published: obj.Status.Published,
 	}
+	if group, ok := obj.ObjectMeta.Labels[v1.GroupLabel]; ok {
+		su.Group = group
+	}
+	return su
 }
 
 func ToListModel(items *v1.ServiceunitList) []*Serviceunit {

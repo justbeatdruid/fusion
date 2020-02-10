@@ -1,7 +1,8 @@
-curl localhost:8001/api/v1/serviceunitgroup/create -H 'content-type:application/json' \
+curl localhost:8001/api/v1/serviceunitgroups -H 'content-type:application/json' \
   -d'
 {
   "data": {
-    "name": "xuxutest"
+    "name": "xuxutest",
+    "description": "this is a test serviceunit group"
   }
 }'

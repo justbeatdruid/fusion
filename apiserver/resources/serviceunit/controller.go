@@ -6,6 +6,7 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/emicklei/go-restful"
 )
@@ -31,9 +32,9 @@ type CreateRequest = Wrapped
 type DeleteResponse = Wrapped
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int                    `json:"code"`
-	Message string                 `json:"message"`
-	Data    []*service.Serviceunit `json:"data"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
 }
 type PingResponse = DeleteResponse
 
@@ -55,7 +56,7 @@ func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateRespon
 			Message: "read entity error: data is null",
 		}
 	}
-	if db, err := c.service.CreateServiceunit(body.Data); err != nil {
+	if su, err := c.service.CreateServiceunit(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
 			Message: fmt.Errorf("create serviceunit error: %+v", err).Error(),
@@ -63,14 +64,14 @@ func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateRespon
 	} else {
 		return http.StatusOK, &CreateResponse{
 			Code: 0,
-			Data: db,
+			Data: su,
 		}
 	}
 }
 
 func (c *controller) GetServiceunit(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
-	if db, err := c.service.GetServiceunit(id); err != nil {
+	if su, err := c.service.GetServiceunit(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
 			Message: fmt.Errorf("get serviceunit error: %+v", err).Error(),
@@ -78,7 +79,7 @@ func (c *controller) GetServiceunit(req *restful.Request) (int, *GetResponse) {
 	} else {
 		return http.StatusOK, &GetResponse{
 			Code: 0,
-			Data: db,
+			Data: su,
 		}
 	}
 }
@@ -99,17 +100,41 @@ func (c *controller) DeleteServiceunit(req *restful.Request) (int, *DeleteRespon
 }
 
 func (c *controller) ListServiceunit(req *restful.Request) (int, *ListResponse) {
-	if db, err := c.service.ListServiceunit(); err != nil {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	group := req.QueryParameter("group")
+	if su, err := c.service.ListServiceunit(group); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list serviceunit error: %+v", err).Error(),
 		}
 	} else {
+		var sus ServiceunitList = su
+		data, err := util.PageWrap(sus, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:    1,
+				Message: fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
 		return http.StatusOK, &ListResponse{
 			Code: 0,
-			Data: db,
+			Data: data,
 		}
 	}
+}
+
+type ServiceunitList []*service.Serviceunit
+
+func (sus ServiceunitList) Length() int {
+	return len(sus)
+}
+
+func (sus ServiceunitList) GetItem(i int) (interface{}, error) {
+	if i >= len(sus) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return sus[i], nil
 }
 
 func (c *controller) PublishServiceunit(req *restful.Request) (int, *CreateResponse) {
@@ -143,15 +168,15 @@ func (c *controller) UpdateServiceunit(req *restful.Request) (int, *UpdateRespon
 		}
 	}
 	id := req.PathParameter("id")
-	if db, err := c.service.UpdateServiceunit(body.Data, id); err != nil {
+	if su, err := c.service.UpdateServiceunit(body.Data, id); err != nil {
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:    2,
-			Message: fmt.Errorf("update database error: %+v", err).Error(),
+			Message: fmt.Errorf("update serviceunit error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &UpdateResponse{
 			Code: 0,
-			Data: db,
+			Data: su,
 		}
 	}
 }

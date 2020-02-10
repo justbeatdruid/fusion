@@ -6,18 +6,18 @@ metadata:
   annotations:
     controller-gen.kubebuilder.io/version: v0.2.2
   creationTimestamp: null
-  name: serviceunitgroups.nlpt.cmcc.com
+  name: applicationgroups.nlpt.cmcc.com
 spec:
   group: nlpt.cmcc.com
   names:
-    kind: ServiceunitGroup
-    listKind: ServiceunitGroupList
-    plural: serviceunitgroups
-    singular: serviceunitgroup
+    kind: ApplicationGroup
+    listKind: ApplicationGroupList
+    plural: applicationgroups
+    singular: applicationgroup
   scope: ""
   validation:
     openAPIV3Schema:
-      description: ServiceunitGroup is the Schema for the serviceunitgroups API
+      description: ApplicationGroup is the Schema for the applicationgroups API
       properties:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
@@ -32,19 +32,19 @@ spec:
         metadata:
           type: object
         spec:
-          description: ServiceunitGroupSpec defines the desired state of ServiceunitGroup
+          description: ApplicationGroupSpec defines the desired state of ApplicationGroup
           properties:
             description:
               type: string
             name:
-              description: Foo is an example field of ServiceunitGroup. Edit ServiceunitGroup_types.go
+              description: Foo is an example field of ApplicationGroup. Edit ApplicationGroup_types.go
                 to remove/update
               type: string
           required:
           - description
           type: object
         status:
-          description: ServiceunitGroupStatus defines the observed state of ServiceunitGroup
+          description: ApplicationGroupStatus defines the observed state of ApplicationGroup
           type: object
       type: object
   version: v1

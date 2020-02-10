@@ -28,7 +28,8 @@ type ServiceunitGroupSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of ServiceunitGroup. Edit ServiceunitGroup_types.go to remove/update
-	Name string `json:"name,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Description string `json:"description"`
 }
 
 // ServiceunitGroupStatus defines the observed state of ServiceunitGroup
