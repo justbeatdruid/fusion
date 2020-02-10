@@ -48,3 +48,6 @@ vd:
 
 alpine:
 	docker build -t alpine:glibc -f alpine.Dockerfile .
+
+run:
+	LD_LIBRARY_PATH=$(shell pwd)/lib $(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5

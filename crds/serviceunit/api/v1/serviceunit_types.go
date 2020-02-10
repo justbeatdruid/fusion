@@ -27,6 +27,8 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+const GroupLabel = "nlpt.cmcc.com/group"
+
 // ServiceunitSpec defines the desired state of Serviceunit
 type ServiceunitSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -35,8 +37,8 @@ type ServiceunitSpec struct {
 	Name         string                `json:"name"`
 	Group        Group                 `json:"group"`
 	Type         ServiceType           `json:"type"`
-	DatasourceID Datasource            `json:"datasourcesID"`
-	Datasource   datav1.DatasourceSpec `json:"datasources"`
+	DatasourceID Datasource            `json:"datasourcesID,omitempty"`
+	Datasource   datav1.DatasourceSpec `json:"datasources,omitempty"`
 	Users        []apiv1.User          `json:"users"`
 	APIs         []Api                 `json:"apis"`
 	Description  string                `json:"description"`
