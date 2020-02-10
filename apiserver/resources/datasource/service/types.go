@@ -28,12 +28,13 @@ type Datasource struct {
 mysql 连接
 */
 type Connect struct {
-	UserName  string
-	Password  string
-	Ip        string
-	Port      string
-	DBName    string
-	TableName string
+	UserName       string
+	Password       string
+	Ip             string
+	Port           string
+	DBName         string
+	TableName      string
+	QueryCondition map[string]string
 }
 
 // only used in creation or update options
