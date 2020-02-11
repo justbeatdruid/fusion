@@ -137,7 +137,7 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 	} else {
 		return http.StatusOK, &MessageResponse{
 			Code: 0,
-			Message: messages,
+			Messages: messages,
 		}
 	}
 }
