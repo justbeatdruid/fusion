@@ -55,7 +55,7 @@ func (c *controller) CreateApplication(req *restful.Request) (int, *CreateRespon
 	if app, err := c.service.CreateApplication(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
-			Message: fmt.Errorf("create database error: %+v", err).Error(),
+			Message: fmt.Errorf("create application error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -70,7 +70,7 @@ func (c *controller) GetApplication(req *restful.Request) (int, *GetResponse) {
 	if app, err := c.service.GetApplication(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
-			Message: fmt.Errorf("get database error: %+v", err).Error(),
+			Message: fmt.Errorf("get application error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -85,7 +85,7 @@ func (c *controller) DeleteApplication(req *restful.Request) (int, *DeleteRespon
 	if app, err := c.service.DeleteApplication(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
-			Message: fmt.Errorf("delete database error: %+v", err).Error(),
+			Message: fmt.Errorf("delete application error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
@@ -98,10 +98,11 @@ func (c *controller) DeleteApplication(req *restful.Request) (int, *DeleteRespon
 func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-	if app, err := c.service.ListApplication(); err != nil {
+	group := req.QueryParameter("group")
+	if app, err := c.service.ListApplication(group); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
-			Message: fmt.Errorf("list database error: %+v", err).Error(),
+			Message: fmt.Errorf("list application error: %+v", err).Error(),
 		}
 	} else {
 		var apps ApplicationList = app

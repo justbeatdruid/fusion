@@ -6,6 +6,8 @@ import (
 
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Datasource struct {
@@ -28,12 +30,13 @@ type Datasource struct {
 mysql 连接
 */
 type Connect struct {
-	UserName  string
-	Password  string
-	Ip        string
-	Port      string
-	DBName    string
-	TableName string
+	UserName       string
+	Password       string
+	Ip             string
+	Port           string
+	DBName         string
+	TableName      string
+	QueryCondition map[string]string
 }
 
 // only used in creation or update options
@@ -58,12 +61,12 @@ func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 	if dealType == "create" {
 		crd.Status = v1.DatasourceStatus{
 			Status:    status,
-			CreatedAt: time.Now(),
+			CreatedAt: metav1.Now(),
 		}
 	} else if dealType == "update" {
 		crd.Status = v1.DatasourceStatus{
 			Status:    status,
-			UpdatedAt: time.Now(),
+			UpdatedAt: metav1.Now(),
 		}
 	}
 	return crd
@@ -79,8 +82,8 @@ func ToModel(obj *v1.Datasource) *Datasource {
 		RDB: obj.Spec.RDB,
 
 		Status:    obj.Status.Status,
-		UpdatedAt: obj.Status.UpdatedAt,
-		CreatedAt: obj.Status.CreatedAt,
+		UpdatedAt: obj.Status.UpdatedAt.Time,
+		CreatedAt: obj.Status.CreatedAt.Time,
 	}
 }
 

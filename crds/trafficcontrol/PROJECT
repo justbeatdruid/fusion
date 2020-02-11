@@ -1,0 +1,7 @@
+domain: cmcc.com
+repo: github.com/chinamobile/nlpt/crds/trafficcontrol
+resources:
+- group: nlpt
+  kind: Trafficcontrol
+  version: v1
+version: "2"

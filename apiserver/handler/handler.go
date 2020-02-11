@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -10,6 +11,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/application"
 	"github.com/chinamobile/nlpt/apiserver/resources/applicationgroup"
 	"github.com/chinamobile/nlpt/apiserver/resources/apply"
+	"github.com/chinamobile/nlpt/apiserver/resources/dataservice"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource"
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit"
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunitgroup"
@@ -57,6 +59,8 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 		datasource.NewRouter(h.config),
 		apply.NewRouter(h.config),
 		topic.NewRouter(h.config),
+		trafficcontrol.NewRouter(h.config),
+		dataservice.NewRouter(h.config),
 	}
 
 	for _, routerHandler := range handlers {

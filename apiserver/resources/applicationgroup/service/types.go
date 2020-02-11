@@ -2,15 +2,18 @@ package service
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/chinamobile/nlpt/crds/applicationgroup/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
 )
 
 type ApplicationGroup struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
+	ID          string    `json:"id"`
+	Namespace   string    `json:"namespace"`
+	Name        string    `json:"name"`
+	Description string    `json:"description"`
+	CreatedAt   time.Time `json:"createdAt"`
 }
 
 // only used in creation options
@@ -22,16 +25,19 @@ func ToAPI(app *ApplicationGroup) *v1.ApplicationGroup {
 	crd.ObjectMeta.Name = app.ID
 	crd.ObjectMeta.Namespace = crdNamespace
 	crd.Spec = v1.ApplicationGroupSpec{
-		Name: app.Name,
+		Name:        app.Name,
+		Description: app.Description,
 	}
 	return crd
 }
 
 func ToModel(obj *v1.ApplicationGroup) *ApplicationGroup {
 	return &ApplicationGroup{
-		ID:        obj.ObjectMeta.Name,
-		Name:      obj.Spec.Name,
-		Namespace: obj.ObjectMeta.Namespace,
+		ID:          obj.ObjectMeta.Name,
+		Name:        obj.Spec.Name,
+		Namespace:   obj.ObjectMeta.Namespace,
+		Description: obj.Spec.Description,
+		CreatedAt:   obj.ObjectMeta.CreationTimestamp.Time,
 	}
 }
 

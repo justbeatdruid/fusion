@@ -223,8 +223,10 @@ func returns500(b *restful.RouteBuilder) {
  */
 func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 	connect := &service.Connect{}
+	qtype := req.QueryParameter("type")
+
 	e := req.ReadEntity(connect)
-	if e != nil {
+	if e != nil || len(qtype) == 0 {
 		fmt.Println("parameter error")
 		return http.StatusInternalServerError, &QueryMysqlDataResponse{
 			Code:    1,
@@ -263,15 +265,29 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 		}
 	}
 	var querySql string
-	if len(connect.TableName) != 0 {
+
+	if qtype == "1" {
 		//查询表字段名称，字段描述，字段类型
 		querySql = "select COLUMN_NAME '字段名称',COLUMN_TYPE '字段类型长度',IF(EXTRA='auto_increment',CONCAT(COLUMN_KEY," +
 			"'(', IF(EXTRA='auto_increment','自增长',EXTRA),')'),COLUMN_KEY) '主外键',IS_NULLABLE '空标识',COLUMN_COMMENT " +
 			"'字段说明' from information_schema.columns where table_name='" + connect.TableName + "'" +
 			" and table_schema='" + connect.DBName + "'"
-	} else {
+	} else if qtype == "2" {
 		//查询数据库所有表名
 		querySql = "SELECT distinct TABLE_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + connect.DBName + "'"
+	} else {
+		//查询数据表数据
+		querySqls := strings.Builder{}
+		querySqls.WriteString("SELECT * FROM " + "`" + connect.DBName + "`." + "`" + connect.TableName + "`")
+		if len(connect.QueryCondition) > 0 {
+			querySqls.WriteString("where ")
+			for k, v := range connect.QueryCondition {
+				querySqls.WriteString(k + "=" + "'" + v + "'" + " and ")
+			}
+			querySql = querySqls.String()            //拼接的sql语句转成字符串
+			querySql = querySql[0 : len(querySql)-4] //截取最后三个字符“and”
+		}
+
 	}
 	fmt.Println("connnect success")
 	data, err := service.GetMySQLDbData(db, querySql)

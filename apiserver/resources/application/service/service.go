@@ -33,8 +33,8 @@ func (s *Service) CreateApplication(model *Application) (*Application, error) {
 	return ToModel(app), nil
 }
 
-func (s *Service) ListApplication() ([]*Application, error) {
-	apps, err := s.List()
+func (s *Service) ListApplication(group string) ([]*Application, error) {
+	apps, err := s.List(group)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
@@ -74,8 +74,12 @@ func (s *Service) Create(app *v1.Application) (*v1.Application, error) {
 	return app, nil
 }
 
-func (s *Service) List() (*v1.ApplicationList, error) {
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
+func (s *Service) List(group string) (*v1.ApplicationList, error) {
+	var options metav1.ListOptions
+	if len(group) > 0 {
+		options.LabelSelector = fmt.Sprintf("%s=%s", v1.GroupLabel, group)
+	}
+	crd, err := s.client.Namespace(crdNamespace).List(options)
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}

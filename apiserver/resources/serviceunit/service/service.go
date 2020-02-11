@@ -38,8 +38,8 @@ func (s *Service) CreateServiceunit(model *Serviceunit) (*Serviceunit, error) {
 	return ToModel(su), nil
 }
 
-func (s *Service) ListServiceunit() ([]*Serviceunit, error) {
-	sus, err := s.List()
+func (s *Service) ListServiceunit(group string) ([]*Serviceunit, error) {
+	sus, err := s.List(group)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
@@ -109,8 +109,12 @@ func (s *Service) Create(su *v1.Serviceunit) (*v1.Serviceunit, error) {
 	return su, nil
 }
 
-func (s *Service) List() (*v1.ServiceunitList, error) {
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
+func (s *Service) List(group string) (*v1.ServiceunitList, error) {
+	var options metav1.ListOptions
+	if len(group) > 0 {
+		options.LabelSelector = fmt.Sprintf("%s=%s", v1.GroupLabel, group)
+	}
+	crd, err := s.client.Namespace(crdNamespace).List(options)
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}

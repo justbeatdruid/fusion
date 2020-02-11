@@ -26,6 +26,8 @@ type Application struct {
 	APICount  int       `json:"apiCount"`
 
 	CreatedAt time.Time `json:"createdAt"`
+
+	Group string `json:"group"`
 }
 
 // only used in creation options
@@ -48,11 +50,14 @@ func ToAPI(app *Application) *v1.Application {
 	crd.Status = v1.ApplicationStatus{
 		Status: v1.Init,
 	}
+	if len(app.Group) > 0 {
+		crd.ObjectMeta.Labels[v1.GroupLabel] = app.Group
+	}
 	return crd
 }
 
 func ToModel(obj *v1.Application) *Application {
-	return &Application{
+	app := &Application{
 		ID:        obj.ObjectMeta.Name,
 		Name:      obj.Spec.Name,
 		Namespace: obj.ObjectMeta.Namespace,
@@ -70,6 +75,10 @@ func ToModel(obj *v1.Application) *Application {
 
 		CreatedAt: obj.ObjectMeta.CreationTimestamp.Time,
 	}
+	if group, ok := obj.ObjectMeta.Labels[v1.GroupLabel]; ok {
+		app.Group = group
+	}
+	return app
 }
 
 func ToListModel(items *v1.ApplicationList) []*Application {

@@ -16,8 +16,6 @@ limitations under the License.
 package v1
 
 import (
-	"time"
-
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 
@@ -27,6 +25,8 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+const GroupLabel = "nlpt.cmcc.com/group"
+
 // ServiceunitSpec defines the desired state of Serviceunit
 type ServiceunitSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
@@ -35,8 +35,8 @@ type ServiceunitSpec struct {
 	Name         string                `json:"name"`
 	Group        Group                 `json:"group"`
 	Type         ServiceType           `json:"type"`
-	DatasourceID Datasource            `json:"datasourcesID"`
-	Datasource   datav1.DatasourceSpec `json:"datasources"`
+	DatasourceID Datasource            `json:"datasourcesID,omitempty"`
+	Datasource   datav1.DatasourceSpec `json:"datasources,omitempty"`
 	Users        []apiv1.User          `json:"users"`
 	APIs         []Api                 `json:"apis"`
 	Description  string                `json:"description"`
@@ -66,8 +66,8 @@ type Group struct {
 }
 
 type Api struct {
-	ID   string
-	Name string
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type ServiceType string
@@ -81,11 +81,11 @@ const (
 type ServiceunitStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status    Status    `json:"status"`
-	UpdatedAt time.Time `json:"time.Time"`
-	APICount  int       `json:"apiCount"`
-	Published bool      `json:"published"`
-	Message   string    `json:"message"`
+	Status    Status      `json:"status"`
+	UpdatedAt metav1.Time `json:"time"`
+	APICount  int         `json:"apiCount"`
+	Published bool        `json:"published"`
+	Message   string      `json:"message"`
 }
 
 type Status string

@@ -3,6 +3,8 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.2
   creationTimestamp: null
   name: serviceunits.nlpt.cmcc.com
 spec:
@@ -32,13 +34,187 @@ spec:
         spec:
           description: ServiceunitSpec defines the desired state of Serviceunit
           properties:
-            name:
-              description: Foo is an example field of Serviceunit. Edit Serviceunit_types.go
-                to remove/update
+            apis:
+              items:
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+                required:
+                - id
+                - name
+                type: object
+              type: array
+            datasources:
+              description: DatasourceSpec defines the desired state of Datasource
+              properties:
+                authType:
+                  type: string
+                localtion:
+                  type: string
+                name:
+                  description: Foo is an example field of Datasource. Edit Datasource_types.go
+                    to remove/update
+                  type: string
+                rdb:
+                  properties:
+                    connect:
+                      properties:
+                        host:
+                          type: string
+                        password:
+                          type: string
+                        port:
+                          type: integer
+                        username:
+                          type: string
+                      required:
+                      - host
+                      - password
+                      - port
+                      - username
+                      type: object
+                    createUser:
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - id
+                      - name
+                      type: object
+                    database:
+                      type: string
+                    schema:
+                      type: string
+                    type:
+                      type: string
+                    updateUser:
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - id
+                      - name
+                      type: object
+                  required:
+                  - connect
+                  - createUser
+                  - database
+                  - type
+                  - updateUser
+                  type: object
+                type:
+                  type: string
+              required:
+              - authType
+              - localtion
+              - name
+              - type
+              type: object
+            datasourcesID:
+              properties:
+                groupId:
+                  type: string
+                id:
+                  type: string
+              required:
+              - groupId
+              - id
+              type: object
+            description:
               type: string
+            group:
+              properties:
+                id:
+                  type: string
+                name:
+                  type: string
+              required:
+              - id
+              - name
+              type: object
+            kongServiceInfo:
+              description: KongInfo
+              properties:
+                connect_timeout:
+                  type: integer
+                host:
+                  type: string
+                id:
+                  type: string
+                path:
+                  type: string
+                port:
+                  type: integer
+                protocol:
+                  type: string
+                read_timeout:
+                  type: integer
+                write_timeout:
+                  type: integer
+              required:
+              - connect_timeout
+              - host
+              - id
+              - path
+              - port
+              - protocol
+              - read_timeout
+              - write_timeout
+              type: object
+            name:
+              type: string
+            type:
+              type: string
+            users:
+              items:
+                properties:
+                  inCharge:
+                    type: boolean
+                  name:
+                    type: string
+                required:
+                - inCharge
+                - name
+                type: object
+              type: array
+          required:
+          - apis
+          - description
+          - group
+          - kongServiceInfo
+          - name
+          - type
+          - users
           type: object
         status:
           description: ServiceunitStatus defines the observed state of Serviceunit
+          properties:
+            apiCount:
+              type: integer
+            message:
+              type: string
+            published:
+              type: boolean
+            status:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "make" to regenerate code after modifying
+                this file'
+              type: string
+            time:
+              format: date-time
+              type: string
+          required:
+          - apiCount
+          - message
+          - published
+          - status
+          - time
           type: object
       type: object
   version: v1
