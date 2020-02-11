@@ -3,6 +3,8 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.2
   creationTimestamp: null
   name: applies.nlpt.cmcc.com
 spec:
@@ -32,13 +34,70 @@ spec:
         spec:
           description: ApplySpec defines the desired state of Apply
           properties:
-            foo:
+            action:
+              type: string
+            appliedBy:
+              type: string
+            approvedBy:
+              type: string
+            expireAt:
+              format: date-time
+              type: string
+            name:
               description: Foo is an example field of Apply. Edit Apply_types.go to
                 remove/update
               type: string
+            sourceID:
+              type: string
+            sourceName:
+              type: string
+            sourceType:
+              type: string
+            targetID:
+              type: string
+            targetName:
+              type: string
+            targetType:
+              type: string
+          required:
+          - action
+          - appliedBy
+          - approvedBy
+          - expireAt
+          - sourceID
+          - sourceName
+          - sourceType
+          - targetID
+          - targetName
+          - targetType
           type: object
         status:
           description: ApplyStatus defines the observed state of Apply
+          properties:
+            appliedAt:
+              format: date-time
+              type: string
+            approvedAt:
+              format: date-time
+              type: string
+            oprationDone:
+              type: boolean
+            reason:
+              type: string
+            retry:
+              type: integer
+            status:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "make" to regenerate code after modifying
+                this file'
+              type: string
+          required:
+          - appliedAt
+          - approvedAt
+          - oprationDone
+          - reason
+          - retry
+          - status
           type: object
       type: object
   version: v1

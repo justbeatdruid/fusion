@@ -6,6 +6,8 @@ import (
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Api struct {
@@ -67,8 +69,8 @@ func ToAPI(api *Api) *v1.Api {
 	crd.Status = v1.ApiStatus{
 		Status:           v1.Init,
 		AccessLink:       api.AccessLink,
-		UpdatedAt:        time.Now(),
-		ReleasedAt:       time.Now(),
+		UpdatedAt:        metav1.Now(),
+		ReleasedAt:       metav1.Now(),
 		ApplicationCount: api.ApplicationCount,
 		CalledCount:      api.CalledCount,
 	}
@@ -96,8 +98,8 @@ func ToModel(obj *v1.Api) *Api {
 
 		Status:           obj.Status.Status,
 		AccessLink:       obj.Status.AccessLink,
-		UpdatedAt:        obj.Status.UpdatedAt,
-		ReleasedAt:       obj.Status.ReleasedAt,
+		UpdatedAt:        obj.Status.UpdatedAt.Time,
+		ReleasedAt:       obj.Status.ReleasedAt.Time,
 		ApplicationCount: obj.Status.ApplicationCount,
 		CalledCount:      obj.Status.CalledCount,
 	}

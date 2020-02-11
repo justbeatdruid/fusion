@@ -16,8 +16,6 @@ limitations under the License.
 package v1
 
 import (
-	"time"
-
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 
@@ -68,8 +66,8 @@ type Group struct {
 }
 
 type Api struct {
-	ID   string
-	Name string
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type ServiceType string
@@ -83,11 +81,11 @@ const (
 type ServiceunitStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status    Status    `json:"status"`
-	UpdatedAt time.Time `json:"time.Time"`
-	APICount  int       `json:"apiCount"`
-	Published bool      `json:"published"`
-	Message   string    `json:"message"`
+	Status    Status      `json:"status"`
+	UpdatedAt metav1.Time `json:"time"`
+	APICount  int         `json:"apiCount"`
+	Published bool        `json:"published"`
+	Message   string      `json:"message"`
 }
 
 type Status string

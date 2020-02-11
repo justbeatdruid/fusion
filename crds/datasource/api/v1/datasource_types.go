@@ -17,7 +17,6 @@ package v1
 
 import (
 	"fmt"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -82,8 +81,8 @@ func (r *RDB) Validate() error {
 }
 
 type User struct {
-	UserId   string
-	UserName string
+	UserId   string `json:"id"`
+	UserName string `json:"name"`
 }
 
 type ConnectInfo struct {
@@ -97,9 +96,9 @@ type ConnectInfo struct {
 type DatasourceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status    Status    `json:"status"`
-	UpdatedAt time.Time `json:"UpdatedAt"`
-	CreatedAt time.Time `json:"CreatedAt"`
+	Status    Status      `json:"status"`
+	UpdatedAt metav1.Time `json:"UpdatedAt"`
+	CreatedAt metav1.Time `json:"CreatedAt"`
 }
 type Status string
 

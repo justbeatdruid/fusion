@@ -6,6 +6,8 @@ import (
 
 	"github.com/chinamobile/nlpt/crds/apply/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Apply struct {
@@ -48,13 +50,13 @@ func ToAPI(app *Apply) *v1.Apply {
 		SourceType: app.Source.Type,
 		SourceID:   app.Source.ID,
 		Action:     app.Action,
-		ExpireAt:   app.ExpireAt,
+		ExpireAt:   metav1.NewTime(app.ExpireAt),
 		AppliedBy:  app.AppliedBy,
 		ApprovedBy: app.ApprovedBy,
 	}
 	crd.Status = v1.ApplyStatus{
 		Status:    v1.Waiting,
-		AppliedAt: time.Now(),
+		AppliedAt: metav1.Now(),
 	}
 	return crd
 }
@@ -83,12 +85,12 @@ func (s *Service) ToModel(obj *v1.Apply) (*Apply, error) {
 			Name: obj.Spec.SourceName,
 		},
 		Action:   obj.Spec.Action,
-		ExpireAt: obj.Spec.ExpireAt,
+		ExpireAt: obj.Spec.ExpireAt.Time,
 
 		Status:     obj.Status.Status,
 		Reason:     obj.Status.Reason,
-		AppliedAt:  obj.Status.AppliedAt,
-		ApprovedAt: obj.Status.ApprovedAt,
+		AppliedAt:  obj.Status.AppliedAt.Time,
+		ApprovedAt: obj.Status.ApprovedAt.Time,
 	}
 	var err error
 	a.Source, err = s.Completion(a.Source)
