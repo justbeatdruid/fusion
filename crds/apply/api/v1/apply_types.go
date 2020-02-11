@@ -16,8 +16,6 @@ limitations under the License.
 package v1
 
 import (
-	"time"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,17 +28,17 @@ type ApplySpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Apply. Edit Apply_types.go to remove/update
-	Name       string    `json:"name,omitempty"`
-	TargetType Type      `json:"targetType"`
-	TargetID   string    `json:"targetID"`
-	TargetName string    `json:"targetName"`
-	SourceType Type      `json:"sourceType"`
-	SourceID   string    `json:"sourceID"`
-	SourceName string    `json:"sourceName"`
-	Action     Action    `json:"action"`
-	ExpireAt   time.Time `json:"expireAt"`
-	AppliedBy  string    `json:"appliedBy"`
-	ApprovedBy string    `json:"approvedBy"`
+	Name       string      `json:"name,omitempty"`
+	TargetType Type        `json:"targetType"`
+	TargetID   string      `json:"targetID"`
+	TargetName string      `json:"targetName"`
+	SourceType Type        `json:"sourceType"`
+	SourceID   string      `json:"sourceID"`
+	SourceName string      `json:"sourceName"`
+	Action     Action      `json:"action"`
+	ExpireAt   metav1.Time `json:"expireAt"`
+	AppliedBy  string      `json:"appliedBy"`
+	ApprovedBy string      `json:"approvedBy"`
 }
 
 type Type string
@@ -71,10 +69,10 @@ const (
 type ApplyStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status     Status    `json:"status"`
-	Reason     string    `json:"reason"`
-	AppliedAt  time.Time `json:"appliedAt"`
-	ApprovedAt time.Time `json:"approvedAt"`
+	Status     Status      `json:"status"`
+	Reason     string      `json:"reason"`
+	AppliedAt  metav1.Time `json:"appliedAt"`
+	ApprovedAt metav1.Time `json:"approvedAt"`
 
 	OperationDone bool `json:"oprationDone"`
 	Retry         int  `json:"retry"`

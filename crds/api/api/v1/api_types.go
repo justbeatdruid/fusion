@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -232,13 +231,13 @@ const (
 type ApiStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status           Status     `json:"status"`
-	AccessLink       AccessLink `json:"access"`
-	UpdatedAt        time.Time  `json:"updatedAt"`
-	ReleasedAt       time.Time  `json:"releasedAt"`
-	ApplicationCount int        `json:"applicationCount"`
-	CalledCount      int        `json:"calledCount"`
-	Message          string     `json:"msg"`
+	Status           Status      `json:"status"`
+	AccessLink       AccessLink  `json:"access"`
+	UpdatedAt        metav1.Time `json:"updatedAt"`
+	ReleasedAt       metav1.Time `json:"releasedAt"`
+	ApplicationCount int         `json:"applicationCount"`
+	CalledCount      int         `json:"calledCount"`
+	Message          string      `json:"msg"`
 
 	Applications map[string]ApiApplicationStatus `json:"applications"`
 }

@@ -1,0 +1,24 @@
+# permissions for end users to edit dataservices.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dataservice-editor-role
+rules:
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - dataservices
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - dataservices/status
+  verbs:
+  - get
