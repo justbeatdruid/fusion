@@ -1,0 +1,7 @@
+apiVersion: nlpt.cmcc.com/v1
+kind: Trafficcontrol
+metadata:
+  name: trafficcontrol-sample
+spec:
+  # Add fields here
+  foo: bar
