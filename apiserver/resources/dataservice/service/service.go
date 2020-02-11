@@ -61,6 +61,7 @@ func (s *Service) DeleteDataservice(id string) error {
 }
 
 func (s *Service) Create(ds *v1.Dataservice) (*v1.Dataservice, error) {
+	klog.V(5).Infof("creating dataservice: %+v", *ds)
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ds)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
