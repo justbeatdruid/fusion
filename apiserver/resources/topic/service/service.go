@@ -74,7 +74,7 @@ func (s *Service) DeleteAllTopics() ([]*Topic, error) {
 	return ToListModel(tps), nil
 }
 
-func (s *Service) ListMessages(id string) ([]string, error) {
+func (s *Service) ListMessages(id string) (*[]Message, error) {
 	messages, err := s.ListTopicMessages(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
@@ -193,7 +193,7 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 }
 
 //查询topic中的所有消息
-func (s *Service) ListTopicMessages(id string) ([]string, error) {
+func (s *Service) ListTopicMessages(id string) (*[]Message, error) {
 	tp, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
@@ -216,7 +216,9 @@ func (s *Service) ListTopicMessages(id string) ([]string, error) {
 	}
 
 	defer reader.Close()
-	messages := []string{}
+	var messageStructs []Message
+	var messageStruct Message
+
 
 	ctx := context.Background()
 
@@ -229,7 +231,10 @@ func (s *Service) ListTopicMessages(id string) ([]string, error) {
 			log.Fatalf("Error reading from topic: %v", err)
 		}
 		// Process the message
-		messages = append(messages,string(msg.Payload()[:]))
+		messageStruct.ID = msg.ID()
+		messageStruct.Time = msg.PublishTime()
+		messageStruct.Messages = string(msg.Payload()[:])
+		messageStructs = append(messageStructs,messageStruct)
 	}
-	return messages, nil
+	return &messageStructs, nil
 }

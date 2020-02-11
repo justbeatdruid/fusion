@@ -3,9 +3,9 @@ package topic
 import (
 	"fmt"
 	"net/http"
-
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+
 
 	"github.com/emicklei/go-restful"
 )
@@ -43,7 +43,7 @@ type ListResponse = struct {
 type MessageResponse = struct {
 	Code    int              `json:"code"`
 	Message string           `json:"message"`
-	Messages []string        `json:"messages"`
+    Messages *[]service.Message `json:"messages"`
 }
 type PingResponse = DeleteResponse
 
