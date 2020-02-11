@@ -74,10 +74,10 @@ func (s *Service) DeleteAllTopics() ([]*Topic, error) {
 	return ToListModel(tps), nil
 }
 
-func (s *Service) ListMessages(id string) (string, error) {
+func (s *Service) ListMessages(id string) ([]string, error) {
 	messages, err := s.ListTopicMessages(id)
 	if err != nil {
-		return "", fmt.Errorf("cannot get object: %+v", err)
+		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	return messages, nil
 }
