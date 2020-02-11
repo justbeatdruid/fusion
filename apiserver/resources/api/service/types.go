@@ -27,6 +27,7 @@ type Api struct {
 	WebParams     []v1.WebParams    `json:"webParams"`
 	ApiType       v1.ApiType        `json:"apiType"`
 	AuthType      v1.AuthType       `json:"authType"`
+	Traffic       v1.Traffic        `json:"traffic"`
 	KongApi       v1.KongApiInfo    `json:"KongApi"`
 
 	Status v1.Status `json:"status"`
@@ -65,6 +66,7 @@ func ToAPI(api *Api) *v1.Api {
 		KongApi:      api.KongApi,
 		ApiType:      api.ApiType,
 		AuthType:     api.AuthType,
+		Traffic:      api.Traffic,
 	}
 	crd.Status = v1.ApiStatus{
 		Status:           v1.Init,
@@ -95,6 +97,7 @@ func ToModel(obj *v1.Api) *Api {
 		KongApi:      obj.Spec.KongApi,
 		ApiType:      obj.Spec.ApiType,
 		AuthType:     obj.Spec.AuthType,
+		Traffic:      obj.Spec.Traffic,
 
 		Status:           obj.Status.Status,
 		AccessLink:       obj.Status.AccessLink,

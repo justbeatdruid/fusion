@@ -16,14 +16,14 @@ import (
 var crdNamespace = "default"
 
 type Service struct {
-	client           dynamic.NamespaceableResourceInterface
-	apiClient        dynamic.NamespaceableResourceInterface
+	client    dynamic.NamespaceableResourceInterface
+	apiClient dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface) *Service {
 	return &Service{
-		client:           client.Resource(v1.GetOOFSGVR()),
-		apiClient:        client.Resource(apiv1.GetOOFSGVR()),
+		client:    client.Resource(v1.GetOOFSGVR()),
+		apiClient: client.Resource(apiv1.GetOOFSGVR()),
 	}
 }
 
@@ -54,12 +54,12 @@ func (s *Service) GetTrafficcontrol(id string) (*Trafficcontrol, error) {
 	return ToModel(su), nil
 }
 
-func (s *Service) DeleteTrafficcontrol(id string) (*Trafficcontrol, error) {
-	su, err := s.Delete(id)
+func (s *Service) DeleteTrafficcontrol(id string) error {
+	err := s.Delete(id)
 	if err != nil {
-		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
+		return fmt.Errorf("cannot delete traffic control: %+v", err)
 	}
-	return ToModel(su), nil
+	return nil
 }
 
 // + update_sunyu
@@ -75,7 +75,6 @@ func (s *Service) UpdateTrafficcontrol(model *Trafficcontrol, id string) (*Traff
 	}
 	return ToModel(su), nil
 }
-
 
 func (s *Service) Create(su *v1.Trafficcontrol) (*v1.Trafficcontrol, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(su)
@@ -132,16 +131,20 @@ func (s *Service) ForceDelete(id string) error {
 	return nil
 }
 
-func (s *Service) Delete(id string) (*v1.Trafficcontrol, error) {
+func (s *Service) Delete(id string) error {
 	su, err := s.Get(id)
 	if err != nil {
-		return nil, fmt.Errorf("get crd by id error: %+v", err)
+		return fmt.Errorf("get crd by id error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.trafficcontrol: %+v", su)
+	err = s.client.Namespace(crdNamespace).Delete(id, &metav1.DeleteOptions{})
+	if err != nil {
+		return fmt.Errorf("error delete crd: %+v", err)
 	}
 	//TODO need check status !!!
-	su.Status.Status = v1.Delete
-	return s.UpdateStatus(su)
+	//su.Status.Status = v1.Delete
+	return nil
 }
-
 
 // + update_sunyu
 func (s *Service) Update(su *v1.Trafficcontrol) (*v1.Trafficcontrol, error) {
@@ -173,19 +176,6 @@ func (s *Service) UpdateStatus(su *v1.Trafficcontrol) (*v1.Trafficcontrol, error
 	return su, nil
 }
 
-func (s *Service) getApiInfo(id string) (* apiv1.Traffic, error) {
-	crd, err := s.apiClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("error get crd: %+v", err)
-	}
-	api := &apiv1.Traffic{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), api); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	klog.V(5).Infof("get v1.api: %+v", api)
-	return api, nil
-}
-
 func (s *Service) getAPi(id string) (*apiv1.Api, error) {
 	crd, err := s.apiClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
@@ -195,19 +185,26 @@ func (s *Service) getAPi(id string) (*apiv1.Api, error) {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), su); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.api: %+v", su)
+	klog.V(5).Infof("get v1.api info: %+v", su)
 	return su, nil
 }
 
-func (s *Service) updateApi(apiid string, traffic *v1.Trafficcontrol) (*apiv1.Api, error) {
+func (s *Service) updateApi(apiid string, traffic *v1.Trafficcontrol, status v1.Status) (*apiv1.Api, error) {
 	api, err := s.getAPi(apiid)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get service unit: %+v", err)
+		return nil, fmt.Errorf("cannot update api: %+v", err)
 	}
-	api.Spec.Traffic = apiv1.Traffic{
-		ID:   traffic.Spec.Name,
+	if v1.Bind == status {
+		api.Spec.Traffic = apiv1.Traffic{
+			ID:   traffic.ObjectMeta.Name,
+			Name: traffic.Spec.Name,
+		}
+	} else {
+		api.Spec.Traffic = apiv1.Traffic{
+			ID:   "",
+			Name: "",
+		}
 	}
-
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -225,34 +222,63 @@ func (s *Service) updateApi(apiid string, traffic *v1.Trafficcontrol) (*apiv1.Ap
 	}
 	return api, nil
 }
-func (s *Service) BindApi(id string,  apis []v1.Api) (*Trafficcontrol, error) {
+func (s *Service) BindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 	traffic, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("get traffic error: %+v", err)
 	}
 
 	for _, api := range apis {
-		apiInfo, err := s.getApiInfo(api.ID)
+		apiSource, err := s.getAPi(api.ID)
 		if err != nil {
-			return nil, fmt.Errorf("get api error: %+v", err)
+			return nil, fmt.Errorf("cannot get api: %+v", err)
 		}
-		if len(apiInfo.ID) > 0 {
+		if len(apiSource.Spec.Traffic.ID) > 0 {
 			return nil, fmt.Errorf("api alrady bound to traffic")
 		}
-		//traffic.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "true"
-		traffic.Spec.APIs = append(traffic.Spec.APIs, v1.Api{
-			ID: api.ID,
+		//绑定api
+		traffic.ObjectMeta.Labels[api.ID] = "true"
+		traffic.Spec.Apis = append(traffic.Spec.Apis, v1.Api{
+			ID:     api.ID,
+			Name:   apiSource.Spec.Name,
+			KongID: apiSource.Spec.KongApi.KongID,
+			Result: v1.INIT,
 		})
 
-		if _, err = s.updateApi(api.ID, traffic); err != nil {
+		if _, err = s.updateApi(api.ID, traffic, v1.Bind); err != nil {
 			return nil, fmt.Errorf("cannot update api traffic")
 		}
+		//update status bind
+		traffic.Status.Status = v1.Bind
 		traffic, err = s.UpdateSpec(traffic)
+		traffic, err = s.UpdateStatus(traffic)
+	}
+	return ToModel(traffic), err
+}
 
-		//if _, err = s.updateApplicationApi(appid, api.ObjectMeta.Name, api.Spec.Name); err != nil {
-		//	return fmt.Errorf("cannot update")
-		//}
+func (s *Service) UnBindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
+	traffic, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("get traffic error: %+v", err)
+	}
 
+	for _, api := range apis {
+		apiSource, err := s.getAPi(api.ID)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get api: %+v", err)
+		}
+		if len(apiSource.Spec.Traffic.ID) == 0 {
+			return nil, fmt.Errorf("api has no bound to traffic")
+		}
+		//解除绑定
+		traffic.ObjectMeta.Labels[api.ID] = "false"
+		if _, err = s.updateApi(api.ID, traffic, v1.UnBind); err != nil {
+			return nil, fmt.Errorf("cannot update api traffic")
+		}
+		//update status unbind
+		traffic.Status.Status = v1.UnBind
+		traffic, err = s.UpdateSpec(traffic)
+		traffic, err = s.UpdateStatus(traffic)
 	}
 	return ToModel(traffic), err
 }

@@ -22,8 +22,8 @@ func newController(cfg *config.Config) *controller {
 }
 
 type Wrapped struct {
-	Code    int                  `json:"code"`
-	Message string               `json:"message"`
+	Code    int                     `json:"code"`
+	Message string                  `json:"message"`
 	Data    *service.Trafficcontrol `json:"data,omitempty"`
 }
 
@@ -32,8 +32,8 @@ type CreateRequest = Wrapped
 type DeleteResponse = Wrapped
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int                    `json:"code"`
-	Message string                 `json:"message"`
+	Code    int                       `json:"code"`
+	Message string                    `json:"message"`
 	Data    []*service.Trafficcontrol `json:"data"`
 }
 type PingResponse = DeleteResponse
@@ -43,8 +43,8 @@ type UpdateRequest = Wrapped
 type UpdateResponse = Wrapped
 
 type BindRequest struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Code    int      `json:"code"`
+	Message string   `json:"message"`
 	Data    []v1.Api `json:"data,omitempty"`
 }
 type BindResponse = Wrapped
@@ -93,7 +93,7 @@ func (c *controller) GetTrafficcontrol(req *restful.Request) (int, *GetResponse)
 
 func (c *controller) DeleteTrafficcontrol(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if data, err := c.service.DeleteTrafficcontrol(id); err != nil {
+	if err := c.service.DeleteTrafficcontrol(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("delete trafficcontrol error: %+v", err).Error(),
@@ -101,7 +101,6 @@ func (c *controller) DeleteTrafficcontrol(req *restful.Request) (int, *DeleteRes
 	} else {
 		return http.StatusOK, &DeleteResponse{
 			Code: 0,
-			Data: data,
 		}
 	}
 }
@@ -119,7 +118,6 @@ func (c *controller) ListTrafficcontrol(req *restful.Request) (int, *ListRespons
 		}
 	}
 }
-
 
 // +update_sunyu
 func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateResponse) {
@@ -150,7 +148,6 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 	}
 }
 
-
 func (c *controller) BindApis(req *restful.Request) (int, interface{}) {
 	body := &BindRequest{}
 	if err := req.ReadEntity(body); err != nil {
@@ -164,6 +161,27 @@ func (c *controller) BindApis(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:    2,
 			Message: fmt.Errorf("bind api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &BindResponse{
+			Code: 0,
+			Data: api,
+		}
+	}
+}
+func (c *controller) UnBindApis(req *restful.Request) (int, interface{}) {
+	body := &BindRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	trafficID := req.PathParameter("id")
+	if api, err := c.service.UnBindApi(trafficID, body.Data); err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:    2,
+			Message: fmt.Errorf("unbind api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &BindResponse{

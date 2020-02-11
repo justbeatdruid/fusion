@@ -8,14 +8,14 @@ import (
 )
 
 type Trafficcontrol struct {
-	ID           string                `json:"id"`
-	Name         string                `json:"name"`
-	Namespace    string                `json:"namespace"`
-	Type         v1.LimitType          `json:"type"`
-	Config       v1.ConfigInfo         `json:"config"`
-	Apis         v1.Api                `json:"api"`
-	Description  string                `json:"description"`
-	User         string                `json:"user"`
+	ID          string        `json:"id"`
+	Name        string        `json:"name"`
+	Namespace   string        `json:"namespace"`
+	Type        v1.LimitType  `json:"type"`
+	Config      v1.ConfigInfo `json:"config"`
+	Apis        []v1.Api      `json:"apis"`
+	Description string        `json:"description"`
+	User        string        `json:"user"`
 
 	Status    v1.Status `json:"status"`
 	UpdatedAt time.Time `json:"time"`
@@ -28,15 +28,17 @@ func ToAPI(app *Trafficcontrol) *v1.Trafficcontrol {
 	crd := &v1.Trafficcontrol{}
 	crd.TypeMeta.Kind = "Trafficcontrol"
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
-
 	crd.ObjectMeta.Name = app.ID
 	crd.ObjectMeta.Namespace = crdNamespace
+	crd.ObjectMeta.Labels = make(map[string]string)
+	crd.ObjectMeta.Labels[app.ID] = app.ID
 	crd.Spec = v1.TrafficcontrolSpec{
-		Name:         app.Name,
-		Type:         app.Type,
-		Config:       app.Config,
-		User:         app.User,
-		Description:  app.Description,
+		Name:        app.Name,
+		Type:        app.Type,
+		Config:      app.Config,
+		Apis:        app.Apis,
+		User:        app.User,
+		Description: app.Description,
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -54,10 +56,10 @@ func ToAPI(app *Trafficcontrol) *v1.Trafficcontrol {
 // +update
 func ToAPIUpdate(app *Trafficcontrol, crd *v1.Trafficcontrol) *v1.Trafficcontrol {
 	crd.Spec = v1.TrafficcontrolSpec{
-		Name:         app.Name,
-		Type:         app.Type,
-		Config:       app.Config,
-		Description:  app.Description,
+		Name:        app.Name,
+		Type:        app.Type,
+		Config:      app.Config,
+		Description: app.Description,
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -74,13 +76,15 @@ func ToAPIUpdate(app *Trafficcontrol, crd *v1.Trafficcontrol) *v1.Trafficcontrol
 
 func ToModel(obj *v1.Trafficcontrol) *Trafficcontrol {
 	return &Trafficcontrol{
-		ID:           obj.ObjectMeta.Name,
-		Name:         obj.Spec.Name,
-		Namespace:    obj.ObjectMeta.Namespace,
-		Type:         obj.Spec.Type,
-		Config:       obj.Spec.Config,
+		ID:        obj.ObjectMeta.Name,
+		Name:      obj.Spec.Name,
+		Namespace: obj.ObjectMeta.Namespace,
+		Type:      obj.Spec.Type,
+		Config:    obj.Spec.Config,
+		Apis:      obj.Spec.Apis,
+		User:      obj.Spec.User,
 
-		Description:  obj.Spec.Description,
+		Description: obj.Spec.Description,
 
 		Status:    obj.Status.Status,
 		UpdatedAt: obj.Status.UpdatedAt,
@@ -108,21 +112,20 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 		}
 	}
 
-	if len(a.Type) == 0{
+	if len(a.Type) == 0 {
 		return fmt.Errorf("type is null")
 	}
 
 	switch a.Type {
-	case v1.APIC,v1.APPC, v1.IPC, v1.USERC:
+	case v1.APIC, v1.APPC, v1.IPC, v1.USERC:
 	default:
 		return fmt.Errorf("wrong type: %s.", a.Type)
 	}
 
-	if (a.Config.Year + a.Config.Month + a.Config.Day + a.Config.Hour + a.Config.Minute + a.Config.Second) == 0{
+	if (a.Config.Year + a.Config.Month + a.Config.Day + a.Config.Hour + a.Config.Minute + a.Config.Second) == 0 {
 		return fmt.Errorf("at least one limit config must exist.")
 	}
 
 	a.ID = names.NewID()
 	return nil
 }
-

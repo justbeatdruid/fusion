@@ -27,7 +27,16 @@ type Api struct {
 	ID         string     `json:"id"`
 	Name       string     `json:"name"`
 	TrafficID  string     `json:"trafficID"`
+	KongID     string     `json:"kongID"`
+	Result     Result     `json:"result"`
 }
+type Result string
+const (
+	INIT        Result = "init"
+	FAILED      Result = "failed"
+	SUCCESS     Result = "success"
+)
+
 
 type ConfigInfo struct {
 	Year       int     `json:"year"`
@@ -46,7 +55,7 @@ type TrafficcontrolSpec struct {
 	Type         LimitType              `json:"type"`
 	Config       ConfigInfo            `json:"config"`
 	User         string                `json:"user"`
-	APIs         []Api                 `json:"apis"`
+	Apis         []Api                 `json:"apis"`
 	Description  string                `json:"description"`
 	//KongInfo
 	//KongService KongServiceInfo `json:"kongServiceInfo"`
@@ -64,16 +73,19 @@ const (
 type Status string
 
 const (
-	Init     Status = "init"
-	Creating Status = "creating"
-	Created  Status = "created"
-	Delete   Status = "delete"
-	Deleting Status = "deleting"
-	Error    Status = "error"
-	// + update_sunyu
-	Update   Status = "update"
-	Updating Status = "updating"
-	Updated  Status = "updated"
+	Init         Status = "init"
+	Bind         Status = "bind"   //绑定api
+	Binding      Status = "binding" //启动绑定api
+	Binded       Status = "binded"    //绑定结束
+	UnBind       Status = "unbind"   //绑定api
+	UnBinding    Status = "unbinding" //启动绑定api
+	UnBinded     Status = "unbinded"    //绑定结束
+	Delete       Status = "delete"
+	Deleting     Status = "deleting"
+	Error        Status = "error"
+	Update       Status = "update"  //更新流程策略时更新插件
+	Updating     Status = "updating"
+	Updated      Status = "updated"
 )
 
 // TrafficcontrolStatus defines the observed state of Trafficcontrol
