@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol"
 	"net/http"
 
 	"github.com/emicklei/go-restful"
@@ -15,6 +16,8 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunitgroup"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+
+
 
 	"k8s.io/apiserver/pkg/server/healthz"
 )
@@ -57,6 +60,7 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 		datasource.NewRouter(h.config),
 		apply.NewRouter(h.config),
 		topic.NewRouter(h.config),
+		trafficcontrol.NewRouter(h.config),
 	}
 
 	for _, routerHandler := range handlers {

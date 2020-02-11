@@ -1,0 +1,24 @@
+# permissions for end users to edit trafficcontrols.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: trafficcontrol-editor-role
+rules:
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - trafficcontrols
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - trafficcontrols/status
+  verbs:
+  - get
