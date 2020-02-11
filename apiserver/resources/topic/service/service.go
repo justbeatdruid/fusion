@@ -1,18 +1,17 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
-	"log"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
+	"log"
+	"context"
 )
 
 var crdNamespace = "default"
@@ -194,10 +193,10 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 }
 
 //查询topic中的所有消息
-func (s *Service) ListTopicMessages(id string) (string, error) {
+func (s *Service) ListTopicMessages(id string) ([]string, error) {
 	tp, err := s.Get(id)
 	if err != nil {
-		return "", fmt.Errorf("cannot get object: %+v", err)
+		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	topicUrl := tp.Spec.Url
 	fmt.Println(topicUrl)
@@ -217,7 +216,7 @@ func (s *Service) ListTopicMessages(id string) (string, error) {
 	}
 
 	defer reader.Close()
-	var  messages,message string
+	messages := []string{}
 
 	ctx := context.Background()
 
@@ -230,8 +229,7 @@ func (s *Service) ListTopicMessages(id string) (string, error) {
 			log.Fatalf("Error reading from topic: %v", err)
 		}
 		// Process the message
-		message = string(msg.Payload()[:])
-		messages = message+"\n"+messages
+		messages = append(messages,string(msg.Payload()[:]))
 	}
 	return messages, nil
 }
