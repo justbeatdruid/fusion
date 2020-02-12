@@ -74,8 +74,8 @@ func (s *Service) DeleteAllTopics() ([]*Topic, error) {
 	return ToListModel(tps), nil
 }
 
-func (s *Service) ListMessages(id string) (*[]Message, error) {
-	messages, err := s.ListTopicMessages(id)
+func (s *Service) ListMessages(id string,start int64,end int64) (*[]Message, error) {
+	messages, err := s.ListTopicMessages(id,start,end)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -193,13 +193,12 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 }
 
 //查询topic中的所有消息
-func (s *Service) ListTopicMessages(id string) (*[]Message, error) {
+func (s *Service) ListTopicMessages(id string,start int64,end int64) (*[]Message, error) {
 	tp, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	topicUrl := tp.Spec.Url
-	fmt.Println(topicUrl)
 	// Instantiate a Pulsar client
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
 		URL: "pulsar://localhost:6650",
@@ -218,7 +217,7 @@ func (s *Service) ListTopicMessages(id string) (*[]Message, error) {
 	defer reader.Close()
 	var messageStructs []Message
 	var messageStruct Message
-
+	var timeStamp int64
 
 	ctx := context.Background()
 
@@ -231,10 +230,14 @@ func (s *Service) ListTopicMessages(id string) (*[]Message, error) {
 			log.Fatalf("Error reading from topic: %v", err)
 		}
 		// Process the message
-		messageStruct.ID = msg.ID()
 		messageStruct.Time = msg.PublishTime()
-		messageStruct.Messages = string(msg.Payload()[:])
-		messageStructs = append(messageStructs,messageStruct)
+		timeStamp = messageStruct.Time.Unix()
+		if timeStamp>=start&&timeStamp<=end {
+			messageStruct.ID = msg.ID()
+			messageStruct.Messages = string(msg.Payload()[:])
+			messageStructs = append(messageStructs,messageStruct)
+		}
+
 	}
 	return &messageStructs, nil
 }
