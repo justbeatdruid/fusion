@@ -53,8 +53,8 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.deleteAllTopics).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
-	//查询topic信息
-	ws.Route(ws.GET("/messages/{id}").
+	//根据时间和id查询topic信息
+	ws.Route(ws.GET("/topics/{id}/starttime/{start}/endtime/{end}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all messages ").
