@@ -24,12 +24,15 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 type Api struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	//app api ip user 类型记录的kong插件id
 	TrafficID string `json:"trafficID"`
-	KongID    string `json:"kongID"`
-	Result    Result `json:"result"`
-	Detail    string `json:"detail"`
+	//特殊应用 记录的kong插件id列表
+	SpecialID []string `json:"specialID"`
+	KongID    string   `json:"kongID"`
+	Result    Result   `json:"result"`
+	Detail    string   `json:"detail"`
 }
 type Result string
 
