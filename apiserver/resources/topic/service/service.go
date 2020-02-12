@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
@@ -11,7 +12,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 	"log"
-	"context"
 )
 
 var crdNamespace = "default"
@@ -74,8 +74,8 @@ func (s *Service) DeleteAllTopics() ([]*Topic, error) {
 	return ToListModel(tps), nil
 }
 
-func (s *Service) ListMessages(id string,start int64,end int64) (*[]Message, error) {
-	messages, err := s.ListTopicMessages(id,start,end)
+func (s *Service) ListMessages(id string, start int64, end int64) (*[]Message, error) {
+	messages, err := s.ListTopicMessages(id, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -193,7 +193,7 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 }
 
 //查询topic中的所有消息
-func (s *Service) ListTopicMessages(id string,start int64,end int64) (*[]Message, error) {
+func (s *Service) ListTopicMessages(id string, start int64, end int64) (*[]Message, error) {
 	tp, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
@@ -232,10 +232,10 @@ func (s *Service) ListTopicMessages(id string,start int64,end int64) (*[]Message
 		// Process the message
 		messageStruct.Time = msg.PublishTime()
 		timeStamp = messageStruct.Time.Unix()
-		if timeStamp>=start&&timeStamp<=end {
+		if timeStamp >= start && timeStamp <= end {
 			messageStruct.ID = msg.ID()
 			messageStruct.Messages = string(msg.Payload()[:])
-			messageStructs = append(messageStructs,messageStruct)
+			messageStructs = append(messageStructs, messageStruct)
 		}
 
 	}

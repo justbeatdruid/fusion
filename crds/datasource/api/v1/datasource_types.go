@@ -18,6 +18,7 @@ package v1
 import (
 	"fmt"
 
+	dwv1 "github.com/chinamobile/nlpt/crds/datasource/datawarehouse/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -33,7 +34,8 @@ type DatasourceSpec struct {
 	Name string `json:"name"`
 	Type Type   `json:"type"`
 
-	RDB *RDB `json:"rdb,omitempty"`
+	RDB           *RDB           `json:"rdb,omitempty"`
+	DataWarehouse *dwv1.Database `json:"datawarehouse,omitempty"`
 
 	Location string `json:"localtion"`
 	AuthType string `json:"authType"`
@@ -46,7 +48,8 @@ func (t Type) String() string {
 }
 
 const (
-	RDBType Type = "rdb"
+	RDBType           Type = "rdb"
+	DataWarehouseType Type = "datawarehouse"
 )
 
 type RDB struct {
@@ -97,8 +100,8 @@ type DatasourceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	Status    Status      `json:"status"`
-	UpdatedAt metav1.Time `json:"UpdatedAt"`
-	CreatedAt metav1.Time `json:"CreatedAt"`
+	UpdatedAt metav1.Time `json:"updatedAt"`
+	CreatedAt metav1.Time `json:"createdAt"`
 }
 type Status string
 

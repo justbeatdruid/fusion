@@ -53,6 +53,11 @@ type ListResponse = struct {
 	Data    interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
+type Unstructured struct {
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data,omitempty"`
+}
 
 func (c *controller) CreateDatasource(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
@@ -185,6 +190,37 @@ func (c *controller) Ping(req *restful.Request) (int, *PingResponse) {
 	}
 	return http.StatusOK, &PingResponse{
 		Code: 0,
+	}
+}
+
+func (c *controller) GetTables(req *restful.Request) (int, *Unstructured) {
+	id := req.PathParameter("id")
+	result, err := c.service.GetTables(id)
+	if err != nil {
+		return http.StatusInternalServerError, &Unstructured{
+			Code:    1,
+			Message: fmt.Errorf("get tables error: %+v", err).Error(),
+		}
+	}
+	return http.StatusOK, &Unstructured{
+		Code: 0,
+		Data: result,
+	}
+}
+
+func (c *controller) GetFields(req *restful.Request) (int, *Unstructured) {
+	id := req.PathParameter("id")
+	table := req.PathParameter("table")
+	result, err := c.service.GetFields(id, table)
+	if err != nil {
+		return http.StatusInternalServerError, &Unstructured{
+			Code:    1,
+			Message: fmt.Errorf("get fields: %+v", err).Error(),
+		}
+	}
+	return http.StatusOK, &Unstructured{
+		Code: 0,
+		Data: result,
 	}
 }
 

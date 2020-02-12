@@ -4,10 +4,13 @@ import (
 	"fmt"
 	"time"
 
+	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
+	rdb "github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 type Datasource struct {
@@ -18,12 +21,24 @@ type Datasource struct {
 
 	RDB *v1.RDB `json:"rdb"`
 
-	Status    v1.Status `json:"status"`
-	UpdatedAt time.Time `json:"UpdatedAt"`
-	CreatedAt time.Time `json:"CreatedAt"`
+	DataWarehouse *dw.Database `json:"datawarehouse"`
 
-	CreateUser v1.User `json:"createUser"`
-	UpdateUser v1.User `json:"updateUser"`
+	Status    v1.Status `json:"status"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	CreatedAt time.Time `json:"createdAt"`
+
+	CreateUser v1.User `json:"createdBy"`
+	UpdateUser v1.User `json:"updatedBy"`
+}
+
+type Tables struct {
+	RDBTables           []rdb.Table `json:"rdbTables,omitempty"`
+	DataWarehouseTables []dw.Table  `json:"tables,omitempry"`
+}
+
+type Fields struct {
+	RDBFields           []rdb.Field   `json:"rdbFields,omitempty"`
+	DataWarehouseFields []dw.Property `json:"properties,omitempty"`
 }
 
 /**
@@ -74,18 +89,39 @@ func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 }
 
 func ToModel(obj *v1.Datasource) *Datasource {
-	return &Datasource{
+	ds := &Datasource{
 		ID:        obj.ObjectMeta.Name,
 		Namespace: obj.ObjectMeta.Namespace,
 		Name:      obj.Spec.Name,
 		Type:      obj.Spec.Type,
 
-		RDB: obj.Spec.RDB,
+		//RDB: obj.Spec.RDB,
 
 		Status:    obj.Status.Status,
 		UpdatedAt: obj.Status.UpdatedAt.Time,
 		CreatedAt: obj.Status.CreatedAt.Time,
 	}
+	switch obj.Spec.Type {
+	case v1.RDBType:
+		if obj.Spec.RDB != nil {
+			ds.RDB = &v1.RDB{
+				Type:     obj.Spec.RDB.Type,
+				Database: obj.Spec.RDB.Database,
+				Schema:   obj.Spec.RDB.Schema,
+			}
+		} else {
+			klog.Errorf("datasource %s in type rdb has no rdb instance", obj.ObjectMeta.Name)
+		}
+	case v1.DataWarehouseType:
+		if obj.Spec.DataWarehouse != nil {
+			ds.DataWarehouse = &dw.Database{
+				Name: obj.Spec.DataWarehouse.Name,
+			}
+		} else {
+			klog.Errorf("datasource %s in type datawarehouse has no datawarehouse instance", obj.ObjectMeta.Name)
+		}
+	}
+	return ds
 }
 
 func ToListModel(items *v1.DatasourceList) []*Datasource {
@@ -105,10 +141,15 @@ func (a *Datasource) Validate() error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
-	if a.Type == v1.RDBType {
+	switch a.Type {
+	case v1.RDBType:
 		if err := a.RDB.Validate(); err != nil {
 			return err
 		}
+	case v1.DataWarehouseType:
+		return fmt.Errorf("cannot create datawarehouse datasource")
+	default:
+		return fmt.Errorf("unknown datasource type: %s", a.Type)
 	}
 
 	if !support(a.Type) {

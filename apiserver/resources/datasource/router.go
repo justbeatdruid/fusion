@@ -62,6 +62,22 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.GET("/datasources/{id}/tables").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("list datasource tables").
+		To(r.getTables).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	ws.Route(ws.GET("/datasources/{id}/{table}/fields").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("list fields of a table").
+		To(r.getFields).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.GET("/datasources/{apiId}/data").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -99,6 +115,16 @@ func (r *router) deleteDatasource(request *restful.Request, response *restful.Re
 
 func (r *router) listDatasource(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListDatasource(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) getTables(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.GetTables(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) getFields(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.GetFields(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 

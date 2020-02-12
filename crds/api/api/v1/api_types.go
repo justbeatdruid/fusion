@@ -53,7 +53,6 @@ type ApiSpec struct {
 	ApiType      ApiType       `json:"apiType"` //API类型
 	AuthType     AuthType      `json:"authType"`
 	Traffic      Traffic       `json:"traffic"`
-
 }
 
 type KongApiInfo struct {
@@ -83,10 +82,9 @@ type Serviceunit struct {
 	Port   int    `json:"Port"`
 }
 
-
 type Traffic struct {
-	ID     string `json:"id"`
-	Name   string `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type PublishInfo struct {

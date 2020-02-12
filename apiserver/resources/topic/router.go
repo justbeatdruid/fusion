@@ -82,6 +82,7 @@ func (r *router) listTopic(request *restful.Request, response *restful.Response)
 	code, result := r.controller.ListTopic(request)
 	response.WriteHeaderAndEntity(code, result)
 }
+
 //批量删除topics
 func (r *router) deleteAllTopics(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DeleteAllTopics(request)
