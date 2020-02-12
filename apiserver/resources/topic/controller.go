@@ -2,10 +2,12 @@ package topic
 
 import (
 	"fmt"
-	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
-	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"net/http"
 	"strconv"
+
+	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/emicklei/go-restful"
 )
@@ -36,14 +38,14 @@ type DeleteResponse = Wrapped
 }*/
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int              `json:"code"`
-	Message string           `json:"message"`
-	Data    []*service.Topic `json:"data"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 type MessageResponse = struct {
-	Code     int                `json:"code"`
-	Message  string             `json:"message"`
-	Messages *[]service.Message `json:"messages"`
+	Code     int         `json:"code"`
+	Message  string      `json:"message"`
+	Messages interface{} `json:"messages"`
 }
 type PingResponse = DeleteResponse
 
@@ -113,17 +115,40 @@ func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 }
 
 func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
 	if tp, err := c.service.ListTopic(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
+		var tps TopicList = tp
+		data, err := util.PageWrap(tps, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:    1,
+				Message: fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
 		return http.StatusOK, &ListResponse{
 			Code: 0,
-			Data: tp,
+			Data: data,
 		}
 	}
+}
+
+type TopicList []*service.Topic
+
+func (ts TopicList) Length() int {
+	return len(ts)
+}
+
+func (ts TopicList) GetItem(i int) (interface{}, error) {
+	if i >= len(ts) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return ts[i], nil
 }
 
 //查询topic的消息
@@ -131,17 +156,40 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 	id := req.PathParameter("id")
 	startTime, _ := strconv.ParseInt(req.PathParameter("start"), 10, 64)
 	endTime, _ := strconv.ParseInt(req.PathParameter("end"), 10, 64)
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
 	if messages, err := c.service.ListMessages(id, startTime, endTime); err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:    1,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
+		var ms MessageList = *messages
+		data, err := util.PageWrap(ms, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:    1,
+				Message: fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
 		return http.StatusOK, &MessageResponse{
 			Code:     0,
-			Messages: messages,
+			Messages: data,
 		}
 	}
+}
+
+type MessageList []service.Message
+
+func (ms MessageList) Length() int {
+	return len(ms)
+}
+
+func (ms MessageList) GetItem(i int) (interface{}, error) {
+	if i >= len(ms) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return ms[i], nil
 }
 
 func returns200(b *restful.RouteBuilder) {

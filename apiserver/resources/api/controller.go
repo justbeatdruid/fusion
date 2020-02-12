@@ -6,6 +6,7 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/api/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/emicklei/go-restful"
 )
@@ -45,9 +46,9 @@ type CreateRequest = Wrapped
 type DeleteResponse = Wrapped
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int            `json:"code"`
-	Message string         `json:"message"`
-	Data    []*service.Api `json:"data"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
 
@@ -143,17 +144,40 @@ func (c *controller) OfflineApi(req *restful.Request) (int, interface{}) {
 }
 
 func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
 	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list api error: %+v", err).Error(),
 		}
 	} else {
+		var apis ApiList = api
+		data, err := util.PageWrap(apis, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:    1,
+				Message: fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
 		return http.StatusOK, &ListResponse{
 			Code: 0,
-			Data: api,
+			Data: data,
 		}
 	}
+}
+
+type ApiList []*service.Api
+
+func (apis ApiList) Length() int {
+	return len(apis)
+}
+
+func (apis ApiList) GetItem(i int) (interface{}, error) {
+	if i >= len(apis) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return apis[i], nil
 }
 
 func (c *controller) BindApi(req *restful.Request) (int, interface{}) {
