@@ -17,6 +17,8 @@ limitations under the License.
 package v1
 
 import (
+	"fmt"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -44,16 +46,24 @@ type Task struct {
 
 type TaskType string
 
+const (
+	Realtime TaskType = "realtime"
+	Periodic TaskType = "periodic"
+)
+
 type RealtimeTask struct {
 	Incremental bool `json:"incremental"`
 }
 
 type PeriodicTask struct {
-	Minute TimeConfig `json:"minute"`
-	Hour   TimeConfig `json:"hour"`
-	Date   TimeConfig `json:"date"`
-	Month  TimeConfig `json:"mounth"`
-	Day    TimeConfig `json:"day"`
+	CronConfig string `json:"cronConfig"`
+}
+
+func ValidateCronConfig(config string) error {
+	if len(config) == 0 {
+		return fmt.Errorf("input is null")
+	}
+	return nil
 }
 
 // in crontab format
@@ -75,12 +85,16 @@ type TimeConfig struct {
 type DataserviceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status    Status      `json:"status"`
+	Status    TaskStatus  `json:"status"`
 	StartedAt metav1.Time `json:"startedAt"`
 	StoppedAt metav1.Time `json:"stoppedAt"`
 }
 
-type Status string
+type TaskStatus string
+
+const (
+	Created TaskStatus = "created"
+)
 
 // +kubebuilder:object:root=true
 
