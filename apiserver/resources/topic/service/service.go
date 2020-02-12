@@ -1,18 +1,17 @@
 package service
 
 import (
-	"context"
 	"fmt"
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
-	"log"
-
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
+	"log"
+	"context"
 )
 
 var crdNamespace = "default"
@@ -75,12 +74,12 @@ func (s *Service) DeleteAllTopics() ([]*Topic, error) {
 	return ToListModel(tps), nil
 }
 
-func (s *Service) ListMessages(id string) (*Topic, error) {
-	tpc, err := s.ListTopicMessages(id)
+func (s *Service) ListMessages(id string) (*[]Message, error) {
+	messages, err := s.ListTopicMessages(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
-	return ToModel(tpc), nil
+	return messages, nil
 }
 func (s *Service) Create(tp *v1.Topic) (*v1.Topic, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
@@ -194,7 +193,7 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 }
 
 //查询topic中的所有消息
-func (s *Service) ListTopicMessages(id string) (*v1.Topic, error) {
+func (s *Service) ListTopicMessages(id string) (*[]Message, error) {
 	tp, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
@@ -217,6 +216,9 @@ func (s *Service) ListTopicMessages(id string) (*v1.Topic, error) {
 	}
 
 	defer reader.Close()
+	var messageStructs []Message
+	var messageStruct Message
+
 
 	ctx := context.Background()
 
@@ -229,7 +231,10 @@ func (s *Service) ListTopicMessages(id string) (*v1.Topic, error) {
 			log.Fatalf("Error reading from topic: %v", err)
 		}
 		// Process the message
-		fmt.Println(string(msg.Payload()[:]))
+		messageStruct.ID = msg.ID()
+		messageStruct.Time = msg.PublishTime()
+		messageStruct.Messages = string(msg.Payload()[:])
+		messageStructs = append(messageStructs,messageStruct)
 	}
-	return tp, nil
+	return &messageStructs, nil
 }

@@ -2,8 +2,10 @@ package service
 
 import (
 	"fmt"
+	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"time"
 )
 
 type Topic struct {
@@ -19,6 +21,11 @@ type Topic struct {
 	Message         string    `json:"message"`
 }
 
+type Message struct {
+	ID      pulsar.MessageID `json:"id"`
+	Time    time.Time        `json:"time"`
+	Messages string        `json:"messages"`
+}
 // only used in creation options
 func ToAPI(app *Topic) *v1.Topic {
 	crd := &v1.Topic{}

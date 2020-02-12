@@ -8,6 +8,8 @@ import (
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Serviceunit struct {
@@ -52,7 +54,7 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 	}
 	crd.Status = v1.ServiceunitStatus{
 		Status:    status,
-		UpdatedAt: time.Now(),
+		UpdatedAt: metav1.Now(),
 		APICount:  0,
 		Published: false,
 	}
@@ -81,7 +83,7 @@ func ToAPIUpdate(su *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 	}
 	crd.Status = v1.ServiceunitStatus{
 		Status:    status,
-		UpdatedAt: time.Now(),
+		UpdatedAt: metav1.Now(),
 		APICount:  0,
 		Published: false,
 	}
@@ -100,7 +102,7 @@ func ToModel(obj *v1.Serviceunit) *Serviceunit {
 		Description:  obj.Spec.Description,
 
 		Status:    obj.Status.Status,
-		UpdatedAt: obj.Status.UpdatedAt,
+		UpdatedAt: obj.Status.UpdatedAt.Time,
 		APICount:  obj.Status.APICount,
 		Published: obj.Status.Published,
 	}

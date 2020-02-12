@@ -6,6 +6,8 @@ import (
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Api struct {
@@ -25,6 +27,7 @@ type Api struct {
 	WebParams     []v1.WebParams    `json:"webParams"`
 	ApiType       v1.ApiType        `json:"apiType"`
 	AuthType      v1.AuthType       `json:"authType"`
+	Traffic       v1.Traffic        `json:"traffic"`
 	KongApi       v1.KongApiInfo    `json:"KongApi"`
 
 	Status v1.Status `json:"status"`
@@ -63,12 +66,13 @@ func ToAPI(api *Api) *v1.Api {
 		KongApi:      api.KongApi,
 		ApiType:      api.ApiType,
 		AuthType:     api.AuthType,
+		Traffic:      api.Traffic,
 	}
 	crd.Status = v1.ApiStatus{
 		Status:           v1.Init,
 		AccessLink:       api.AccessLink,
-		UpdatedAt:        time.Now(),
-		ReleasedAt:       time.Now(),
+		UpdatedAt:        metav1.Now(),
+		ReleasedAt:       metav1.Now(),
 		ApplicationCount: api.ApplicationCount,
 		CalledCount:      api.CalledCount,
 	}
@@ -93,11 +97,12 @@ func ToModel(obj *v1.Api) *Api {
 		KongApi:      obj.Spec.KongApi,
 		ApiType:      obj.Spec.ApiType,
 		AuthType:     obj.Spec.AuthType,
+		Traffic:      obj.Spec.Traffic,
 
 		Status:           obj.Status.Status,
 		AccessLink:       obj.Status.AccessLink,
-		UpdatedAt:        obj.Status.UpdatedAt,
-		ReleasedAt:       obj.Status.ReleasedAt,
+		UpdatedAt:        obj.Status.UpdatedAt.Time,
+		ReleasedAt:       obj.Status.ReleasedAt.Time,
 		ApplicationCount: obj.Status.ApplicationCount,
 		CalledCount:      obj.Status.CalledCount,
 	}

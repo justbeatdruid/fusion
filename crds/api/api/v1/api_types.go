@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
-	"time"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -53,6 +52,8 @@ type ApiSpec struct {
 	PublishInfo  PublishInfo   `json:"publishInfo"`
 	ApiType      ApiType       `json:"apiType"` //API类型
 	AuthType     AuthType      `json:"authType"`
+	Traffic      Traffic       `json:"traffic"`
+
 }
 
 type KongApiInfo struct {
@@ -80,6 +81,12 @@ type Serviceunit struct {
 	Type   string `json:"Type"`
 	Host   string `json:"Host"`
 	Port   int    `json:"Port"`
+}
+
+
+type Traffic struct {
+	ID     string `json:"id"`
+	Name   string `json:"name"`
 }
 
 type PublishInfo struct {
@@ -224,13 +231,13 @@ const (
 type ApiStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status           Status     `json:"status"`
-	AccessLink       AccessLink `json:"access"`
-	UpdatedAt        time.Time  `json:"updatedAt"`
-	ReleasedAt       time.Time  `json:"releasedAt"`
-	ApplicationCount int        `json:"applicationCount"`
-	CalledCount      int        `json:"calledCount"`
-	Message          string     `json:"msg"`
+	Status           Status      `json:"status"`
+	AccessLink       AccessLink  `json:"access"`
+	UpdatedAt        metav1.Time `json:"updatedAt"`
+	ReleasedAt       metav1.Time `json:"releasedAt"`
+	ApplicationCount int         `json:"applicationCount"`
+	CalledCount      int         `json:"calledCount"`
+	Message          string      `json:"msg"`
 
 	Applications map[string]ApiApplicationStatus `json:"applications"`
 }

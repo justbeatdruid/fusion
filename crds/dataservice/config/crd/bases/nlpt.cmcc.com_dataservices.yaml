@@ -1,0 +1,100 @@
+
+---
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.2
+  creationTimestamp: null
+  name: dataservices.nlpt.cmcc.com
+spec:
+  group: nlpt.cmcc.com
+  names:
+    kind: Dataservice
+    listKind: DataserviceList
+    plural: dataservices
+    singular: dataservice
+  scope: ""
+  validation:
+    openAPIV3Schema:
+      description: Dataservice is the Schema for the dataservices API
+      properties:
+        apiVersion:
+          description: 'APIVersion defines the versioned schema of this representation
+            of an object. Servers should convert recognized schemas to the latest
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
+          type: string
+        kind:
+          description: 'Kind is a string value representing the REST resource this
+            object represents. Servers may infer this from the endpoint the client
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+          type: string
+        metadata:
+          type: object
+        spec:
+          description: DataserviceSpec defines the desired state of Dataservice
+          properties:
+            source:
+              description: read data from
+              type: string
+            target:
+              description: write data to
+              type: string
+            task:
+              properties:
+                periodicTask:
+                  properties:
+                    cronConfig:
+                      type: string
+                  required:
+                  - cronConfig
+                  type: object
+                realtimeTask:
+                  properties:
+                    incremental:
+                      type: boolean
+                  required:
+                  - incremental
+                  type: object
+                type:
+                  description: type of task, realtime or periodic
+                  type: string
+              required:
+              - type
+              type: object
+          required:
+          - source
+          - target
+          - task
+          type: object
+        status:
+          description: DataserviceStatus defines the observed state of Dataservice
+          properties:
+            startedAt:
+              format: date-time
+              type: string
+            status:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "make" to regenerate code after modifying
+                this file'
+              type: string
+            stoppedAt:
+              format: date-time
+              type: string
+          required:
+          - startedAt
+          - status
+          - stoppedAt
+          type: object
+      type: object
+  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
+status:
+  acceptedNames:
+    kind: ""
+    plural: ""
+  conditions: []
+  storedVersions: []

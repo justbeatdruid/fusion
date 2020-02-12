@@ -1,0 +1,7 @@
+apiVersion: nlpt.cmcc.com/v1
+kind: Dataservice
+metadata:
+  name: dataservice-sample
+spec:
+  # Add fields here
+  foo: bar

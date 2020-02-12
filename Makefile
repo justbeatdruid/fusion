@@ -24,6 +24,7 @@ test: fmt vet
 	go test ./... -coverprofile cover.out
 
 apiserver-binary:
+	rm bin/fusion-apiserver
 	CGO_CFLAGS="-I$(shell pwd)/include" CGO_LDFLAGS="-L$(shell pwd)/lib" go build -o bin/fusion-apiserver cmd/apiserver/apiserver.go
 
 apiserver-image: #fmt vet vd
