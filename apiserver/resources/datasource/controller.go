@@ -264,13 +264,13 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 	}
 	var querySql string
 
-	if qtype == "1" {
+	if connect.QType == "1" {
 		//查询表字段名称，字段描述，字段类型
 		querySql = "select COLUMN_NAME '字段名称',COLUMN_TYPE '字段类型长度',IF(EXTRA='auto_increment',CONCAT(COLUMN_KEY," +
 			"'(', IF(EXTRA='auto_increment','自增长',EXTRA),')'),COLUMN_KEY) '主外键',IS_NULLABLE '空标识',COLUMN_COMMENT " +
 			"'字段说明' from information_schema.columns where table_name='" + connect.TableName + "'" +
 			" and table_schema='" + connect.DBName + "'"
-	} else if qtype == "2" {
+	} else if connect.QType == "2" {
 		//查询数据库所有表名
 		querySql = "SELECT distinct TABLE_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + connect.DBName + "'"
 	} else {
