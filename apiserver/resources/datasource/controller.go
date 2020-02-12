@@ -223,10 +223,8 @@ func returns500(b *restful.RouteBuilder) {
  */
 func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 	connect := &service.Connect{}
-	qtype := req.QueryParameter("type")
-
 	e := req.ReadEntity(connect)
-	if e != nil || len(qtype) == 0 {
+	if e != nil || len(connect.QType) == 0 {
 		fmt.Println("parameter error")
 		return http.StatusInternalServerError, &QueryMysqlDataResponse{
 			Code:    1,

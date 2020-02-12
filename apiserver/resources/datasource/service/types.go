@@ -35,6 +35,7 @@ type Connect struct {
 	DBName         string
 	TableName      string
 	QueryCondition map[string]string
+	QType          string
 }
 
 // only used in creation or update options
