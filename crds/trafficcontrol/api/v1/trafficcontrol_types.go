@@ -29,6 +29,7 @@ type Api struct {
 	TrafficID string `json:"trafficID"`
 	KongID    string `json:"kongID"`
 	Result    Result `json:"result"`
+	Detail    string `json:"detail"`
 }
 type Result string
 
@@ -39,12 +40,20 @@ const (
 )
 
 type ConfigInfo struct {
-	Year   int `json:"year"`
-	Month  int `json:"month"`
-	Day    int `json:"day"`
-	Hour   int `json:"hour"`
-	Minute int `json:"minute"`
-	Second int `json:"second"`
+	Year    int       `json:"year"`
+	Month   int       `json:"month"`
+	Day     int       `json:"day"`
+	Hour    int       `json:"hour"`
+	Minute  int       `json:"minute"`
+	Second  int       `json:"second"`
+	Special []Special `json:"special"`
+}
+
+const MAXNUM int = 5
+
+type Special struct {
+	ID     string `json:"id"`
+	Minute int    `json:"minute"`
 }
 
 // TrafficcontrolSpec defines the desired state of Trafficcontrol
@@ -65,10 +74,11 @@ type TrafficcontrolSpec struct {
 type LimitType string
 
 const (
-	APIC  LimitType = "api"
-	IPC   LimitType = "ip"
-	APPC  LimitType = "app"
-	USERC LimitType = "user"
+	APIC     LimitType = "api"
+	IPC      LimitType = "ip"
+	APPC     LimitType = "app"
+	USERC    LimitType = "user"
+	SPECAPPC LimitType = "specialapp"
 )
 
 type Status string

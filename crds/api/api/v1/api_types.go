@@ -83,8 +83,9 @@ type Serviceunit struct {
 }
 
 type Traffic struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID        string   `json:"id"`
+	Name      string   `json:"name"`
+	SpecialID []string `json:"specialID"`
 }
 
 type PublishInfo struct {
