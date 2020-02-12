@@ -18,6 +18,7 @@ package v1
 import (
 	"fmt"
 
+	dwv1 "github.com/chinamobile/nlpt/crds/datasource/datawarehouse/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -33,7 +34,8 @@ type DatasourceSpec struct {
 	Name string `json:"name"`
 	Type Type   `json:"type"`
 
-	RDB *RDB `json:"rdb,omitempty"`
+	RDB           *RDB           `json:"rdb,omitempty"`
+	DataWarehouse *dwv1.Database `json:"datawarehouse,omitempty"`
 
 	Location string `json:"localtion"`
 	AuthType string `json:"authType"`

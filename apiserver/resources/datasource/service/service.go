@@ -3,9 +3,12 @@ package service
 import (
 	"database/sql"
 	"fmt"
+
 	api "github.com/chinamobile/nlpt/apiserver/resources/api/service"
+	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
 	serviceunit "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -93,6 +96,7 @@ func (s *Service) Create(ds *v1.Datasource) (*v1.Datasource, error) {
 	klog.V(5).Infof("get v1.datasource of creating: %+v", ds)
 	return ds, nil
 }
+
 func (s *Service) Update(ds *v1.Datasource) (*v1.Datasource, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ds)
 	if err != nil {
@@ -112,6 +116,7 @@ func (s *Service) Update(ds *v1.Datasource) (*v1.Datasource, error) {
 	klog.V(5).Infof("get v1.datasource of creating: %+v", ds)
 	return ds, nil
 }
+
 func (s *Service) List() (*v1.DatasourceList, error) {
 	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
 	if err != nil {
@@ -144,6 +149,63 @@ func (s *Service) Delete(id string) error {
 		return fmt.Errorf("error delete crd: %+v", err)
 	}
 	return nil
+}
+
+func (s *Service) GetTables(id string) (*Tables, error) {
+	result := &Tables{}
+	ds, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot datasource: %+v", err)
+	}
+	switch ds.Spec.Type {
+	case v1.RDBType:
+		if ds.Spec.RDB == nil {
+			return nil, fmt.Errorf("datasource %s in type rdb has no rdb instance", ds.ObjectMeta.Name)
+		}
+	case v1.DataWarehouseType:
+		if ds.Spec.DataWarehouse == nil {
+			return nil, fmt.Errorf("datasource %s in type datawarehouse has no datawarehouse instance", ds.ObjectMeta.Name)
+		}
+		result.DataWarehouseTables = make([]dw.Table, 0)
+		for _, t := range ds.Spec.DataWarehouse.Tables {
+			result.DataWarehouseTables = append(result.DataWarehouseTables, dw.FromApiTable(t))
+		}
+	default:
+		return nil, fmt.Errorf("wrong datasource type: %s", ds.Spec.Type)
+	}
+	return result, nil
+}
+
+func (s *Service) GetFields(id, table string) (*Fields, error) {
+	result := &Fields{}
+	ds, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot datasource: %+v", err)
+	}
+	switch ds.Spec.Type {
+	case v1.RDBType:
+		if ds.Spec.RDB == nil {
+			return nil, fmt.Errorf("datasource %s in type rdb has no rdb instance", ds.ObjectMeta.Name)
+		}
+	case v1.DataWarehouseType:
+		if ds.Spec.DataWarehouse == nil {
+			return nil, fmt.Errorf("datasource %s in type datawarehouse has no datawarehouse instance", ds.ObjectMeta.Name)
+		}
+		result.DataWarehouseFields = make([]dw.Property, 0)
+		for _, apiTable := range ds.Spec.DataWarehouse.Tables {
+			if apiTable.Name == table {
+				for _, p := range apiTable.Properties {
+					result.DataWarehouseFields = append(result.DataWarehouseFields, dw.FromApiProperty(p))
+				}
+				goto rt
+			}
+		}
+		return nil, fmt.Errorf("cannot find table %s in datasource %s", ds.ObjectMeta.Name)
+	default:
+		return nil, fmt.Errorf("wrong datasource type: %s", ds.Spec.Type)
+	}
+rt:
+	return result, nil
 }
 
 func (s *Service) GetDataSourceByApiId(apiId string, parames string) (map[string]interface{}, error) {
