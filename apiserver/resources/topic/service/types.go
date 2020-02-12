@@ -22,10 +22,11 @@ type Topic struct {
 }
 
 type Message struct {
-	ID      pulsar.MessageID `json:"id"`
-	Time    time.Time        `json:"time"`
-	Messages string        `json:"messages"`
+	ID       pulsar.MessageID `json:"id"`
+	Time     time.Time        `json:"time"`
+	Messages string           `json:"messages"`
 }
+
 // only used in creation options
 func ToAPI(app *Topic) *v1.Topic {
 	crd := &v1.Topic{}

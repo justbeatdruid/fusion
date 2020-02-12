@@ -2,9 +2,9 @@ package topic
 
 import (
 	"fmt"
-	"net/http"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"net/http"
 	"strconv"
 
 	"github.com/emicklei/go-restful"
@@ -41,9 +41,9 @@ type ListResponse = struct {
 	Data    []*service.Topic `json:"data"`
 }
 type MessageResponse = struct {
-	Code    int              `json:"code"`
-	Message string           `json:"message"`
-    Messages *[]service.Message `json:"messages"`
+	Code     int                `json:"code"`
+	Message  string             `json:"message"`
+	Messages *[]service.Message `json:"messages"`
 }
 type PingResponse = DeleteResponse
 
@@ -106,7 +106,7 @@ func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
-			Code: 0,
+			Code:    0,
 			Message: "success",
 		}
 	}
@@ -129,16 +129,16 @@ func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 //查询topic的消息
 func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) {
 	id := req.PathParameter("id")
-	startTime,_:= strconv.ParseInt(req.PathParameter("start"),10,64)
-	endTime,_:= strconv.ParseInt(req.PathParameter("end"),10,64)
-	if messages, err := c.service.ListMessages(id,startTime,endTime); err != nil {
+	startTime, _ := strconv.ParseInt(req.PathParameter("start"), 10, 64)
+	endTime, _ := strconv.ParseInt(req.PathParameter("end"), 10, 64)
+	if messages, err := c.service.ListMessages(id, startTime, endTime); err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:    1,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &MessageResponse{
-			Code: 0,
+			Code:     0,
 			Messages: messages,
 		}
 	}

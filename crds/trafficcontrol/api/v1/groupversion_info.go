@@ -39,6 +39,7 @@ var oofsGVR = schema.GroupVersionResource{
 	Version:  GroupVersion.Version,
 	Resource: "trafficcontrols",
 }
+
 func GetOOFSGVR() schema.GroupVersionResource {
 	return oofsGVR
 }

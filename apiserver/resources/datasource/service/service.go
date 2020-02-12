@@ -200,7 +200,7 @@ func (s *Service) GetFields(id, table string) (*Fields, error) {
 				goto rt
 			}
 		}
-		return nil, fmt.Errorf("cannot find table %s in datasource %s", ds.ObjectMeta.Name)
+		return nil, fmt.Errorf("cannot find table %s in datasource %s", table, ds.ObjectMeta.Name)
 	default:
 		return nil, fmt.Errorf("wrong datasource type: %s", ds.Spec.Type)
 	}

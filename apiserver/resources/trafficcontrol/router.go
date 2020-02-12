@@ -62,7 +62,6 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-
 	// + update
 	ws.Route(ws.PATCH("/trafficcontrols/{id}").
 		Consumes(restful.MIME_JSON).
