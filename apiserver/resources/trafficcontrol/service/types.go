@@ -117,13 +117,25 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 	}
 
 	switch a.Type {
-	case v1.APIC, v1.APPC, v1.IPC, v1.USERC:
+	case v1.APIC, v1.APPC, v1.IPC, v1.USERC, v1.SPECAPPC:
 	default:
 		return fmt.Errorf("wrong type: %s.", a.Type)
 	}
 
-	if (a.Config.Year + a.Config.Month + a.Config.Day + a.Config.Hour + a.Config.Minute + a.Config.Second) == 0 {
-		return fmt.Errorf("at least one limit config must exist.")
+	switch a.Type {
+	case v1.APIC, v1.APPC, v1.IPC, v1.USERC:
+		if (a.Config.Year + a.Config.Month + a.Config.Day + a.Config.Hour + a.Config.Minute + a.Config.Second) == 0 {
+			return fmt.Errorf("at least one limit config must exist.")
+		}
+	case v1.SPECAPPC:
+		if len(a.Config.Special) == 0 {
+			return fmt.Errorf("at least one special config must exist.")
+		}
+		if len(a.Config.Special) > v1.MAXNUM {
+			return fmt.Errorf("special config maxinum limit exceeded.")
+		}
+	default:
+		return fmt.Errorf("wrong type: %s.", a.Type)
 	}
 
 	a.ID = names.NewID()

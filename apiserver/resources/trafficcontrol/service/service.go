@@ -189,21 +189,34 @@ func (s *Service) getAPi(id string) (*apiv1.Api, error) {
 	return su, nil
 }
 
-func (s *Service) updateApi(apiid string, traffic *v1.Trafficcontrol, status v1.Status) (*apiv1.Api, error) {
+func (s *Service) updateApi(apiid string, traffic *v1.Trafficcontrol) (*apiv1.Api, error) {
 	api, err := s.getAPi(apiid)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update api: %+v", err)
 	}
-	if v1.Bind == status {
-		api.Spec.Traffic = apiv1.Traffic{
-			ID:   traffic.ObjectMeta.Name,
-			Name: traffic.Spec.Name,
+	switch traffic.Spec.Type {
+	case v1.APIC, v1.APPC, v1.IPC, v1.USERC:
+		if v1.Bind == traffic.Status.Status {
+			api.Spec.Traffic.ID = traffic.ObjectMeta.Name
+			api.Spec.Traffic.Name = traffic.Spec.Name
+		} else {
+			api.Spec.Traffic.ID = ""
+			api.Spec.Traffic.Name = ""
 		}
-	} else {
-		api.Spec.Traffic = apiv1.Traffic{
-			ID:   "",
-			Name: "",
+	case v1.SPECAPPC:
+		if v1.Bind == traffic.Status.Status {
+			api.Spec.Traffic.SpecialID = append(api.Spec.Traffic.SpecialID, traffic.ObjectMeta.Name)
+		} else {
+			for index := 0; index < len(api.Spec.Traffic.SpecialID); index++ {
+				if api.Spec.Traffic.SpecialID[index] == traffic.ObjectMeta.Name {
+					api.Spec.Traffic.SpecialID = append(api.Spec.Traffic.SpecialID[:index], api.Spec.Traffic.SpecialID[index+1:]...)
+					break
+				}
+			}
 		}
+
+	default:
+		return nil, fmt.Errorf("wrong type: %s.", traffic.Spec.Type)
 	}
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
 	if err != nil {
@@ -233,7 +246,8 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 		if err != nil {
 			return nil, fmt.Errorf("cannot get api: %+v", err)
 		}
-		if len(apiSource.Spec.Traffic.ID) > 0 {
+		//SPECAPPC 1个API可以绑定多个
+		if len(apiSource.Spec.Traffic.ID) > 0 && traffic.Spec.Type != v1.SPECAPPC {
 			return nil, fmt.Errorf("api alrady bound to traffic")
 		}
 		//绑定api
@@ -244,12 +258,12 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 			KongID: apiSource.Spec.KongApi.KongID,
 			Result: v1.INIT,
 		})
-
-		if _, err = s.updateApi(api.ID, traffic, v1.Bind); err != nil {
-			return nil, fmt.Errorf("cannot update api traffic")
-		}
 		//update status bind
 		traffic.Status.Status = v1.Bind
+		if _, err = s.updateApi(api.ID, traffic); err != nil {
+			return nil, fmt.Errorf("cannot update api traffic")
+		}
+		//update traffic
 		traffic, err = s.UpdateSpec(traffic)
 		traffic, err = s.UpdateStatus(traffic)
 	}
@@ -267,16 +281,21 @@ func (s *Service) UnBindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 		if err != nil {
 			return nil, fmt.Errorf("cannot get api: %+v", err)
 		}
-		if len(apiSource.Spec.Traffic.ID) == 0 {
+		//
+		if len(apiSource.Spec.Traffic.ID) == 0 && traffic.Spec.Type != v1.SPECAPPC {
 			return nil, fmt.Errorf("api has no bound to traffic")
 		}
-		//解除绑定
-		traffic.ObjectMeta.Labels[api.ID] = "false"
-		if _, err = s.updateApi(api.ID, traffic, v1.UnBind); err != nil {
-			return nil, fmt.Errorf("cannot update api traffic")
+		if len(apiSource.Spec.Traffic.SpecialID) == 0 && traffic.Spec.Type == v1.SPECAPPC {
+			return nil, fmt.Errorf("api has no bound to special traffic")
 		}
+		//解除绑定
 		//update status unbind
 		traffic.Status.Status = v1.UnBind
+		traffic.ObjectMeta.Labels[api.ID] = "false"
+		if _, err = s.updateApi(api.ID, traffic); err != nil {
+			return nil, fmt.Errorf("cannot update api traffic")
+		}
+		//update traffic
 		traffic, err = s.UpdateSpec(traffic)
 		traffic, err = s.UpdateStatus(traffic)
 	}

@@ -24,11 +24,15 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 type Api struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	//app api ip user 类型记录的kong插件id
 	TrafficID string `json:"trafficID"`
-	KongID    string `json:"kongID"`
-	Result    Result `json:"result"`
+	//特殊应用 记录的kong插件id列表
+	SpecialID []string `json:"specialID"`
+	KongID    string   `json:"kongID"`
+	Result    Result   `json:"result"`
+	Detail    string   `json:"detail"`
 }
 type Result string
 
@@ -39,12 +43,20 @@ const (
 )
 
 type ConfigInfo struct {
-	Year   int `json:"year"`
-	Month  int `json:"month"`
-	Day    int `json:"day"`
-	Hour   int `json:"hour"`
-	Minute int `json:"minute"`
-	Second int `json:"second"`
+	Year    int       `json:"year"`
+	Month   int       `json:"month"`
+	Day     int       `json:"day"`
+	Hour    int       `json:"hour"`
+	Minute  int       `json:"minute"`
+	Second  int       `json:"second"`
+	Special []Special `json:"special"`
+}
+
+const MAXNUM int = 5
+
+type Special struct {
+	ID     string `json:"id"`
+	Minute int    `json:"minute"`
 }
 
 // TrafficcontrolSpec defines the desired state of Trafficcontrol
@@ -65,10 +77,11 @@ type TrafficcontrolSpec struct {
 type LimitType string
 
 const (
-	APIC  LimitType = "api"
-	IPC   LimitType = "ip"
-	APPC  LimitType = "app"
-	USERC LimitType = "user"
+	APIC     LimitType = "api"
+	IPC      LimitType = "ip"
+	APPC     LimitType = "app"
+	USERC    LimitType = "user"
+	SPECAPPC LimitType = "specialapp"
 )
 
 type Status string
