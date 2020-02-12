@@ -3,12 +3,12 @@ package datasource
 import (
 	"database/sql"
 	"fmt"
-	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
 	"strings"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/emicklei/go-restful"
 )
