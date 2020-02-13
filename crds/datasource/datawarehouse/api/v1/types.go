@@ -50,9 +50,10 @@ type AssociationTable struct {
 }
 
 type QueryField struct {
-	PropertyName string `json:"propertyName"`
-	TableName    string `json:"tableName"`
-	Operator     string `json:"operator"`
+	PropertyName        string `json:"propertyName"`
+	PropertyDisplayName string `json:"propertyDisplayName"`
+	TableName           string `json:"tableName"`
+	Operator            string `json:"operator"`
 }
 
 type WhereField struct {
@@ -64,6 +65,7 @@ type WhereField struct {
 }
 
 type Result struct {
-	Headers []string            `json:"headerList"`
-	Data    []map[string]string `json:"dataValueList"`
+	Headers   []string            `json:"headerList"`
+	ColumnDic map[string]string   `json:"columnDic"`
+	Data      []map[string]string `json:"dataValueList"`
 }

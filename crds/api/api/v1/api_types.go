@@ -18,6 +18,7 @@ package v1
 import (
 	"fmt"
 	"net/url"
+	"regexp"
 	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -33,12 +34,25 @@ func ApplicationLabel(id string) string {
 	return strings.Join([]string{applicationLabel, id}, "/")
 }
 
+func IsApplicationLabel(l string) bool {
+	match, _ := regexp.MatchString(fmt.Sprintf("%s/([0-9a-f]{16})", applicationLabel), l)
+	return match
+}
+
+func GetIDFromApplicationLabel(l string) string {
+	if !IsApplicationLabel(l) {
+		return "wronglabel"
+	}
+	return l[len(applicationLabel)+2:]
+}
+
 // ApiSpec defines the desired state of Api
 type ApiSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
 	Name         string        `json:"name"`
+	Description  string        `json:"description"`
 	Serviceunit  Serviceunit   `json:"serviceunit"`
 	Applications []Application `json:"applications"`
 	Users        []User        `json:"users"`

@@ -59,8 +59,8 @@ type RDB struct {
 
 	Connect ConnectInfo `json:"connect"`
 
-	CreateUser User `json:"createUser"`
-	UpdateUser User `json:"updateUser"`
+	CreatedBy User `json:"createdBy"`
+	UpdatedBy User `json:"updatedBy"`
 }
 
 func (r *RDB) Validate() error {
@@ -136,4 +136,8 @@ type DatasourceList struct {
 
 func init() {
 	SchemeBuilder.Register(&Datasource{}, &DatasourceList{})
+}
+
+func DeepCompareDataWarehouse(d1, d2 *dwv1.Database) bool {
+	return true
 }

@@ -36,6 +36,74 @@ spec:
           properties:
             authType:
               type: string
+            datawarehouse:
+              properties:
+                databaseName:
+                  type: string
+                table_property:
+                  items:
+                    properties:
+                      desc:
+                        type: string
+                      property:
+                        items:
+                          properties:
+                            dataType:
+                              type: string
+                            desc:
+                              type: string
+                            displayName:
+                              type: string
+                            encrypAlgorithm:
+                              type: string
+                            encryption:
+                              type: string
+                            id:
+                              type: integer
+                            length:
+                              type: integer
+                            name:
+                              type: string
+                            primaryKey:
+                              type: string
+                            tableId:
+                              type: string
+                            unique:
+                              type: string
+                          required:
+                          - dataType
+                          - desc
+                          - displayName
+                          - encrypAlgorithm
+                          - encryption
+                          - id
+                          - length
+                          - name
+                          - primaryKey
+                          - tableId
+                          - unique
+                          type: object
+                        type: array
+                      tableName:
+                        type: string
+                      tableType:
+                        type: string
+                      tags:
+                        items:
+                          type: string
+                        type: array
+                    required:
+                    - desc
+                    - property
+                    - tableName
+                    - tableType
+                    - tags
+                    type: object
+                  type: array
+              required:
+              - databaseName
+              - table_property
+              type: object
             localtion:
               type: string
             name:
@@ -60,7 +128,7 @@ spec:
                   - port
                   - username
                   type: object
-                createUser:
+                createdBy:
                   properties:
                     id:
                       type: string
@@ -76,7 +144,7 @@ spec:
                   type: string
                 type:
                   type: string
-                updateUser:
+                updatedBy:
                   properties:
                     id:
                       type: string
@@ -88,10 +156,10 @@ spec:
                   type: object
               required:
               - connect
-              - createUser
+              - createdBy
               - database
               - type
-              - updateUser
+              - updatedBy
               type: object
             type:
               type: string
@@ -104,10 +172,7 @@ spec:
         status:
           description: DatasourceStatus defines the observed state of Datasource
           properties:
-            CreatedAt:
-              format: date-time
-              type: string
-            UpdatedAt:
+            createdAt:
               format: date-time
               type: string
             status:
@@ -115,10 +180,13 @@ spec:
                 of cluster Important: Run "make" to regenerate code after modifying
                 this file'
               type: string
+            updatedAt:
+              format: date-time
+              type: string
           required:
-          - CreatedAt
-          - UpdatedAt
+          - createdAt
           - status
+          - updatedAt
           type: object
       type: object
   version: v1

@@ -75,10 +75,10 @@ spec:
         - containerPort: 8001
           name: http
           protocol: TCP
-        resources:
-          requests:
-            cpu: 0.1
-            memory: 100Mi
+        #resources:
+        #  requests:
+        #    cpu: 0.1
+        #    memory: 100Mi
         volumeMounts:
         - mountPath: /data
           name: data

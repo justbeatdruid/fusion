@@ -55,8 +55,9 @@ func ToAPI(app *Apply) *v1.Apply {
 		ApprovedBy: app.ApprovedBy,
 	}
 	crd.Status = v1.ApplyStatus{
-		Status:    v1.Waiting,
-		AppliedAt: metav1.Now(),
+		Status:     v1.Waiting,
+		AppliedAt:  metav1.Now(),
+		ApprovedAt: metav1.Unix(0, 0),
 	}
 	return crd
 }
