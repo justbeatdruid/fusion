@@ -24,6 +24,7 @@ type Table struct {
 
 type Property struct {
 	Name        string `json:"name"`
+	DisplayName string `json:"displayName"`
 	Unique      bool   `json:"unique"`
 	DataType    string `json:"dataType"`
 	Length      int    `json:"length"`
