@@ -345,9 +345,9 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 			for k, v := range connect.QueryCondition {
 				querySqls.WriteString(k + "=" + "'" + v + "'" + " and ")
 			}
-			querySql = querySqls.String()            //拼接的sql语句转成字符串
-			querySql = querySql[0 : len(querySql)-4] //截取最后三个字符“and”
 		}
+		querySql = querySqls.String()            //拼接的sql语句转成字符串
+		querySql = querySql[0 : len(querySql)-4] //截取最后三个字符“and”
 		fmt.Println("querySql: " + querySql)
 
 	}
