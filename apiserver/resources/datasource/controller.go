@@ -2,6 +2,7 @@ package datasource
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strings"
@@ -254,13 +255,29 @@ func returns200(b *restful.RouteBuilder) {
 func returns500(b *restful.RouteBuilder) {
 	b.Returns(http.StatusInternalServerError, "internal server error", nil)
 }
+func getParams(req *restful.Request) *service.Connect {
+	connect := &service.Connect{}
+	connect.UserName = req.QueryParameter("UserName")
+	connect.Password = req.QueryParameter("Password")
+	connect.Ip = req.QueryParameter("Ip")
+	connect.Port = req.QueryParameter("Port")
+	connect.DBName = req.QueryParameter("DBName")
+	connect.TableName = req.QueryParameter("TableName")
+	queryCondition := make(map[string]string)
+	err := json.Unmarshal([]byte(req.QueryParameter("QueryCondition")), &queryCondition)
+	if err != nil {
+		return nil
+	}
+	connect.QueryCondition = queryCondition
+	connect.QType = req.QueryParameter("QType")
+	return connect
+}
 
 /**链接MySQL
  */
 func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
-	connect := &service.Connect{}
-	e := req.ReadEntity(connect)
-	if e != nil || len(connect.QType) == 0 {
+	connect := getParams(req)
+	if connect == nil || len(connect.QType) == 0 {
 		fmt.Println("parameter error")
 		return http.StatusInternalServerError, &QueryMysqlDataResponse{
 			Code:    1,
