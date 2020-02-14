@@ -40,7 +40,7 @@ type Api struct {
 	CalledCount      int           `json:"calledCount"`
 	PublishInfo      v1.PublishInfo
 
-	ApplicationBindStatus *v1.ApiApplicationStatus `json:"applicationBindSucceeded"`
+	ApplicationBindStatus *v1.ApiApplicationStatus `json:"applicationBindStatus"`
 }
 
 // only used in creation
