@@ -266,9 +266,10 @@ func getParams(req *restful.Request) *service.Connect {
 	queryCondition := make(map[string]string)
 	err := json.Unmarshal([]byte(req.QueryParameter("QueryCondition")), &queryCondition)
 	if err != nil {
-		return nil
+		connect.QueryCondition = nil
+	} else {
+		connect.QueryCondition = queryCondition
 	}
-	connect.QueryCondition = queryCondition
 	connect.QType = req.QueryParameter("QType")
 	return connect
 }
@@ -277,11 +278,18 @@ func getParams(req *restful.Request) *service.Connect {
  */
 func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 	connect := getParams(req)
-	if connect == nil || len(connect.QType) == 0 {
-		fmt.Println("parameter error")
+	if len(connect.QType) == 0 {
+		if connect.QType == "3" && connect.QueryCondition == nil {
+			fmt.Println("parameter error,条件为空")
+			return http.StatusInternalServerError, &QueryMysqlDataResponse{
+				Code:    1,
+				Message: "parameter error,条件不能为空",
+			}
+		}
+		fmt.Println("parameter error,qType 为空")
 		return http.StatusInternalServerError, &QueryMysqlDataResponse{
 			Code:    1,
-			Message: "parameter error",
+			Message: "parameter error,qType 不能为空",
 		}
 	}
 	buildPath := strings.Builder{}
