@@ -9,6 +9,7 @@ require (
 	github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0
 	github.com/emicklei/go-restful v2.9.5+incompatible
 	github.com/go-logr/logr v0.1.0
+	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/kubernetes-sigs/kubebuilder v1.0.8 // indirect
