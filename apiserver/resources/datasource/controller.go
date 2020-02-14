@@ -347,8 +347,8 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 			}
 			querySql = querySqls.String()            //拼接的sql语句转成字符串
 			querySql = querySql[0 : len(querySql)-4] //截取最后三个字符“and”
-			fmt.Println("querySql: " + querySql)
 		}
+		fmt.Println("querySql: " + querySql)
 
 	}
 	data, err := service.GetMySQLDbData(db, querySql)
