@@ -164,7 +164,7 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
-		var ms MessageList = *messages
+		var ms MessageList = messages
 		data, err := util.PageWrap(ms, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
