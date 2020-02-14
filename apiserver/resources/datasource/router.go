@@ -90,7 +90,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("Connect  Mysql").
-		To(r.getDataByApi).
+		To(r.getMysqlData).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 }
