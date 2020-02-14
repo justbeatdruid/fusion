@@ -339,7 +339,6 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 	} else {
 		//查询数据表数据
 		querySqls := strings.Builder{}
-		var querySql string
 		querySqls.WriteString("SELECT * FROM " + "`" + connect.DBName + "`." + "`" + connect.TableName + "`")
 		if connect.QueryCondition != nil && len(connect.QueryCondition) > 0 {
 			querySqls.WriteString("where ")
