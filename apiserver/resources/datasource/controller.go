@@ -339,15 +339,18 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 	} else {
 		//查询数据表数据
 		querySqls := strings.Builder{}
+		var querySql string
 		querySqls.WriteString("SELECT * FROM " + "`" + connect.DBName + "`." + "`" + connect.TableName + "`")
 		if connect.QueryCondition != nil && len(connect.QueryCondition) > 0 {
 			querySqls.WriteString("where ")
 			for k, v := range connect.QueryCondition {
 				querySqls.WriteString(k + "=" + "'" + v + "'" + " and ")
 			}
+			querySql = querySqls.String()            //拼接的sql语句转成字符串
+			querySql = querySql[0 : len(querySql)-4] //截取最后三个字符“and”
+		} else {
+			querySql = querySqls.String() //拼接的sql语句转成字符串
 		}
-		querySql = querySqls.String()            //拼接的sql语句转成字符串
-		querySql = querySql[0 : len(querySql)-4] //截取最后三个字符“and”
 		fmt.Println("querySql: " + querySql)
 
 	}
