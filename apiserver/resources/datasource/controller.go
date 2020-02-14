@@ -305,7 +305,8 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 	path := buildPath.String()
 	db, err := sql.Open("mysql", path)
 	if err != nil {
-		fmt.Println("open DB err")
+		fmt.Println("open DB err", err)
+		fmt.Println(err)
 		return http.StatusInternalServerError, &QueryMysqlDataResponse{
 			Code:    1,
 			Message: "open DB err，path :" + path,
