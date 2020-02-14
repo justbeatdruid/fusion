@@ -323,7 +323,6 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 		}
 
 	}
-	fmt.Println("connnect success")
 	data, err := service.GetMySQLDbData(db, querySql)
 	if err != nil {
 		return http.StatusInternalServerError, &QueryMysqlDataResponse{
@@ -332,7 +331,8 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 		}
 	}
 	return http.StatusOK, &QueryMysqlDataResponse{
-		Code: 0,
-		Data: data,
+		Code:    0,
+		Message: "查询成功",
+		Data:    data,
 	}
 }
