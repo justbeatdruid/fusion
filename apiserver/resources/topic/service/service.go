@@ -74,8 +74,8 @@ func (s *Service) DeleteAllTopics() ([]*Topic, error) {
 	return ToListModel(tps), nil
 }
 
-func (s *Service) ListMessages(id string, start int64, end int64) (*[]Message, error) {
-	messages, err := s.ListTopicMessages(id, start, end)
+func (s *Service) ListMessages(id string,start int64,end int64) ([]Message, error) {
+	messages, err := s.ListTopicMessages(id,start,end)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -193,7 +193,7 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 }
 
 //查询topic中的所有消息
-func (s *Service) ListTopicMessages(id string, start int64, end int64) (*[]Message, error) {
+func (s *Service) ListTopicMessages(id string,start int64,end int64) ([]Message, error) {
 	tp, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
@@ -239,5 +239,5 @@ func (s *Service) ListTopicMessages(id string, start int64, end int64) (*[]Messa
 		}
 
 	}
-	return &messageStructs, nil
+	return messageStructs, nil
 }
