@@ -308,7 +308,7 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 		fmt.Println("open DB err")
 		return http.StatusInternalServerError, &QueryMysqlDataResponse{
 			Code:    1,
-			Message: "open DB err",
+			Message: "open DB err，path :" + path,
 		}
 	}
 	//设置数据库最大连接数
