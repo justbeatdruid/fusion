@@ -17,14 +17,22 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/go-logr/logr"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	nlptv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
+	dw "github.com/chinamobile/nlpt/crds/datasource/datawarehouse"
+	"github.com/chinamobile/nlpt/pkg/names"
+
+	"k8s.io/klog"
 )
+
+var defaultNamespace = "default"
 
 // DatasourceReconciler reconciles a Datasource object
 type DatasourceReconciler struct {
@@ -37,12 +45,70 @@ type DatasourceReconciler struct {
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=datasources/status,verbs=get;update;patch
 
 func (r *DatasourceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("datasource", req.NamespacedName)
-
-	// your logic here
-
+	if false {
+		_ = context.Background()
+		_ = r.Log.WithValues("datasource", req.NamespacedName)
+	}
 	return ctrl.Result{}, nil
+}
+
+func (r *DatasourceReconciler) SyncDatasources() error {
+	klog.Infof("sync datasources")
+	ctx := context.Background()
+
+	apiDatasourceList := &nlptv1.DatasourceList{}
+	if err := r.List(ctx, apiDatasourceList, &client.ListOptions{
+		Namespace: defaultNamespace,
+	}); err != nil {
+		return fmt.Errorf("cannot list datasources: %+v", err)
+	}
+	existedDatawarehouses := make(map[string]nlptv1.Datasource)
+	for i, ds := range apiDatasourceList.Items {
+		klog.V(5).Infof("get datasources: %dth datasource: %+v", i, ds)
+		if ds.Spec.Type == nlptv1.DataWarehouseType {
+			existedDatawarehouses[ds.Spec.Name] = ds
+		}
+	}
+
+	datawarehouse, err := dw.GetExampleDatawarehouse()
+	if err != nil {
+		return fmt.Errorf("get datawarehouse error: %+v", err)
+	}
+	klog.Infof("get %d datawarehouse", len(datawarehouse.Databases))
+	for _, db := range datawarehouse.Databases {
+		if apiDs, ok := existedDatawarehouses[db.Name]; ok {
+			if !nlptv1.DeepCompareDataWarehouse(apiDs.Spec.DataWarehouse, &db) {
+				klog.V(4).Infof("need to update datawarehouse %s", db.Name)
+				apiDs.Spec.DataWarehouse = &db
+				apiDs.Status.UpdatedAt = metav1.Now()
+				if err = r.Update(ctx, &apiDs); err != nil {
+					return fmt.Errorf("cannot update datasource: %+v", err)
+				}
+			}
+		} else {
+			klog.V(4).Infof("need to create datawarehouse %s", db.Name)
+			ds := &nlptv1.Datasource{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      names.NewID(),
+					Namespace: defaultNamespace,
+				},
+				Spec: nlptv1.DatasourceSpec{
+					Name:          db.Name,
+					Type:          nlptv1.DataWarehouseType,
+					DataWarehouse: &db,
+				},
+				Status: nlptv1.DatasourceStatus{
+					Status:    nlptv1.Created,
+					CreatedAt: metav1.Now(),
+					UpdatedAt: metav1.Unix(0, 0),
+				},
+			}
+			if err = r.Create(ctx, ds); err != nil {
+				return fmt.Errorf("cannot create datasource: %+v", err)
+			}
+		}
+	}
+	return nil
 }
 
 func (r *DatasourceReconciler) SetupWithManager(mgr ctrl.Manager) error {

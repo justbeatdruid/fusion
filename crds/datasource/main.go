@@ -18,12 +18,15 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
 	nlptv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/datasource/controllers"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/wait"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	// +kubebuilder:scaffold:imports
@@ -39,6 +42,7 @@ func init() {
 
 	_ = nlptv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
+	klog.InitFlags(nil)
 }
 
 func main() {
@@ -64,19 +68,31 @@ func main() {
 		os.Exit(1)
 	}
 
-	if err = (&controllers.DatasourceReconciler{
+	var dr *controllers.DatasourceReconciler = &controllers.DatasourceReconciler{
 		Client: mgr.GetClient(),
 		Log:    ctrl.Log.WithName("controllers").WithName("Datasource"),
 		Scheme: mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	}
+	if dr.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Datasource")
 		os.Exit(1)
 	}
 	// +kubebuilder:scaffold:builder
-
-	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
-	}
+	stop := make(chan struct{})
+	go func() {
+		setupLog.Info("starting manager")
+		if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+			setupLog.Error(err, "problem running manager")
+			os.Exit(1)
+		}
+		close(stop)
+	}()
+	// wait for caches up
+	time.Sleep(time.Second)
+	wait.Until(func() {
+		if err := dr.SyncDatasources(); err != nil {
+			klog.Errorf("sync datasource error: %+v", err)
+		}
+		// do not use wait.NerverStop
+	}, time.Second*60, stop)
 }

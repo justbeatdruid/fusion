@@ -24,68 +24,82 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 type Api struct {
-	ID         string     `json:"id"`
-	Name       string     `json:"name"`
-	TrafficID  string     `json:"trafficID"`
-	KongID     string     `json:"kongID"`
-	Result     Result     `json:"result"`
+	ID   string `json:"id"`
+	Name string `json:"name"`
+	//app api ip user 类型记录的kong插件id
+	TrafficID string `json:"trafficID"`
+	//特殊应用 记录的kong插件id列表
+	SpecialID []string `json:"specialID"`
+	KongID    string   `json:"kongID"`
+	Result    Result   `json:"result"`
+	Detail    string   `json:"detail"`
 }
 type Result string
+
 const (
-	INIT        Result = "init"
-	FAILED      Result = "failed"
-	SUCCESS     Result = "success"
+	INIT    Result = "init"
+	FAILED  Result = "failed"
+	SUCCESS Result = "success"
 )
 
-
 type ConfigInfo struct {
-	Year       int     `json:"year"`
-	Month      int     `json:"month"`
-	Day        int     `json:"day"`
-	Hour       int     `json:"hour"`
-	Minute     int     `json:"minute"`
-	Second     int     `json:"second"`
+	Year    int       `json:"year"`
+	Month   int       `json:"month"`
+	Day     int       `json:"day"`
+	Hour    int       `json:"hour"`
+	Minute  int       `json:"minute"`
+	Second  int       `json:"second"`
+	Special []Special `json:"special"`
 }
+
+const MAXNUM int = 5
+
+type Special struct {
+	ID     string `json:"id"`
+	Minute int    `json:"minute"`
+}
+
 // TrafficcontrolSpec defines the desired state of Trafficcontrol
 type TrafficcontrolSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	ID           string               `json:"ID"`
-	Name         string                `json:"name"`
-	Type         LimitType              `json:"type"`
-	Config       ConfigInfo            `json:"config"`
-	User         string                `json:"user"`
-	Apis         []Api                 `json:"apis"`
-	Description  string                `json:"description"`
+	ID          string     `json:"ID"`
+	Name        string     `json:"name"`
+	Type        LimitType  `json:"type"`
+	Config      ConfigInfo `json:"config"`
+	User        string     `json:"user"`
+	Apis        []Api      `json:"apis"`
+	Description string     `json:"description"`
 	//KongInfo
 	//KongService KongServiceInfo `json:"kongServiceInfo"`
 }
 
 type LimitType string
-const (
-	APIC      LimitType = "api"
-	IPC       LimitType = "ip"
-	APPC      LimitType = "app"
-	USERC     LimitType = "user"
-)
 
+const (
+	APIC     LimitType = "api"
+	IPC      LimitType = "ip"
+	APPC     LimitType = "app"
+	USERC    LimitType = "user"
+	SPECAPPC LimitType = "specialapp"
+)
 
 type Status string
 
 const (
-	Init         Status = "init"
-	Bind         Status = "bind"   //绑定api
-	Binding      Status = "binding" //启动绑定api
-	Binded       Status = "binded"    //绑定结束
-	UnBind       Status = "unbind"   //绑定api
-	UnBinding    Status = "unbinding" //启动绑定api
-	UnBinded     Status = "unbinded"    //绑定结束
-	Delete       Status = "delete"
-	Deleting     Status = "deleting"
-	Error        Status = "error"
-	Update       Status = "update"  //更新流程策略时更新插件
-	Updating     Status = "updating"
-	Updated      Status = "updated"
+	Init      Status = "init"
+	Bind      Status = "bind"      //绑定api
+	Binding   Status = "binding"   //启动绑定api
+	Binded    Status = "binded"    //绑定结束
+	UnBind    Status = "unbind"    //绑定api
+	UnBinding Status = "unbinding" //启动绑定api
+	UnBinded  Status = "unbinded"  //绑定结束
+	Delete    Status = "delete"
+	Deleting  Status = "deleting"
+	Error     Status = "error"
+	Update    Status = "update" //更新流程策略时更新插件
+	Updating  Status = "updating"
+	Updated   Status = "updated"
 )
 
 // TrafficcontrolStatus defines the observed state of Trafficcontrol

@@ -11,10 +11,11 @@ import (
 )
 
 type Api struct {
-	ID        string `json:"id"`
-	Namespace string `json:"namespace"`
+	ID          string `json:"id"`
+	Namespace   string `json:"namespace"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
 
-	Name          string            `json:"name"`
 	Serviceunit   v1.Serviceunit    `json:"serviceunit"`
 	Applications  []v1.Application  `json:"applications"`
 	Users         []v1.User         `json:"users"`
@@ -54,6 +55,7 @@ func ToAPI(api *Api) *v1.Api {
 	crd.ObjectMeta.Labels[v1.ServiceunitLabel] = api.Serviceunit.ID
 	crd.Spec = v1.ApiSpec{
 		Name:         api.Name,
+		Description:  api.Description,
 		Serviceunit:  api.Serviceunit,
 		Applications: api.Applications,
 		Users:        api.Users,
@@ -85,6 +87,7 @@ func ToModel(obj *v1.Api) *Api {
 		Namespace: obj.ObjectMeta.Namespace,
 
 		Name:         obj.Spec.Name,
+		Description:  obj.Spec.Description,
 		Serviceunit:  obj.Spec.Serviceunit,
 		Applications: obj.Spec.Applications,
 		Users:        obj.Spec.Users,
@@ -103,7 +106,7 @@ func ToModel(obj *v1.Api) *Api {
 		AccessLink:       obj.Status.AccessLink,
 		UpdatedAt:        obj.Status.UpdatedAt.Time,
 		ReleasedAt:       obj.Status.ReleasedAt.Time,
-		ApplicationCount: obj.Status.ApplicationCount,
+		ApplicationCount: 0,
 		CalledCount:      obj.Status.CalledCount,
 	}
 	if model.Applications == nil {
@@ -121,6 +124,11 @@ func ToModel(obj *v1.Api) *Api {
 	model.ApiParameters = p
 	if model.WebParams == nil {
 		model.WebParams = []v1.WebParams{}
+	}
+	for l := range obj.ObjectMeta.Labels {
+		if v1.IsApplicationLabel(l) {
+			model.ApplicationCount = model.ApplicationCount + 1
+		}
 	}
 	return model
 }

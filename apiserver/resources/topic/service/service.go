@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"fmt"
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
@@ -11,7 +12,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 	"log"
-	"context"
 )
 
 var crdNamespace = "default"
@@ -232,10 +232,10 @@ func (s *Service) ListTopicMessages(id string,start int64,end int64) ([]Message,
 		// Process the message
 		messageStruct.Time = msg.PublishTime()
 		timeStamp = messageStruct.Time.Unix()
-		if timeStamp>=start&&timeStamp<=end {
+		if timeStamp >= start && timeStamp <= end {
 			messageStruct.ID = msg.ID()
 			messageStruct.Messages = string(msg.Payload()[:])
-			messageStructs = append(messageStructs,messageStruct)
+			messageStructs = append(messageStructs, messageStruct)
 		}
 
 	}

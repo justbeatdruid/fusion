@@ -7,6 +7,7 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/emicklei/go-restful"
 )
@@ -32,9 +33,9 @@ type CreateRequest = Wrapped
 type DeleteResponse = Wrapped
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int                       `json:"code"`
-	Message string                    `json:"message"`
-	Data    []*service.Trafficcontrol `json:"data"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
 
@@ -106,17 +107,40 @@ func (c *controller) DeleteTrafficcontrol(req *restful.Request) (int, *DeleteRes
 }
 
 func (c *controller) ListTrafficcontrol(req *restful.Request) (int, *ListResponse) {
-	if db, err := c.service.ListTrafficcontrol(); err != nil {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	if tc, err := c.service.ListTrafficcontrol(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
-			Message: fmt.Errorf("list trafficcontrol error: %+v", err).Error(),
+			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
+		var tcs TrafficcontrolList = tc
+		data, err := util.PageWrap(tcs, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:    1,
+				Message: fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
 		return http.StatusOK, &ListResponse{
 			Code: 0,
-			Data: db,
+			Data: data,
 		}
 	}
+}
+
+type TrafficcontrolList []*service.Trafficcontrol
+
+func (tcs TrafficcontrolList) Length() int {
+	return len(tcs)
+}
+
+func (tcs TrafficcontrolList) GetItem(i int) (interface{}, error) {
+	if i >= len(tcs) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return tcs[i], nil
 }
 
 // +update_sunyu
