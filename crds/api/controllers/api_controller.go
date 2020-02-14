@@ -100,9 +100,9 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			}
 		}
 		api.Status.Status = nlptv1.Created
-		api.Status.AccessLink = nlptv1.AccessLink(fmt.Sprintf("%s://%s:%d%s/%s",
+		api.Status.AccessLink = nlptv1.AccessLink(fmt.Sprintf("%s://%s:%d%s",
 			strings.ToLower(string(api.Spec.Protocol)),
-			r.Operator.Host, r.Operator.KongPortalPort, api.Spec.KongApi.Paths[0], api.ObjectMeta.Name))
+			r.Operator.Host, r.Operator.KongPortalPort, api.Spec.KongApi.Paths[0]))
 		api.Status.Message = "success"
 		r.Update(ctx, api)
 	}

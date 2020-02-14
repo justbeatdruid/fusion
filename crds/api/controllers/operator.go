@@ -245,13 +245,14 @@ func (r *Operator) AddRouteJwtByKong(db *nlptv1.Api) (err error) {
 		request = request.Set(k, v)
 	}
 	request = request.Retry(3, 5*time.Second, retryStatus...)
-	verList := []string{"exp"}
-	configBody := &ConfigJwt{
-		ClaimsToVerify: verList, //校验的参数列表 exp
-	}
+	//TODO 后续确定超时策略后再添加token超时机制
+	//verList := []string{"exp"}
+	//configBody := &ConfigJwt{
+	//ClaimsToVerify: verList, //校验的参数列表 exp
+	//}
 	requestBody := &JwtRequestBody{
-		Name:   "jwt", //插件名称
-		Config: *configBody,
+		Name: "jwt", //插件名称
+		//Config: *configBody,
 	}
 	responseBody := &JwtResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
