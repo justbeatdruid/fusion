@@ -37,14 +37,6 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.PATCH("/apis/{id}").
-		Consumes(restful.MIME_JSON).
-		Produces(restful.MIME_JSON).
-		Doc("get an api by id").
-		To(r.patchApi).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
-		Do(returns200, returns500))
-
 	ws.Route(ws.DELETE("/apis/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -116,10 +108,6 @@ func process(f func(*restful.Request) (int, interface{}), request *restful.Reque
 
 func (r *router) createApi(request *restful.Request, response *restful.Response) {
 	process(r.controller.CreateApi, request, response)
-}
-
-func (r *router) patchApi(request *restful.Request, response *restful.Response) {
-	process(r.controller.PatchApi, request, response)
 }
 
 func (r *router) getApi(request *restful.Request, response *restful.Response) {

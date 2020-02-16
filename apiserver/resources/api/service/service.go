@@ -67,27 +67,6 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	return ToModel(api), nil
 }
 
-func (s *Service) PatchApi(id string, data interface{}) (*Api, error) {
-	api, err := s.Get(id)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get object: %+v", err)
-	}
-	if err = s.assignment(api, data); err != nil {
-		return nil, err
-	}
-	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
-	if err != nil {
-		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
-	}
-	crd := &unstructured.Unstructured{}
-	crd.SetUnstructuredContent(content)
-	crd, err = s.client.Namespace(crdNamespace).Update(crd, metav1.UpdateOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("error update crd: %+v", err)
-	}
-	return ToModel(api), err
-}
-
 func (s *Service) ListApi(suid, appid string) ([]*Api, error) {
 	apis, err := s.List(suid, appid)
 	if err != nil {

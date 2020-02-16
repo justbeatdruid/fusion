@@ -85,34 +85,6 @@ func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 	}
 }
 
-func (c *controller) PatchApi(req *restful.Request) (int, interface{}) {
-	reqBody := make(map[string]interface{})
-	if err := req.ReadEntity(&reqBody); err != nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
-		}
-	}
-	data, ok := reqBody["data,omitempty"]
-	if !ok {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: "read entity error: data is null",
-		}
-	}
-	if api, err := c.service.PatchApi(req.PathParameter("id"), data); err != nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    2,
-			Message: fmt.Errorf("create api error: %+v", err).Error(),
-		}
-	} else {
-		return http.StatusOK, &CreateResponse{
-			Code: 0,
-			Data: api,
-		}
-	}
-}
-
 func (c *controller) GetApi(req *restful.Request) (int, interface{}) {
 	id := req.PathParameter("id")
 	if api, err := c.service.GetApi(id); err != nil {
