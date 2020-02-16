@@ -1,10 +1,13 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
-	"github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
-	"github.com/chinamobile/nlpt/pkg/names"
 	"time"
+
+	v1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
+	"github.com/chinamobile/nlpt/pkg/names"
+	"k8s.io/klog"
 )
 
 type Trafficcontrol struct {
@@ -139,5 +142,65 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 	}
 
 	a.ID = names.NewID()
+	return nil
+}
+
+func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) error {
+	data, ok := reqData.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("reqData type is error,req data: %v", reqData)
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("json.Marshal error,: %v", err)
+	}
+	var source Trafficcontrol
+	if err = json.Unmarshal(b, &source); err != nil {
+		return fmt.Errorf("json.Unmarshal error,: %v", err)
+	}
+	if _, ok = data["name"]; ok {
+		target.Spec.Name = source.Name
+	}
+	if _, ok = data["namespace"]; ok {
+		target.ObjectMeta.Namespace = source.Namespace
+	}
+	if _, ok = data["type"]; ok {
+		target.Spec.Type = source.Type
+	}
+	if _, ok = data["user"]; ok {
+		target.Spec.User = source.User
+	}
+	if _, ok = data["apiCount"]; ok {
+		target.Status.APICount = source.APICount
+	}
+	if _, ok = data["description"]; ok {
+		target.Spec.Description = source.Description
+	}
+	if _, ok := data["apis"]; ok {
+		target.Spec.Apis = source.Apis
+	}
+	if reqConfig, ok := data["config"]; ok {
+		if config, ok := reqConfig.(map[string]interface{}); ok {
+			if _, ok = config["year"]; ok {
+				target.Spec.Config.Year = source.Config.Year
+			}
+			if _, ok = config["month"]; ok {
+				target.Spec.Config.Month = source.Config.Month
+			}
+			if _, ok = config["day"]; ok {
+				target.Spec.Config.Day = source.Config.Day
+			}
+			if _, ok = config["hour"]; ok {
+				target.Spec.Config.Hour = source.Config.Hour
+			}
+			if _, ok = config["minute"]; ok {
+				target.Spec.Config.Minute = source.Config.Minute
+			}
+			if _, ok = config["second"]; ok {
+				target.Spec.Config.Second = source.Config.Second
+			}
+		}
+	}
+	target.Status.UpdatedAt = time.Now()
 	return nil
 }

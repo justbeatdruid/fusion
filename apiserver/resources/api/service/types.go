@@ -1,11 +1,12 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
-
-	"github.com/chinamobile/nlpt/crds/api/api/v1"
+	v1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"k8s.io/klog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -236,5 +237,64 @@ func (s *Service) Validate(a *Api) error {
 		Group: su.Spec.Group.Name,
 	}
 	a.ID = names.NewID()
+	return nil
+}
+
+func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
+	data, ok := reqData.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("reqData type is error,req data: %v", reqData)
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("json.Marshal error,: %v", err)
+	}
+	var source Api
+	if err = json.Unmarshal(b, &source); err != nil {
+		return fmt.Errorf("json.Unmarshal error,: %v", err)
+	}
+	if _, ok := data["name"]; ok {
+		target.Spec.Name = source.Name
+	}
+	if _, ok := data["namespace"]; ok {
+		target.ObjectMeta.Namespace = source.Namespace
+	}
+	if _, ok := data["applications"]; ok {
+		target.Spec.Applications = source.Applications
+	}
+	if _, ok = data["users"]; ok {
+		target.Spec.Users = source.Users
+	}
+	if _, ok := data["frequency"]; ok {
+		target.Spec.Frequency = source.Frequency
+	}
+	if _, ok := data["method"]; ok {
+		target.Spec.Method = source.Method
+	}
+	if _, ok := data["protocol"]; ok {
+		target.Spec.Protocol = source.Protocol
+	}
+	if _, ok := data["apiFields"]; ok {
+		target.Spec.ApiFields = source.ApiFields
+	}
+	if _, ok = data["returnType"]; ok {
+		target.Spec.ReturnType = source.ReturnType
+	}
+	if _, ok = data["webParams"]; ok {
+		target.Spec.WebParams = source.WebParams
+	}
+	if _, ok = data["apiType"]; ok {
+		target.Spec.ApiType = source.ApiType
+	}
+	if _, ok = data["authType"]; ok {
+		target.Spec.AuthType = source.AuthType
+	}
+	if _, ok = data["traffic"]; ok {
+		target.Spec.Traffic = source.Traffic
+	}
+	if _, ok = data["KongApi"]; ok {
+		target.Spec.KongApi = source.KongApi
+	}
+	target.Status.UpdatedAt = metav1.Now()
 	return nil
 }

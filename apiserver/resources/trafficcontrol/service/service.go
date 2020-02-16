@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
-	"github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
+	v1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -63,13 +63,15 @@ func (s *Service) DeleteTrafficcontrol(id string) error {
 }
 
 // + update_sunyu
-func (s *Service) UpdateTrafficcontrol(model *Trafficcontrol, id string) (*Trafficcontrol, error) {
-	//db, err := s.GetServiceunit(id)
+func (s *Service) UpdateTrafficcontrol(id string, reqData interface{}) (*Trafficcontrol, error) {
 	crd, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
-	su, err := s.Update(ToAPIUpdate(model, crd)) //model是传入的，db是原始的
+	if err = s.assignment(crd, reqData); err != nil {
+		return nil, err
+	}
+	su, err := s.Update(crd) //model是传入的，db是原始的
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to update: %+v", err)
 	}

@@ -145,21 +145,22 @@ func (tcs TrafficcontrolList) GetItem(i int) (interface{}, error) {
 
 // +update_sunyu
 func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateResponse) {
-	body := &UpdateRequest{}
-	if err := req.ReadEntity(body); err != nil {
-		return http.StatusInternalServerError, &UpdateResponse{
+	reqBody := make(map[string]interface{})
+	if err := req.ReadEntity(&reqBody); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Message: fmt.Errorf("cannot read entity: %+v, reqbody:%v, req:%v", err, reqBody, req).Error(),
 		}
 	}
-	if body.Data == nil {
-		return http.StatusInternalServerError, &UpdateResponse{
+	data, ok := reqBody["data,omitempty"]
+	if !ok {
+		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,
 			Message: "read entity error: data is null",
 		}
 	}
-	id := req.PathParameter("id")
-	if db, err := c.service.UpdateTrafficcontrol(body.Data, id); err != nil {
+
+	if db, err := c.service.UpdateTrafficcontrol(req.PathParameter("id"), data); err != nil {
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:    2,
 			Message: fmt.Errorf("update database error: %+v", err).Error(),
