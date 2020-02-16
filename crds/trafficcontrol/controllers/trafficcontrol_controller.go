@@ -21,6 +21,7 @@ import (
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
@@ -32,16 +33,37 @@ type TrafficcontrolReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	Operator *Operator
 }
 
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=trafficcontrols,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=trafficcontrols/status,verbs=get;update;patch
 
 func (r *TrafficcontrolReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("trafficcontrol", req.NamespacedName)
+		ctx := context.Background()
+		_ = r.Log.WithValues("trafficcontrol", req.NamespacedName)
 
-	// your logic here
+	trafficcontrl := &nlptv1.Trafficcontrol{}
+	if err := r.Get(ctx, req.NamespacedName, trafficcontrl); err != nil {
+		klog.Errorf("cannot get trafficcontrol of ctrl req: %+v", err)
+		return ctrl.Result{}, nil
+	}
+	klog.Infof("get new trafficcontrol event: %+v", *trafficcontrl)
+
+	if trafficcontrl.Status.Status == nlptv1.Bind {
+		trafficcontrl.Status.Status = nlptv1.Binding
+		klog.Infof("trafficcontrol is binding")
+		if err := r.Operator.AddRouteRatelimitByKong(trafficcontrl); err != nil {
+			klog.Infof("trafficcontrol bind err")
+			trafficcontrl.Status.Status = nlptv1.Error
+			trafficcontrl.Status.Message = err.Error()
+		} else {
+			klog.Infof("trafficcontrol bind sunccess")
+			trafficcontrl.Status.Status = nlptv1.Binded
+			trafficcontrl.Status.Message = "success"
+		}
+		r.Update(ctx, trafficcontrl)
+	}
 
 	return ctrl.Result{}, nil
 }
