@@ -22,6 +22,8 @@ import (
 
 	nlptv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/datasource/controllers"
+	dw "github.com/chinamobile/nlpt/crds/datasource/datawarehouse"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -48,9 +50,13 @@ func init() {
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
+	var dataserviceHost string
+	var dataservicePort int
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
+	flag.StringVar(&dataserviceHost, "dataservice-host", "127.0.0.1", "The address the metric endpoint binds to.")
+	flag.IntVar(&dataservicePort, "dataservice-port", 27778, "The address the metric endpoint binds to.")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(func(o *zap.Options) {
@@ -69,9 +75,10 @@ func main() {
 	}
 
 	var dr *controllers.DatasourceReconciler = &controllers.DatasourceReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Datasource"),
-		Scheme: mgr.GetScheme(),
+		Client:        mgr.GetClient(),
+		Log:           ctrl.Log.WithName("controllers").WithName("Datasource"),
+		Scheme:        mgr.GetScheme(),
+		DataConnector: dw.NewConnector(dataserviceHost, dataservicePort),
 	}
 	if dr.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Datasource")

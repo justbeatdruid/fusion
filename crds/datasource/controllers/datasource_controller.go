@@ -27,6 +27,7 @@ import (
 
 	nlptv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	dw "github.com/chinamobile/nlpt/crds/datasource/datawarehouse"
+	dwv1 "github.com/chinamobile/nlpt/crds/datasource/datawarehouse/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
 
 	"k8s.io/klog"
@@ -37,8 +38,9 @@ var defaultNamespace = "default"
 // DatasourceReconciler reconciles a Datasource object
 type DatasourceReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log           logr.Logger
+	Scheme        *runtime.Scheme
+	DataConnector dw.Connector
 }
 
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=datasources,verbs=get;list;watch;create;update;patch;delete
@@ -70,7 +72,7 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 		}
 	}
 
-	datawarehouse, err := dw.GetExampleDatawarehouse()
+	datawarehouse, err := r.DataConnector.GetExampleDatawarehouse()
 	if err != nil {
 		return fmt.Errorf("get datawarehouse error: %+v", err)
 	}
@@ -87,6 +89,14 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 			}
 		} else {
 			klog.V(4).Infof("need to create datawarehouse %s", db.Name)
+			if db.Tables == nil {
+				db.Tables = make([]dwv1.Table, 0)
+			}
+			for i, t := range db.Tables {
+				if t.Properties == nil {
+					db.Tables[i].Properties = make([]dwv1.Property, 0)
+				}
+			}
 			ds := &nlptv1.Datasource{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      names.NewID(),
