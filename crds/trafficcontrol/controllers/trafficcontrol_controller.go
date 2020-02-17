@@ -40,8 +40,8 @@ type TrafficcontrolReconciler struct {
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=trafficcontrols/status,verbs=get;update;patch
 
 func (r *TrafficcontrolReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-		ctx := context.Background()
-		_ = r.Log.WithValues("trafficcontrol", req.NamespacedName)
+	ctx := context.Background()
+	_ = r.Log.WithValues("trafficcontrol", req.NamespacedName)
 
 	trafficcontrl := &nlptv1.Trafficcontrol{}
 	if err := r.Get(ctx, req.NamespacedName, trafficcontrl); err != nil {
