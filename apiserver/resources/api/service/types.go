@@ -7,7 +7,6 @@ import (
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
-	"k8s.io/klog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )

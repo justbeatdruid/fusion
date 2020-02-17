@@ -6,7 +6,6 @@ import (
 	"time"
 	"github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
-	"k8s.io/klog"
 )
 
 type Trafficcontrol struct {
