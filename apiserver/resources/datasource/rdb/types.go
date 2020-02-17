@@ -12,6 +12,7 @@ type Field struct {
 	Unique      bool   `json:"unique"`
 	DataType    string `json:"dataType"`
 	Length      int    `json:"length"`
+	IsNullAble  string `json:"IsNullAble"`
 	Description string `json:"desc"`
 	PrimaryKey  bool   `json:"primaryKey"`
 }
