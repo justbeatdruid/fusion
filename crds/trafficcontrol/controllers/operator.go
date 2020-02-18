@@ -4,10 +4,9 @@ import (
 	"fmt"
 	nlptv1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 	"github.com/parnurzeal/gorequest"
+	"k8s.io/klog"
 	"net/http"
 	"time"
-
-	"k8s.io/klog"
 )
 
 const path string = "/plugins"
@@ -126,9 +125,9 @@ func NewOperator(host string, port int, portal int, cafile string) (*Operator, e
 func (r *Operator) AddRouteRatelimitByKong(db *nlptv1.Trafficcontrol) (err error) {
 	for index := 0; index < len(db.Spec.Apis); {
 		api := db.Spec.Apis[index]
-		if api.TrafficID == "" {
-			id := api.KongID
-			klog.Infof("begin create rate-limiting %s", id)
+		if len(api.TrafficID) == 0 {
+			id := api.KongID 
+			klog.Infof("begin create rate-limiting , the KongID of api is %s", id)
 			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 			schema := "http"
 			request = request.Post(fmt.Sprintf("%s://%s:%d%s%s/%s", schema, "192.168.1.207", 30081, "/routes/", id, path))
@@ -146,24 +145,55 @@ func (r *Operator) AddRouteRatelimitByKong(db *nlptv1.Trafficcontrol) (err error
 			responseBody := &RateLimitingResponseBody{}
 			response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 			if len(errs) > 0 {
+				db.Spec.Apis[index].Result = nlptv1.FAILED
 				return fmt.Errorf("request for add rate-limiting error: %+v", errs)
 			}
 			klog.V(5).Infof("creation rate-limiting code: %d, body: %s ", response.StatusCode, string(body))
 			if response.StatusCode != 201 {
+				db.Spec.Apis[index].Result = nlptv1.FAILED
 				klog.V(5).Infof("create rate-limiting failed msg: %s\n", responseBody.Message)
 				return fmt.Errorf("request for create rate-limiting error: receive wrong status code: %s", string(body))
 			}
-
+			db.Spec.Apis[index].Result = nlptv1.SUCCESS
 			db.Spec.Apis[index].TrafficID = responseBody.ID
-			klog.Infof("rate-limiting id is %s", responseBody.ID)
-			klog.Infof("trafficID is %s", db.Spec.Apis[index].TrafficID)
 
 			if err != nil {
 				return fmt.Errorf("create rate-limiting error %s", responseBody.Message)
 			}
-		} else {
-			continue
 		}
+		index = index + 1
+	}
+	return nil
+}
+
+func (r *Operator) DeleteRouteLimitByKong(db *nlptv1.Trafficcontrol) (err error) {
+	for index := 0; index < len(db.Spec.Apis); {
+		api := db.Spec.Apis[index]
+		if len(api.TrafficID) != 0 {
+			trafficID := api.TrafficID  //route_id
+			klog.Infof("begin delete rate-limiting , the TrafficID of api is %s", trafficID)
+			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+			schema := "http"
+			for k, v := range headers {
+				request = request.Set(k, v)
+			}
+			response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, trafficID)).End()
+			request = request.Retry(3, 5*time.Second, retryStatus...)
+
+			if len(errs) > 0 {
+				db.Spec.Apis[index].Result = nlptv1.FAILED
+				return fmt.Errorf("request for delete rate-limiting error: %+v", errs)
+			}
+			klog.V(5).Infof("delete rate-limiting response code: %d%s", response.StatusCode, string(body))
+			if response.StatusCode != 204 {
+				db.Spec.Apis[index].Result = nlptv1.FAILED
+				return fmt.Errorf("request for delete rate-limiting error: receive wrong status code: %d", response.StatusCode)
+			}
+			db.Spec.Apis[index].Result = nlptv1.SUCCESS
+			db.Spec.Apis[index].TrafficID = ""
+		}
+		db.Spec.Apis[index].ID = ""
+		db.Spec.Apis[index].KongID = ""
 		index = index + 1
 	}
 	return nil

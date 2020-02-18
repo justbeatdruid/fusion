@@ -43,28 +43,41 @@ func (r *TrafficcontrolReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 	ctx := context.Background()
 	_ = r.Log.WithValues("trafficcontrol", req.NamespacedName)
 
-	trafficcontrl := &nlptv1.Trafficcontrol{}
-	if err := r.Get(ctx, req.NamespacedName, trafficcontrl); err != nil {
+	trafficcontrol := &nlptv1.Trafficcontrol{}
+	if err := r.Get(ctx, req.NamespacedName, trafficcontrol); err != nil {
 		klog.Errorf("cannot get trafficcontrol of ctrl req: %+v", err)
 		return ctrl.Result{}, nil
 	}
-	klog.Infof("get new trafficcontrol event: %+v", *trafficcontrl)
+	klog.Infof("get new trafficcontrol event: %+v", *trafficcontrol)
 
-	if trafficcontrl.Status.Status == nlptv1.Bind {
-		trafficcontrl.Status.Status = nlptv1.Binding
+	if trafficcontrol.Status.Status == nlptv1.Bind {
+		trafficcontrol.Status.Status = nlptv1.Binding
 		klog.Infof("trafficcontrol is binding")
-		if err := r.Operator.AddRouteRatelimitByKong(trafficcontrl); err != nil {
+		if err := r.Operator.AddRouteRatelimitByKong(trafficcontrol); err != nil {
 			klog.Infof("trafficcontrol bind err")
-			trafficcontrl.Status.Status = nlptv1.Error
-			trafficcontrl.Status.Message = err.Error()
+			trafficcontrol.Status.Status = nlptv1.Error
+			trafficcontrol.Status.Message = err.Error()
 		} else {
 			klog.Infof("trafficcontrol bind sunccess")
-			trafficcontrl.Status.Status = nlptv1.Binded
-			trafficcontrl.Status.Message = "success"
+			trafficcontrol.Status.Status = nlptv1.Binded
+			trafficcontrol.Status.Message = "success"
 		}
-		r.Update(ctx, trafficcontrl)
+		r.Update(ctx, trafficcontrol)
 	}
 
+	if trafficcontrol.Status.Status == nlptv1.UnBind {
+		trafficcontrol.Status.Status = nlptv1.UnBinding
+		klog.Infof("trafficcontrol is unbinding")
+		if err := r.Operator.DeleteRouteLimitByKong(trafficcontrol); err != nil {
+			klog.Infof("trafficcontrol unbind err")
+			trafficcontrol.Status.Status = nlptv1.Error
+			trafficcontrol.Status.Message = err.Error()
+		} else {
+			klog.Infof("trafficcontrol unbind sunccess")
+			trafficcontrol.Status.Status = nlptv1.UnBinded
+			trafficcontrol.Status.Message = "success"
+		}
+	}
 	return ctrl.Result{}, nil
 }
 
