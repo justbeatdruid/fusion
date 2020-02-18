@@ -21,6 +21,8 @@ import (
 	"regexp"
 	"strings"
 
+	dwv1 "github.com/chinamobile/nlpt/crds/api/datawarehouse/api/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -61,6 +63,7 @@ type ApiSpec struct {
 	Protocol     Protocol      `json:"protocol"`
 	ReturnType   ReturnType    `json:"returnType"`
 	ApiFields    []Field       `json:"apiFields"`
+	Query        *dwv1.Query   `json:"dataserviceQuery,omitempty"`
 	WebParams    []WebParams   `json:"webParams"`
 	KongApi      KongApiInfo   `json:"kongApi"`
 	PublishInfo  PublishInfo   `json:"publishInfo"`
@@ -174,6 +177,18 @@ type ApiParameter struct {
 	Example     string        `json:"example"`
 	Description string        `json:"description"`
 	Required    bool          `json:"required"`
+}
+
+func ParameterFromQuery(w dwv1.WhereField) ApiParameter {
+	ap := ApiParameter{
+		Name:        w.PropertyName,
+		Type:        ParameterType(w.Type),
+		Operator:    Operator(w.Operator),
+		Example:     w.Example,
+		Description: w.Description,
+		Required:    w.Required,
+	}
+	return ap
 }
 
 type ParameterType string

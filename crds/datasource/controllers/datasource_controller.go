@@ -66,7 +66,7 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 	}
 	existedDatawarehouses := make(map[string]nlptv1.Datasource)
 	for i, ds := range apiDatasourceList.Items {
-		klog.V(5).Infof("get datasources: %dth datasource: %+v", i, ds)
+		klog.V(6).Infof("get datasources: %dth datasource: %+v", i, ds)
 		if ds.Spec.Type == nlptv1.DataWarehouseType {
 			existedDatawarehouses[ds.Spec.Name] = ds
 		}
@@ -77,7 +77,9 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 		return fmt.Errorf("get datawarehouse error: %+v", err)
 	}
 	klog.Infof("get %d datawarehouse", len(datawarehouse.Databases))
-	for _, db := range datawarehouse.Databases {
+	//TODO remove deleted datawarehouse
+	for _, d := range datawarehouse.Databases {
+		db := dwv1.FromApiDatabase(d)
 		if apiDs, ok := existedDatawarehouses[db.Name]; ok {
 			if !nlptv1.DeepCompareDataWarehouse(apiDs.Spec.DataWarehouse, &db) {
 				klog.V(4).Infof("need to update datawarehouse %s", db.Name)
