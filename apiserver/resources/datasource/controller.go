@@ -335,7 +335,7 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 			" and table_schema='" + connect.DBName + "'"
 	} else if connect.QType == "2" {
 		//查询数据库所有表名
-		querySql = "SELECT distinct TABLE_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + connect.DBName + "'"
+		querySql = "SELECT distinct table_name FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + connect.DBName + "'"
 	} else {
 		//查询数据表数据
 		querySqls := strings.Builder{}

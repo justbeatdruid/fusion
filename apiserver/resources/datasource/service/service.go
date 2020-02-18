@@ -3,17 +3,18 @@ package service
 import (
 	"database/sql"
 	"fmt"
-
 	api "github.com/chinamobile/nlpt/apiserver/resources/api/service"
 	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
+	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
 	serviceunit "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
-
+	_ "github.com/go-sql-driver/mysql"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
+	"strings"
 )
 
 var crdNamespace = "default"
@@ -150,7 +151,38 @@ func (s *Service) Delete(id string) error {
 	}
 	return nil
 }
-
+func connectMysql(ds *v1.Datasource, querySql string) ([]map[string]string, error) {
+	buildPath := strings.Builder{}
+	buildPath.WriteString(ds.Spec.RDB.Connect.Username)
+	buildPath.WriteString(":")
+	buildPath.WriteString(ds.Spec.RDB.Connect.Password)
+	buildPath.WriteString("@tcp(")
+	buildPath.WriteString(ds.Spec.RDB.Connect.Host)
+	buildPath.WriteString(":")
+	buildPath.WriteString(string(ds.Spec.RDB.Connect.Port))
+	buildPath.WriteString(")/")
+	buildPath.WriteString(ds.Spec.RDB.Database)
+	path := buildPath.String()
+	db, err := sql.Open("mysql", path)
+	if err != nil {
+		fmt.Println("open DB err", err)
+		return nil, fmt.Errorf("open DB err")
+	}
+	//设置数据库最大连接数
+	db.SetConnMaxLifetime(100)
+	//设置上数据库最大闲置连接数
+	db.SetMaxIdleConns(10)
+	//验证连接
+	if err := db.Ping(); err != nil {
+		fmt.Println("open database fail")
+		return nil, fmt.Errorf("check database fail")
+	}
+	data, err := GetMySQLDbData(db, querySql)
+	if err != nil {
+		return nil, fmt.Errorf("deal data fail")
+	}
+	return data, nil
+}
 func (s *Service) GetTables(id string) (*Tables, error) {
 	result := &Tables{}
 	ds, err := s.Get(id)
@@ -161,6 +193,24 @@ func (s *Service) GetTables(id string) (*Tables, error) {
 	case v1.RDBType:
 		if ds.Spec.RDB == nil {
 			return nil, fmt.Errorf("datasource %s in type rdb has no rdb instance", ds.ObjectMeta.Name)
+		}
+		if len(ds.Spec.RDB.Type) == 0 {
+			return nil, fmt.Errorf("datasource %s in type rdb has no databasetype", ds.ObjectMeta.Name)
+		}
+		//mysql类型
+		if ds.Spec.RDB.Type == "mysql" {
+			querySql := "SELECT distinct table_name FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + ds.Spec.RDB.Database + "'"
+			mysqlData, err := connectMysql(ds, querySql)
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range mysqlData {
+				table := rdb.Table{}
+				table.Name = v["table_name"]
+				result.RDBTables = append(result.RDBTables, table)
+			}
+			fmt.Println(result)
+			return result, nil
 		}
 	case v1.DataWarehouseType:
 		if ds.Spec.DataWarehouse == nil {
@@ -186,6 +236,48 @@ func (s *Service) GetFields(id, table string) (*Fields, error) {
 	case v1.RDBType:
 		if ds.Spec.RDB == nil {
 			return nil, fmt.Errorf("datasource %s in type rdb has no rdb instance", ds.ObjectMeta.Name)
+		}
+		//mysql类型
+		if ds.Spec.RDB.Type == "mysql" {
+			//查询表结构sql
+			querySql := "select COLUMN_NAME '字段名称',COLUMN_TYPE '字段类型长度',IF(EXTRA='auto_increment',CONCAT(COLUMN_KEY," +
+				"'(', IF(EXTRA='auto_increment','自增长',EXTRA),')'),COLUMN_KEY) '主外键',IS_NULLABLE '空标识',COLUMN_COMMENT " +
+				"'字段说明' from information_schema.columns where table_name='" + table + "'" +
+				" and table_schema='" + ds.Spec.RDB.Database + "'"
+			mysqlData, err := connectMysql(ds, querySql)
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range mysqlData {
+				table := rdb.Field{}
+				table.Name = v["字段名称"]
+				table.DataType = v["字段类型长度"]
+				table.Description = v["字段说明"]
+				if len(v["主外键"]) == 0 {
+					table.PrimaryKey = false
+				} else {
+					table.PrimaryKey = true
+				}
+				table.IsNullAble = v["空标识"]
+				result.RDBFields = append(result.RDBFields, table)
+			}
+			//查询索引sql
+			querySql = "show keys  from " + table
+			data, err := connectMysql(ds, querySql)
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range data {
+				for i := 0; i < len(result.RDBFields); i++ {
+					//表索引字段==表字段 则索引值为true
+					if v["Column_name"] == result.RDBFields[i].Name {
+						result.RDBFields[i].Unique = true
+					} else {
+						result.RDBFields[i].Unique = false
+					}
+				}
+			}
+			return result, nil
 		}
 	case v1.DataWarehouseType:
 		if ds.Spec.DataWarehouse == nil {
