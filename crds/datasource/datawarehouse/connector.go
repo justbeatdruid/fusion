@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/chinamobile/nlpt/crds/datasource/datawarehouse/api/v1"
+	"github.com/chinamobile/nlpt/pkg/datawarehouse/api/v1"
 	"github.com/chinamobile/nlpt/pkg/logs"
 
 	"github.com/parnurzeal/gorequest"

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
+	dwv1 "github.com/chinamobile/nlpt/crds/api/datawarehouse/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,6 +26,7 @@ type Api struct {
 	Protocol      v1.Protocol       `json:"protocol"`
 	ReturnType    v1.ReturnType     `json:"returnType"`
 	ApiFields     []v1.Field        `json:"apiFields"`
+	Query         *dwv1.Query       `json:"dataserviceQuery,omitempty"`
 	ApiParameters []v1.ApiParameter `json:"apiParameters"`
 	WebParams     []v1.WebParams    `json:"webParams"`
 	ApiType       v1.ApiType        `json:"apiType"`
@@ -65,6 +67,7 @@ func ToAPI(api *Api) *v1.Api {
 		Protocol:     api.Protocol,
 		ReturnType:   api.ReturnType,
 		ApiFields:    api.ApiFields,
+		Query:        api.Query,
 		WebParams:    api.WebParams,
 		KongApi:      api.KongApi,
 		ApiType:      api.ApiType,
@@ -116,6 +119,8 @@ func ToModel(obj *v1.Api) *Api {
 	if model.ApiFields == nil {
 		model.ApiFields = []v1.Field{}
 	}
+
+	// for data service (rdb)
 	p := []v1.ApiParameter{}
 	for _, f := range model.ApiFields {
 		if f.ParameterInfo != nil {
@@ -123,9 +128,23 @@ func ToModel(obj *v1.Api) *Api {
 		}
 	}
 	model.ApiParameters = p
+
+	// web params
 	if model.WebParams == nil {
 		model.WebParams = []v1.WebParams{}
 	}
+
+	// for data service (datawarehouse api)
+	p = []v1.ApiParameter{}
+	if obj.Spec.Query != nil {
+		for _, w := range obj.Spec.Query.WhereFieldInfo {
+			if w.ParameterEnabled {
+				p = append(p, v1.ParameterFromQuery(w))
+			}
+		}
+	}
+	model.ApiParameters = p
+
 	for l := range obj.ObjectMeta.Labels {
 		if v1.IsApplicationLabel(l) {
 			model.ApplicationCount = model.ApplicationCount + 1
@@ -197,6 +216,11 @@ func (s *Service) Validate(a *Api) error {
 			}
 			if len(p.Description) == 0 {
 				return fmt.Errorf("%dth parameter description is null", i)
+			}
+		}
+		if a.Query != nil {
+			if err = a.Query.Validate(); err != nil {
+				return fmt.Errorf("query field validate error: %+v")
 			}
 		}
 	}
