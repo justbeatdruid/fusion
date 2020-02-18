@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"k8s.io/apimachinery/pkg/types"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -25,14 +26,15 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	nlptv1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 )
 
 // TrafficcontrolReconciler reconciles a Trafficcontrol object
 type TrafficcontrolReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
 	Operator *Operator
 }
 
@@ -52,31 +54,78 @@ func (r *TrafficcontrolReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 
 	if trafficcontrol.Status.Status == nlptv1.Bind {
 		trafficcontrol.Status.Status = nlptv1.Binding
+		r.Update(ctx, trafficcontrol)
 		klog.Infof("trafficcontrol is binding")
-		if err := r.Operator.AddRouteRatelimitByKong(trafficcontrol); err != nil {
-			klog.Infof("trafficcontrol bind err")
-			trafficcontrol.Status.Status = nlptv1.Error
-			trafficcontrol.Status.Message = err.Error()
+		if trafficcontrol.Spec.Type != nlptv1.SPECAPPC {
+			if err := r.Operator.AddRouteRatelimitByKong(trafficcontrol); err != nil {
+				klog.Infof("trafficcontrol bind err")
+				trafficcontrol.Status.Status = nlptv1.Error
+				trafficcontrol.Status.Message = err.Error()
+			} else {
+				klog.Infof("trafficcontrol bind sunccess")
+				trafficcontrol.Status.Status = nlptv1.Binded
+				trafficcontrol.Status.Message = "success"
+			}
 		} else {
-			klog.Infof("trafficcontrol bind sunccess")
-			trafficcontrol.Status.Status = nlptv1.Binded
-			trafficcontrol.Status.Message = "success"
+			//get special app consumerinfo
+			var consumerList []string
+			for i := 0; i < len(trafficcontrol.Spec.Config.Special); i++ {
+				app := &appv1.Application{}
+				appNamespacedName := types.NamespacedName{
+					Namespace: req.NamespacedName.Namespace,
+					Name:      trafficcontrol.Spec.Config.Special[i].ID,
+				}
+				if err := r.Get(ctx, appNamespacedName, app); err != nil {
+					klog.Errorf("cannot get app with name %s: %+v", appNamespacedName, err)
+					return ctrl.Result{}, nil
+				}
+				klog.Infof("get app %+v", *app)
+				consumer := app.Spec.ConsumerInfo.ConsumerID
+				klog.Infof("get consumer id %s", consumer)
+				consumerList = append(consumerList, consumer)
+				klog.Infof("get consumer list %s", consumerList)
+			}
+			if err := r.Operator.AddSpecialAppRateLimit(trafficcontrol, consumerList); err != nil {
+				klog.Infof("special app trafficcontrol bind err")
+				trafficcontrol.Status.Status = nlptv1.Error
+				trafficcontrol.Status.Message = err.Error()
+			} else {
+				klog.Infof("special app trafficcontrol bind sunccess")
+				trafficcontrol.Status.Status = nlptv1.Binded
+				trafficcontrol.Status.Message = "success"
+			}
 		}
+		// update status
 		r.Update(ctx, trafficcontrol)
 	}
 
 	if trafficcontrol.Status.Status == nlptv1.UnBind {
 		trafficcontrol.Status.Status = nlptv1.UnBinding
+		r.Update(ctx, trafficcontrol)
 		klog.Infof("trafficcontrol is unbinding")
-		if err := r.Operator.DeleteRouteLimitByKong(trafficcontrol); err != nil {
-			klog.Infof("trafficcontrol unbind err")
-			trafficcontrol.Status.Status = nlptv1.Error
-			trafficcontrol.Status.Message = err.Error()
+		if trafficcontrol.Spec.Type != nlptv1.SPECAPPC {
+			if err := r.Operator.DeleteRouteLimitByKong(trafficcontrol); err != nil {
+				klog.Infof("trafficcontrol unbind err")
+				trafficcontrol.Status.Status = nlptv1.Error
+				trafficcontrol.Status.Message = err.Error()
+			} else {
+				klog.Infof("trafficcontrol unbind sunccess")
+				trafficcontrol.Status.Status = nlptv1.UnBinded
+				trafficcontrol.Status.Message = "success"
+			}
 		} else {
-			klog.Infof("trafficcontrol unbind sunccess")
-			trafficcontrol.Status.Status = nlptv1.UnBinded
-			trafficcontrol.Status.Message = "success"
+			if err := r.Operator.DeleteSpecialAppRateLimit(trafficcontrol); err != nil {
+				klog.Infof("special app trafficcontrol unbind err")
+				trafficcontrol.Status.Status = nlptv1.Error
+				trafficcontrol.Status.Message = err.Error()
+			} else {
+				klog.Infof("special app trafficcontrol unbind sunccess")
+				trafficcontrol.Status.Status = nlptv1.UnBinded
+				trafficcontrol.Status.Message = "success"
+			}
 		}
+		// update status
+		r.Update(ctx, trafficcontrol)
 	}
 	return ctrl.Result{}, nil
 }

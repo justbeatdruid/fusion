@@ -266,9 +266,9 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 			return nil, fmt.Errorf("cannot update api traffic")
 		}
 		//update traffic
-		traffic, err = s.UpdateSpec(traffic)
-		traffic, err = s.UpdateStatus(traffic)
 	}
+	//update traffic 所有api绑定完成后更新数据库的状态
+	traffic, err = s.UpdateSpec(traffic)
 	return ToModel(traffic), err
 }
 
@@ -297,9 +297,8 @@ func (s *Service) UnBindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 		if _, err = s.updateApi(api.ID, traffic); err != nil {
 			return nil, fmt.Errorf("cannot update api traffic")
 		}
-		//update traffic
-		traffic, err = s.UpdateSpec(traffic)
-		traffic, err = s.UpdateStatus(traffic)
 	}
+	//update traffic
+	traffic, err = s.UpdateSpec(traffic)
 	return ToModel(traffic), err
 }
