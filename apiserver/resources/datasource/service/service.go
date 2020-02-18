@@ -285,7 +285,7 @@ func (s *Service) GetFields(id, table string) (*Fields, error) {
 		}
 		result.DataWarehouseFields = make([]dw.Property, 0)
 		for _, apiTable := range ds.Spec.DataWarehouse.Tables {
-			if apiTable.Name == table {
+			if apiTable.Info.Name == table {
 				for _, p := range apiTable.Properties {
 					result.DataWarehouseFields = append(result.DataWarehouseFields, dw.FromApiProperty(p))
 				}
