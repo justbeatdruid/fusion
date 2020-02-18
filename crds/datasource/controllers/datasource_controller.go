@@ -89,6 +89,7 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 			}
 		} else {
 			klog.V(4).Infof("need to create datawarehouse %s", db.Name)
+			klog.V(5).Infof("database=%+v", db)
 			if db.Tables == nil {
 				db.Tables = make([]dwv1.Table, 0)
 			}

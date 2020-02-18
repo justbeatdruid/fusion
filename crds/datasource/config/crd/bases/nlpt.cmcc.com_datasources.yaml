@@ -38,71 +38,135 @@ spec:
               type: string
             datawarehouse:
               properties:
+                databaseDisplayName:
+                  type: string
+                databaseId:
+                  type: string
                 databaseName:
                   type: string
-                table_property:
+                tableMetadataInfos:
                   items:
                     properties:
-                      desc:
-                        type: string
-                      property:
+                      propertyEntrys:
                         items:
+                          description: '{"id":"2928","name":"doctor_pk","displayName":"医生pk","englishName":null,"tableType":null,"tableId":null,"physicalType":"varchar","logicalType":"通用字符串","idx":0,"fieldLength":"0","fieldPersion":null,"isUnique":"否","des":null,"isPrimarykey":"否","isForeignkey":"是","referenceTableId":"2b7efd2a859f47da98ef5be248097a3a","referenceTableDisplayName":"医生信息维度表","referencePropertyId":"2698","referencePropertyName":"doctor_pk","isEncryption":"\u0000","entryptionType":null,"version":0,"standard":null,"isPartionfield":null,"sourceSql":null,"sourceTableId":null,"sourcePropertyId":null,"encrypt":"不加密"}'
                           properties:
-                            dataType:
-                              type: string
-                            desc:
+                            des:
                               type: string
                             displayName:
                               type: string
-                            encrypAlgorithm:
+                            encrypt:
                               type: string
-                            encryption:
+                            englishName:
+                              type: string
+                            entryptionType:
+                              type: string
+                            fieldLength:
+                              type: string
+                            fieldPersion:
                               type: string
                             id:
+                              type: string
+                            idx:
                               type: integer
-                            length:
-                              type: integer
+                            isEncryption:
+                              type: string
+                            isForeignkey:
+                              type: string
+                            isPartionfield:
+                              type: string
+                            isPrimarykey:
+                              type: string
+                            isUnique:
+                              type: string
+                            logicalType:
+                              type: string
                             name:
                               type: string
-                            primaryKey:
+                            physicalType:
+                              type: string
+                            referencePropertyId:
+                              type: string
+                            referencePropertyName:
+                              type: string
+                            referenceTableDisplayName:
+                              type: string
+                            referenceTableId:
+                              type: string
+                            sourcePropertyId:
+                              type: string
+                            sourceSql:
+                              type: string
+                            sourceTableId:
+                              type: string
+                            standard:
                               type: string
                             tableId:
                               type: string
-                            unique:
+                            tableType:
                               type: string
+                            version:
+                              type: integer
                           required:
-                          - dataType
-                          - desc
+                          - des
                           - displayName
-                          - encrypAlgorithm
-                          - encryption
+                          - encrypt
+                          - englishName
+                          - entryptionType
+                          - fieldLength
+                          - fieldPersion
                           - id
-                          - length
+                          - idx
+                          - isEncryption
+                          - isForeignkey
+                          - isPartionfield
+                          - isPrimarykey
+                          - isUnique
+                          - logicalType
                           - name
-                          - primaryKey
+                          - physicalType
+                          - referencePropertyId
+                          - referencePropertyName
+                          - referenceTableDisplayName
+                          - referenceTableId
+                          - sourcePropertyId
+                          - sourceSql
+                          - sourceTableId
+                          - standard
                           - tableId
-                          - unique
+                          - tableType
+                          - version
                           type: object
                         type: array
-                      tableName:
-                        type: string
-                      tableType:
-                        type: string
-                      tags:
-                        items:
-                          type: string
-                        type: array
+                      tableInfo:
+                        properties:
+                          displayName:
+                            type: string
+                          englishName:
+                            type: string
+                          id:
+                            type: string
+                          name:
+                            type: string
+                          tableType:
+                            type: string
+                        required:
+                        - displayName
+                        - englishName
+                        - id
+                        - name
+                        - tableType
+                        type: object
                     required:
-                    - desc
-                    - property
-                    - tableName
-                    - tableType
-                    - tags
+                    - propertyEntrys
+                    - tableInfo
                     type: object
                   type: array
               required:
+              - databaseDisplayName
+              - databaseId
               - databaseName
-              - table_property
+              - tableMetadataInfos
               type: object
             localtion:
               type: string

@@ -31,7 +31,11 @@ apiserver-image: #fmt vet vd
 	docker build . -f apiserver.Dockerfile -t ${APIIMG}
 	docker push ${APIIMG}
 
-serviceunit: fmt vet
+datasource-binary:
+	if rm bin/datasource-controller-manager;then test 0;fi
+	go build -o bin/datasource-controller-manager cmd/datasource-controller-manager/datasource-controller-manager.go
+
+datasource-image:
 	docker build . -f crds/serviceunit/Dockerfile -t ${APIIMG}
 	docker push ${APIIMG}
 
