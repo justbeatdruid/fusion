@@ -26,8 +26,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	nlptv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
-	dw "github.com/chinamobile/nlpt/crds/datasource/datawarehouse"
 	dwv1 "github.com/chinamobile/nlpt/crds/datasource/datawarehouse/api/v1"
+	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 	"github.com/chinamobile/nlpt/pkg/names"
 
 	"k8s.io/klog"

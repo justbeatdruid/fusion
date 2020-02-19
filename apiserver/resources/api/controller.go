@@ -17,7 +17,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient()),
+		service.NewService(cfg.GetDynamicClient(), cfg.DataserviceConfig),
 	}
 }
 
@@ -255,14 +255,26 @@ func (c *controller) ReleaseApi(req *restful.Request) (int, interface{}) {
 
 func (c *controller) Query(req *restful.Request) (int, interface{}) {
 	apiid := req.PathParameter(apiidPath)
-	form := req.Request.Form
-	header := req.Request.Header
-	return http.StatusOK, struct {
-		Code    int    `json:"code"`
-		Message string `json:"message"`
-	}{
-		Code:    0,
-		Message: fmt.Sprintf("get your request with api %s, form: %+v, Header: %+v", apiid, form, header),
+	req.Request.ParseForm()
+	// pass an array to query parameter example:
+	// http://localhost:8080?links[]=http://www.baidu.com&links[]=http://www.google.cn
+	if data, err := c.service.Query(apiid, req.Request.Form); err == nil {
+		return http.StatusOK, struct {
+			Code    int          `json:"code"`
+			Message string       `json:"message"`
+			Data    service.Data `json:"data"`
+		}{
+			Code: 0,
+			Data: data,
+		}
+	} else {
+		return http.StatusInternalServerError, struct {
+			Code    int    `json:"code"`
+			Message string `json:"message"`
+		}{
+			Code:    1,
+			Message: fmt.Sprintf("query data error:%+v", err),
+		}
 	}
 }
 

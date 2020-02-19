@@ -181,7 +181,7 @@ type ApiParameter struct {
 
 func ParameterFromQuery(w dwv1.WhereField) ApiParameter {
 	ap := ApiParameter{
-		Name:        w.PropertyName,
+		Name:        w.ParamName(),
 		Type:        ParameterType(w.Type),
 		Operator:    Operator(w.Operator),
 		Example:     w.Example,

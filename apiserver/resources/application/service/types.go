@@ -51,6 +51,9 @@ func ToAPI(app *Application) *v1.Application {
 		Status: v1.Init,
 	}
 	if len(app.Group) > 0 {
+		if crd.ObjectMeta.Labels == nil {
+			crd.ObjectMeta.Labels = make(map[string]string)
+		}
 		crd.ObjectMeta.Labels[v1.GroupLabel] = app.Group
 	}
 	return crd

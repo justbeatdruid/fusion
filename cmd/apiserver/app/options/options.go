@@ -27,7 +27,8 @@ type ServerRunOptions struct {
 	ConfigPath  string
 	LocalConfig struct{}
 
-	Datasource *DatasourceOptions
+	Datasource  *DatasourceOptions
+	Dataservice *DataserviceOptions
 }
 
 func NewServerRunOptions() *ServerRunOptions {
@@ -35,7 +36,8 @@ func NewServerRunOptions() *ServerRunOptions {
 		ListenAddress: ":8001",
 		CrdNamespace:  os.Getenv("MY_POD_NAMESPACE"),
 
-		Datasource: DefaultDatasourceOptions(),
+		Datasource:  DefaultDatasourceOptions(),
+		Dataservice: DefaultDataserviceOptions(),
 	}
 	if len(s.CrdNamespace) == 0 {
 		klog.Infof("cannot find environmnent MY_POD_NAMESPACE, use default")
@@ -47,6 +49,7 @@ func NewServerRunOptions() *ServerRunOptions {
 func (s *ServerRunOptions) Flags() cliflag.NamedFlagSets {
 	fss := cliflag.NamedFlagSets{}
 	s.Datasource.AddFlags(fss.FlagSet("data source"))
+	s.Dataservice.AddFlags(fss.FlagSet("data service"))
 	kfset := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(kfset)
 	fss.FlagSet("klog").AddGoFlagSet(kfset)
@@ -100,7 +103,8 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		Dynamic:    dynClient,
 		Kubeconfig: kubeconfig,
 
-		DatasourceConfig: appconfig.NewDatasourceConfig(s.Datasource.Supported),
+		DatasourceConfig:  appconfig.NewDatasourceConfig(s.Datasource.Supported),
+		DataserviceConfig: appconfig.NewDataserviceConfig(s.Dataservice.Host, s.Dataservice.Port),
 	}
 	return c, nil
 }

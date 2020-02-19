@@ -18,7 +18,8 @@ type Config struct {
 
 	Kubeconfig *restclient.Config
 
-	DatasourceConfig *DatasourceConfig
+	DatasourceConfig  *DatasourceConfig
+	DataserviceConfig *DataserviceConfig
 }
 
 func (c *Config) GetDynamicClient() dynamicclient.Interface {

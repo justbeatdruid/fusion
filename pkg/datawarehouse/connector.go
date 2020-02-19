@@ -14,6 +14,7 @@ import (
 
 type Connector interface {
 	GetExampleDatawarehouse() (*v1.Datawarehouse, error)
+	QueryData(v1.Query) (v1.Result, error)
 }
 
 type httpConnector struct {
@@ -31,7 +32,7 @@ var headers = map[string]string{
 	"Content-Type": "application/json",
 }
 
-var metadataRequestPath = "/cmcc/data/service/dataService/metadata/getMetadataInfo"
+const metadataRequestPath = "/cmcc/data/service/dataService/metadata/getMetadataInfo"
 
 func (c *httpConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
 	request := gorequest.New().SetLogger(logs.GetGoRequestLogger(4)).SetDebug(true).SetCurlCommand(true)
@@ -54,6 +55,35 @@ func (c *httpConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
 	}
 
 	return responseBody, nil
+}
+
+const dataRequestPath = "/cmcc/data/service/dataService/query/getQueryResult"
+
+func (c *httpConnector) QueryData(q v1.Query) (v1.Result, error) {
+	q.UserID = "admin"
+	if len(q.DatabaseName) == 0 {
+		return v1.Result{}, fmt.Errorf("database not set")
+	}
+	request := gorequest.New().SetLogger(logs.GetGoRequestLogger(4)).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, c.Host, c.Port, dataRequestPath))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second)
+
+	responseBody := &v1.Result{}
+	response, body, errs := request.Send(&q).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return v1.Result{}, fmt.Errorf("request for quering data error: %+v", errs)
+	}
+	klog.V(5).Infof("creation response body: %s", string(body))
+	if response.StatusCode/100 != 2 {
+		klog.V(5).Infof("create operation failed: %d %s", response.StatusCode, string(body))
+		return v1.Result{}, fmt.Errorf("request for quering data error: receive wrong status code: %s", string(body))
+	}
+
+	return *responseBody, nil
 }
 
 func NewConnector(host string, port int) Connector {
@@ -140,4 +170,7 @@ func (fakeConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
 		return nil, fmt.Errorf("unmarshal datawarehouse struct error: %+v", err)
 	}
 	return result, nil
+}
+func (fakeConnector) QueryData(v1.Query) (v1.Result, error) {
+	return v1.Result{}, nil
 }
