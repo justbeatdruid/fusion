@@ -52,6 +52,12 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 	if len(status) == 0 {
 		status = v1.Init
 	}
+	if crd.Spec.APIs == nil {
+		crd.Spec.APIs = make([]v1.Api, 0)
+	}
+	if crd.Spec.Users == nil {
+		crd.Spec.Users = make([]apiv1.User, 0)
+	}
 	crd.Status = v1.ServiceunitStatus{
 		Status:    status,
 		UpdatedAt: metav1.Now(),
