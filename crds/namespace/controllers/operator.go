@@ -19,7 +19,6 @@ type requestLogger struct {
 	prefix string
 }
 
-
 var logger = &requestLogger{}
 
 func (r *requestLogger) SetPrefix(prefix string) {
@@ -34,7 +33,7 @@ func (r *requestLogger) Println(v ...interface{}) {
 	klog.V(4).Infof("%+v", v)
 }
 
-func (r *Operator) CreateNamespace (namespace *v1.Namespace) error {
+func (r *Operator) CreateNamespace(namespace *v1.Namespace) error {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 
 	url := fmt.Sprintf(namespaceUrl, namespace.Spec.Tenant, namespace.Spec.Name)

@@ -30,8 +30,8 @@ import (
 // NamespaceReconciler reconciles a Namespace object
 type NamespaceReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
 	Operator *Operator
 }
 
@@ -64,7 +64,6 @@ func (r *NamespaceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			klog.Errorf("update namespace error: %+v", namespace)
 		}
 	}
-
 
 	return ctrl.Result{}, nil
 }
