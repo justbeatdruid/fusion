@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/chinamobile/nlpt/crds/application/api/v1"
+	groupv1 "github.com/chinamobile/nlpt/crds/applicationgroup/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -15,11 +16,15 @@ import (
 var crdNamespace = "default"
 
 type Service struct {
-	client dynamic.NamespaceableResourceInterface
+	client      dynamic.NamespaceableResourceInterface
+	groupClient dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface) *Service {
-	return &Service{client: client.Resource(v1.GetOOFSGVR())}
+	return &Service{
+		client:      client.Resource(v1.GetOOFSGVR()),
+		groupClient: client.Resource(groupv1.GetOOFSGVR()),
+	}
 }
 
 func (s *Service) CreateApplication(model *Application) (*Application, error) {
@@ -55,6 +60,14 @@ func (s *Service) DeleteApplication(id string) (*Application, error) {
 }
 
 func (s *Service) Create(app *v1.Application) (*v1.Application, error) {
+	if group, ok := app.ObjectMeta.Labels[v1.GroupLabel]; !ok {
+		return nil, fmt.Errorf("group not found")
+	} else {
+		if _, err := s.GetGroup(group); err != nil {
+			return nil, fmt.Errorf("get group error: %+v", err)
+		}
+	}
+
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(app)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -144,5 +157,18 @@ func (s *Service) UpdateStatus(app *v1.Application) (*v1.Application, error) {
 	}
 	klog.V(5).Infof("get v1.serviceunit: %+v", app)
 
+	return app, nil
+}
+
+func (s *Service) GetGroup(id string) (*groupv1.ApplicationGroup, error) {
+	crd, err := s.groupClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	app := &groupv1.ApplicationGroup{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), app); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.applicationgroup: %+v", app)
 	return app, nil
 }

@@ -139,7 +139,16 @@ func (sus ServiceunitList) GetItem(i int) (interface{}, error) {
 
 func (c *controller) PublishServiceunit(req *restful.Request) (int, *CreateResponse) {
 	id := req.PathParameter("id")
-	if su, err := c.service.PublishServiceunit(id); err != nil {
+	body := &struct {
+		Published bool `json:"published"`
+	}{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if su, err := c.service.PublishServiceunit(id, body.Published); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
 			Message: fmt.Errorf("create serviceunit error: %+v", err).Error(),

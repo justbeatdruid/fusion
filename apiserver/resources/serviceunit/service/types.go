@@ -134,6 +134,7 @@ func (s *Service) Validate(a *Serviceunit) error {
 	for k, v := range map[string]string{
 		"name":        a.Name,
 		"description": a.Description,
+		"group":       a.Group,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
@@ -155,6 +156,8 @@ func (s *Service) Validate(a *Serviceunit) error {
 		if len(a.KongSevice.Host) == 0 || len(a.KongSevice.Protocol) == 0 {
 			return fmt.Errorf("webservice is null")
 		}
+	default:
+		return fmt.Errorf("wrong type: %s", a.Type)
 	}
 
 	a.ID = names.NewID()

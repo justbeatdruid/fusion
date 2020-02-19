@@ -3,6 +3,7 @@ package util
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
 func CheckStruct(o interface{}) error {
@@ -12,6 +13,10 @@ func CheckStruct(o interface{}) error {
 		field := obj.Elem().Field(i)
 		//fieldName := obj.Elem().Type().Field(i).Name
 		fieldName := typ.Elem().Field(i).Tag.Get("json")
+		names := strings.Split(fieldName, ",")
+		if len(names) > 1 && names[1] == "omitempty" {
+			continue
+		}
 		if field.Type().String() == "string" {
 			if value, ok := field.Interface().(string); ok {
 				if len(value) == 0 {
