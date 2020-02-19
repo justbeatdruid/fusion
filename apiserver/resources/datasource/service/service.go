@@ -3,10 +3,10 @@ package service
 import (
 	"database/sql"
 	"fmt"
-	api "github.com/chinamobile/nlpt/apiserver/resources/api/service"
+	//api "github.com/chinamobile/nlpt/apiserver/resources/api/service"
 	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
-	serviceunit "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
+	//serviceunit "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	_ "github.com/go-sql-driver/mysql"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,17 +22,17 @@ var crdNamespace = "default"
 var Supported = []string{}
 
 type Service struct {
-	client     dynamic.NamespaceableResourceInterface
-	apiService *api.Service
-	suService  *serviceunit.Service
+	client dynamic.NamespaceableResourceInterface
+	//apiService *api.Service
+	//suService *serviceunit.Service
 }
 
 func NewService(client dynamic.Interface, supported []string) *Service {
 	Supported = supported
 	return &Service{
-		client:     client.Resource(v1.GetOOFSGVR()),
-		apiService: api.NewService(client),
-		suService:  serviceunit.NewService(client),
+		client: client.Resource(v1.GetOOFSGVR()),
+		//apiService: api.NewService(client),
+		//suService: serviceunit.NewService(client),
 	}
 }
 

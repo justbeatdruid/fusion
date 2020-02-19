@@ -322,3 +322,9 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	target.Status.UpdatedAt = metav1.Now()
 	return nil
 }
+
+type Data struct {
+	Headers []string            `json:"headers"`
+	Columns map[string]string   `json:"columns"`
+	Data    []map[string]string `json:"data"`
+}

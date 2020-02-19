@@ -9,9 +9,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
+	dsv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
+	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -26,13 +29,19 @@ type Service struct {
 	client            dynamic.NamespaceableResourceInterface
 	serviceunitClient dynamic.NamespaceableResourceInterface
 	applicationClient dynamic.NamespaceableResourceInterface
+	datasourceClient  dynamic.NamespaceableResourceInterface
+
+	dataService dw.Connector
 }
 
-func NewService(client dynamic.Interface) *Service {
+func NewService(client dynamic.Interface, dsConfig *config.DataserviceConfig) *Service {
 	return &Service{
 		client:            client.Resource(v1.GetOOFSGVR()),
 		serviceunitClient: client.Resource(suv1.GetOOFSGVR()),
 		applicationClient: client.Resource(appv1.GetOOFSGVR()),
+		datasourceClient:  client.Resource(dsv1.GetOOFSGVR()),
+
+		dataService: dw.NewConnector(dsConfig.Host, dsConfig.Port),
 	}
 }
 
@@ -288,6 +297,19 @@ func (s *Service) getApplication(id string) (*appv1.Application, error) {
 	return app, nil
 }
 
+func (s *Service) getDatasource(id string) (*dsv1.Datasource, error) {
+	crd, err := s.datasourceClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	ds := &dsv1.Datasource{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), ds); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.datasource: %+v", ds)
+	return ds, nil
+}
+
 func (s *Service) updateServiceApi(svcid, apiid, apiname string) (*suv1.Serviceunit, error) {
 	su, err := s.getServiceunit(svcid)
 	if err != nil {
@@ -393,6 +415,47 @@ func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
 	//	return fmt.Errorf("cannot update")
 	//}
 	return ToModel(api), err
+}
+
+func (s *Service) Query(apiid string, params map[string][]string) (Data, error) {
+	d := Data{
+		Headers: make([]string, 0),
+		Columns: make(map[string]string, 0),
+		Data:    make([]map[string]string, 0),
+	}
+	api, err := s.Get(apiid)
+	if err != nil {
+		return d, fmt.Errorf("get api error: %+v", err)
+	}
+	// data service API
+	if api.Spec.Query != nil {
+		q := api.Spec.Query.ToApiQuery(params)
+		q.UserID = "admin"
+		su, err := s.getServiceunit(api.Spec.Serviceunit.ID)
+		if err != nil {
+			return d, fmt.Errorf("get serviceunit error: %+v", err)
+		}
+		ds, err := s.getDatasource(su.Spec.DatasourceID.ID)
+		if err != nil {
+			return d, fmt.Errorf("get datasource error: %+v", err)
+		}
+		if ds.Spec.DataWarehouse == nil {
+			return d, fmt.Errorf("datasource datawarehouse is null")
+		}
+		q.DatabaseName = ds.Spec.DataWarehouse.Name
+
+		data, err := s.dataService.QueryData(q)
+		if err != nil {
+			return d, fmt.Errorf("query data error: %+v", err)
+		}
+		d.Headers = data.Headers
+		d.Columns = data.ColumnDic
+		d.Data = data.Data
+		return d, nil
+	} else {
+		klog.V(4).Infof("api %s is not dataservice api", apiid)
+	}
+	return d, nil
 }
 
 //TestApi ...
