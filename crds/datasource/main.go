@@ -22,7 +22,7 @@ import (
 
 	nlptv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/datasource/controllers"
-	dw "github.com/chinamobile/nlpt/crds/datasource/datawarehouse"
+	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/util/wait"

@@ -173,7 +173,7 @@ func (r *Operator) AddRouteRatelimitByKong(db *nlptv1.Trafficcontrol) (err error
 	for index := 0; index < len(db.Spec.Apis); {
 		api := db.Spec.Apis[index]
 		if len(api.TrafficID) == 0 {
-			id := api.KongID 
+			id := api.KongID
 			klog.Infof("begin create rate-limiting , the KongID of api is %s", id)
 			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 			schema := "http"
@@ -183,7 +183,7 @@ func (r *Operator) AddRouteRatelimitByKong(db *nlptv1.Trafficcontrol) (err error
 			}
 			request = request.Retry(3, 5*time.Second, retryStatus...)
 			requestBody := &RateLimitingRequestBody{
-				Name:   "rate-limiting",
+				Name: "rate-limiting",
 				Config: Config{
 					Second: 5,
 					Hour:   10000,
@@ -316,7 +316,7 @@ func (r *Operator) DeleteRouteLimitByKong(db *nlptv1.Trafficcontrol) (err error)
 	for index := 0; index < len(db.Spec.Apis); {
 		api := db.Spec.Apis[index]
 		if len(api.TrafficID) != 0 {
-			trafficID := api.TrafficID  //route_id
+			trafficID := api.TrafficID //route_id
 			klog.Infof("begin delete rate-limiting , the TrafficID of api is %s", trafficID)
 			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 			schema := "http"

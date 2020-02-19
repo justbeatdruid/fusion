@@ -7,12 +7,12 @@ import (
 )
 
 type Namespace struct {
-	ID              string    `json:"id"`
-	Name            string    `json:"name"` //namespace名称
-	Namespace       string    `json:"namespace"`
-	Tenant          string    `json:"tenant"` //namespace的所属租户名称
-	Status          v1.Status `json:"status"`
-	Message         string    `json:"message"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"` //namespace名称
+	Namespace string    `json:"namespace"`
+	Tenant    string    `json:"tenant"` //namespace的所属租户名称
+	Status    v1.Status `json:"status"`
+	Message   string    `json:"message"`
 }
 
 // only used in creation options
@@ -25,9 +25,9 @@ func ToAPI(app *Namespace) *v1.Namespace {
 	crd.ObjectMeta.Namespace = crdNamespace
 
 	crd.Spec = v1.NamespaceSpec{
-		Name:            app.Name,
-		Tenant:          app.Tenant,
-		Namespace:       app.Namespace,
+		Name:      app.Name,
+		Tenant:    app.Tenant,
+		Namespace: app.Namespace,
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -42,12 +42,12 @@ func ToAPI(app *Namespace) *v1.Namespace {
 
 func ToModel(obj *v1.Namespace) *Namespace {
 	return &Namespace{
-		ID:              obj.ObjectMeta.Name,
-		Name:            obj.Spec.Name,
-		Namespace:       obj.ObjectMeta.Namespace,
-		Tenant:          obj.Spec.Tenant,
-		Status:          obj.Status.Status,
-		Message:         obj.Status.Message,
+		ID:        obj.ObjectMeta.Name,
+		Name:      obj.Spec.Name,
+		Namespace: obj.ObjectMeta.Namespace,
+		Tenant:    obj.Spec.Tenant,
+		Status:    obj.Status.Status,
+		Message:   obj.Status.Message,
 	}
 }
 

@@ -3,9 +3,9 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"time"
 	"github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"time"
 )
 
 type Trafficcontrol struct {
