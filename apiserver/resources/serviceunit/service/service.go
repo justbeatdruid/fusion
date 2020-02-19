@@ -5,6 +5,7 @@ import (
 
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
+	groupv1 "github.com/chinamobile/nlpt/crds/serviceunitgroup/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -18,12 +19,14 @@ var crdNamespace = "default"
 type Service struct {
 	client           dynamic.NamespaceableResourceInterface
 	datasourceClient dynamic.NamespaceableResourceInterface
+	groupClient      dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface) *Service {
 	return &Service{
 		client:           client.Resource(v1.GetOOFSGVR()),
 		datasourceClient: client.Resource(datav1.GetOOFSGVR()),
+		groupClient:      client.Resource(groupv1.GetOOFSGVR()),
 	}
 }
 
@@ -76,20 +79,34 @@ func (s *Service) UpdateServiceunit(model *Serviceunit, id string) (*Serviceunit
 	return ToModel(su), nil
 }
 
-func (s *Service) PublishServiceunit(id string) (*Serviceunit, error) {
+func (s *Service) PublishServiceunit(id string, published bool) (*Serviceunit, error) {
 	su, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("get crd by id error: %+v", err)
 	}
-	if su.Status.Published {
-		return nil, fmt.Errorf("serviceunit already published")
+	var status string
+	if published {
+		status = "published"
+	} else {
+		status = "unpublished"
 	}
-	su.Status.Published = true
+	if su.Status.Published == published {
+		return nil, fmt.Errorf("serviceunit already %s", status)
+	}
+	su.Status.Published = published
 	su, err = s.UpdateStatus(su)
 	return ToModel(su), err
 }
 
 func (s *Service) Create(su *v1.Serviceunit) (*v1.Serviceunit, error) {
+	if group, ok := su.ObjectMeta.Labels[v1.GroupLabel]; !ok {
+		return nil, fmt.Errorf("group not found")
+	} else {
+		if _, err := s.GetGroup(group); err != nil {
+			return nil, fmt.Errorf("get group error: %+v", err)
+		}
+	}
+
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(su)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -198,4 +215,17 @@ func (s *Service) getDatasource(id string) (*datav1.DatasourceSpec, error) {
 	}
 	klog.V(5).Infof("get v1.datasource: %+v", ds)
 	return &ds.Spec, nil
+}
+
+func (s *Service) GetGroup(id string) (*groupv1.ServiceunitGroup, error) {
+	crd, err := s.groupClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	su := &groupv1.ServiceunitGroup{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), su); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.serviceunitgroup: %+v", su)
+	return su, nil
 }

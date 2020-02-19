@@ -9,10 +9,6 @@ import (
 )
 
 type Query struct {
-	// always admin
-	UserID string `json:"userId"`
-
-	DatabaseName      string             `json:"databaseName"`
 	PrimaryTableName  string             `json:"primaryTableName"`
 	AssociationTables []AssociationTable `json:"associationTable"`
 	QueryFieldList    []QueryField       `json:"queryFieldList"`
@@ -32,7 +28,7 @@ type QueryField struct {
 	PropertyName        string `json:"propertyName"`
 	PropertyDisplayName string `json:"propertyDisplayName"`
 	TableName           string `json:"tableName"`
-	Operator            string `json:"operator"`
+	Operator            string `json:"operator,omitempty"`
 }
 
 type WhereField struct {
@@ -93,17 +89,17 @@ func (q *Query) Validate() error {
 		return fmt.Errorf("primary table name is null")
 	}
 	for _, a := range q.AssociationTables {
-		if err := util.CheckStruct(a); err != nil {
+		if err := util.CheckStruct(&a); err != nil {
 			return fmt.Errorf("associationTable wrong: %+v", err)
 		}
 	}
 	for _, a := range q.QueryFieldList {
-		if err := util.CheckStruct(a); err != nil {
+		if err := util.CheckStruct(&a); err != nil {
 			return fmt.Errorf("queryFieldList wrong: %+v", err)
 		}
 	}
 	for _, a := range q.GroupbyFieldInfo {
-		if err := util.CheckStruct(a); err != nil {
+		if err := util.CheckStruct(&a); err != nil {
 			return fmt.Errorf("groupbyFieldInfo wrong: %+v", err)
 		}
 	}

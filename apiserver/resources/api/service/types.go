@@ -220,7 +220,7 @@ func (s *Service) Validate(a *Api) error {
 		}
 		if a.Query != nil {
 			if err = a.Query.Validate(); err != nil {
-				return fmt.Errorf("query field validate error: %+v")
+				return fmt.Errorf("query field validate error: %+v", err)
 			}
 		}
 	}
