@@ -80,6 +80,34 @@ func (c *controller) GetApplication(req *restful.Request) (int, *GetResponse) {
 	}
 }
 
+func (c *controller) PatchApplication(req *restful.Request) (int, *DeleteResponse) {
+	reqBody := make(map[string]interface{})
+	if err := req.ReadEntity(&reqBody); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	data, ok := reqBody["data,omitempty"]
+	if !ok {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "read entity error: data is null",
+		}
+	}
+	if app, err := c.service.PatchApplication(req.PathParameter("id"), data); err != nil {
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:    1,
+			Message: fmt.Errorf("patch application error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &DeleteResponse{
+			Code: 0,
+			Data: app,
+		}
+	}
+}
+
 func (c *controller) DeleteApplication(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	if app, err := c.service.DeleteApplication(id); err != nil {

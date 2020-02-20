@@ -87,6 +87,27 @@ func (s *Service) Create(app *v1.Application) (*v1.Application, error) {
 	return app, nil
 }
 
+func (s *Service) PatchApplication(id string, data interface{}) (*Application, error) {
+	app, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	if err = s.assignment(app, data); err != nil {
+		return nil, err
+	}
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(app)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	crd, err = s.client.Namespace(crdNamespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd: %+v", err)
+	}
+	return ToModel(app), err
+}
+
 func (s *Service) List(group string) (*v1.ApplicationList, error) {
 	var options metav1.ListOptions
 	if len(group) > 0 {
