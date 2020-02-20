@@ -147,6 +147,36 @@ type AclResponseBody struct {
 	Code    int         `json:"code"`
 }
 
+type CorsRequestBody struct {
+	Name string `json:"name"`
+}
+
+type CorsResponseBody struct {
+	CreatedAt int `json:"created_at"`
+	Config    struct {
+		Methods           []interface{} `json:"methods"`
+		ExposedHeaders    interface{}   `json:"exposed_headers"`
+		MaxAge            interface{}   `json:"max_age"`
+		Headers           interface{}   `json:"headers"`
+		Origins           interface{}   `json:"origins"`
+		Credentials       bool          `json:"credentials"`
+		PreflightContinue bool          `json:"preflight_continue"`
+	} `json:"config"`
+	ID        string      `json:"id"`
+	Service   interface{} `json:"service"`
+	Enabled   bool        `json:"enabled"`
+	Protocols []string    `json:"protocols"`
+	Name      string      `json:"name"`
+	Consumer  interface{} `json:"consumer"`
+	Route     struct {
+		ID string `json:"id"`
+	} `json:"route"`
+	Tags    interface{} `json:"tags"`
+	Message string      `json:"message"`
+	Fields  interface{} `json:"fields"`
+	Code    int         `json:"code"`
+}
+
 /*
 {"host":"apps",
 "created_at":1578378841,
@@ -355,6 +385,37 @@ func (r *Operator) DeleteConsumerFromAcl(aclId string, comId string) (err error)
 	klog.V(5).Infof("delete consumer response code: %d%s", response.StatusCode, string(body))
 	if response.StatusCode != 204 {
 		return fmt.Errorf("request for delete consumer error: receive wrong status code: %d", response.StatusCode)
+	}
+	return nil
+}
+
+func (r *Operator) AddRouteCorsByKong(db *nlptv1.Api) (err error) {
+	id := db.Spec.KongApi.KongID
+	klog.Infof("begin create cors %s", id)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &AclRequestBody{
+		Name: "cors", //插件名称
+	}
+	responseBody := &AclResponseBody{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return fmt.Errorf("request for create cors error: %+v", errs)
+	}
+	klog.V(5).Infof("create cors code: %d, body: %s ", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.V(5).Infof("create cors failed msg: %s\n", responseBody.Message)
+		return fmt.Errorf("request for create cors error: receive wrong status code: %s", string(body))
+	}
+	(*db).Spec.KongApi.CorsID = responseBody.ID
+
+	if err != nil {
+		return fmt.Errorf("create cors error %s", responseBody.Message)
 	}
 	return nil
 }
