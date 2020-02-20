@@ -70,6 +70,7 @@ type ApiSpec struct {
 	ApiType      ApiType       `json:"apiType"` //API类型
 	AuthType     AuthType      `json:"authType"`
 	Traffic      Traffic       `json:"traffic"`
+	ApiAttribute Attribute     `json:"apiAttribute"`
 }
 
 type KongApiInfo struct {
@@ -87,6 +88,7 @@ type KongApiInfo struct {
 	KongID        string   `json:"kong_id"`
 	JwtID         string   `json:"jwt_id"`
 	AclID         string   `json:"acl_id"`
+	CorsID        string   `json:"cors_id"`
 }
 
 type Serviceunit struct {
@@ -177,6 +179,14 @@ type ApiParameter struct {
 	Example     string        `json:"example"`
 	Description string        `json:"description"`
 	Required    bool          `json:"required"`
+}
+
+type Attribute struct {
+	MatchMode      string `json:"matchMode"`
+	Tags           string `json:"tags"`
+	Cors           string `json:"cors"`
+	NormalExample  string `json:"normalExample"`
+	FailureExample string `json:"failureExample"`
 }
 
 func ParameterFromQuery(w dwv1.WhereField) ApiParameter {

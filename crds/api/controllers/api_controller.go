@@ -99,6 +99,14 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				return ctrl.Result{}, nil
 			}
 		}
+		if api.Spec.ApiAttribute.Cors == "true" {
+			if err := r.Operator.AddRouteCorsByKong(api); err != nil {
+				api.Status.Status = nlptv1.Error
+				api.Status.Message = err.Error()
+				r.Update(ctx, api)
+				return ctrl.Result{}, nil
+			}
+		}
 		api.Status.Status = nlptv1.Created
 		api.Status.AccessLink = nlptv1.AccessLink(fmt.Sprintf("%s://%s:%d%s",
 			strings.ToLower(string(api.Spec.Protocol)),
