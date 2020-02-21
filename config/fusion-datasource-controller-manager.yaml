@@ -11,9 +11,9 @@ spec:
   type: ClusterIP
   ports:
     - name: service
-      port: 8001
+      port: 8080
       protocol: TCP
-      targetPort: 8001
+      targetPort: 8080
   selector:
     app: fusion-datasource-controller-manager
     version: v0.1-alpha
