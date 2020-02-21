@@ -250,7 +250,6 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	responseBody := &ResponseBody{}
 	klog.Infof("begin send create route requeset body: %+v", responseBody)
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
-	klog.Infof("end send create route response body:%d %s", response.StatusCode, string(body))
 	if len(errs) > 0 {
 		return fmt.Errorf("request for create route error: %+v", errs)
 	}
@@ -349,9 +348,7 @@ func (r *Operator) DeleteRouteByKong(db *nlptv1.Api) (err error) {
 	id := db.Spec.KongApi.KongID
 	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
 	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id)).End()
-	klog.Infof("delete api response code: %d %s", response.StatusCode, string(body))
 	request = request.Retry(3, 5*time.Second, retryStatus...)
-
 	if len(errs) > 0 {
 		return fmt.Errorf("request for delete api error: %+v", errs)
 	}
@@ -375,7 +372,6 @@ func (r *Operator) DeleteConsumerFromAcl(aclId string, comId string) (err error)
 		"/consumers/", comId, "/acls/", aclId))
 	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s%s%s%s", schema, r.Host, r.Port,
 		"/consumers/", comId, "/acls/", aclId)).End()
-	klog.Infof("delete consumer from acl response code: %d %s", response.StatusCode, string(body))
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 
 	if len(errs) > 0 {
