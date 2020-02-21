@@ -193,7 +193,6 @@ func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	id := db.Spec.KongService.ID
 	klog.Infof("delete service id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
 	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id)).End()
-	klog.Infof("delete service response code: %d %s", response.StatusCode, string(body))
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 
 	if len(errs) > 0 {
