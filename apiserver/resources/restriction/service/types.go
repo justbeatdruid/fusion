@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/chinamobile/nlpt/crds/restriction/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"time"
 )
 
@@ -17,11 +18,12 @@ type Restriction struct {
 	Config    v1.ConfigInfo `json:"config"`
 	User      string        `json:"user"`
 	Apis      []v1.Api      `json:"apis"`
+	CreatedAt time.Time     `json:"createdAt"`
 
-	Status    v1.Status `json:"status"`
-	Published bool      `json:"published"`
-	UpdatedAt time.Time `json:"time"`
-	APICount  int       `json:"apiCount"`
+	Status    v1.Status   `json:"status"`
+	Published bool        `json:"published"`
+	UpdatedAt metav1.Time `json:"time"`
+	APICount  int         `json:"apiCount"`
 }
 
 // only used in creation options
@@ -49,7 +51,10 @@ func ToAPI(app *Restriction) *v1.Restriction {
 		status = v1.Init
 	}
 	crd.Status = v1.RestrictionStatus{
-		Status: status,
+		Status:    status,
+		UpdatedAt: metav1.Now(),
+		APICount:  0,
+		Published: false,
 	}
 
 	return crd
@@ -80,6 +85,7 @@ func ToModel(obj *v1.Restriction) *Restriction {
 		Config:    obj.Spec.Config,
 		Apis:      obj.Spec.Apis,
 		User:      obj.Spec.User,
+		CreatedAt: obj.ObjectMeta.CreationTimestamp.Time,
 
 		Status:    obj.Status.Status,
 		UpdatedAt: obj.Status.UpdatedAt,
@@ -166,5 +172,6 @@ func (s *Service) assignment(target *v1.Restriction, reqData interface{}) error 
 		target.Spec.Config = source.Config
 	}
 
+	target.Status.UpdatedAt = metav1.Now()
 	return nil
 }

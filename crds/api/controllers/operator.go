@@ -236,7 +236,7 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	protocols := []string{}
 	protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
 	paths := []string{}
-	queryPath := fmt.Sprintf("%s%s", "/api/v1/apiquery/", db.ObjectMeta.Name)
+	queryPath := fmt.Sprintf("%s%s%s", "/api/v1/apis/", db.ObjectMeta.Name, "/data")
 	paths = append(paths, queryPath)
 	//替换ID
 	id := db.Spec.Serviceunit.KongID

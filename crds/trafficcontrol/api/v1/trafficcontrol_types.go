@@ -18,7 +18,6 @@ package v1
 
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"time"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
@@ -106,11 +105,11 @@ const (
 type TrafficcontrolStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status    Status    `json:"status"`
-	UpdatedAt time.Time `json:"time.Time"`
-	APICount  int       `json:"apiCount"`
-	Published bool      `json:"published"`
-	Message   string    `json:"message"`
+	Status    Status      `json:"status"`
+	UpdatedAt metav1.Time `json:"time.Time"`
+	APICount  int         `json:"apiCount"`
+	Published bool        `json:"published"`
+	Message   string      `json:"message"`
 }
 
 // +kubebuilder:object:root=true
