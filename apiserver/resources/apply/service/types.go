@@ -5,8 +5,10 @@ import (
 	"time"
 
 	"github.com/chinamobile/nlpt/crds/apply/api/v1"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/names"
 
+	//"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -32,6 +34,7 @@ type Resource struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
 	Owner     string    `json:"owner"`
+	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"createdAt"`
 }
 
@@ -110,11 +113,29 @@ func (s *Service) Completion(r Resource) (Resource, error) {
 	case v1.Api:
 		api, err := s.getApi(r.ID)
 		if err != nil {
+			if errors.IsNotFound(err) {
+				r.Status = "missing"
+				return r, nil
+			}
 			return r, fmt.Errorf("get api error: %+v", err)
 		}
 		r.Owner = "TODO"
 		r.Name = api.Spec.Name
 		r.CreatedAt = api.ObjectMeta.CreationTimestamp.Time
+		r.Status = string(api.Status.Status)
+	case v1.Application:
+		app, err := s.getApplication(r.ID)
+		if err != nil {
+			if errors.IsNotFound(err) {
+				r.Status = "missing"
+				return r, nil
+			}
+			return r, fmt.Errorf("get application error: %+v", err)
+		}
+		r.Owner = "TODO"
+		r.Name = app.Spec.Name
+		r.CreatedAt = app.ObjectMeta.CreationTimestamp.Time
+		r.Status = string(app.Status.Status)
 	}
 	return r, nil
 }

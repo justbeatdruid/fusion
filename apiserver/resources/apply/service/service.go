@@ -71,6 +71,7 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 			return nil, fmt.Errorf("%s resource error: %+v", n, err)
 		}
 	}
+	//TODO check if target api already bound to source application
 
 	apl, err := s.Create(ToAPI(model))
 	if err != nil {
