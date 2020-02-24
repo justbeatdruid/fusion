@@ -78,6 +78,7 @@ func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 		crd.Status = v1.DatasourceStatus{
 			Status:    status,
 			CreatedAt: metav1.Now(),
+			UpdatedAt: metav1.Now(),
 		}
 	} else if dealType == "update" {
 		crd.Status = v1.DatasourceStatus{
