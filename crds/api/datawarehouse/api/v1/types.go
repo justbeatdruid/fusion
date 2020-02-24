@@ -26,7 +26,7 @@ type AssociationTable struct {
 
 type QueryField struct {
 	PropertyName        string `json:"propertyName"`
-	PropertyDisplayName string `json:"propertyDisplayName"`
+	PropertyDisplayName string `json:"propertyDisplayName,omitempty"`
 	TableName           string `json:"tableName"`
 	Operator            string `json:"operator,omitempty"`
 }

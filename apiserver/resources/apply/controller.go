@@ -113,7 +113,7 @@ func (c *controller) ListApply(req *restful.Request) (int, *ListResponse) {
 	if apl, err := c.service.ListApply(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
-			Message: fmt.Errorf("list application error: %+v", err).Error(),
+			Message: fmt.Errorf("list applies error: %+v", err).Error(),
 		}
 	} else {
 		var apls ApplyList = apl
