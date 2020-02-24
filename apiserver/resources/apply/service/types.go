@@ -21,7 +21,7 @@ type Apply struct {
 	Action          v1.Action `json:"action"`
 	Message         string    `json:"message"`
 	ExpireAt        time.Time `json:"expireAt"`
-	ExpireTimestamp int64     `json:"expireTimestamp"`
+	ExpireTimestamp int64     `json:"expireTimestamp,omitempty"`
 	AppliedBy       string    `json:"appliedBy"`
 	ApprovedBy      string    `json:"approvedBy"`
 
