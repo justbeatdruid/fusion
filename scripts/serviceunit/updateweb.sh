@@ -13,9 +13,10 @@ curl -XPATCH localhost:8001/api/v1/serviceunits/$1 -H 'content-type:application/
     "kongService": {
 
         "host": "192.168.7.201",
-        "port": 8080,
-        "protocol" : "http"
+        "port": 1111,
+        "protocol" : "https"
 
-     }
+     },
+    "group": "182a3f334f835da7"
   }
 }'
