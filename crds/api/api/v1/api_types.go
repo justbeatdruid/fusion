@@ -71,6 +71,7 @@ type ApiSpec struct {
 	AuthType     AuthType      `json:"authType"`
 	Traffic      Traffic       `json:"traffic"`
 	ApiAttribute Attribute     `json:"apiAttribute"`
+	Restriction  Restriction   `json:"restriction"`
 }
 
 type KongApiInfo struct {
@@ -105,6 +106,11 @@ type Traffic struct {
 	ID        string   `json:"id"`
 	Name      string   `json:"name"`
 	SpecialID []string `json:"specialID"`
+}
+
+type Restriction struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type PublishInfo struct {

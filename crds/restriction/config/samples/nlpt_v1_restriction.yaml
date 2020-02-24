@@ -1,0 +1,7 @@
+apiVersion: nlpt.cmcc.com/v1
+kind: Restriction
+metadata:
+  name: restriction-sample
+spec:
+  # Add fields here
+  foo: bar

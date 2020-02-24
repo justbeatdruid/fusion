@@ -1,0 +1,7 @@
+domain: cmcc.com
+repo: github.com/chinamobile/nlpt/crds/restriction
+resources:
+- group: nlpt
+  kind: Restriction
+  version: v1
+version: "2"

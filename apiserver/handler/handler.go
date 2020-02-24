@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"github.com/chinamobile/nlpt/apiserver/resources/restriction"
 	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol"
 	"net/http"
 
@@ -61,6 +62,7 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 		topic.NewRouter(h.config),
 		trafficcontrol.NewRouter(h.config),
 		dataservice.NewRouter(h.config),
+		restriction.NewRouter(h.config),
 	}
 
 	for _, routerHandler := range handlers {
