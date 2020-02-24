@@ -19,6 +19,7 @@ type Apply struct {
 	Target     Resource  `json:"target"`
 	Source     Resource  `json:"source"`
 	Action     v1.Action `json:"action"`
+	Message    string    `json:"message"`
 	ExpireAt   time.Time `json:"expireAt"`
 	AppliedBy  string    `json:"appliedBy"`
 	ApprovedBy string    `json:"approvedBy"`
@@ -56,6 +57,7 @@ func ToAPI(app *Apply) *v1.Apply {
 		ExpireAt:   metav1.NewTime(app.ExpireAt),
 		AppliedBy:  app.AppliedBy,
 		ApprovedBy: app.ApprovedBy,
+		Message:    app.Message,
 	}
 	crd.Status = v1.ApplyStatus{
 		Status:     v1.Waiting,
@@ -89,6 +91,7 @@ func (s *Service) ToModel(obj *v1.Apply) (*Apply, error) {
 			Name: obj.Spec.SourceName,
 		},
 		Action:   obj.Spec.Action,
+		Message:  obj.Spec.Message,
 		ExpireAt: obj.Spec.ExpireAt.Time,
 
 		Status:     obj.Status.Status,

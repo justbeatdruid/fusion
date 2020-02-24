@@ -36,6 +36,7 @@ type ApplySpec struct {
 	SourceID   string      `json:"sourceID"`
 	SourceName string      `json:"sourceName"`
 	Action     Action      `json:"action"`
+	Message    string      `json:"message"`
 	ExpireAt   metav1.Time `json:"expireAt"`
 	AppliedBy  string      `json:"appliedBy"`
 	ApprovedBy string      `json:"approvedBy"`

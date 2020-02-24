@@ -215,6 +215,7 @@ func (s *Service) ApproveApply(id string, admitted bool, reason string) (*v1.App
 		apl.Status.Status = v1.Denied
 	}
 	apl.Status.Reason = reason
+	apl.Status.ApprovedAt = metav1.Now()
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(apl)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
