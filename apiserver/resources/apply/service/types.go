@@ -16,13 +16,14 @@ type Apply struct {
 	ID        string `json:"id"`
 	Namespace string `json:"namespace"`
 
-	Target     Resource  `json:"target"`
-	Source     Resource  `json:"source"`
-	Action     v1.Action `json:"action"`
-	Message    string    `json:"message"`
-	ExpireAt   time.Time `json:"expireAt"`
-	AppliedBy  string    `json:"appliedBy"`
-	ApprovedBy string    `json:"approvedBy"`
+	Target          Resource  `json:"target"`
+	Source          Resource  `json:"source"`
+	Action          v1.Action `json:"action"`
+	Message         string    `json:"message"`
+	ExpireAt        time.Time `json:"expireAt"`
+	ExpireTimestamp int64     `json:"expireTimestamp"`
+	AppliedBy       string    `json:"appliedBy"`
+	ApprovedBy      string    `json:"approvedBy"`
 
 	Status     v1.Status `json:"status"`
 	Reason     string    `json:"reason"`
@@ -173,6 +174,31 @@ func (a *Apply) Validate() error {
 	case v1.Bind, v1.Release:
 	default:
 		return fmt.Errorf("wrong action: %s", a.Action)
+	}
+	if a.ExpireTimestamp > 0 {
+		s := a.ExpireTimestamp
+		var sec int64 = 0
+		var nano int64 = 0
+		d := func(x int64) int {
+			n := 0
+			for x > 0 {
+				x /= 10
+				n = n + 1
+			}
+			return n
+		}(s)
+		if d == 13 {
+			sec = s / 1000
+			nano = s - (sec * 1000)
+			nano = nano * 1000000
+		} else if d == 10 {
+			sec = s
+			nano = 0
+		} else {
+			return fmt.Errorf("wrong expireTimestamp: wrong timestamp format, expect 10 or 13 digits")
+		}
+		fmt.Println(sec, nano)
+		a.ExpireAt = time.Unix(sec, nano)
 	}
 	if a.ExpireAt.IsZero() {
 		return fmt.Errorf("expire time not set")
