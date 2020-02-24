@@ -32,6 +32,11 @@ datasource-image:
 	docker build . -f crds/datasource/Dockerfile -t ${image}
 	docker push ${image}
 
+topic-image: image := ${REG}/library/fusion-topic-controller-manager:0.1.0
+topic-image:
+	docker build . -f crds/topic/Dockerfile -t ${image}
+	docker push ${image}
+
 # Run go fmt against code
 fmt:
 	go fmt ./...
