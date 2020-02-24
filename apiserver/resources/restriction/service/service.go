@@ -234,7 +234,7 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
 			return nil, fmt.Errorf("cannot get api: %+v", err)
 		}
 		// 1个API只能绑定一个
-		if len(apiSource.Spec.Traffic.ID) > 0 {
+		if len(apiSource.Spec.Restriction.ID) > 0 {
 			return nil, fmt.Errorf("api alrady bound to restriction")
 		}
 		//绑定api
