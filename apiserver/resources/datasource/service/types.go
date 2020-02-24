@@ -70,6 +70,8 @@ func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 	if ds.Type == v1.RDBType {
 		crd.Spec.RDB = ds.RDB
 	}
+	fmt.Println(ds.RDB)
+	fmt.Println(crd.Spec.RDB)
 	status := ds.Status
 	if len(status) == 0 {
 		status = v1.Init
