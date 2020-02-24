@@ -34,6 +34,7 @@ type Api struct {
 	ApiAttribute  v1.Attribute      `json:"apiAttribute"`
 	Traffic       v1.Traffic        `json:"traffic"`
 	KongApi       v1.KongApiInfo    `json:"KongApi"`
+	Restriction   v1.Restriction    `json:"restriction"`
 
 	Status v1.Status `json:"status"`
 	//Publish          v1.Publish    `json:"publish"`
@@ -75,6 +76,7 @@ func ToAPI(api *Api) *v1.Api {
 		AuthType:     api.AuthType,
 		ApiAttribute: api.ApiAttribute,
 		Traffic:      api.Traffic,
+		Restriction:  api.Restriction,
 	}
 	crd.Status = v1.ApiStatus{
 		Status:           v1.Init,
@@ -108,6 +110,7 @@ func ToModel(obj *v1.Api) *Api {
 		AuthType:     obj.Spec.AuthType,
 		ApiAttribute: obj.Spec.ApiAttribute,
 		Traffic:      obj.Spec.Traffic,
+		Restriction:  obj.Spec.Restriction,
 
 		Status:           obj.Status.Status,
 		AccessLink:       obj.Status.AccessLink,

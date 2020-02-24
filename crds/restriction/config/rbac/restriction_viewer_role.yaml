@@ -1,0 +1,20 @@
+# permissions for end users to view restrictions.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: restriction-viewer-role
+rules:
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - restrictions
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - restrictions/status
+  verbs:
+  - get

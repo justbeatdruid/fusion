@@ -1,0 +1,24 @@
+# permissions for end users to edit restrictions.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: restriction-editor-role
+rules:
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - restrictions
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - restrictions/status
+  verbs:
+  - get
