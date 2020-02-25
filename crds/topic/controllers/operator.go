@@ -72,8 +72,7 @@ func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
 func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicNamespace, topic.Spec.Name)
-	topicUrl := fmt.Sprintf(persistentTopicUrl, topic.Spec.Tenant, topic.Spec.TopicNamespace, topic.Spec.Name)
-	topicUrl = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl)
+	topicUrl := fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topic.Spec.Url)
 	request = request.Delete(topicUrl)
 	response, body, errs := request.Send("").EndStruct("")
 	fmt.Println("URL:", topicUrl)
