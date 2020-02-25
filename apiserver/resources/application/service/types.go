@@ -141,5 +141,11 @@ func (s *Service) assignment(target *v1.Application, reqData interface{}) error 
 		}
 		target.ObjectMeta.Labels[v1.GroupLabel] = source.Group
 	}
+	if target.Spec.Users == nil {
+		target.Spec.Users = make([]apiv1.User, 0)
+	}
+	if target.Spec.APIs == nil {
+		target.Spec.APIs = make([]v1.Api, 0)
+	}
 	return nil
 }

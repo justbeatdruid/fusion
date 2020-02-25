@@ -42,7 +42,7 @@ func (r *router) Install(ws *restful.WebService) {
 	ws.Route(ws.PATCH("/applications/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
-		Doc("delete an app by id").
+		Doc("patch an app by id").
 		To(r.patchApplication).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))

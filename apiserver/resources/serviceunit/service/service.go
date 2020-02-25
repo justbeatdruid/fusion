@@ -126,6 +126,27 @@ func (s *Service) Create(su *v1.Serviceunit) (*v1.Serviceunit, error) {
 	return su, nil
 }
 
+func (s *Service) PatchServiceunit(id string, data interface{}) (*Serviceunit, error) {
+	su, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	if err = s.assignment(su, data); err != nil {
+		return nil, err
+	}
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(su)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	crd, err = s.client.Namespace(crdNamespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd: %+v", err)
+	}
+	return ToModel(su), err
+}
+
 func (s *Service) List(group string) (*v1.ServiceunitList, error) {
 	var options metav1.ListOptions
 	if len(group) > 0 {

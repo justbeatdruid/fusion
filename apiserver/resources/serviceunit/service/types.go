@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -206,4 +207,38 @@ func (s *Service) checkDatasource(d *v1.Datasource) (*datav1.DatasourceSpec, err
 		*/
 	}
 	return ds, nil
+}
+
+func (s *Service) assignment(target *v1.Serviceunit, reqData interface{}) error {
+	data, ok := reqData.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("reqData type is error,req data: %v", reqData)
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("json.Marshal error,: %v", err)
+	}
+	var source Serviceunit
+	if err = json.Unmarshal(b, &source); err != nil {
+		return fmt.Errorf("json.Unmarshal error,: %v", err)
+	}
+	if _, ok := data["name"]; ok {
+		target.Spec.Name = source.Name
+	}
+	if _, ok := data["description"]; ok {
+		target.Spec.Description = source.Description
+	}
+	if _, ok := data["group"]; ok {
+		if target.ObjectMeta.Labels == nil {
+			target.ObjectMeta.Labels = make(map[string]string)
+		}
+		target.ObjectMeta.Labels[v1.GroupLabel] = source.Group
+	}
+	if target.Spec.Users == nil {
+		target.Spec.Users = make([]apiv1.User, 0)
+	}
+	if target.Spec.APIs == nil {
+		target.Spec.APIs = make([]v1.Api, 0)
+	}
+	return nil
 }
