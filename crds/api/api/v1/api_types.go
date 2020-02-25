@@ -80,6 +80,7 @@ type KongApiInfo struct {
 	Hosts         []string `json:"hosts"`
 	Paths         []string `json:"paths"`
 	Headers       []string `json:"Headers"`
+	Methods       []string `json:"methods"`
 	HttpsCode     int      `json:"https_redirect_status_code"`
 	RegexPriority int      `json:"regex_priority"`
 	StripPath     bool     `json:"strip_path"`
@@ -309,6 +310,8 @@ const (
 	Delete   Status = "delete"
 	Deleting Status = "deleting"
 	Error    Status = "error"
+	Updating Status = "updating"
+	Update   Status = "update"
 )
 
 type Publish string
