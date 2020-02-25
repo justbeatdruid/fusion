@@ -84,6 +84,8 @@ func (s *Service) PatchApi(id string, data interface{}) (*Api, error) {
 	if err = s.assignment(api, data); err != nil {
 		return nil, err
 	}
+	//更新API时将API的状态修改为 Updating
+	api.Status.Status = v1.Updating
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)

@@ -6,6 +6,8 @@ import (
 	"github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"time"
+
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Trafficcontrol struct {
@@ -17,11 +19,12 @@ type Trafficcontrol struct {
 	Apis        []v1.Api      `json:"apis"`
 	Description string        `json:"description"`
 	User        string        `json:"user"`
+	CreatedAt   time.Time     `json:"createdAt"`
 
-	Status    v1.Status `json:"status"`
-	UpdatedAt time.Time `json:"time"`
-	APICount  int       `json:"apiCount"`
-	Published bool      `json:"published"`
+	Status    v1.Status   `json:"status"`
+	UpdatedAt metav1.Time `json:"time"`
+	APICount  int         `json:"apiCount"`
+	Published bool        `json:"published"`
 }
 
 // only used in creation options
@@ -47,7 +50,7 @@ func ToAPI(app *Trafficcontrol) *v1.Trafficcontrol {
 	}
 	crd.Status = v1.TrafficcontrolStatus{
 		Status:    status,
-		UpdatedAt: time.Now(),
+		UpdatedAt: metav1.Now(),
 		APICount:  0,
 		Published: false,
 	}
@@ -68,7 +71,7 @@ func ToAPIUpdate(app *Trafficcontrol, crd *v1.Trafficcontrol) *v1.Trafficcontrol
 	}
 	crd.Status = v1.TrafficcontrolStatus{
 		Status:    status,
-		UpdatedAt: time.Now(),
+		UpdatedAt: metav1.Now(),
 		APICount:  0,
 		Published: false,
 	}
@@ -77,14 +80,14 @@ func ToAPIUpdate(app *Trafficcontrol, crd *v1.Trafficcontrol) *v1.Trafficcontrol
 
 func ToModel(obj *v1.Trafficcontrol) *Trafficcontrol {
 	return &Trafficcontrol{
-		ID:        obj.ObjectMeta.Name,
-		Name:      obj.Spec.Name,
-		Namespace: obj.ObjectMeta.Namespace,
-		Type:      obj.Spec.Type,
-		Config:    obj.Spec.Config,
-		Apis:      obj.Spec.Apis,
-		User:      obj.Spec.User,
-
+		ID:          obj.ObjectMeta.Name,
+		Name:        obj.Spec.Name,
+		Namespace:   obj.ObjectMeta.Namespace,
+		Type:        obj.Spec.Type,
+		Config:      obj.Spec.Config,
+		Apis:        obj.Spec.Apis,
+		User:        obj.Spec.User,
+		CreatedAt:   obj.ObjectMeta.CreationTimestamp.Time,
 		Description: obj.Spec.Description,
 
 		Status:    obj.Status.Status,
@@ -199,6 +202,6 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 			}
 		}
 	}
-	target.Status.UpdatedAt = time.Now()
+	target.Status.UpdatedAt = metav1.Now()
 	return nil
 }

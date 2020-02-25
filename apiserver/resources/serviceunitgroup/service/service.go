@@ -60,6 +60,24 @@ func (s *Service) DeleteServiceunitGroup(id string) error {
 	return s.Delete(id)
 }
 
+func (s *Service) UpdateServiceunitGroup(id string, model *ServiceunitGroup) (*ServiceunitGroup, error) {
+	sug, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("get serviceunitgroup error: %+v", err)
+	}
+	if len(model.Name) > 0 {
+		sug.Spec.Name = model.Name
+	}
+	if len(model.Description) > 0 {
+		sug.Spec.Description = model.Description
+	}
+	sug, err = s.UpdateSpec(sug)
+	if err != nil {
+		return nil, fmt.Errorf("cannot update object: %+v", err)
+	}
+	return ToModel(sug), nil
+}
+
 func (s *Service) Create(sug *v1.ServiceunitGroup) (*v1.ServiceunitGroup, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(sug)
 	if err != nil {
@@ -112,4 +130,25 @@ func (s *Service) Delete(id string) error {
 		return fmt.Errorf("error delete crd: %+v", err)
 	}
 	return nil
+}
+
+func (s *Service) UpdateSpec(sug *v1.ServiceunitGroup) (*v1.ServiceunitGroup, error) {
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(sug)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	klog.V(5).Infof("try to update status for crd: %+v", crd)
+	crd, err = s.client.Namespace(sug.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd status: %+v", err)
+	}
+	sug = &v1.ServiceunitGroup{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), sug); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.serviceunitgroup: %+v", sug)
+
+	return sug, nil
 }

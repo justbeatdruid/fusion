@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
@@ -301,8 +302,10 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	if _, ok := data["method"]; ok {
 		target.Spec.Method = source.Method
 	}
+	//更新协议
 	if _, ok := data["protocol"]; ok {
 		target.Spec.Protocol = source.Protocol
+		target.Spec.KongApi.Protocols = []string{strings.ToLower(string(target.Spec.Protocol))}
 	}
 	if _, ok := data["apiFields"]; ok {
 		target.Spec.ApiFields = source.ApiFields
@@ -319,12 +322,15 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	if _, ok = data["authType"]; ok {
 		target.Spec.AuthType = source.AuthType
 	}
-	if _, ok = data["traffic"]; ok {
-		target.Spec.Traffic = source.Traffic
-	}
 	if _, ok = data["KongApi"]; ok {
-		target.Spec.KongApi = source.KongApi
+		target.Spec.KongApi.Methods = source.KongApi.Methods
+		target.Spec.KongApi.Paths = source.KongApi.Paths
+		target.Spec.KongApi.Hosts = source.KongApi.Hosts
 	}
+	if _, ok = data["apiAttribute"]; ok {
+		target.Spec.ApiAttribute = source.ApiAttribute
+	}
+
 	target.Status.UpdatedAt = metav1.Now()
 	return nil
 }

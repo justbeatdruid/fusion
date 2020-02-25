@@ -60,6 +60,24 @@ func (s *Service) DeleteApplicationGroup(id string) error {
 	return s.Delete(id)
 }
 
+func (s *Service) UpdateApplicationGroup(id string, model *ApplicationGroup) (*ApplicationGroup, error) {
+	app, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("get applicationgroup error: %+v", err)
+	}
+	if len(model.Name) > 0 {
+		app.Spec.Name = model.Name
+	}
+	if len(model.Description) > 0 {
+		app.Spec.Description = model.Description
+	}
+	app, err = s.UpdateSpec(app)
+	if err != nil {
+		return nil, fmt.Errorf("cannot update object: %+v", err)
+	}
+	return ToModel(app), nil
+}
+
 func (s *Service) Create(app *v1.ApplicationGroup) (*v1.ApplicationGroup, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(app)
 	if err != nil {
@@ -112,4 +130,25 @@ func (s *Service) Delete(id string) error {
 		return fmt.Errorf("error delete crd: %+v", err)
 	}
 	return nil
+}
+
+func (s *Service) UpdateSpec(app *v1.ApplicationGroup) (*v1.ApplicationGroup, error) {
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(app)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	klog.V(5).Infof("try to update status for crd: %+v", crd)
+	crd, err = s.client.Namespace(app.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd status: %+v", err)
+	}
+	app = &v1.ApplicationGroup{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), app); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.applicationgroup: %+v", app)
+
+	return app, nil
 }

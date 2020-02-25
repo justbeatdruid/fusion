@@ -39,6 +39,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.PATCH("/serviceunits/{id}").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("patch a serviceunit by id").
+		To(r.patchServiceunit).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.GET("/serviceunits").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all serviceunits").
@@ -55,14 +63,13 @@ func (r *router) Install(ws *restful.WebService) {
 		Do(returns200, returns500))
 
 	// + update_sunyu
-	ws.Route(ws.PATCH("/serviceunits/{id}").
+	ws.Route(ws.PUT("/serviceunits/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("update serviceunit").
 		To(r.updateServiceunit).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
-
 }
 
 func (r *router) createServiceunit(request *restful.Request, response *restful.Response) {
@@ -77,6 +84,11 @@ func (r *router) getServiceunit(request *restful.Request, response *restful.Resp
 
 func (r *router) deleteServiceunit(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DeleteServiceunit(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) patchServiceunit(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.PatchServiceunit(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 

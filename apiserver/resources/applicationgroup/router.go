@@ -45,6 +45,13 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.listApplicationGroup).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	ws.Route(ws.PUT("/applicationgroups/{id}").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("update an applicationgroup").
+		To(r.updateApplicationGroup).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func (r *router) createApplicationGroup(request *restful.Request, response *restful.Response) {
@@ -64,5 +71,10 @@ func (r *router) deleteApplicationGroup(request *restful.Request, response *rest
 
 func (r *router) listApplicationGroup(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListApplicationGroup(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) updateApplicationGroup(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.UpdateApplicationGroup(request)
 	response.WriteHeaderAndEntity(code, result)
 }

@@ -57,7 +57,7 @@ func (c *controller) CreateServiceunitGroup(req *restful.Request) (int, *CreateR
 	if db, err := c.service.CreateServiceunitGroup(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
-			Message: fmt.Errorf("create database error: %+v", err).Error(),
+			Message: fmt.Errorf("create serviceunitgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -72,7 +72,7 @@ func (c *controller) GetServiceunitGroup(req *restful.Request) (int, *GetRespons
 	if db, err := c.service.GetServiceunitGroup(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
-			Message: fmt.Errorf("get database error: %+v", err).Error(),
+			Message: fmt.Errorf("get serviceunitgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -87,7 +87,7 @@ func (c *controller) DeleteServiceunitGroup(req *restful.Request) (int, *DeleteR
 	if err := c.service.DeleteServiceunitGroup(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
-			Message: fmt.Errorf("delete database error: %+v", err).Error(),
+			Message: fmt.Errorf("delete serviceunitgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
@@ -101,10 +101,32 @@ func (c *controller) ListServiceunitGroup(req *restful.Request) (int, *ListRespo
 	if db, err := c.service.ListServiceunitGroup(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
-			Message: fmt.Errorf("list database error: %+v", err).Error(),
+			Message: fmt.Errorf("list serviceunitgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &ListResponse{
+			Code: 0,
+			Data: db,
+		}
+	}
+}
+
+func (c *controller) UpdateServiceunitGroup(req *restful.Request) (int, *CreateResponse) {
+	body := &CreateRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	id := req.PathParameter("id")
+	if db, err := c.service.UpdateServiceunitGroup(id, body.Data); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: fmt.Errorf("update serviceunitgroup error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
 			Code: 0,
 			Data: db,
 		}
