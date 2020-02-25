@@ -57,7 +57,7 @@ func (c *controller) CreateApplicationGroup(req *restful.Request) (int, *CreateR
 	if db, err := c.service.CreateApplicationGroup(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
-			Message: fmt.Errorf("create database error: %+v", err).Error(),
+			Message: fmt.Errorf("create applicationgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -72,7 +72,7 @@ func (c *controller) GetApplicationGroup(req *restful.Request) (int, *GetRespons
 	if db, err := c.service.GetApplicationGroup(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
-			Message: fmt.Errorf("get database error: %+v", err).Error(),
+			Message: fmt.Errorf("get applicationgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -87,7 +87,7 @@ func (c *controller) DeleteApplicationGroup(req *restful.Request) (int, *DeleteR
 	if err := c.service.DeleteApplicationGroup(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
-			Message: fmt.Errorf("delete database error: %+v", err).Error(),
+			Message: fmt.Errorf("delete applicationgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
@@ -101,10 +101,32 @@ func (c *controller) ListApplicationGroup(req *restful.Request) (int, *ListRespo
 	if db, err := c.service.ListApplicationGroup(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
-			Message: fmt.Errorf("list database error: %+v", err).Error(),
+			Message: fmt.Errorf("list applicationgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &ListResponse{
+			Code: 0,
+			Data: db,
+		}
+	}
+}
+
+func (c *controller) UpdateApplicationGroup(req *restful.Request) (int, *CreateResponse) {
+	body := &CreateRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	id := req.PathParameter("id")
+	if db, err := c.service.UpdateApplicationGroup(id, body.Data); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: fmt.Errorf("update applicationgroup error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
 			Code: 0,
 			Data: db,
 		}
