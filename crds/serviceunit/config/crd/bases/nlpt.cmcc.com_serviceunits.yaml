@@ -51,6 +51,137 @@ spec:
               properties:
                 authType:
                   type: string
+                datawarehouse:
+                  properties:
+                    databaseDisplayName:
+                      type: string
+                    databaseId:
+                      type: string
+                    databaseName:
+                      type: string
+                    tableMetadataInfos:
+                      items:
+                        properties:
+                          propertyEntrys:
+                            items:
+                              properties:
+                                des:
+                                  type: string
+                                displayName:
+                                  type: string
+                                encrypt:
+                                  type: string
+                                englishName:
+                                  type: string
+                                entryptionType:
+                                  type: string
+                                fieldLength:
+                                  type: string
+                                fieldPersion:
+                                  type: string
+                                id:
+                                  type: string
+                                idx:
+                                  type: integer
+                                isEncryption:
+                                  type: string
+                                isForeignkey:
+                                  type: string
+                                isPartionfield:
+                                  type: string
+                                isPrimarykey:
+                                  type: string
+                                isUnique:
+                                  type: string
+                                logicalType:
+                                  type: string
+                                name:
+                                  type: string
+                                physicalType:
+                                  type: string
+                                referencePropertyId:
+                                  type: string
+                                referencePropertyName:
+                                  type: string
+                                referenceTableDisplayName:
+                                  type: string
+                                referenceTableId:
+                                  type: string
+                                sourcePropertyId:
+                                  type: string
+                                sourceSql:
+                                  type: string
+                                sourceTableId:
+                                  type: string
+                                standard:
+                                  type: string
+                                tableId:
+                                  type: string
+                                tableType:
+                                  type: string
+                                version:
+                                  type: integer
+                              required:
+                              - des
+                              - displayName
+                              - encrypt
+                              - englishName
+                              - entryptionType
+                              - fieldLength
+                              - fieldPersion
+                              - id
+                              - idx
+                              - isEncryption
+                              - isForeignkey
+                              - isPartionfield
+                              - isPrimarykey
+                              - isUnique
+                              - logicalType
+                              - name
+                              - physicalType
+                              - referencePropertyId
+                              - referencePropertyName
+                              - referenceTableDisplayName
+                              - referenceTableId
+                              - sourcePropertyId
+                              - sourceSql
+                              - sourceTableId
+                              - standard
+                              - tableId
+                              - tableType
+                              - version
+                              type: object
+                            type: array
+                          tableInfo:
+                            properties:
+                              displayName:
+                                type: string
+                              englishName:
+                                type: string
+                              id:
+                                type: string
+                              name:
+                                type: string
+                              tableType:
+                                type: string
+                            required:
+                            - displayName
+                            - englishName
+                            - id
+                            - name
+                            - tableType
+                            type: object
+                        required:
+                        - propertyEntrys
+                        - tableInfo
+                        type: object
+                      type: array
+                  required:
+                  - databaseDisplayName
+                  - databaseId
+                  - databaseName
+                  - tableMetadataInfos
+                  type: object
                 localtion:
                   type: string
                 name:
@@ -75,7 +206,7 @@ spec:
                       - port
                       - username
                       type: object
-                    createUser:
+                    createdBy:
                       properties:
                         id:
                           type: string
@@ -91,7 +222,7 @@ spec:
                       type: string
                     type:
                       type: string
-                    updateUser:
+                    updatedBy:
                       properties:
                         id:
                           type: string
@@ -103,10 +234,10 @@ spec:
                       type: object
                   required:
                   - connect
-                  - createUser
+                  - createdBy
                   - database
                   - type
-                  - updateUser
+                  - updatedBy
                   type: object
                 type:
                   type: string

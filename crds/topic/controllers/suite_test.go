@@ -53,7 +53,7 @@ func TestOperator_CreateTopic(t *testing.T) {
 	op.Host = "192.168.100.71"
 	op.Port = 30002
 	topic := new(nlptv1.Topic)
-	topic.Spec.TopicNamespace = "functions"
+	topic.Spec.TopicGroup = "functions"
 	topic.Spec.Name = "test0115"
 	topic.Spec.Tenant = "public"
 
