@@ -174,6 +174,8 @@ func connectMysql(ds *v1.Datasource, querySql string) ([]map[string]string, erro
 	//设置上数据库最大闲置连接数
 	db.SetMaxIdleConns(10)
 	//验证连接
+	fmt.Println("lianjia:" + path)
+	fmt.Println(db)
 	if err := db.Ping(); err != nil {
 		fmt.Println("open database fail")
 		return nil, fmt.Errorf("check database fail")
