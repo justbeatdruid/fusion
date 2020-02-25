@@ -76,19 +76,11 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.POST("/apis/{id}/applications").
+	ws.Route(ws.POST("/apis/{id}/applications/{appid}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
-		Doc("bind an api to application").
+		Doc("bind/release an api to/from application").
 		To(r.bindApi).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
-		Do(returns200, returns500))
-
-	ws.Route(ws.DELETE("/apis/{id}/applications").
-		Consumes(restful.MIME_JSON).
-		Produces(restful.MIME_JSON).
-		Doc("bind an api to application").
-		To(r.releaseApi).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
@@ -144,10 +136,6 @@ func (r *router) listApi(request *restful.Request, response *restful.Response) {
 
 func (r *router) bindApi(request *restful.Request, response *restful.Response) {
 	process(r.controller.BindApi, request, response)
-}
-
-func (r *router) releaseApi(request *restful.Request, response *restful.Response) {
-	process(r.controller.ReleaseApi, request, response)
 }
 
 func (r *router) query(request *restful.Request, response *restful.Response) {

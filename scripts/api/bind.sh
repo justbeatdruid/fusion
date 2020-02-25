@@ -1,8 +1,13 @@
-curl -XPOST localhost:8001/api/v1/apis/eefcc02078a17e82/applications -H 'content-type:application/json'  -v \
+if ! test $2;then
+  echo need apiid, appid
+  exit 1
+fi
+
+
+curl -XPOST localhost:8001/api/v1/apis/$1/applications/$2 -H 'content-type:application/json'  -v \
   -d'
 {
   "data": {
-    "apiid": "51e6c509de3b1bf",
-    "appid": "85de4d6bf0542989"
+    "operation": "release"
   }
 }'
