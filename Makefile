@@ -32,20 +32,20 @@ datasource-image:
 	docker build . -f crds/datasource/Dockerfile -t ${image}
 	docker push ${image}
 
+application-image: applicationimage:= ${REG}/library/fusion-application-controller-manager:0.1.0
+application-image:
+	docker build . -f crds/application/Dockerfile -t ${applicationimage}
+	docker push ${applicationimage}
+
+trafficcontrol-image: trafficcontrolimage:= ${REG}/library/fusion-trafficcontrol-controller-manager:0.1.0
+trafficcontrol-image:
+	docker build . -f crds/trafficcontrol/Dockerfile -t ${trafficcontrolimage}
+	docker push ${trafficcontrolimage}
+
 topic-image: image := ${REG}/library/fusion-topic-controller-manager:0.1.0
 topic-image:
 	docker build . -f crds/topic/Dockerfile -t ${image}
 	docker push ${image}
-
-api-image: apiimage := ${REG}/library/fusion-api-controller-manager:0.1.0
-api-image:
-	docker build . -f crds/api/Dockerfile -t ${apiimage}
-	docker push ${apiimage}
-
-serviceunit-image: simg := ${REG}/library/fusion-serviceunit-controller-manager:0.1.0
-serviceunit-image:
-	docker build . -f crds/serviceunit/Dockerfile -t ${simg}
-	docker push ${simg}
 
 # Run go fmt against code
 fmt:
