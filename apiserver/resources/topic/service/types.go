@@ -13,7 +13,7 @@ type Topic struct {
 	Name            string    `json:"name"` //topic名称
 	Namespace       string    `json:"namespace"`
 	Tenant          string    `json:"tenant"` //topic的所属租户名称
-	TopicNamespace  string    `json:"topicNamespace"`
+	TopicGroup      string    `json:"topicGroup"`
 	Partition       int       `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
 	IsNonPersistent bool      `json:"isNonPersistent"` //非持久化，默认为false，非必填topic
 	URL             string    `json:"url"`             //URL
@@ -40,7 +40,7 @@ func ToAPI(app *Topic) *v1.Topic {
 		Name:            app.Name,
 		Tenant:          app.Tenant,
 		Namespace:       app.Namespace,
-		TopicNamespace:  app.TopicNamespace,
+		TopicGroup:      app.TopicGroup,
 		Partition:       app.Partition,
 		IsNonPersistent: app.IsNonPersistent,
 	}
@@ -61,7 +61,7 @@ func ToModel(obj *v1.Topic) *Topic {
 		Name:            obj.Spec.Name,
 		Namespace:       obj.ObjectMeta.Namespace,
 		Tenant:          obj.Spec.Tenant,
-		TopicNamespace:  obj.Spec.TopicNamespace,
+		TopicGroup:      obj.Spec.TopicGroup,
 		IsNonPersistent: obj.Spec.IsNonPersistent,
 		Partition:       obj.Spec.Partition,
 		Status:          obj.Status.Status,
