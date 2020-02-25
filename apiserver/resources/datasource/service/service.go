@@ -3,6 +3,8 @@ package service
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
+
 	//api "github.com/chinamobile/nlpt/apiserver/resources/api/service"
 	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
@@ -160,7 +162,7 @@ func connectMysql(ds *v1.Datasource, querySql string) ([]map[string]string, erro
 	buildPath.WriteString("@tcp(")
 	buildPath.WriteString(ds.Spec.RDB.Connect.Host)
 	buildPath.WriteString(":")
-	buildPath.WriteString(string(ds.Spec.RDB.Connect.Port))
+	buildPath.WriteString(strconv.Itoa(ds.Spec.RDB.Connect.Port))
 	buildPath.WriteString(")/")
 	buildPath.WriteString(ds.Spec.RDB.Database)
 	path := buildPath.String()
