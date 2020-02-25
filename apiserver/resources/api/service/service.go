@@ -366,6 +366,17 @@ func (s *Service) updateApplicationApi(appid, apiid, apiname string) (*appv1.App
 	return app, nil
 }
 
+func (s *Service) BindOrRelease(apiid, appid, operation string) (*Api, error) {
+	switch operation {
+	case "bind":
+		return s.BindApi(apiid, appid)
+	case "release":
+		return s.ReleaseApi(apiid, appid)
+	default:
+		return nil, fmt.Errorf("unknown operation %s, expect bind or release", operation)
+	}
+}
+
 func (s *Service) BindApi(apiid, appid string) (*Api, error) {
 	api, err := s.Get(apiid)
 	if err != nil {

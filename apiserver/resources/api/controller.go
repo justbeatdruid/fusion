@@ -36,8 +36,7 @@ type BindRequest struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    struct {
-		AppID string `json:"appID"`
-		ApiID string `json:"apiID"`
+		Operation string `json:"operation"`
 	} `json:"data,omitempty"`
 }
 type BindResponse = Wrapped
@@ -217,33 +216,12 @@ func (c *controller) BindApi(req *restful.Request) (int, interface{}) {
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
-	body.Data.ApiID = req.PathParameter("id")
-	if api, err := c.service.BindApi(body.Data.ApiID, body.Data.AppID); err != nil {
+	apiID := req.PathParameter("id")
+	appID := req.PathParameter("appid")
+	if api, err := c.service.BindOrRelease(apiID, appID, body.Data.Operation); err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:    2,
 			Message: fmt.Errorf("bind api error: %+v", err).Error(),
-		}
-	} else {
-		return http.StatusOK, &BindResponse{
-			Code: 0,
-			Data: api,
-		}
-	}
-}
-
-func (c *controller) ReleaseApi(req *restful.Request) (int, interface{}) {
-	body := &BindRequest{}
-	if err := req.ReadEntity(body); err != nil {
-		return http.StatusInternalServerError, &BindResponse{
-			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
-		}
-	}
-	body.Data.ApiID = req.PathParameter("id")
-	if api, err := c.service.ReleaseApi(body.Data.ApiID, body.Data.AppID); err != nil {
-		return http.StatusInternalServerError, &BindResponse{
-			Code:    2,
-			Message: fmt.Errorf("release api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &BindResponse{
