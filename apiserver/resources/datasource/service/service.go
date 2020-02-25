@@ -85,7 +85,8 @@ func (s *Service) Create(ds *v1.Datasource) (*v1.Datasource, error) {
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-
+	fmt.Println("crd:")
+	fmt.Println(crd)
 	crd, err = s.client.Namespace(crdNamespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error creating crd: %+v", err)
