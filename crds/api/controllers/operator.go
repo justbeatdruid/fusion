@@ -9,7 +9,6 @@ import (
 	"github.com/parnurzeal/gorequest"
 
 	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
-
 	"k8s.io/klog"
 )
 
@@ -32,6 +31,8 @@ type RequestBody struct {
 	Protocols []string  `json:"protocols"`
 	Paths     []string  `json:"paths"`
 	StripPath bool      `json:"strip_path"`
+	Hosts     []string  `json:"hosts"`
+	Methods   []string  `json:"methods"`
 }
 
 // {"success":true,"code":200,"message":"请求成功","data":{"targetDbType":"MySQL","targetDbIp":"192.168.100.103","targetDbPort":"3306","targetDbUser":"root","targetDbPass":"Pass1234","targetDbName":["POSTGRESQL_public","POSTGRESQL_testschema"]},"pageInfo":null,"ext":null}
@@ -54,7 +55,7 @@ type ResponseBody struct {
 	Paths                   []string    `json:"paths"`
 	HTTPSRedirectStatusCode int         `json:"https_redirect_status_code"`
 	Hosts                   []string    `json:"hosts"`
-	Methods                 interface{} `json:"methods"`
+	Methods                 []string    `json:"methods"`
 	Message                 string      `json:"message"`
 	Fields                  interface{} `json:"fields"`
 	Code                    int         `json:"code"`
@@ -232,21 +233,31 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 		request = request.Set(k, v)
 	}
 	request = request.Retry(3, 5*time.Second, retryStatus...)
-	//API创建时路由信息 数据后端使用 /api/v1/apiquery web后端使用传入参数
+	//API创建时路由信息 数据后端使用 /api/v1/apis/{id}/data web后端使用传入参数
 	protocols := []string{}
 	protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
 	paths := []string{}
-	queryPath := fmt.Sprintf("%s%s%s", "/api/v1/apis/", db.ObjectMeta.Name, "/data")
-	paths = append(paths, queryPath)
 	//替换ID
 	id := db.Spec.Serviceunit.KongID
-	requestBody := &RequestBody{
-		Service:   ServiceID{id},
-		Protocols: protocols,
-		Paths:     paths,
-		//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
-		StripPath: false,
+	requestBody := &RequestBody{}
+	requestBody.Service = ServiceID{id}
+	requestBody.Protocols = protocols
+	//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
+	requestBody.StripPath = false
+	if db.Spec.Serviceunit.Type == "data" {
+		queryPath := fmt.Sprintf("%s%s%s", "/api/v1/apis/", db.ObjectMeta.Name, "/data")
+		paths = append(paths, queryPath)
+		requestBody.Paths = paths
+	} else {
+		requestBody.Paths = db.Spec.KongApi.Paths
+		if len(db.Spec.KongApi.Hosts) != 0 {
+			requestBody.Hosts = db.Spec.KongApi.Hosts
+		}
+		if len(db.Spec.KongApi.Methods) != 0 {
+			requestBody.Methods = db.Spec.KongApi.Methods
+		}
 	}
+
 	responseBody := &ResponseBody{}
 	klog.Infof("begin send create route requeset body: %+v", responseBody)
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
@@ -412,6 +423,109 @@ func (r *Operator) AddRouteCorsByKong(db *nlptv1.Api) (err error) {
 
 	if err != nil {
 		return fmt.Errorf("create cors error %s", responseBody.Message)
+	}
+	return nil
+}
+
+func (r *Operator) getRouteInfoFromKong(db *nlptv1.Api) (rsp *ResponseBody, err error) {
+	klog.Infof("begin get route info from kong %s %s", db.Spec.Name, db.Spec.KongApi.KongID)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	responseBody := &ResponseBody{}
+	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s%s", schema, r.Host, r.Port, "/routes/", db.Spec.KongApi.KongID)).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("request for get route info error: %+v", errs)
+
+	}
+	if response.StatusCode != 200 {
+		return nil, fmt.Errorf("request for get route error: receive wrong status code: %s", string(body))
+	}
+
+	klog.Infof("get route info return: code:%d ,body:%s", response.StatusCode, string(body))
+	klog.Infof("get route info methods:%v, paths:%v, hosts:%v", responseBody.Methods, responseBody.Paths, responseBody.Hosts)
+	return responseBody, nil
+}
+
+func SliceEq(a, b []string) bool {
+	// If one is nil, the other must also be nil.
+	if (a == nil) != (b == nil) {
+		klog.Infof("SliceEq nil false %v:%v", a, b)
+		return false
+	}
+	if len(a) != len(b) {
+		klog.Infof("SliceEq len false %v:%v", a, b)
+		return false
+	}
+	for i := range a {
+		if a[i] != b[i] {
+			klog.Infof("SliceEq ele false %v:%v", a, b)
+			return false
+		}
+	}
+	return true
+}
+
+func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api) (err error) {
+	klog.Infof("begin update route info %s:%s", db.Spec.Name, db.Spec.KongApi.KongID)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+
+	request = request.Patch(fmt.Sprintf("%s://%s:%d%s%s", schema, r.Host, r.Port, "/routes/", db.Spec.KongApi.KongID))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	protocols := []string{}
+	protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
+	paths := []string{}
+	id := db.Spec.Serviceunit.KongID
+	requestBody := &RequestBody{}
+	requestBody.Service = ServiceID{id}
+	requestBody.Protocols = protocols
+	//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
+	requestBody.StripPath = false
+	if db.Spec.Serviceunit.Type == "data" {
+		queryPath := fmt.Sprintf("%s%s%s", "/api/v1/apis/", db.ObjectMeta.Name, "/data")
+		paths = append(paths, queryPath)
+		requestBody.Paths = paths
+	} else {
+		requestBody.Paths = db.Spec.KongApi.Paths
+		if len(db.Spec.KongApi.Hosts) != 0 {
+			requestBody.Hosts = db.Spec.KongApi.Hosts
+		}
+		if len(db.Spec.KongApi.Methods) != 0 {
+			requestBody.Methods = db.Spec.KongApi.Methods
+		}
+	}
+	responseBody := &ResponseBody{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Infof("request for update route error: %+v", errs)
+		return fmt.Errorf("request for update route error: %+v", errs)
+	}
+
+	if response.StatusCode != 200 {
+		return fmt.Errorf("request for update route error: receive wrong status code: %s", string(body))
+	}
+
+	klog.Infof("update route info return: code:%d ,body:%s", response.StatusCode, string(body))
+	klog.Infof("update route info methods:%v, paths:%v, hosts:%v", responseBody.Methods, responseBody.Paths, responseBody.Hosts)
+	return nil
+}
+func (r *Operator) UpdateRouteByKong(db *nlptv1.Api) (err error) {
+	klog.Infof("Enter UpdateRouteByKong name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
+	rsp, errs := r.getRouteInfoFromKong(db)
+	if errs != nil {
+		return fmt.Errorf("request for get route info error: %+v", errs)
+	}
+	if SliceEq(rsp.Hosts, db.Spec.KongApi.Hosts) && SliceEq(rsp.Paths, db.Spec.KongApi.Paths) &&
+		SliceEq(rsp.Methods, db.Spec.KongApi.Methods) && SliceEq(rsp.Protocols, db.Spec.KongApi.Protocols) {
+		klog.Infof("no need update route info")
+		return nil
+	} else {
+		if errs := r.UpdateRouteInfoFromKong(db); errs != nil {
+			return fmt.Errorf("request for get route info error: %+v", errs)
+		}
 	}
 	return nil
 }

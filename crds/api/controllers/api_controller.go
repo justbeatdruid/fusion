@@ -126,6 +126,17 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		r.Update(ctx, api)
 	}
 
+	if api.Status.Status == nlptv1.Updating {
+		// call kong api update
+		if err := r.Operator.UpdateRouteByKong(api); err != nil {
+			//TODO 异常处理
+			api.Status.Status = nlptv1.Error
+			api.Status.Message = err.Error()
+		}
+		api.Status.Status = nlptv1.Update
+		r.Update(ctx, api)
+	}
+
 	if api.Status.Status == nlptv1.Delete {
 		// call kong api delete
 		if err := r.Operator.DeleteRouteByKong(api); err != nil {
