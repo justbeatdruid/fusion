@@ -109,7 +109,7 @@ func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 	} else {
 		return http.StatusOK, &DeleteResponse{
 			Code:    0,
-			Message: "success",
+			Message: "deleting",
 		}
 	}
 }

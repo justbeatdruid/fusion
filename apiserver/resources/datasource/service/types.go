@@ -70,8 +70,6 @@ func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 	if ds.Type == v1.RDBType {
 		crd.Spec.RDB = ds.RDB
 	}
-	fmt.Println(ds.RDB)
-	fmt.Println(crd.Spec.RDB)
 	status := ds.Status
 	if len(status) == 0 {
 		status = v1.Init
@@ -91,6 +89,8 @@ func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 	return crd
 }
 
+const opaque = "opaque"
+
 func ToModel(obj *v1.Datasource) *Datasource {
 	ds := &Datasource{
 		ID:        obj.ObjectMeta.Name,
@@ -107,10 +107,12 @@ func ToModel(obj *v1.Datasource) *Datasource {
 	switch obj.Spec.Type {
 	case v1.RDBType:
 		if obj.Spec.RDB != nil {
-			ds.RDB = &v1.RDB{
-				Type:     obj.Spec.RDB.Type,
-				Database: obj.Spec.RDB.Database,
-				Schema:   obj.Spec.RDB.Schema,
+			ds.RDB = obj.Spec.RDB
+			ds.RDB.Connect = v1.ConnectInfo{
+				Host:     opaque,
+				Port:     0,
+				Username: opaque,
+				Password: opaque,
 			}
 		} else {
 			klog.Errorf("datasource %s in type rdb has no rdb instance", obj.ObjectMeta.Name)

@@ -10,19 +10,21 @@ WORKDIR /go/src/github.com/chinamobile/nlpt/
 #RUN go mod download
 
 # Copy the go source
-# COPY apiserver/ apiserver/
-COPY crds/ crds/
+COPY cmd/ cmd/
+COPY crds/trafficcontrol crds/trafficcontrol
+COPY crds/application crds/application
+COPY crds/api crds/api
 COPY pkg/ pkg/
 COPY vendor/ vendor/
 
 # Build
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=off go build -a -o /go/bin/trafficcontrol-controller crds/trafficcontrol/main.go
+RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=off go build -a -o /go/bin/fusion-trafficcontrol-controller-manager cmd/trafficcontrol-controller-manager/trafficcontrol-controller-manager.go
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates
-COPY --from=builder /go/bin/trafficcontrol-controller /usr/local/bin
+COPY --from=builder /go/bin/fusion-trafficcontrol-controller-manager /bin/
 EXPOSE 8080
 
-ENTRYPOINT ["trafficcontrol-controller"]
+ENTRYPOINT ["fusion-trafficcontrol-controller-manager"]

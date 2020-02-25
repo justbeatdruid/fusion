@@ -322,11 +322,22 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	if _, ok = data["authType"]; ok {
 		target.Spec.AuthType = source.AuthType
 	}
-	if _, ok = data["KongApi"]; ok {
-		target.Spec.KongApi.Methods = source.KongApi.Methods
-		target.Spec.KongApi.Paths = source.KongApi.Paths
-		target.Spec.KongApi.Hosts = source.KongApi.Hosts
+
+	if kongInfo, ok := data["KongApi"]; ok {
+		if config, ok := kongInfo.(map[string]interface{}); ok {
+			if _, ok = config["methods"]; ok {
+				target.Spec.KongApi.Methods = source.KongApi.Methods
+			}
+			if _, ok = config["paths"]; ok {
+				target.Spec.KongApi.Paths = source.KongApi.Paths
+			}
+			if _, ok = config["hosts"]; ok {
+				target.Spec.KongApi.Hosts = source.KongApi.Hosts
+			}
+
+		}
 	}
+
 	if _, ok = data["apiAttribute"]; ok {
 		target.Spec.ApiAttribute = source.ApiAttribute
 	}
