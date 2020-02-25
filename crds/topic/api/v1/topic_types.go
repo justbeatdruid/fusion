@@ -32,7 +32,7 @@ type TopicSpec struct {
 	// Foo is an example field of Topic. Edit Topic_types.go to remove/update
 	Name            string `json:"name"`
 	Tenant          string `json:"tenant"`
-	TopicNamespace  string `json:"topicNamespace"`
+	TopicGroup      string `json:"topicGroup"`
 	Namespace       string `json:"namespace"`
 	Partition       int    `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
 	IsNonPersistent bool   `json:"isNonPersistent"` //topic是否不持久化
@@ -93,7 +93,7 @@ func (in *Topic) GetUrl(t *Topic) (url string) {
 
 	build.WriteString(t.Spec.Tenant)
 	build.WriteString("/")
-	build.WriteString(t.Spec.TopicNamespace)
+	build.WriteString(t.Spec.TopicGroup)
 	build.WriteString("/")
 	build.WriteString(t.Spec.Name)
 
