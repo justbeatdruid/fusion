@@ -486,8 +486,8 @@ func (s *Service) TestApi(model *Api) (interface{}, error) {
 	bytesData, _ := json.Marshal(body)
 
 	reqest, err := http.NewRequest(string(model.Method), remoteUrl, bytes.NewReader(bytesData))
-	for i := range model.ApiParameters {
-		reqest.Header.Add(model.ApiParameters[i].Name, model.ApiParameters[i].Example)
+	for i := range model.ApiRequestParameters {
+		reqest.Header.Add(model.ApiRequestParameters[i].Name, model.ApiRequestParameters[i].Example)
 
 	}
 	response, err := client.Do(reqest)

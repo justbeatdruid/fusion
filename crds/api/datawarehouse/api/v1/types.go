@@ -39,7 +39,6 @@ type WhereField struct {
 	Values       []string `json:"value"`
 
 	ParameterEnabled bool   `json:"parameterEnabled,omitempty"`
-	Type             string `json:"type,omitempty"`
 	Example          string `json:"example,omitempty"`
 	Description      string `json:"description,omitempty"`
 	Required         bool   `json:"required,omitempty"`
@@ -52,6 +51,10 @@ type GroupbyField struct {
 
 func (w WhereField) ParamName() string {
 	return fmt.Sprintf("%s/%s", w.TableName, w.PropertyName)
+}
+
+func (q QueryField) ParamName() string {
+	return fmt.Sprintf("%s/%s", q.TableName, q.PropertyName)
 }
 
 func (q *Query) ToApiQuery(params map[string][]string) v1.Query {
