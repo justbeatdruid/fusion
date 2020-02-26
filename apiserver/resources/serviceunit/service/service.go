@@ -6,6 +6,7 @@ import (
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	groupv1 "github.com/chinamobile/nlpt/crds/serviceunitgroup/api/v1"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -41,12 +42,16 @@ func (s *Service) CreateServiceunit(model *Serviceunit) (*Serviceunit, error) {
 	return ToModel(su), nil
 }
 
-func (s *Service) ListServiceunit(group string) ([]*Serviceunit, error) {
+func (s *Service) ListServiceunit(group string, opts ...util.OpOption) ([]*Serviceunit, error) {
 	sus, err := s.List(group)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	return ToListModel(sus), nil
+	groupMap, err := s.GetGroupMap()
+	if err != nil {
+		return nil, fmt.Errorf("get groups error: %+v", err)
+	}
+	return ToListModel(sus, groupMap, opts...), nil
 }
 
 func (s *Service) GetServiceunit(id string) (*Serviceunit, error) {
@@ -174,6 +179,16 @@ func (s *Service) Get(id string) (*v1.Serviceunit, error) {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.serviceunit: %+v", su)
+	if su.ObjectMeta.Labels != nil {
+		if gid, ok := su.ObjectMeta.Labels[v1.GroupLabel]; ok {
+			group, err := s.GetGroup(gid)
+			if err != nil {
+				return nil, fmt.Errorf("get group error: %+v", err)
+			}
+			su.Spec.Group.ID = group.ObjectMeta.Name
+			su.Spec.Group.Name = group.Spec.Name
+		}
+	}
 	return su, nil
 }
 
@@ -249,4 +264,21 @@ func (s *Service) GetGroup(id string) (*groupv1.ServiceunitGroup, error) {
 	}
 	klog.V(5).Infof("get v1.serviceunitgroup: %+v", su)
 	return su, nil
+}
+
+func (s *Service) GetGroupMap() (map[string]string, error) {
+	crd, err := s.groupClient.Namespace(crdNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	sus := &groupv1.ServiceunitGroupList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), sus); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.serviceunitgrouplist: %+v", sus)
+	m := make(map[string]string)
+	for _, su := range sus.Items {
+		m[su.ObjectMeta.Name] = su.Spec.Name
+	}
+	return m, nil
 }

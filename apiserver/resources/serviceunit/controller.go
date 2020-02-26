@@ -131,7 +131,8 @@ func (c *controller) ListServiceunit(req *restful.Request) (int, *ListResponse) 
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
 	group := req.QueryParameter("group")
-	if su, err := c.service.ListServiceunit(group); err != nil {
+	name := req.QueryParameter("name")
+	if su, err := c.service.ListServiceunit(group, util.WithNameLike(name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list serviceunit error: %+v", err).Error(),
