@@ -153,30 +153,56 @@ func (ts TopicList) GetItem(i int) (interface{}, error) {
 
 //查询topic的消息
 func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) {
-	id := req.PathParameter("id")
-	startTime, _ := strconv.ParseInt(req.PathParameter("start"), 10, 64)
-	endTime, _ := strconv.ParseInt(req.PathParameter("end"), 10, 64)
+	topicUrl := req.QueryParameter("topicUrl")
+	startTime := req.QueryParameter("startTime")
+	endTime := req.QueryParameter("endTime")
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-	if messages, err := c.service.ListMessages(id, startTime, endTime); err != nil {
-		return http.StatusInternalServerError, &MessageResponse{
-			Code:    1,
-			Message: fmt.Errorf("list database error: %+v", err).Error(),
-		}
-	} else {
-		var ms MessageList = messages
-		data, err := util.PageWrap(ms, page, size)
-		if err != nil {
+	//startTime、endTime参数都存在
+	if len(startTime)>0 &&len(endTime)>0 {
+		start, _ := strconv.ParseInt(startTime, 10, 64)
+		end, _ := strconv.ParseInt(endTime, 10, 64)
+		if messages, err := c.service.ListMessagesTime(topicUrl, start, end); err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
 				Code:    1,
-				Message: fmt.Sprintf("page parameter error: %+v", err),
+				Message: fmt.Errorf("list database error: %+v", err).Error(),
+			}
+		} else {
+			var ms MessageList = messages
+			data, err := util.PageWrap(ms, page, size)
+			if err != nil {
+				return http.StatusInternalServerError, &MessageResponse{
+					Code:    1,
+					Message: fmt.Sprintf("page parameter error: %+v", err),
+				}
+			}
+			return http.StatusOK, &MessageResponse{
+				Code:     0,
+				Messages: data,
 			}
 		}
-		return http.StatusOK, &MessageResponse{
-			Code:     0,
-			Messages: data,
+	} else {
+		if messages, err := c.service.ListMessages(topicUrl); err != nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:    1,
+				Message: fmt.Errorf("list database error: %+v", err).Error(),
+			}
+		} else {
+			var ms MessageList = messages
+			data, err := util.PageWrap(ms, page, size)
+			if err != nil {
+				return http.StatusInternalServerError, &MessageResponse{
+					Code:    1,
+					Message: fmt.Sprintf("page parameter error: %+v", err),
+				}
+			}
+			return http.StatusOK, &MessageResponse{
+				Code:     0,
+				Messages: data,
+			}
 		}
 	}
+
 }
 
 type MessageList []service.Message
