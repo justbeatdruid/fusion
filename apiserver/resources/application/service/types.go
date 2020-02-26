@@ -96,7 +96,6 @@ func ToListModel(items *v1.ApplicationList) []*Application {
 func (s *Service) Validate(a *Application) error {
 	for k, v := range map[string]string{
 		"name":        a.Name,
-		"group":       a.Group,
 		"description": a.Description,
 	} {
 		if len(v) == 0 {
