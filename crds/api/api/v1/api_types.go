@@ -153,7 +153,7 @@ const (
 type AuthType string
 
 const (
-	NOAUTH  AuthType = "NOAUTR"
+	NOAUTH  AuthType = "NOAUTH"
 	APPAUTH AuthType = "APPAUTH"
 )
 
