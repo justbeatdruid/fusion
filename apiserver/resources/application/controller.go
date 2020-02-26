@@ -127,7 +127,8 @@ func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) 
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
 	group := req.QueryParameter("group")
-	if app, err := c.service.ListApplication(group); err != nil {
+	name := req.QueryParameter("name")
+	if app, err := c.service.ListApplication(group, util.WithNameLike(name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list application error: %+v", err).Error(),

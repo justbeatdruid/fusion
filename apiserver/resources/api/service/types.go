@@ -9,6 +9,7 @@ import (
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	dwv1 "github.com/chinamobile/nlpt/crds/api/datawarehouse/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -174,12 +175,25 @@ func ToModel(obj *v1.Api) *Api {
 	return model
 }
 
-func ToListModel(items *v1.ApiList) []*Api {
-	var api []*Api = make([]*Api, len(items.Items))
-	for i := range items.Items {
-		api[i] = ToModel(&items.Items[i])
+func ToListModel(items *v1.ApiList, opts ...util.OpOption) []*Api {
+	if len(opts) > 0 {
+		nameLike := util.OpList(opts...).NameLike()
+		if len(nameLike) > 0 {
+			var apis []*Api = make([]*Api, 0)
+			for i := range items.Items {
+				api := ToModel(&items.Items[i])
+				if strings.Contains(api.Name, nameLike) {
+					apis = append(apis, api)
+				}
+			}
+			return apis
+		}
 	}
-	return api
+	var apis []*Api = make([]*Api, len(items.Items))
+	for i := range items.Items {
+		apis[i] = ToModel(&items.Items[i])
+	}
+	return apis
 }
 
 func (s *Service) Validate(a *Api) error {

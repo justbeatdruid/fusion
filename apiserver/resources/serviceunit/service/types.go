@@ -3,12 +3,14 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -29,7 +31,8 @@ type Serviceunit struct {
 	APICount  int       `json:"apiCount"`
 	Published bool      `json:"published"`
 
-	Group string `json:"group"`
+	Group     string `json:"group"`
+	GroupName string `json:"groupName"`
 }
 
 // only used in creation options
@@ -124,16 +127,36 @@ func ToModel(obj *v1.Serviceunit) *Serviceunit {
 	}
 	if group, ok := obj.ObjectMeta.Labels[v1.GroupLabel]; ok {
 		su.Group = group
+		su.GroupName = obj.Spec.Group.Name
 	}
 	return su
 }
 
-func ToListModel(items *v1.ServiceunitList) []*Serviceunit {
-	var app []*Serviceunit = make([]*Serviceunit, len(items.Items))
-	for i := range items.Items {
-		app[i] = ToModel(&items.Items[i])
+func ToListModel(items *v1.ServiceunitList, groups map[string]string, opts ...util.OpOption) []*Serviceunit {
+	if len(opts) > 0 {
+		nameLike := util.OpList(opts...).NameLike()
+		if len(nameLike) > 0 {
+			var sus []*Serviceunit = make([]*Serviceunit, 0)
+			for i := range items.Items {
+				su := ToModel(&items.Items[i])
+				if gname, ok := groups[su.Group]; ok {
+					su.GroupName = gname
+				}
+				if strings.Contains(su.Name, nameLike) {
+					sus = append(sus, su)
+				}
+			}
+			return sus
+		}
 	}
-	return app
+	var sus []*Serviceunit = make([]*Serviceunit, len(items.Items))
+	for i := range items.Items {
+		sus[i] = ToModel(&items.Items[i])
+		if gname, ok := groups[sus[i].Group]; ok {
+			sus[i].GroupName = gname
+		}
+	}
+	return sus
 }
 
 // check create parameters

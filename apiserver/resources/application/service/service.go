@@ -5,6 +5,7 @@ import (
 
 	"github.com/chinamobile/nlpt/crds/application/api/v1"
 	groupv1 "github.com/chinamobile/nlpt/crds/applicationgroup/api/v1"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -38,12 +39,16 @@ func (s *Service) CreateApplication(model *Application) (*Application, error) {
 	return ToModel(app), nil
 }
 
-func (s *Service) ListApplication(group string) ([]*Application, error) {
+func (s *Service) ListApplication(group string, opts ...util.OpOption) ([]*Application, error) {
 	apps, err := s.List(group)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	return ToListModel(apps), nil
+	groupMap, err := s.GetGroupMap()
+	if err != nil {
+		return nil, fmt.Errorf("get groups error: %+v", err)
+	}
+	return ToListModel(apps, groupMap, opts...), nil
 }
 
 func (s *Service) GetApplication(id string) (*Application, error) {
@@ -135,6 +140,16 @@ func (s *Service) Get(id string) (*v1.Application, error) {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.application: %+v", app)
+	if app.ObjectMeta.Labels != nil {
+		if gid, ok := app.ObjectMeta.Labels[v1.GroupLabel]; ok {
+			group, err := s.GetGroup(gid)
+			if err != nil {
+				return nil, fmt.Errorf("get group error: %+v", err)
+			}
+			app.Spec.Group.ID = group.ObjectMeta.Name
+			app.Spec.Group.Name = group.Spec.Name
+		}
+	}
 	return app, nil
 }
 
@@ -192,4 +207,21 @@ func (s *Service) GetGroup(id string) (*groupv1.ApplicationGroup, error) {
 	}
 	klog.V(5).Infof("get v1.applicationgroup: %+v", app)
 	return app, nil
+}
+
+func (s *Service) GetGroupMap() (map[string]string, error) {
+	crd, err := s.groupClient.Namespace(crdNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	apps := &groupv1.ApplicationGroupList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apps); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.applicationgrouplist: %+v", apps)
+	m := make(map[string]string)
+	for _, app := range apps.Items {
+		m[app.ObjectMeta.Name] = app.Spec.Name
+	}
+	return m, nil
 }

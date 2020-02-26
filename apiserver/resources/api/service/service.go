@@ -15,6 +15,7 @@ import (
 	dsv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -99,12 +100,12 @@ func (s *Service) PatchApi(id string, data interface{}) (*Api, error) {
 	return ToModel(api), err
 }
 
-func (s *Service) ListApi(suid, appid string) ([]*Api, error) {
+func (s *Service) ListApi(suid, appid string, opts ...util.OpOption) ([]*Api, error) {
 	apis, err := s.List(suid, appid)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	result := ToListModel(apis)
+	result := ToListModel(apis, opts...)
 	if len(appid) > 0 {
 		for i := range result {
 			if apis.Items[i].Status.Applications != nil {
