@@ -73,9 +73,17 @@ func (s *Service) DeleteAllTopics() ([]*Topic, error) {
 	}
 	return ToListModel(tps), nil
 }
-
-func (s *Service) ListMessages(id string, start int64, end int64) ([]Message, error) {
-	messages, err := s.ListTopicMessages(id, start, end)
+//带时间查询
+func (s *Service) ListMessagesTime(topicUrl string, start int64, end int64) ([]Message, error) {
+	messages, err := s.ListTopicMessagesTime(topicUrl, start, end)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	return messages, nil
+}
+//不带时间查询
+func (s *Service) ListMessages(topicUrl string) ([]Message, error) {
+	messages, err := s.ListTopicMessages(topicUrl)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -192,16 +200,11 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 	return tp, nil
 }
 
-//查询topic中的所有消息
-func (s *Service) ListTopicMessages(id string, start int64, end int64) ([]Message, error) {
-	tp, err := s.Get(id)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get object: %+v", err)
-	}
-	topicUrl := tp.Spec.Url
+//带时间查询topic中的所有消息
+func (s *Service) ListTopicMessagesTime(topicUrl string, start int64, end int64) ([]Message, error) {
 	// Instantiate a Pulsar client
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://localhost:6650",
+		URL: "pulsar://10.160.32.24:30003",
 	})
 	if err != nil {
 		log.Fatalf("Could not create client: %v", err)
@@ -237,6 +240,46 @@ func (s *Service) ListTopicMessages(id string, start int64, end int64) ([]Messag
 			messageStruct.Messages = string(msg.Payload()[:])
 			messageStructs = append(messageStructs, messageStruct)
 		}
+
+	}
+	return messageStructs, nil
+}
+//不带时间查询topic中的所有消息
+func (s *Service) ListTopicMessages(topicUrl string) ([]Message, error) {
+	// Instantiate a Pulsar client
+	client, err := pulsar.NewClient(pulsar.ClientOptions{
+		URL: "pulsar://10.160.32.24:30003",
+	})
+	if err != nil {
+		log.Fatalf("Could not create client: %v", err)
+	}
+	reader, err := client.CreateReader(pulsar.ReaderOptions{
+		Topic:          topicUrl,
+		StartMessageID: pulsar.EarliestMessage,
+	})
+	if err != nil {
+		log.Fatalf("Could not create reader: %v", err)
+	}
+
+	defer reader.Close()
+	var messageStructs []Message
+	var messageStruct Message
+
+	ctx := context.Background()
+
+	for {
+		if flag, _ := reader.HasNext(); flag == false {
+			break
+		}
+		msg, err := reader.Next(ctx)
+		if err != nil {
+			log.Fatalf("Error reading from topic: %v", err)
+		}
+		// Process the message
+		messageStruct.Time = msg.PublishTime()
+		messageStruct.ID = msg.ID()
+		messageStruct.Messages = string(msg.Payload()[:])
+		messageStructs = append(messageStructs, messageStruct)
 
 	}
 	return messageStructs, nil
