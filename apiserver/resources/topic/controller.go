@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
@@ -117,25 +118,47 @@ func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
+
 	if tp, err := c.service.ListTopic(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
-		var tps TopicList = tp
+		var tps TopicList = c.ListTopicByField(req, tp)
+
 		data, err := util.PageWrap(tps, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    1,
 				Message: fmt.Sprintf("page parameter error: %+v", err),
 			}
+		} else {
+			return http.StatusOK, &ListResponse{
+				Code: 0,
+				Data: data,
+			}
 		}
-		return http.StatusOK, &ListResponse{
-			Code: 0,
-			Data: data,
+
+	}
+}
+
+//根据可选搜索字段过滤topic列表,大小写不敏感
+func (c *controller) ListTopicByField(req *restful.Request, tps []*service.Topic) []*service.Topic {
+	//Topic名称查询参数
+	var tpsResult []*service.Topic
+	name := req.QueryParameter("name")
+	if len(name) == 0 {
+		return tps
+	} else {
+		name = strings.ToLower(name)
+		for _, tp := range tps {
+			if strings.Contains(strings.ToLower(tp.Name), name) {
+				tpsResult = append(tpsResult, tp)
+			}
 		}
 	}
+	return tpsResult
 }
 
 type TopicList []*service.Topic
@@ -159,7 +182,7 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
 	//startTime、endTime参数都存在
-	if len(startTime)>0 &&len(endTime)>0 {
+	if len(startTime) > 0 && len(endTime) > 0 {
 		start, _ := strconv.ParseInt(startTime, 10, 64)
 		end, _ := strconv.ParseInt(endTime, 10, 64)
 		if messages, err := c.service.ListMessagesTime(topicUrl, start, end); err != nil {

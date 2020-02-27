@@ -46,216 +46,34 @@ spec:
                 - name
                 type: object
               type: array
-            datasources:
-              description: DatasourceSpec defines the desired state of Datasource
+            datasourcesID:
               properties:
-                authType:
-                  type: string
-                datawarehouse:
+                dataWarehouse:
+                  description: never stored in crds
                   properties:
                     databaseDisplayName:
                       type: string
-                    databaseId:
-                      type: string
                     databaseName:
                       type: string
-                    tableMetadataInfos:
-                      items:
-                        properties:
-                          propertyEntrys:
-                            items:
-                              properties:
-                                des:
-                                  type: string
-                                displayName:
-                                  type: string
-                                encrypt:
-                                  type: string
-                                englishName:
-                                  type: string
-                                entryptionType:
-                                  type: string
-                                fieldLength:
-                                  type: string
-                                fieldPersion:
-                                  type: string
-                                id:
-                                  type: string
-                                idx:
-                                  type: integer
-                                isEncryption:
-                                  type: string
-                                isForeignkey:
-                                  type: string
-                                isPartionfield:
-                                  type: string
-                                isPrimarykey:
-                                  type: string
-                                isUnique:
-                                  type: string
-                                logicalType:
-                                  type: string
-                                name:
-                                  type: string
-                                physicalType:
-                                  type: string
-                                referencePropertyId:
-                                  type: string
-                                referencePropertyName:
-                                  type: string
-                                referenceTableDisplayName:
-                                  type: string
-                                referenceTableId:
-                                  type: string
-                                sourcePropertyId:
-                                  type: string
-                                sourceSql:
-                                  type: string
-                                sourceTableId:
-                                  type: string
-                                standard:
-                                  type: string
-                                tableId:
-                                  type: string
-                                tableType:
-                                  type: string
-                                version:
-                                  type: integer
-                              required:
-                              - des
-                              - displayName
-                              - encrypt
-                              - englishName
-                              - entryptionType
-                              - fieldLength
-                              - fieldPersion
-                              - id
-                              - idx
-                              - isEncryption
-                              - isForeignkey
-                              - isPartionfield
-                              - isPrimarykey
-                              - isUnique
-                              - logicalType
-                              - name
-                              - physicalType
-                              - referencePropertyId
-                              - referencePropertyName
-                              - referenceTableDisplayName
-                              - referenceTableId
-                              - sourcePropertyId
-                              - sourceSql
-                              - sourceTableId
-                              - standard
-                              - tableId
-                              - tableType
-                              - version
-                              type: object
-                            type: array
-                          tableInfo:
-                            properties:
-                              displayName:
-                                type: string
-                              englishName:
-                                type: string
-                              id:
-                                type: string
-                              name:
-                                type: string
-                              tableType:
-                                type: string
-                            required:
-                            - displayName
-                            - englishName
-                            - id
-                            - name
-                            - tableType
-                            type: object
-                        required:
-                        - propertyEntrys
-                        - tableInfo
-                        type: object
-                      type: array
+                    subjectDisplayName:
+                      type: string
+                    subjectName:
+                      type: string
                   required:
                   - databaseDisplayName
-                  - databaseId
                   - databaseName
-                  - tableMetadataInfos
+                  - subjectDisplayName
+                  - subjectName
                   type: object
-                localtion:
-                  type: string
-                name:
-                  description: Foo is an example field of Datasource. Edit Datasource_types.go
-                    to remove/update
-                  type: string
-                rdb:
-                  properties:
-                    connect:
-                      properties:
-                        host:
-                          type: string
-                        password:
-                          type: string
-                        port:
-                          type: integer
-                        username:
-                          type: string
-                      required:
-                      - host
-                      - password
-                      - port
-                      - username
-                      type: object
-                    createdBy:
-                      properties:
-                        id:
-                          type: string
-                        name:
-                          type: string
-                      required:
-                      - id
-                      - name
-                      type: object
-                    database:
-                      type: string
-                    schema:
-                      type: string
-                    type:
-                      type: string
-                    updatedBy:
-                      properties:
-                        id:
-                          type: string
-                        name:
-                          type: string
-                      required:
-                      - id
-                      - name
-                      type: object
-                  required:
-                  - connect
-                  - createdBy
-                  - database
-                  - type
-                  - updatedBy
-                  type: object
-                type:
-                  type: string
-              required:
-              - authType
-              - localtion
-              - name
-              - type
-              type: object
-            datasourcesID:
-              properties:
-                groupId:
+                group:
                   type: string
                 id:
                   type: string
+                name:
+                  type: string
               required:
-              - groupId
               - id
+              - name
               type: object
             description:
               type: string
@@ -303,6 +121,7 @@ spec:
             type:
               type: string
             users:
+              description: Datasource   datav1.DatasourceSpec `json:"datasources,omitempty"`
               items:
                 properties:
                   inCharge:

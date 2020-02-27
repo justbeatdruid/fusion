@@ -3,33 +3,36 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 type Serviceunit struct {
-	ID           string                `json:"id"`
-	Name         string                `json:"name"`
-	Namespace    string                `json:"namespace"`
-	Type         v1.ServiceType        `json:"type"`
-	DatasourceID v1.Datasource         `json:"datasources,omitempty"`
-	Datasource   datav1.DatasourceSpec `json:"-"`
-	KongSevice   v1.KongServiceInfo    `json:"kongService"`
-	Users        []apiv1.User          `json:"users"`
-	Description  string                `json:"description"`
+	ID           string         `json:"id"`
+	Name         string         `json:"name"`
+	Namespace    string         `json:"namespace"`
+	Type         v1.ServiceType `json:"type"`
+	DatasourceID v1.Datasource  `json:"datasources,omitempty"`
+	//Datasource   datav1.DatasourceSpec `json:"-"`
+	KongSevice  v1.KongServiceInfo `json:"kongService"`
+	Users       []apiv1.User       `json:"users"`
+	Description string             `json:"description"`
 
 	Status    v1.Status `json:"status"`
 	UpdatedAt time.Time `json:"time"`
 	APICount  int       `json:"apiCount"`
 	Published bool      `json:"published"`
 
-	Group string `json:"group"`
+	Group     string `json:"group"`
+	GroupName string `json:"groupName"`
 }
 
 // only used in creation options
@@ -44,10 +47,10 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 		Name:         app.Name,
 		Type:         app.Type,
 		DatasourceID: app.DatasourceID,
-		Datasource:   app.Datasource,
-		KongService:  app.KongSevice,
-		Users:        app.Users,
-		Description:  app.Description,
+		//Datasource:   app.Datasource,
+		KongService: app.KongSevice,
+		Users:       app.Users,
+		Description: app.Description,
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -81,10 +84,10 @@ func ToAPIUpdate(su *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 		Name:         su.Name,
 		Type:         su.Type,
 		DatasourceID: su.DatasourceID,
-		Datasource:   su.Datasource,
-		KongService:  su.KongSevice,
-		Users:        su.Users,
-		Description:  su.Description,
+		//Datasource:   su.Datasource,
+		KongService: su.KongSevice,
+		Users:       su.Users,
+		Description: su.Description,
 	}
 	crd.Spec.KongService.ID = id
 	status := su.Status
@@ -124,24 +127,49 @@ func ToModel(obj *v1.Serviceunit) *Serviceunit {
 	}
 	if group, ok := obj.ObjectMeta.Labels[v1.GroupLabel]; ok {
 		su.Group = group
+		su.GroupName = obj.Spec.Group.Name
 	}
 	return su
 }
 
-func ToListModel(items *v1.ServiceunitList) []*Serviceunit {
-	var app []*Serviceunit = make([]*Serviceunit, len(items.Items))
-	for i := range items.Items {
-		app[i] = ToModel(&items.Items[i])
+func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[string]v1.Datasource, opts ...util.OpOption) []*Serviceunit {
+	if len(opts) > 0 {
+		nameLike := util.OpList(opts...).NameLike()
+		if len(nameLike) > 0 {
+			var sus []*Serviceunit = make([]*Serviceunit, 0)
+			for _, item := range items.Items {
+				if !strings.Contains(item.Spec.Name, nameLike) {
+					continue
+				}
+				if gname, ok := groups[item.Spec.Group.ID]; ok {
+					item.Spec.Group.Name = gname
+				}
+				if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
+					item.Spec.DatasourceID = data
+				}
+				su := ToModel(&item)
+				sus = append(sus, su)
+			}
+			return sus
+		}
 	}
-	return app
+	var sus []*Serviceunit = make([]*Serviceunit, len(items.Items))
+	for i, item := range items.Items {
+		if gname, ok := groups[item.Spec.Group.ID]; ok {
+			item.Spec.Group.Name = gname
+		}
+		if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
+			item.Spec.DatasourceID = data
+		}
+		sus[i] = ToModel(&item)
+	}
+	return sus
 }
 
 // check create parameters
 func (s *Service) Validate(a *Serviceunit) error {
 	for k, v := range map[string]string{
-		"name":        a.Name,
-		"description": a.Description,
-		"group":       a.Group,
+		"name": a.Name,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
@@ -153,10 +181,10 @@ func (s *Service) Validate(a *Serviceunit) error {
 		if len(a.DatasourceID.ID) == 0 {
 			return fmt.Errorf("datasource is null")
 		} else {
-			if ds, err := s.checkDatasource(&a.DatasourceID); err != nil {
+			if _, err := s.checkDatasource(&a.DatasourceID); err != nil {
 				return fmt.Errorf("error datasource: %+v", err)
 			} else {
-				a.Datasource = *ds
+				//a.Datasource = *ds
 			}
 		}
 	case v1.WebService:
@@ -233,6 +261,19 @@ func (s *Service) assignment(target *v1.Serviceunit, reqData interface{}) error 
 			target.ObjectMeta.Labels = make(map[string]string)
 		}
 		target.ObjectMeta.Labels[v1.GroupLabel] = source.Group
+	}
+	if _, ok := data["type"]; ok {
+		if target.Spec.Type != source.Type {
+			return fmt.Errorf("type err")
+		}
+	}
+	if _, ok := data["kongService"]; ok {
+		target.Spec.KongService.Host = source.KongSevice.Host
+		target.Spec.KongService.Port = source.KongSevice.Port
+		target.Spec.KongService.Protocol = source.KongSevice.Protocol
+	}
+	if _, ok := data["datasources"]; ok {
+		target.Spec.DatasourceID.ID = source.DatasourceID.ID
 	}
 	if target.Spec.Users == nil {
 		target.Spec.Users = make([]apiv1.User, 0)

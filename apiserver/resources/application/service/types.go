@@ -3,11 +3,13 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	v1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
 )
 
 type Application struct {
@@ -28,7 +30,8 @@ type Application struct {
 
 	CreatedAt time.Time `json:"createdAt"`
 
-	Group string `json:"group"`
+	Group     string `json:"group"`
+	GroupName string `json:"groupName"`
 }
 
 // only used in creation options
@@ -81,22 +84,42 @@ func ToModel(obj *v1.Application) *Application {
 	}
 	if group, ok := obj.ObjectMeta.Labels[v1.GroupLabel]; ok {
 		app.Group = group
+		app.GroupName = obj.Spec.Group.Name
 	}
 	return app
 }
 
-func ToListModel(items *v1.ApplicationList) []*Application {
-	var app []*Application = make([]*Application, len(items.Items))
-	for i := range items.Items {
-		app[i] = ToModel(&items.Items[i])
+func ToListModel(items *v1.ApplicationList, groups map[string]string, opts ...util.OpOption) []*Application {
+	if len(opts) > 0 {
+		nameLike := util.OpList(opts...).NameLike()
+		if len(nameLike) > 0 {
+			var apps []*Application = make([]*Application, 0)
+			for _, item := range items.Items {
+				if !strings.Contains(item.Spec.Name, nameLike) {
+					continue
+				}
+				if gname, ok := groups[item.Spec.Group.ID]; ok {
+					item.Spec.Group.Name = gname
+				}
+				app := ToModel(&item)
+				apps = append(apps, app)
+			}
+			return apps
+		}
 	}
-	return app
+	var apps []*Application = make([]*Application, len(items.Items))
+	for i, item := range items.Items {
+		if gname, ok := groups[item.Spec.Group.ID]; ok {
+			item.Spec.Group.Name = gname
+		}
+		apps[i] = ToModel(&item)
+	}
+	return apps
 }
 
 func (s *Service) Validate(a *Application) error {
 	for k, v := range map[string]string{
-		"name":        a.Name,
-		"description": a.Description,
+		"name": a.Name,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)

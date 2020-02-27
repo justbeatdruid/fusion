@@ -9,6 +9,7 @@ import (
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	dwv1 "github.com/chinamobile/nlpt/crds/api/datawarehouse/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
@@ -174,12 +175,25 @@ func ToModel(obj *v1.Api) *Api {
 	return model
 }
 
-func ToListModel(items *v1.ApiList) []*Api {
-	var api []*Api = make([]*Api, len(items.Items))
-	for i := range items.Items {
-		api[i] = ToModel(&items.Items[i])
+func ToListModel(items *v1.ApiList, opts ...util.OpOption) []*Api {
+	if len(opts) > 0 {
+		nameLike := util.OpList(opts...).NameLike()
+		if len(nameLike) > 0 {
+			var apis []*Api = make([]*Api, 0)
+			for i := range items.Items {
+				api := ToModel(&items.Items[i])
+				if strings.Contains(api.Name, nameLike) {
+					apis = append(apis, api)
+				}
+			}
+			return apis
+		}
 	}
-	return api
+	var apis []*Api = make([]*Api, len(items.Items))
+	for i := range items.Items {
+		apis[i] = ToModel(&items.Items[i])
+	}
+	return apis
 }
 
 func (s *Service) Validate(a *Api) error {
@@ -270,6 +284,13 @@ func (s *Service) Validate(a *Api) error {
 				return fmt.Errorf("%dth parameter location is wrong: %s", i, p.Location)
 			}
 		}
+		// kongapi paths  正常返回值
+		if len(a.KongApi.Paths) == 0 {
+			return fmt.Errorf("api paths is null. ")
+		}
+		if len(a.ApiAttribute.NormalExample) == 0 {
+			return fmt.Errorf("normal example is null.")
+		}
 	}
 	a.UpdatedAt = time.Now()
 
@@ -315,6 +336,7 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	}
 	if _, ok := data["method"]; ok {
 		target.Spec.Method = source.Method
+		target.Spec.KongApi.Methods = []string{strings.ToUpper(string(target.Spec.Method))}
 	}
 	//更新协议
 	if _, ok := data["protocol"]; ok {
@@ -339,21 +361,33 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 
 	if kongInfo, ok := data["KongApi"]; ok {
 		if config, ok := kongInfo.(map[string]interface{}); ok {
-			if _, ok = config["methods"]; ok {
-				target.Spec.KongApi.Methods = source.KongApi.Methods
-			}
 			if _, ok = config["paths"]; ok {
 				target.Spec.KongApi.Paths = source.KongApi.Paths
 			}
 			if _, ok = config["hosts"]; ok {
 				target.Spec.KongApi.Hosts = source.KongApi.Hosts
 			}
-
 		}
 	}
 
-	if _, ok = data["apiAttribute"]; ok {
-		target.Spec.ApiAttribute = source.ApiAttribute
+	if apiInfo, ok := data["apiAttribute"]; ok {
+		if config, ok := apiInfo.(map[string]interface{}); ok {
+			if _, ok = config["matchMode"]; ok {
+				target.Spec.ApiAttribute.MatchMode = source.ApiAttribute.MatchMode
+			}
+			if _, ok = config["tags"]; ok {
+				target.Spec.ApiAttribute.Tags = source.ApiAttribute.Tags
+			}
+			if _, ok = config["cors"]; ok {
+				target.Spec.ApiAttribute.Cors = source.ApiAttribute.Cors
+			}
+			if _, ok = config["normalExample"]; ok {
+				target.Spec.ApiAttribute.NormalExample = source.ApiAttribute.NormalExample
+			}
+			if _, ok = config["failureExample"]; ok {
+				target.Spec.ApiAttribute.FailureExample = source.ApiAttribute.FailureExample
+			}
+		}
 	}
 
 	target.Status.UpdatedAt = metav1.Now()

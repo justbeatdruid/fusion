@@ -1,19 +1,16 @@
 package service
 
 import (
-	"context"
 	"fmt"
-	"github.com/apache/pulsar/pulsar-client-go/pulsar"
-	"github.com/chinamobile/nlpt/crds/topic/api/v1"
+
+	"github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
-	"log"
-	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
-	"strconv"
 )
 
 var crdNamespace = "default"
@@ -21,22 +18,18 @@ var crdNamespace = "default"
 var oofsGVR = schema.GroupVersionResource{
 	Group:    v1.GroupVersion.Group,
 	Version:  v1.GroupVersion.Version,
-	Resource: "topics",
+	Resource: "topicgroups",
 }
 
 type Service struct {
 	client dynamic.NamespaceableResourceInterface
-	ip string
-	host int
 }
 
-func NewService(client dynamic.Interface, topConfig *config.TopicConfig) *Service {
-	return &Service{client: client.Resource(oofsGVR),
-		ip:   topConfig.Host,
-		host: topConfig.Port,
-	}
+func NewService(client dynamic.Interface) *Service {
+	return &Service{client: client.Resource(oofsGVR)}
 }
-func (s *Service) CreateTopic(model *Topic) (*Topic, error) {
+
+func (s *Service) CreateTopicGroup(model *Topicgroup) (*Topicgroup, error) {
 	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
@@ -47,7 +40,7 @@ func (s *Service) CreateTopic(model *Topic) (*Topic, error) {
 	return ToModel(tp), nil
 }
 
-func (s *Service) ListTopic() ([]*Topic, error) {
+func (s *Service) ListTopicgroup() ([]*Topicgroup, error) {
 	tps, err := s.List()
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
@@ -55,7 +48,7 @@ func (s *Service) ListTopic() ([]*Topic, error) {
 	return ToListModel(tps), nil
 }
 
-func (s *Service) GetTopic(id string) (*Topic, error) {
+func (s *Service) GetTopicgroup(id string) (*Topicgroup, error) {
 	tp, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
@@ -63,7 +56,7 @@ func (s *Service) GetTopic(id string) (*Topic, error) {
 	return ToModel(tp), nil
 }
 
-func (s *Service) DeleteTopic(id string) (*Topic, error) {
+func (s *Service) DeleteTopicgroup(id string) (*Topicgroup, error) {
 	tp, err := s.Delete(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
@@ -72,7 +65,7 @@ func (s *Service) DeleteTopic(id string) (*Topic, error) {
 }
 
 //删除全部topic
-func (s *Service) DeleteAllTopics() ([]*Topic, error) {
+func (s *Service) DeleteAllTopicgroups() ([]*Topicgroup, error) {
 	tps, err := s.DeleteTopics()
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
@@ -80,24 +73,7 @@ func (s *Service) DeleteAllTopics() ([]*Topic, error) {
 	return ToListModel(tps), nil
 }
 
-//带时间查询
-func (s *Service) ListMessagesTime(topicUrl string, start int64, end int64) ([]Message, error) {
-	messages, err := s.ListTopicMessagesTime(topicUrl, start, end)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get object: %+v", err)
-	}
-	return messages, nil
-}
-
-//不带时间查询
-func (s *Service) ListMessages(topicUrl string) ([]Message, error) {
-	messages, err := s.ListTopicMessages(topicUrl)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get object: %+v", err)
-	}
-	return messages, nil
-}
-func (s *Service) Create(tp *v1.Topic) (*v1.Topic, error) {
+func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -113,37 +89,37 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, error) {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tp); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.topic of creating: %+v", tp)
+	klog.V(5).Infof("get v1.topicgroup of creating: %+v", tp)
 	return tp, nil
 }
 
-func (s *Service) List() (*v1.TopicList, error) {
+func (s *Service) List() (*v1.TopicgroupList, error) {
 	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
-	tps := &v1.TopicList{}
+	tps := &v1.TopicgroupList{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.topicList: %+v", tps)
+	klog.V(5).Infof("get v1.topicgroupList: %+v", tps)
 	return tps, nil
 }
 
-func (s *Service) Get(id string) (*v1.Topic, error) {
+func (s *Service) Get(id string) (*v1.Topicgroup, error) {
 	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
-	tp := &v1.Topic{}
+	tp := &v1.Topicgroup{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tp); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.topic: %+v", tp)
+	klog.V(5).Infof("get v1.Topicgroup: %+v", tp)
 	return tp, nil
 }
 
-func (s *Service) Delete(id string) (*v1.Topic, error) {
+func (s *Service) Delete(id string) (*v1.Topicgroup, error) {
 	tp, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
@@ -153,12 +129,12 @@ func (s *Service) Delete(id string) (*v1.Topic, error) {
 }
 
 //将所有topic的status置为delete
-func (s *Service) DeleteTopics() (*v1.TopicList, error) {
+func (s *Service) DeleteTopics() (*v1.TopicgroupList, error) {
 	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
-	tps := &v1.TopicList{}
+	tps := &v1.TopicgroupList{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
@@ -178,7 +154,7 @@ func (s *Service) DeleteTopics() (*v1.TopicList, error) {
 			return nil, fmt.Errorf("error update crd status: %+v", err)
 		}
 	}
-	tps = &v1.TopicList{}
+	tps = &v1.TopicgroupList{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
@@ -187,7 +163,7 @@ func (s *Service) DeleteTopics() (*v1.TopicList, error) {
 }
 
 //更新状态
-func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
+func (s *Service) UpdateStatus(tp *v1.Topicgroup) (*v1.Topicgroup, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -199,101 +175,11 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error update crd status: %+v", err)
 	}
-	tp = &v1.Topic{}
+	tp = &v1.Topicgroup{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tp); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.topic: %+v", tp)
+	klog.V(5).Infof("get v1.topicgroup: %+v", tp)
 
 	return tp, nil
-}
-
-//带时间查询topic中的所有消息
-func (s *Service) ListTopicMessagesTime(topicUrl string, start int64, end int64) ([]Message, error) {
-	// Instantiate a Pulsar client
-	ip := s.ip
-	host := s.host
-	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://"+ip+":"+strconv.Itoa(host),
-	})
-	if err != nil {
-		log.Fatalf("Could not create client: %v", err)
-	}
-	reader, err := client.CreateReader(pulsar.ReaderOptions{
-		Topic:          topicUrl,
-		StartMessageID: pulsar.EarliestMessage,
-	})
-	if err != nil {
-		log.Fatalf("Could not create reader: %v", err)
-	}
-
-	defer reader.Close()
-	var messageStructs []Message
-	var messageStruct Message
-	var timeStamp int64
-
-	ctx := context.Background()
-
-	for {
-		if flag, _ := reader.HasNext(); flag == false {
-			break
-		}
-		msg, err := reader.Next(ctx)
-		if err != nil {
-			log.Fatalf("Error reading from topic: %v", err)
-		}
-		// Process the message
-		messageStruct.Time = msg.PublishTime()
-		timeStamp = messageStruct.Time.Unix()
-		if timeStamp >= start && timeStamp <= end {
-			messageStruct.ID = msg.ID()
-			messageStruct.Messages = string(msg.Payload()[:])
-			messageStructs = append(messageStructs, messageStruct)
-		}
-
-	}
-	return messageStructs, nil
-}
-
-//不带时间查询topic中的所有消息
-func (s *Service) ListTopicMessages(topicUrl string) ([]Message, error) {
-	// Instantiate a Pulsar client
-	ip := s.ip
-	host := s.host
-	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://"+ip+":"+strconv.Itoa(host),
-	})
-	if err != nil {
-		log.Fatalf("Could not create client: %v", err)
-	}
-	reader, err := client.CreateReader(pulsar.ReaderOptions{
-		Topic:          topicUrl,
-		StartMessageID: pulsar.EarliestMessage,
-	})
-	if err != nil {
-		log.Fatalf("Could not create reader: %v", err)
-	}
-
-	defer reader.Close()
-	var messageStructs []Message
-	var messageStruct Message
-
-	ctx := context.Background()
-
-	for {
-		if flag, _ := reader.HasNext(); flag == false {
-			break
-		}
-		msg, err := reader.Next(ctx)
-		if err != nil {
-			log.Fatalf("Error reading from topic: %v", err)
-		}
-		// Process the message
-		messageStruct.Time = msg.PublishTime()
-		messageStruct.ID = msg.ID()
-		messageStruct.Messages = string(msg.Payload()[:])
-		messageStructs = append(messageStructs, messageStruct)
-
-	}
-	return messageStructs, nil
 }
