@@ -35,7 +35,7 @@ var headers = map[string]string{
 const metadataRequestPath = "/cmcc/data/service/dataService/metadata/getMetadataInfo"
 
 func (c *httpConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
-	request := gorequest.New().SetLogger(logs.GetGoRequestLogger(4)).SetDebug(true).SetCurlCommand(true)
+	request := gorequest.New().SetLogger(logs.GetGoRequestLogger(6)).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, c.Host, c.Port, metadataRequestPath))
 	for k, v := range headers {
@@ -48,7 +48,7 @@ func (c *httpConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("request for getting metadata error: %+v", errs)
 	}
-	klog.V(5).Infof("creation response body: %s", string(body))
+	klog.V(6).Infof("creation response body: %s", string(body))
 	if response.StatusCode/100 != 2 {
 		klog.V(5).Infof("create operation failed: %d %s", response.StatusCode, string(body))
 		return nil, fmt.Errorf("request for getting metadata error: receive wrong status code: %s", string(body))
@@ -64,7 +64,7 @@ func (c *httpConnector) QueryData(q v1.Query) (v1.Result, error) {
 	if len(q.DatabaseName) == 0 {
 		return v1.Result{}, fmt.Errorf("database not set")
 	}
-	request := gorequest.New().SetLogger(logs.GetGoRequestLogger(4)).SetDebug(true).SetCurlCommand(true)
+	request := gorequest.New().SetLogger(logs.GetGoRequestLogger(6)).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, c.Host, c.Port, dataRequestPath))
 	for k, v := range headers {
@@ -77,7 +77,7 @@ func (c *httpConnector) QueryData(q v1.Query) (v1.Result, error) {
 	if len(errs) > 0 {
 		return v1.Result{}, fmt.Errorf("request for quering data error: %+v", errs)
 	}
-	klog.V(5).Infof("creation response body: %s", string(body))
+	klog.V(6).Infof("creation response body: %s", string(body))
 	if response.StatusCode/100 != 2 {
 		klog.V(5).Infof("create operation failed: %d %s", response.StatusCode, string(body))
 		return v1.Result{}, fmt.Errorf("request for quering data error: receive wrong status code: %s", string(body))
