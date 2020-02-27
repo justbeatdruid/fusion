@@ -20,7 +20,6 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/topicgroup"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 
-
 	"k8s.io/apiserver/pkg/server/healthz"
 )
 
