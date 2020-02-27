@@ -98,6 +98,9 @@ func ToListModel(items *v1.ApplicationList, groups map[string]string, opts ...ut
 				if !strings.Contains(item.Spec.Name, nameLike) {
 					continue
 				}
+				if gid, ok := item.ObjectMeta.Labels[v1.GroupLabel]; ok {
+					item.Spec.Group.ID = gid
+				}
 				if gname, ok := groups[item.Spec.Group.ID]; ok {
 					item.Spec.Group.Name = gname
 				}
@@ -109,6 +112,9 @@ func ToListModel(items *v1.ApplicationList, groups map[string]string, opts ...ut
 	}
 	var apps []*Application = make([]*Application, len(items.Items))
 	for i, item := range items.Items {
+		if gid, ok := item.ObjectMeta.Labels[v1.GroupLabel]; ok {
+			item.Spec.Group.ID = gid
+		}
 		if gname, ok := groups[item.Spec.Group.ID]; ok {
 			item.Spec.Group.Name = gname
 		}
