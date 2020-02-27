@@ -54,6 +54,13 @@ func (r *DatasourceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	return ctrl.Result{}, nil
 }
 
+func GenerateName(db *dwv1.Database) string {
+	if db == nil {
+		return ""
+	}
+	return fmt.Sprintf("%s/%s-%s/%s", db.Name, db.SubjectName, db.Id, db.SubjectId)
+}
+
 func (r *DatasourceReconciler) SyncDatasources() error {
 	klog.Infof("sync datasources")
 	ctx := context.Background()
@@ -80,7 +87,7 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 	//TODO remove deleted datawarehouse
 	for _, d := range datawarehouse.Databases {
 		db := dwv1.FromApiDatabase(d)
-		if apiDs, ok := existedDatawarehouses[db.Name]; ok {
+		if apiDs, ok := existedDatawarehouses[GenerateName(&db)]; ok {
 			if !nlptv1.DeepCompareDataWarehouse(apiDs.Spec.DataWarehouse, &db) {
 				klog.V(4).Infof("need to update datawarehouse %s", db.Name)
 				apiDs.Spec.DataWarehouse = &db
@@ -106,7 +113,7 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 					Namespace: defaultNamespace,
 				},
 				Spec: nlptv1.DatasourceSpec{
-					Name:          db.Name,
+					Name:          GenerateName(&db),
 					Type:          nlptv1.DataWarehouseType,
 					DataWarehouse: &db,
 				},

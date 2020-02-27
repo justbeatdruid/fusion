@@ -23,11 +23,13 @@ type Table struct {
 }
 
 type TableInfo struct {
-	ID          string `json:"id"`
-	Name        string `json:"name"`
-	DisplayName string `json:"displayName"`
-	Type        string `json:"tableType"`
-	EnglishName string `json:"englishName"`
+	ID             string `json:"id"`
+	Name           string `json:"name"`
+	DisplayName    string `json:"displayName"`
+	Type           string `json:"tableType"`
+	EnglishName    string `json:"englishName"`
+	CreateTime     string `json:"createTime"`
+	LastUpdateTime string `json:"lastUpdateTime"`
 }
 
 type Property struct {
