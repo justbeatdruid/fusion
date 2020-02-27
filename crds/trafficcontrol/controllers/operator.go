@@ -26,21 +26,13 @@ type Operator struct {
 }
 
 type Config struct {
-	Second            int         `json:"second"`
-	Minute            int         `json:"minute"`
-	Hour              int         `json:"hour"`
-	Day               int         `json:"day"`
-	Month             int         `json:"month"`
-	Year              int         `json:"year"`
-	LimitBy           string      `json:"limit_by"`
-	Policy            string      `json:"policy"`
-	FaultTolerant     bool        `json:"fault_tolerant"`
-	HideClientHeaders bool        `json:"hide_client_headers"`
-	RedisHost         string      `json:"redis_host"`
-	RedisPort         int         `json:"redis_port"`
-	RedisPassword     string      `json:"redis_password"`
-	RedisTimeout      int         `json:"redis_timeout"`
-	RedisDatabse      interface{} `json:"redis_databse"`
+	Second  interface{} `json:"second"`
+	Minute  interface{} `json:"minute"`
+	Hour    interface{} `json:"hour"`
+	Day     interface{} `json:"day"`
+	Month   interface{} `json:"month"`
+	Year    interface{} `json:"year"`
+	LimitBy string      `json:"limit_by"`
 }
 
 type RouteID struct {
@@ -64,22 +56,6 @@ type RateLimitingRequestBody struct {
 "route":{"id":"9caa66ef-f71c-4588-b463-1efbc52ef2cd"},
 "tags":null}
 */
-type RateLimitingResponseBody struct {
-	CreatedAt int         `json:"created_at"`
-	Config    Config      `json:"config"`
-	ID        string      `json:"id"`
-	Service   interface{} `json:"service"`
-	Name      string      `json:"name"`
-	Protocols []string    `json:"protocols"`
-	Enabled   bool        `json:"enabled"`
-	RunOn     string      `json:"run_on"`
-	Consumer  interface{} `json:"consumer"`
-	RouteId   RouteID     `json:"id"`
-	Tags      interface{} `json:"tags"`
-	Message   string      `json:"message"`
-	Fields    interface{} `json:"fields"`
-	Code      int         `json:"code"`
-}
 
 type RateRequestBody struct {
 	Name     string `json:"name"`
@@ -172,41 +148,76 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 func (r *Operator) AddRouteRatelimitByKong(db *nlptv1.Trafficcontrol) (err error) {
 	for index := 0; index < len(db.Spec.Apis); {
 		api := db.Spec.Apis[index]
-		if len(api.TrafficID) == 0 {
+		if db.ObjectMeta.Labels[api.ID] == "true" && len(api.TrafficID) == 0 {
 			id := api.KongID
 			klog.Infof("begin create rate-limiting , the KongID of api is %s", id)
 			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 			schema := "http"
-			request = request.Post(fmt.Sprintf("%s://%s:%d%s%s/%s", schema, "192.168.1.207", 30081, "/routes/", id, path))
+			request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, path))
 			for k, v := range headers {
 				request = request.Set(k, v)
 			}
+			klog.Infof(fmt.Sprintf("====%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, path))
 			request = request.Retry(3, 5*time.Second, retryStatus...)
-			requestBody := &RateLimitingRequestBody{
-				Name: "rate-limiting",
-				Config: Config{
-					Second: 5,
-					Hour:   10000,
-				},
+			requestBody := &RateLimitingRequestBody{}
+			requestBody.Name = "rate-limiting"
+			switch db.Spec.Type {
+			case nlptv1.APIC:
+				requestBody.Config.LimitBy = "service"
+			case nlptv1.IPC:
+				requestBody.Config.LimitBy = "ip"
+			case nlptv1.APPC:
+				requestBody.Config.LimitBy = "consumer"
+			default:
+				requestBody.Config.LimitBy = "consumer"
 			}
-			responseBody := &RateLimitingResponseBody{}
+
+			if db.Spec.Config.Year != 0 {
+				requestBody.Config.Year = db.Spec.Config.Year
+			} else {
+				requestBody.Config.Year = nil
+			}
+			if db.Spec.Config.Month != 0 {
+				requestBody.Config.Month = db.Spec.Config.Month
+			} else {
+				requestBody.Config.Month = nil
+			}
+			if db.Spec.Config.Day != 0 {
+				requestBody.Config.Day = db.Spec.Config.Day
+			} else {
+				requestBody.Config.Day = nil
+			}
+			if db.Spec.Config.Hour != 0 {
+				requestBody.Config.Hour = db.Spec.Config.Hour
+			} else {
+				requestBody.Config.Hour = nil
+			}
+			if db.Spec.Config.Minute != 0 {
+				requestBody.Config.Minute = db.Spec.Config.Minute
+			} else {
+				requestBody.Config.Minute = nil
+			}
+			if db.Spec.Config.Second != 0 {
+				requestBody.Config.Second = db.Spec.Config.Second
+			} else {
+				requestBody.Config.Second = nil
+			}
+
+			responseBody := &RateResponseBody{}
 			response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 			if len(errs) > 0 {
 				db.Spec.Apis[index].Result = nlptv1.FAILED
 				return fmt.Errorf("request for add rate-limiting error: %+v", errs)
 			}
-			klog.V(5).Infof("creation rate-limiting code: %d, body: %s ", response.StatusCode, string(body))
+			klog.Infof("creation rate-limiting code: %d, body: %s ", response.StatusCode, string(body))
 			if response.StatusCode != 201 {
 				db.Spec.Apis[index].Result = nlptv1.FAILED
-				klog.V(5).Infof("create rate-limiting failed msg: %s\n", responseBody.Message)
+				klog.Infof("create rate-limiting failed msg: %s\n", responseBody.Message)
 				return fmt.Errorf("request for create rate-limiting error: receive wrong status code: %s", string(body))
 			}
-			db.Spec.Apis[index].Result = nlptv1.SUCCESS
-			db.Spec.Apis[index].TrafficID = responseBody.ID
+			(*db).Spec.Apis[index].Result = nlptv1.SUCCESS
+			(*db).Spec.Apis[index].TrafficID = responseBody.ID
 
-			if err != nil {
-				return fmt.Errorf("create rate-limiting error %s", responseBody.Message)
-			}
 		}
 		index = index + 1
 	}
@@ -244,7 +255,7 @@ func (r *Operator) DeleteSpecialAppRateLimit(db *nlptv1.Trafficcontrol) (err err
 			(*db).Spec.Apis[index].Result = nlptv1.SUCCESS
 			klog.Infof("begin delete rate-limiting by conusmer %s", id)
 			for i := 0; i < len(api.SpecialID); {
-				err := DeleteRateLimitByKong(api.SpecialID[i])
+				err := r.DeleteRateLimitByKong(api.SpecialID[i])
 				if err != nil {
 					(*db).Spec.Apis[index].Result = nlptv1.FAILED
 					klog.Infof("delete %s rate-limiting failed", db.Spec.Config.Special[i].ID)
@@ -286,20 +297,17 @@ func (r *Operator) AddSpecialAppRateLimitByKong(db *nlptv1.Trafficcontrol, route
 		return "", fmt.Errorf("request for create rate error: receive wrong status code: %s", string(body))
 	}
 	klog.Infof("app rate limite ID==: %s\n", responseBody.ID)
-	if err != nil {
-		return "", fmt.Errorf("create rate by consumer error %s", responseBody.Message)
-	}
 	return responseBody.ID, nil
 }
 
-func DeleteRateLimitByKong(pluginId string) (err error) {
+func (r *Operator) DeleteRateLimitByKong(pluginId string) (err error) {
 	klog.Infof("begin delete rate limit %s", pluginId)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
-	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, "119.3.248.187", 30081, "/plugins", pluginId)).End()
+	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", pluginId)).End()
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 
 	if len(errs) > 0 {
@@ -315,7 +323,7 @@ func DeleteRateLimitByKong(pluginId string) (err error) {
 func (r *Operator) DeleteRouteLimitByKong(db *nlptv1.Trafficcontrol) (err error) {
 	for index := 0; index < len(db.Spec.Apis); {
 		api := db.Spec.Apis[index]
-		if len(api.TrafficID) != 0 {
+		if db.ObjectMeta.Labels[api.ID] == "false" && len(api.TrafficID) != 0 {
 			trafficID := api.TrafficID //route_id
 			klog.Infof("begin delete rate-limiting , the TrafficID of api is %s", trafficID)
 			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
@@ -337,10 +345,10 @@ func (r *Operator) DeleteRouteLimitByKong(db *nlptv1.Trafficcontrol) (err error)
 			}
 			db.Spec.Apis[index].Result = nlptv1.SUCCESS
 			db.Spec.Apis[index].TrafficID = ""
+			db.Spec.Apis = append(db.Spec.Apis[:index], db.Spec.Apis[index+1:]...)
+		} else {
+			index = index + 1
 		}
-		db.Spec.Apis[index].ID = ""
-		db.Spec.Apis[index].KongID = ""
-		index = index + 1
 	}
 	return nil
 }
