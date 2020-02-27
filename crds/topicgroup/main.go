@@ -75,10 +75,10 @@ func main() {
 	}
 
 	if err = (&controllers.TopicgroupReconciler{
-		Client: mgr.GetClient(),
-		Log:    ctrl.Log.WithName("controllers").WithName("Topicgroup"),
-		Scheme: mgr.GetScheme(),
-		Operator:operator,
+		Client:   mgr.GetClient(),
+		Log:      ctrl.Log.WithName("controllers").WithName("Topicgroup"),
+		Scheme:   mgr.GetScheme(),
+		Operator: operator,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Topicgroup")
 		os.Exit(1)
