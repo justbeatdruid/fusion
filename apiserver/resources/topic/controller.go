@@ -143,7 +143,7 @@ func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 	}
 }
 
-//根据可选搜索字段过滤topic列表
+//根据可选搜索字段过滤topic列表,大小写不敏感
 func (c *controller) ListTopicByField(req *restful.Request, tps []*service.Topic) []*service.Topic {
 	//Topic名称查询参数
 	var tpsResult []*service.Topic
@@ -151,8 +151,9 @@ func (c *controller) ListTopicByField(req *restful.Request, tps []*service.Topic
 	if len(name) == 0 {
 		return tps
 	} else {
+		name = strings.ToLower(name)
 		for _, tp := range tps {
-			if strings.Contains(tp.Name, name) {
+			if strings.Contains(strings.ToLower(tp.Name), name) {
 				tpsResult = append(tpsResult, tp)
 			}
 		}
