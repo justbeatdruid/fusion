@@ -66,7 +66,7 @@ func (s *Service) DeleteApplication(id string) (*Application, error) {
 
 func (s *Service) Create(app *v1.Application) (*v1.Application, error) {
 	if group, ok := app.ObjectMeta.Labels[v1.GroupLabel]; !ok {
-		return nil, fmt.Errorf("group not found")
+		//return nil, fmt.Errorf("group not found")
 	} else {
 		if _, err := s.GetGroup(group); err != nil {
 			return nil, fmt.Errorf("get group error: %+v", err)

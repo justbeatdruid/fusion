@@ -12,10 +12,13 @@ type Datawarehouse struct {
 }
 
 type Database struct {
-	Id          string  `json:"databaseId"`
-	Name        string  `json:"databaseName"`
-	DisplayName string  `json:"databaseDisplayName"`
-	Tables      []Table `json:"tableMetadataInfos"`
+	Id                 string  `json:"databaseId"`
+	Name               string  `json:"databaseName"`
+	DisplayName        string  `json:"databaseDisplayName"`
+	SubjectId          string  `json:"subjectId"`
+	SubjectName        string  `json:"subjectName"`
+	SubjectDisplayName string  `json:"subjectDisplayName"`
+	Tables             []Table `json:"tableMetadataInfos"`
 }
 
 type Table struct {

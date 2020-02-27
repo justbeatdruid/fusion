@@ -8,10 +8,13 @@ import (
 )
 
 type Database struct {
-	Id          string  `json:"databaseId"`
-	Name        string  `json:"databaseName"`
-	DisplayName string  `json:"databaseDisplayName"`
-	Tables      []Table `json:"tableMetadataInfos"`
+	Id                 string  `json:"databaseId"`
+	Name               string  `json:"databaseName"`
+	DisplayName        string  `json:"databaseDisplayName"`
+	SubjectId          string  `json:"subjectId"`
+	SubjectName        string  `json:"subjectName"`
+	SubjectDisplayName string  `json:"subjectDisplayName"`
+	Tables             []Table `json:"tableMetadataInfos,omitempty"`
 }
 
 type Table struct {
@@ -74,4 +77,9 @@ func fromApi(api, model interface{}) error {
 		return fmt.Errorf("unmarshal error: %+v", err)
 	}
 	return nil
+}
+
+func OnlyTable(t Table) Table {
+	t.Properties = nil
+	return t
 }

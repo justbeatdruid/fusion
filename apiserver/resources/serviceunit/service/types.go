@@ -16,15 +16,15 @@ import (
 )
 
 type Serviceunit struct {
-	ID           string                `json:"id"`
-	Name         string                `json:"name"`
-	Namespace    string                `json:"namespace"`
-	Type         v1.ServiceType        `json:"type"`
-	DatasourceID v1.Datasource         `json:"datasources,omitempty"`
-	Datasource   datav1.DatasourceSpec `json:"-"`
-	KongSevice   v1.KongServiceInfo    `json:"kongService"`
-	Users        []apiv1.User          `json:"users"`
-	Description  string                `json:"description"`
+	ID           string         `json:"id"`
+	Name         string         `json:"name"`
+	Namespace    string         `json:"namespace"`
+	Type         v1.ServiceType `json:"type"`
+	DatasourceID v1.Datasource  `json:"datasources,omitempty"`
+	//Datasource   datav1.DatasourceSpec `json:"-"`
+	KongSevice  v1.KongServiceInfo `json:"kongService"`
+	Users       []apiv1.User       `json:"users"`
+	Description string             `json:"description"`
 
 	Status    v1.Status `json:"status"`
 	UpdatedAt time.Time `json:"time"`
@@ -47,10 +47,10 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 		Name:         app.Name,
 		Type:         app.Type,
 		DatasourceID: app.DatasourceID,
-		Datasource:   app.Datasource,
-		KongService:  app.KongSevice,
-		Users:        app.Users,
-		Description:  app.Description,
+		//Datasource:   app.Datasource,
+		KongService: app.KongSevice,
+		Users:       app.Users,
+		Description: app.Description,
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -84,10 +84,10 @@ func ToAPIUpdate(su *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 		Name:         su.Name,
 		Type:         su.Type,
 		DatasourceID: su.DatasourceID,
-		Datasource:   su.Datasource,
-		KongService:  su.KongSevice,
-		Users:        su.Users,
-		Description:  su.Description,
+		//Datasource:   su.Datasource,
+		KongService: su.KongSevice,
+		Users:       su.Users,
+		Description: su.Description,
 	}
 	crd.Spec.KongService.ID = id
 	status := su.Status
@@ -132,29 +132,36 @@ func ToModel(obj *v1.Serviceunit) *Serviceunit {
 	return su
 }
 
-func ToListModel(items *v1.ServiceunitList, groups map[string]string, opts ...util.OpOption) []*Serviceunit {
+func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[string]v1.Datasource, opts ...util.OpOption) []*Serviceunit {
 	if len(opts) > 0 {
 		nameLike := util.OpList(opts...).NameLike()
 		if len(nameLike) > 0 {
 			var sus []*Serviceunit = make([]*Serviceunit, 0)
-			for i := range items.Items {
-				su := ToModel(&items.Items[i])
-				if gname, ok := groups[su.Group]; ok {
-					su.GroupName = gname
+			for _, item := range items.Items {
+				if !strings.Contains(item.Spec.Name, nameLike) {
+					continue
 				}
-				if strings.Contains(su.Name, nameLike) {
-					sus = append(sus, su)
+				if gname, ok := groups[item.Spec.Group.ID]; ok {
+					item.Spec.Group.Name = gname
 				}
+				if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
+					item.Spec.DatasourceID = data
+				}
+				su := ToModel(&item)
+				sus = append(sus, su)
 			}
 			return sus
 		}
 	}
 	var sus []*Serviceunit = make([]*Serviceunit, len(items.Items))
-	for i := range items.Items {
-		sus[i] = ToModel(&items.Items[i])
-		if gname, ok := groups[sus[i].Group]; ok {
-			sus[i].GroupName = gname
+	for i, item := range items.Items {
+		if gname, ok := groups[item.Spec.Group.ID]; ok {
+			item.Spec.Group.Name = gname
 		}
+		if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
+			item.Spec.DatasourceID = data
+		}
+		sus[i] = ToModel(&item)
 	}
 	return sus
 }
@@ -162,9 +169,7 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, opts ...ut
 // check create parameters
 func (s *Service) Validate(a *Serviceunit) error {
 	for k, v := range map[string]string{
-		"name":        a.Name,
-		"description": a.Description,
-		"group":       a.Group,
+		"name": a.Name,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
@@ -176,10 +181,10 @@ func (s *Service) Validate(a *Serviceunit) error {
 		if len(a.DatasourceID.ID) == 0 {
 			return fmt.Errorf("datasource is null")
 		} else {
-			if ds, err := s.checkDatasource(&a.DatasourceID); err != nil {
+			if _, err := s.checkDatasource(&a.DatasourceID); err != nil {
 				return fmt.Errorf("error datasource: %+v", err)
 			} else {
-				a.Datasource = *ds
+				//a.Datasource = *ds
 			}
 		}
 	case v1.WebService:

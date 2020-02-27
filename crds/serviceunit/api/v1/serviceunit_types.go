@@ -17,7 +17,7 @@ package v1
 
 import (
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
-	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
+	//datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -32,14 +32,14 @@ type ServiceunitSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Name         string                `json:"name"`
-	Group        Group                 `json:"group"`
-	Type         ServiceType           `json:"type"`
-	DatasourceID Datasource            `json:"datasourcesID,omitempty"`
-	Datasource   datav1.DatasourceSpec `json:"datasources,omitempty"`
-	Users        []apiv1.User          `json:"users"`
-	APIs         []Api                 `json:"apis"`
-	Description  string                `json:"description"`
+	Name         string      `json:"name"`
+	Group        Group       `json:"group"`
+	Type         ServiceType `json:"type"`
+	DatasourceID Datasource  `json:"datasourcesID,omitempty"`
+	//Datasource   datav1.DatasourceSpec `json:"datasources,omitempty"`
+	Users       []apiv1.User `json:"users"`
+	APIs        []Api        `json:"apis"`
+	Description string       `json:"description"`
 	//KongInfo
 	KongService KongServiceInfo `json:"kongServiceInfo"`
 }
@@ -56,8 +56,19 @@ type KongServiceInfo struct {
 }
 
 type Datasource struct {
-	ID      string `json:"id"`
-	GroupID string `json:"groupId"`
+	ID      string  `json:"id"`
+	Name    string  `json:"name"`
+	GroupID *string `json:"group,omitempty"`
+
+	// never stored in crds
+	DataWarehouse *DataWarehouse `json:"dataWarehouse,omitempty"`
+}
+
+type DataWarehouse struct {
+	DatabaseName        string `json:"databaseName"`
+	DatabaseDisplayName string `json:"databaseDisplayName"`
+	SubjectName         string `json:"subjectName"`
+	SubjectDisplayName  string `json:"subjectDisplayName"`
 }
 
 type Group struct {
