@@ -105,7 +105,7 @@ func (s *Service) PublishServiceunit(id string, published bool) (*Serviceunit, e
 
 func (s *Service) Create(su *v1.Serviceunit) (*v1.Serviceunit, error) {
 	if group, ok := su.ObjectMeta.Labels[v1.GroupLabel]; !ok {
-		return nil, fmt.Errorf("group not found")
+		//return nil, fmt.Errorf("group not found")
 	} else {
 		if _, err := s.GetGroup(group); err != nil {
 			return nil, fmt.Errorf("get group error: %+v", err)

@@ -162,9 +162,7 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, opts ...ut
 // check create parameters
 func (s *Service) Validate(a *Serviceunit) error {
 	for k, v := range map[string]string{
-		"name":        a.Name,
-		"description": a.Description,
-		"group":       a.Group,
+		"name": a.Name,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)

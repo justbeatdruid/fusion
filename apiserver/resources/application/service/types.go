@@ -118,8 +118,7 @@ func ToListModel(items *v1.ApplicationList, groups map[string]string, opts ...ut
 
 func (s *Service) Validate(a *Application) error {
 	for k, v := range map[string]string{
-		"name":        a.Name,
-		"description": a.Description,
+		"name": a.Name,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
