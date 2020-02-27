@@ -262,6 +262,19 @@ func (s *Service) assignment(target *v1.Serviceunit, reqData interface{}) error 
 		}
 		target.ObjectMeta.Labels[v1.GroupLabel] = source.Group
 	}
+	if _, ok := data["type"]; ok {
+		if target.Spec.Type != source.Type {
+			return fmt.Errorf("type err")
+		}
+	}
+	if _, ok := data["kongService"]; ok {
+		target.Spec.KongService.Host = source.KongSevice.Host
+		target.Spec.KongService.Port = source.KongSevice.Port
+		target.Spec.KongService.Protocol = source.KongSevice.Protocol
+	}
+	if _, ok := data["datasources"]; ok {
+		target.Spec.DatasourceID.ID = source.DatasourceID.ID
+	}
 	if target.Spec.Users == nil {
 		target.Spec.Users = make([]apiv1.User, 0)
 	}

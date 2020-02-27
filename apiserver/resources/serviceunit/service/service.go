@@ -143,6 +143,7 @@ func (s *Service) PatchServiceunit(id string, data interface{}) (*Serviceunit, e
 	if err = s.assignment(su, data); err != nil {
 		return nil, err
 	}
+	su.Status.Status = v1.Update
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(su)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
