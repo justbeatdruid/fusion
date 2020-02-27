@@ -21,8 +21,8 @@ func newController(cfg *config.Config) *controller {
 }
 
 type Wrapped struct {
-	Code    int                `json:"code"`
-	Message string             `json:"message"`
+	Code    int                 `json:"code"`
+	Message string              `json:"message"`
 	Data    *service.Topicgroup `json:"data,omitempty"`
 }
 
@@ -36,8 +36,8 @@ type DeleteResponse = Wrapped
 }*/
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int                  `json:"code"`
-	Message string               `json:"message"`
+	Code    int                   `json:"code"`
+	Message string                `json:"message"`
 	Data    []*service.Topicgroup `json:"data"`
 }
 type PingResponse = DeleteResponse

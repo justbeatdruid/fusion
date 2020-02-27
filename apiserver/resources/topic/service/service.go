@@ -73,6 +73,7 @@ func (s *Service) DeleteAllTopics() ([]*Topic, error) {
 	}
 	return ToListModel(tps), nil
 }
+
 //带时间查询
 func (s *Service) ListMessagesTime(topicUrl string, start int64, end int64) ([]Message, error) {
 	messages, err := s.ListTopicMessagesTime(topicUrl, start, end)
@@ -81,6 +82,7 @@ func (s *Service) ListMessagesTime(topicUrl string, start int64, end int64) ([]M
 	}
 	return messages, nil
 }
+
 //不带时间查询
 func (s *Service) ListMessages(topicUrl string) ([]Message, error) {
 	messages, err := s.ListTopicMessages(topicUrl)
@@ -244,6 +246,7 @@ func (s *Service) ListTopicMessagesTime(topicUrl string, start int64, end int64)
 	}
 	return messageStructs, nil
 }
+
 //不带时间查询topic中的所有消息
 func (s *Service) ListTopicMessages(topicUrl string) ([]Message, error) {
 	// Instantiate a Pulsar client
