@@ -174,7 +174,8 @@ func (c *controller) OfflineApi(req *restful.Request) (int, interface{}) {
 func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application)); err != nil {
+	name := req.QueryParameter("name")
+	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application), util.WithNameLike(name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list api error: %+v", err).Error(),

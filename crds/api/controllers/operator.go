@@ -33,6 +33,7 @@ type RequestBody struct {
 	StripPath bool      `json:"strip_path"`
 	Hosts     []string  `json:"hosts"`
 	Methods   []string  `json:"methods"`
+	Name      string    `json:"name"`
 }
 
 // {"success":true,"code":200,"message":"请求成功","data":{"targetDbType":"MySQL","targetDbIp":"192.168.100.103","targetDbPort":"3306","targetDbUser":"root","targetDbPass":"Pass1234","targetDbName":["POSTGRESQL_public","POSTGRESQL_testschema"]},"pageInfo":null,"ext":null}
@@ -236,12 +237,17 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	//API创建时路由信息 数据后端使用 /api/v1/apis/{id}/data web后端使用传入参数
 	protocols := []string{}
 	protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
+	methods := []string{}
+	methods = append(methods, strings.ToUpper(string(db.Spec.Method)))
 	paths := []string{}
 	//替换ID
 	id := db.Spec.Serviceunit.KongID
 	requestBody := &RequestBody{}
 	requestBody.Service = ServiceID{id}
+	//请求协议及方法使用公共请求参数
 	requestBody.Protocols = protocols
+	requestBody.Methods = methods
+	requestBody.Name = db.ObjectMeta.Name
 	//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
 	requestBody.StripPath = false
 	if db.Spec.Serviceunit.Type == "data" {
@@ -253,11 +259,7 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 		if len(db.Spec.KongApi.Hosts) != 0 {
 			requestBody.Hosts = db.Spec.KongApi.Hosts
 		}
-		if len(db.Spec.KongApi.Methods) != 0 {
-			requestBody.Methods = db.Spec.KongApi.Methods
-		}
 	}
-
 	responseBody := &ResponseBody{}
 	klog.Infof("begin send create route requeset body: %+v", responseBody)
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
@@ -368,6 +370,7 @@ func (r *Operator) DeleteRouteByKong(db *nlptv1.Api) (err error) {
 	if response.StatusCode != 204 {
 		return fmt.Errorf("request for delete api error: receive wrong status code: %d", response.StatusCode)
 	}
+
 	return nil
 }
 
@@ -482,6 +485,10 @@ func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api) (err error) {
 	requestBody := &RequestBody{}
 	requestBody.Service = ServiceID{id}
 	requestBody.Protocols = protocols
+	if len(db.Spec.KongApi.Methods) != 0 {
+		requestBody.Methods = db.Spec.KongApi.Methods
+	}
+	requestBody.Name = db.ObjectMeta.Name
 	//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
 	requestBody.StripPath = false
 	if db.Spec.Serviceunit.Type == "data" {
@@ -492,9 +499,6 @@ func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api) (err error) {
 		requestBody.Paths = db.Spec.KongApi.Paths
 		if len(db.Spec.KongApi.Hosts) != 0 {
 			requestBody.Hosts = db.Spec.KongApi.Hosts
-		}
-		if len(db.Spec.KongApi.Methods) != 0 {
-			requestBody.Methods = db.Spec.KongApi.Methods
 		}
 	}
 	responseBody := &ResponseBody{}
@@ -512,6 +516,28 @@ func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api) (err error) {
 	klog.Infof("update route info methods:%v, paths:%v, hosts:%v", responseBody.Methods, responseBody.Paths, responseBody.Hosts)
 	return nil
 }
+
+func (r *Operator) DeletePluginByKong(pluginId string) (err error) {
+	klog.Infof("begin delete plugin %s", pluginId)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", pluginId)).End()
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+
+	if len(errs) > 0 {
+		return fmt.Errorf("request for delete plugin error: %+v", errs)
+	}
+
+	klog.V(5).Infof("delete plugin response code: %d%s", response.StatusCode, string(body))
+	if response.StatusCode != 204 {
+		return fmt.Errorf("request for delete api error: receive wrong status code: %d", response.StatusCode)
+	}
+	return nil
+}
+
 func (r *Operator) UpdateRouteByKong(db *nlptv1.Api) (err error) {
 	klog.Infof("Enter UpdateRouteByKong name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
 	rsp, errs := r.getRouteInfoFromKong(db)
@@ -521,11 +547,35 @@ func (r *Operator) UpdateRouteByKong(db *nlptv1.Api) (err error) {
 	if SliceEq(rsp.Hosts, db.Spec.KongApi.Hosts) && SliceEq(rsp.Paths, db.Spec.KongApi.Paths) &&
 		SliceEq(rsp.Methods, db.Spec.KongApi.Methods) && SliceEq(rsp.Protocols, db.Spec.KongApi.Protocols) {
 		klog.Infof("no need update route info")
-		return nil
 	} else {
 		if errs := r.UpdateRouteInfoFromKong(db); errs != nil {
 			return fmt.Errorf("request for get route info error: %+v", errs)
 		}
+	}
+	//更新鉴权方式 无鉴权到APP鉴权 添加插件
+	if len(db.Spec.KongApi.JwtID) == 0 && db.Spec.AuthType == nlptv1.APPAUTH {
+		if err := r.AddRouteJwtByKong(db); err != nil {
+			klog.Infof("request for add route jwt error: %+v", err)
+			return fmt.Errorf("request for add route jwt error: %+v", err)
+		}
+		if err := r.AddRouteAclByKong(db); err != nil {
+			klog.Infof("request for add route acl error: %+v", err)
+			return fmt.Errorf("request for add route acl error: %+v", err)
+		}
+	}
+	//更新鉴权方式 APP鉴权到无鉴权 删除插件
+	if len(db.Spec.KongApi.JwtID) != 0 && db.Spec.AuthType == nlptv1.NOAUTH {
+		if err := r.DeletePluginByKong(db.Spec.KongApi.JwtID); err != nil {
+			klog.Infof("request for delete route jwt error: %+v", err)
+			return fmt.Errorf("request for delete route jwt error: %+v", err)
+		}
+		(*db).Spec.KongApi.JwtID = ""
+
+		if err := r.DeletePluginByKong(db.Spec.KongApi.AclID); err != nil {
+			klog.Infof("request for delete route acl error: %+v", err)
+			return fmt.Errorf("request for delete route acl error: %+v", err)
+		}
+		(*db).Spec.KongApi.AclID = ""
 	}
 	return nil
 }

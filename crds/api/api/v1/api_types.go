@@ -153,7 +153,7 @@ const (
 type AuthType string
 
 const (
-	NOAUTH  AuthType = "NOAUTR"
+	NOAUTH  AuthType = "NOAUTH"
 	APPAUTH AuthType = "APPAUTH"
 )
 
@@ -196,14 +196,24 @@ type Attribute struct {
 	FailureExample string `json:"failureExample"`
 }
 
-func ParameterFromQuery(w dwv1.WhereField) ApiParameter {
+func ParameterFromWhere(w dwv1.WhereField) ApiParameter {
 	ap := ApiParameter{
 		Name:        w.ParamName(),
-		Type:        ParameterType(w.Type),
+		Type:        "TODO",
 		Operator:    Operator(w.Operator),
 		Example:     w.Example,
 		Description: w.Description,
 		Required:    w.Required,
+	}
+	return ap
+}
+
+func ParameterFromQuery(q dwv1.QueryField) ApiParameter {
+	ap := ApiParameter{
+		Name:        q.ParamName(),
+		Type:        "TODO",
+		Example:     "TODO",
+		Description: "TODO",
 	}
 	return ap
 }

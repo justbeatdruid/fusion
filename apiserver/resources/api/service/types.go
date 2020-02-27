@@ -9,8 +9,11 @@ import (
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	dwv1 "github.com/chinamobile/nlpt/crds/api/datawarehouse/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/klog"
 )
 
 type Api struct {
@@ -19,23 +22,24 @@ type Api struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 
-	Serviceunit   v1.Serviceunit    `json:"serviceunit"`
-	Applications  []v1.Application  `json:"applications"`
-	Users         []v1.User         `json:"users"`
-	Frequency     int               `json:"frequency"`
-	Method        v1.Method         `json:"method"`
-	Protocol      v1.Protocol       `json:"protocol"`
-	ReturnType    v1.ReturnType     `json:"returnType"`
-	ApiFields     []v1.Field        `json:"apiFields"`
-	Query         *dwv1.Query       `json:"dataserviceQuery,omitempty"`
-	ApiParameters []v1.ApiParameter `json:"apiParameters"`
-	WebParams     []v1.WebParams    `json:"webParams"`
-	ApiType       v1.ApiType        `json:"apiType"`
-	AuthType      v1.AuthType       `json:"authType"`
-	ApiAttribute  v1.Attribute      `json:"apiAttribute"`
-	Traffic       v1.Traffic        `json:"traffic"`
-	KongApi       v1.KongApiInfo    `json:"KongApi"`
-	Restriction   v1.Restriction    `json:"restriction"`
+	Serviceunit           v1.Serviceunit    `json:"serviceunit"`
+	Applications          []v1.Application  `json:"applications"`
+	Users                 []v1.User         `json:"users"`
+	Frequency             int               `json:"frequency"`
+	Method                v1.Method         `json:"method"`
+	Protocol              v1.Protocol       `json:"protocol"`
+	ReturnType            v1.ReturnType     `json:"returnType"`
+	ApiFields             []v1.Field        `json:"apiFields"`
+	Query                 *dwv1.Query       `json:"dataserviceQuery,omitempty"`
+	ApiRequestParameters  []v1.ApiParameter `json:"apiRequestParameters"`
+	ApiResponseParameters []v1.ApiParameter `json:"apiResponseParameters"`
+	WebParams             []v1.WebParams    `json:"webParams"`
+	ApiType               v1.ApiType        `json:"apiType"`
+	AuthType              v1.AuthType       `json:"authType"`
+	ApiAttribute          v1.Attribute      `json:"apiAttribute"`
+	Traffic               v1.Traffic        `json:"traffic"`
+	KongApi               v1.KongApiInfo    `json:"KongApi"`
+	Restriction           v1.Restriction    `json:"restriction"`
 
 	Status v1.Status `json:"status"`
 	//Publish          v1.Publish    `json:"publish"`
@@ -128,13 +132,15 @@ func ToModel(obj *v1.Api) *Api {
 	}
 
 	// for data service (rdb)
-	p := []v1.ApiParameter{}
-	for _, f := range model.ApiFields {
-		if f.ParameterInfo != nil {
-			p = append(p, *f.ParameterInfo)
+	if len(model.ApiFields) > 0 {
+		p := []v1.ApiParameter{}
+		for _, f := range model.ApiFields {
+			if f.ParameterInfo != nil {
+				p = append(p, *f.ParameterInfo)
+			}
 		}
+		model.ApiRequestParameters = p
 	}
-	model.ApiParameters = p
 
 	// web params
 	if model.WebParams == nil {
@@ -142,15 +148,24 @@ func ToModel(obj *v1.Api) *Api {
 	}
 
 	// for data service (datawarehouse api)
-	p = []v1.ApiParameter{}
 	if obj.Spec.Query != nil {
+		klog.V(5).Infof("api query field not null, ready to build api parameters")
+		p := []v1.ApiParameter{}
 		for _, w := range obj.Spec.Query.WhereFieldInfo {
+			klog.V(5).Infof("build req params from where %+v", w)
 			if w.ParameterEnabled {
-				p = append(p, v1.ParameterFromQuery(w))
+				p = append(p, v1.ParameterFromWhere(w))
 			}
 		}
+		model.ApiRequestParameters = p
+
+		q := []v1.ApiParameter{}
+		for _, f := range obj.Spec.Query.QueryFieldList {
+			klog.V(5).Infof("build resp params from field %+v", f)
+			q = append(q, v1.ParameterFromQuery(f))
+		}
+		model.ApiResponseParameters = q
 	}
-	model.ApiParameters = p
 
 	for l := range obj.ObjectMeta.Labels {
 		if v1.IsApplicationLabel(l) {
@@ -160,12 +175,25 @@ func ToModel(obj *v1.Api) *Api {
 	return model
 }
 
-func ToListModel(items *v1.ApiList) []*Api {
-	var api []*Api = make([]*Api, len(items.Items))
-	for i := range items.Items {
-		api[i] = ToModel(&items.Items[i])
+func ToListModel(items *v1.ApiList, opts ...util.OpOption) []*Api {
+	if len(opts) > 0 {
+		nameLike := util.OpList(opts...).NameLike()
+		if len(nameLike) > 0 {
+			var apis []*Api = make([]*Api, 0)
+			for i := range items.Items {
+				api := ToModel(&items.Items[i])
+				if strings.Contains(api.Name, nameLike) {
+					apis = append(apis, api)
+				}
+			}
+			return apis
+		}
 	}
-	return api
+	var apis []*Api = make([]*Api, len(items.Items))
+	for i := range items.Items {
+		apis[i] = ToModel(&items.Items[i])
+	}
+	return apis
 }
 
 func (s *Service) Validate(a *Api) error {
@@ -256,6 +284,13 @@ func (s *Service) Validate(a *Api) error {
 				return fmt.Errorf("%dth parameter location is wrong: %s", i, p.Location)
 			}
 		}
+		// kongapi paths  正常返回值
+		if len(a.KongApi.Paths) == 0 {
+			return fmt.Errorf("api paths is null. ")
+		}
+		if len(a.ApiAttribute.NormalExample) == 0 {
+			return fmt.Errorf("normal example is null.")
+		}
 	}
 	a.UpdatedAt = time.Now()
 
@@ -301,6 +336,7 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	}
 	if _, ok := data["method"]; ok {
 		target.Spec.Method = source.Method
+		target.Spec.KongApi.Methods = []string{strings.ToUpper(string(target.Spec.Method))}
 	}
 	//更新协议
 	if _, ok := data["protocol"]; ok {
@@ -322,13 +358,36 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	if _, ok = data["authType"]; ok {
 		target.Spec.AuthType = source.AuthType
 	}
-	if _, ok = data["KongApi"]; ok {
-		target.Spec.KongApi.Methods = source.KongApi.Methods
-		target.Spec.KongApi.Paths = source.KongApi.Paths
-		target.Spec.KongApi.Hosts = source.KongApi.Hosts
+
+	if kongInfo, ok := data["KongApi"]; ok {
+		if config, ok := kongInfo.(map[string]interface{}); ok {
+			if _, ok = config["paths"]; ok {
+				target.Spec.KongApi.Paths = source.KongApi.Paths
+			}
+			if _, ok = config["hosts"]; ok {
+				target.Spec.KongApi.Hosts = source.KongApi.Hosts
+			}
+		}
 	}
-	if _, ok = data["apiAttribute"]; ok {
-		target.Spec.ApiAttribute = source.ApiAttribute
+
+	if apiInfo, ok := data["apiAttribute"]; ok {
+		if config, ok := apiInfo.(map[string]interface{}); ok {
+			if _, ok = config["matchMode"]; ok {
+				target.Spec.ApiAttribute.MatchMode = source.ApiAttribute.MatchMode
+			}
+			if _, ok = config["tags"]; ok {
+				target.Spec.ApiAttribute.Tags = source.ApiAttribute.Tags
+			}
+			if _, ok = config["cors"]; ok {
+				target.Spec.ApiAttribute.Cors = source.ApiAttribute.Cors
+			}
+			if _, ok = config["normalExample"]; ok {
+				target.Spec.ApiAttribute.NormalExample = source.ApiAttribute.NormalExample
+			}
+			if _, ok = config["failureExample"]; ok {
+				target.Spec.ApiAttribute.FailureExample = source.ApiAttribute.FailureExample
+			}
+		}
 	}
 
 	target.Status.UpdatedAt = metav1.Now()

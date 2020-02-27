@@ -1,1 +1,1 @@
-curl localhost:8001/api/v1/datasources -v
+curl "localhost:8001/api/v1/datasources?$*" -v

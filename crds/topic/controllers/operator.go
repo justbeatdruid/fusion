@@ -71,8 +71,16 @@ func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
 //DeleteTopic 调用Pulsar的Restful Admin API，删除Topic
 func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
-	topicUrl := fmt.Sprintf(persistentTopicUrl, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
+	url := persistentTopicUrl
+	if topic.Spec.IsNonPersistent {
+		url = nonPersistentTopicUrl
+	}
+
+	if topic.Spec.Partition > 1 {
+		url += "/partitions"
+	}
+	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
+
 	topicUrl = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl)
 	request = request.Delete(topicUrl)
 	response, body, errs := request.Send("").EndStruct("")

@@ -3,6 +3,8 @@ package service
 import (
 	"database/sql"
 	"fmt"
+	"strconv"
+
 	//api "github.com/chinamobile/nlpt/apiserver/resources/api/service"
 	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
@@ -160,7 +162,7 @@ func connectMysql(ds *v1.Datasource, querySql string) ([]map[string]string, erro
 	buildPath.WriteString("@tcp(")
 	buildPath.WriteString(ds.Spec.RDB.Connect.Host)
 	buildPath.WriteString(":")
-	buildPath.WriteString(string(ds.Spec.RDB.Connect.Port))
+	buildPath.WriteString(strconv.Itoa(ds.Spec.RDB.Connect.Port))
 	buildPath.WriteString(")/")
 	buildPath.WriteString(ds.Spec.RDB.Database)
 	path := buildPath.String()
@@ -174,6 +176,8 @@ func connectMysql(ds *v1.Datasource, querySql string) ([]map[string]string, erro
 	//设置上数据库最大闲置连接数
 	db.SetMaxIdleConns(10)
 	//验证连接
+	fmt.Println("lianjia:" + path)
+	fmt.Println(db)
 	if err := db.Ping(); err != nil {
 		fmt.Println("open database fail")
 		return nil, fmt.Errorf("check database fail")
