@@ -33,6 +33,7 @@ type Service struct {
 	datasourceClient  dynamic.NamespaceableResourceInterface
 
 	dataService dw.Connector
+
 }
 
 func NewService(client dynamic.Interface, dsConfig *config.DataserviceConfig) *Service {
@@ -43,6 +44,7 @@ func NewService(client dynamic.Interface, dsConfig *config.DataserviceConfig) *S
 		datasourceClient:  client.Resource(dsv1.GetOOFSGVR()),
 
 		dataService: dw.NewConnector(dsConfig.Host, dsConfig.Port),
+
 	}
 }
 

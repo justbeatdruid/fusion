@@ -20,6 +20,8 @@ type Config struct {
 
 	DatasourceConfig  *DatasourceConfig
 	DataserviceConfig *DataserviceConfig
+
+	TopicConfig *TopicConfig
 }
 
 func (c *Config) GetDynamicClient() dynamicclient.Interface {

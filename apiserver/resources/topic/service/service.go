@@ -12,6 +12,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 	"log"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"strconv"
 )
 
 var crdNamespace = "default"
@@ -24,12 +26,16 @@ var oofsGVR = schema.GroupVersionResource{
 
 type Service struct {
 	client dynamic.NamespaceableResourceInterface
+	ip string
+	host int
 }
 
-func NewService(client dynamic.Interface) *Service {
-	return &Service{client: client.Resource(oofsGVR)}
+func NewService(client dynamic.Interface, topConfig *config.TopicConfig) *Service {
+	return &Service{client: client.Resource(oofsGVR),
+		ip:   topConfig.Host,
+		host: topConfig.Port,
+	}
 }
-
 func (s *Service) CreateTopic(model *Topic) (*Topic, error) {
 	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
@@ -205,8 +211,10 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 //带时间查询topic中的所有消息
 func (s *Service) ListTopicMessagesTime(topicUrl string, start int64, end int64) ([]Message, error) {
 	// Instantiate a Pulsar client
+	ip := s.ip
+	host := s.host
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://10.160.32.24:30003",
+		URL: "pulsar://"+ip+":"+strconv.Itoa(host),
 	})
 	if err != nil {
 		log.Fatalf("Could not create client: %v", err)
@@ -250,8 +258,10 @@ func (s *Service) ListTopicMessagesTime(topicUrl string, start int64, end int64)
 //不带时间查询topic中的所有消息
 func (s *Service) ListTopicMessages(topicUrl string) ([]Message, error) {
 	// Instantiate a Pulsar client
+	ip := s.ip
+	host := s.host
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://10.160.32.24:30003",
+		URL: "pulsar://"+ip+":"+strconv.Itoa(host),
 	})
 	if err != nil {
 		log.Fatalf("Could not create client: %v", err)
