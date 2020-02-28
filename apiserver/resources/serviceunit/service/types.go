@@ -141,6 +141,9 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[
 				if !strings.Contains(item.Spec.Name, nameLike) {
 					continue
 				}
+				if gid, ok := item.ObjectMeta.Labels[v1.GroupLabel]; ok {
+					item.Spec.Group.ID = gid
+				}
 				if gname, ok := groups[item.Spec.Group.ID]; ok {
 					item.Spec.Group.Name = gname
 				}
@@ -155,6 +158,9 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[
 	}
 	var sus []*Serviceunit = make([]*Serviceunit, len(items.Items))
 	for i, item := range items.Items {
+		if gid, ok := item.ObjectMeta.Labels[v1.GroupLabel]; ok {
+			item.Spec.Group.ID = gid
+		}
 		if gname, ok := groups[item.Spec.Group.ID]; ok {
 			item.Spec.Group.Name = gname
 		}

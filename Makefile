@@ -68,23 +68,23 @@ apiserver-binary:
 	CGO_CFLAGS="-I$(shell pwd)/include" CGO_LDFLAGS="-L$(shell pwd)/lib" go build -o bin/fusion-apiserver cmd/apiserver/apiserver.go
 
 datasource-binary:
-	@if rm bin/datasource-controller-manager;then test 0;fi
+	@if rm bin/fusion-datasource-controller-manager;then test 0;fi
 	go build -o bin/fusion-datasource-controller-manager cmd/datasource-controller-manager/datasource-controller-manager.go
 
 application-binary:
-	@if rm bin/application-controller-manager;then test 0;fi
+	@if rm bin/fusion-application-controller-manager;then test 0;fi
 	go build -o bin/fusion-application-controller-manager cmd/application-controller-manager/application-controller-manager.go
 
 serviceunit-binary:
-	@if rm bin/serviceunit-controller-manager;then test 0;fi
+	@if rm bin/fusion-serviceunit-controller-manager;then test 0;fi
 	go build -o bin/fusion-serviceunit-controller-manager cmd/serviceunit-controller-manager/serviceunit-controller-manager.go
 
 api-binary:
-	@if rm bin/api-controller-manager;then test 0;fi
+	@if rm bin/fusion-api-controller-manager;then test 0;fi
 	go build -o bin/fusion-api-controller-manager cmd/api-controller-manager/api-controller-manager.go
 
 apply-binary:
-	@if rm bin/apply-controller-manager;then test 0;fi
+	@if rm bin/fusion-apply-controller-manager;then test 0;fi
 	go build -o bin/fusion-apply-controller-manager cmd/apply-controller-manager/apply-controller-manager.go
 
 apiserver-run:
