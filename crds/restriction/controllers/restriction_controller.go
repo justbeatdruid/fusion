@@ -38,11 +38,56 @@ type RestrictionReconciler struct {
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=restrictions/status,verbs=get;update;patch
 
 func (r *RestrictionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
-	_ = r.Log.WithValues("restriction", req.NamespacedName)
+	ctx := context.Background()
+	_ = r.Log.WithValues("trafficcontrol", req.NamespacedName)
 
-	// your logic here
+	restriction := &nlptv1.Restriction{}
+	if err := r.Get(ctx, req.NamespacedName, restriction); err != nil {
+		klog.Errorf("cannot get restriction of ctrl req: %+v", err)
+		return ctrl.Result{}, nil
+	}
+	klog.Infof("get new restriction event: %+v", *restriction)
 
+	if restriction.Status.Status == nlptv1.Bind {
+		restriction.Status.Status = nlptv1.Binding
+		klog.Infof("restriction is binding")
+		if restriction.Spec.Type == nlptv1.IP {
+			if err := r.Operator.AddRestrictionByKong(restriction); err != nil {
+				klog.Infof("restriction bind err")
+				restriction.Status.Status = nlptv1.Error
+				restriction.Status.Message = err.Error()
+			} else {
+				klog.Infof("restriction bind sunccess")
+				restriction.Status.Status = nlptv1.Binded
+				restriction.Status.Message = "success"
+			}
+		} else if restriction.Spec.Type == nlptv1.USER {
+			//ToDo
+		}
+		// update status
+		r.Update(ctx, restriction)
+	}
+
+	if restriction.Status.Status == nlptv1.UnBind {
+		restriction.Status.Status = nlptv1.UnBinding
+		//r.Update(ctx, trafficcontrol)
+		klog.Infof("restriction is unbinding")
+		if restriction.Spec.Type == nlptv1.IP {
+			if err := r.Operator.DeleteRestrictionByKong(restriction); err != nil {
+				klog.Infof("restriction unbind err")
+				restriction.Status.Status = nlptv1.Error
+				restriction.Status.Message = err.Error()
+			} else {
+				klog.Infof("restriction unbind sunccess")
+				restriction.Status.Status = nlptv1.UnBinded
+				restriction.Status.Message = "success"
+			}
+		} else  if  restriction.Spec.Type == nlptv1.USER {
+			//ToDo
+		}
+		// update status
+		r.Update(ctx, restriction)
+	}
 	return ctrl.Result{}, nil
 }
 
