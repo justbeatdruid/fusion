@@ -17,6 +17,7 @@ type Topic struct {
 	Partition       int       `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
 	IsNonPersistent bool      `json:"isNonPersistent"` //非持久化，默认为false，非必填topic
 	URL             string    `json:"url"`             //URL
+	CreateTime      int64      `json:"createTime""`    //创建Topic的时间戳
 	Status          v1.Status `json:"status"`
 	Message         string    `json:"message"`
 }
@@ -43,6 +44,7 @@ func ToAPI(app *Topic) *v1.Topic {
 		TopicGroup:      app.TopicGroup,
 		Partition:       app.Partition,
 		IsNonPersistent: app.IsNonPersistent,
+		CreatTime: 		 app.CreateTime,
 	}
 	status := app.Status
 	if len(status) == 0 {
