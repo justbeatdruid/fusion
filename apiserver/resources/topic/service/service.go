@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -11,7 +12,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
-	"log"
+	"strconv"
 )
 
 var crdNamespace = "default"
@@ -24,12 +25,16 @@ var oofsGVR = schema.GroupVersionResource{
 
 type Service struct {
 	client dynamic.NamespaceableResourceInterface
+	ip string
+	host int
 }
 
-func NewService(client dynamic.Interface) *Service {
-	return &Service{client: client.Resource(oofsGVR)}
+func NewService(client dynamic.Interface, topConfig *config.TopicConfig) *Service {
+	return &Service{client: client.Resource(oofsGVR),
+		ip:   topConfig.Host,
+		host: topConfig.Port,
+	}
 }
-
 func (s *Service) CreateTopic(model *Topic) (*Topic, error) {
 	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
@@ -75,8 +80,8 @@ func (s *Service) DeleteAllTopics() ([]*Topic, error) {
 }
 
 //带时间查询
-func (s *Service) ListMessagesTime(topicUrl string, start int64, end int64) ([]Message, error) {
-	messages, err := s.ListTopicMessagesTime(topicUrl, start, end)
+func (s *Service) ListMessagesTime(topicUrls []string, start int64, end int64) ([]Message, error) {
+	messages, err := s.ListTopicMessagesTime(topicUrls, start, end)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -84,13 +89,14 @@ func (s *Service) ListMessagesTime(topicUrl string, start int64, end int64) ([]M
 }
 
 //不带时间查询
-func (s *Service) ListMessages(topicUrl string) ([]Message, error) {
-	messages, err := s.ListTopicMessages(topicUrl)
+func (s *Service) ListMessages(topicUrls []string) ([]Message, error) {
+	messages, err := s.ListTopicMessages(topicUrls)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	return messages, nil
 }
+
 func (s *Service) Create(tp *v1.Topic) (*v1.Topic, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
 	if err != nil {
@@ -203,87 +209,94 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 }
 
 //带时间查询topic中的所有消息
-func (s *Service) ListTopicMessagesTime(topicUrl string, start int64, end int64) ([]Message, error) {
+func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int64) ([]Message, error) {
 	// Instantiate a Pulsar client
+	ip := s.ip
+	host := s.host
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://10.160.32.24:30003",
+		URL: "pulsar://"+ip+":"+strconv.Itoa(host),
 	})
 	if err != nil {
-		log.Fatalf("Could not create client: %v", err)
+		fmt.Printf("Could not create client: %v", err)
 	}
-	reader, err := client.CreateReader(pulsar.ReaderOptions{
-		Topic:          topicUrl,
-		StartMessageID: pulsar.EarliestMessage,
-	})
-	if err != nil {
-		log.Fatalf("Could not create reader: %v", err)
-	}
-
-	defer reader.Close()
+	defer client.Close()
 	var messageStructs []Message
 	var messageStruct Message
 	var timeStamp int64
-
-	ctx := context.Background()
-
-	for {
-		if flag, _ := reader.HasNext(); flag == false {
-			break
-		}
-		msg, err := reader.Next(ctx)
+	for _, topicUrl := range topicUrls {
+		reader, err := client.CreateReader(pulsar.ReaderOptions{
+			Topic:          topicUrl,
+			StartMessageID: pulsar.EarliestMessage,
+		})
 		if err != nil {
-			log.Fatalf("Error reading from topic: %v", err)
+			fmt.Println("create reader error")
+			continue
 		}
-		// Process the message
-		messageStruct.Time = msg.PublishTime()
-		timeStamp = messageStruct.Time.Unix()
-		if timeStamp >= start && timeStamp <= end {
+		ctx := context.Background()
+		for {
+			if flag, _ := reader.HasNext(); flag == false {
+				break
+			}
+			msg, err := reader.Next(ctx)
+			if err != nil {
+				fmt.Printf("Error reading from topic: %v", err)
+			}
+			// Process the message
+			messageStruct.TopicName = msg.Topic()
+			timeStamp = messageStruct.Time.Unix()
+			if timeStamp >= start && timeStamp <= end {
+				messageStruct.ID = msg.ID()
+				messageStruct.Messages = string(msg.Payload()[:])
+				messageStructs = append(messageStructs, messageStruct)
+			}
+		}
+		reader.Close()
+	}
+	return messageStructs, err
+}
+
+//不带时间查询多个topic中的所有消息
+func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
+	// Instantiate a Pulsar client
+	ip := s.ip
+	host := s.host
+	client, err := pulsar.NewClient(pulsar.ClientOptions{
+		URL: "pulsar://"+ip+":"+strconv.Itoa(host),
+	})
+	if err != nil {
+		fmt.Printf("Could not create client: %v", err)
+	}
+	defer client.Close()
+	var messageStructs []Message
+	var messageStruct Message
+	for _, topicUrl := range topicUrls {
+		fmt.Println(topicUrl)
+		reader, err := client.CreateReader(pulsar.ReaderOptions{
+			Topic:          topicUrl,
+			StartMessageID: pulsar.EarliestMessage,
+		})
+		if err != nil {
+			fmt.Println("create reader error")
+			continue
+		}
+		ctx := context.Background()
+		for {
+			if flag, _ := reader.HasNext(); flag == false {
+				break
+			}
+			msg, err := reader.Next(ctx)
+			if err != nil {
+				fmt.Printf("Error reading from topic: %v", err)
+			}
+			// Process the message
+			messageStruct.TopicName = msg.Topic()
+			messageStruct.Time = msg.PublishTime()
 			messageStruct.ID = msg.ID()
 			messageStruct.Messages = string(msg.Payload()[:])
 			messageStructs = append(messageStructs, messageStruct)
 		}
-
-	}
-	return messageStructs, nil
-}
-
-//不带时间查询topic中的所有消息
-func (s *Service) ListTopicMessages(topicUrl string) ([]Message, error) {
-	// Instantiate a Pulsar client
-	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://10.160.32.24:30003",
-	})
-	if err != nil {
-		log.Fatalf("Could not create client: %v", err)
-	}
-	reader, err := client.CreateReader(pulsar.ReaderOptions{
-		Topic:          topicUrl,
-		StartMessageID: pulsar.EarliestMessage,
-	})
-	if err != nil {
-		log.Fatalf("Could not create reader: %v", err)
+		reader.Close()
 	}
 
-	defer reader.Close()
-	var messageStructs []Message
-	var messageStruct Message
-
-	ctx := context.Background()
-
-	for {
-		if flag, _ := reader.HasNext(); flag == false {
-			break
-		}
-		msg, err := reader.Next(ctx)
-		if err != nil {
-			log.Fatalf("Error reading from topic: %v", err)
-		}
-		// Process the message
-		messageStruct.Time = msg.PublishTime()
-		messageStruct.ID = msg.ID()
-		messageStruct.Messages = string(msg.Payload()[:])
-		messageStructs = append(messageStructs, messageStruct)
-
-	}
-	return messageStructs, nil
+	return messageStructs, err
 }

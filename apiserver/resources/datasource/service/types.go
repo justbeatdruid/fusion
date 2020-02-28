@@ -19,9 +19,9 @@ type Datasource struct {
 	Namespace string  `json:"namespace"`
 	Type      v1.Type `json:"type"`
 
-	RDB *v1.RDB `json:"rdb"`
+	RDB *v1.RDB `json:"rdb,omitempty"`
 
-	DataWarehouse *dw.Database `json:"datawarehouse"`
+	DataWarehouse *dw.Database `json:"datawarehouse,omitempty"`
 
 	Status    v1.Status `json:"status"`
 	UpdatedAt time.Time `json:"updatedAt"`
@@ -120,7 +120,10 @@ func ToModel(obj *v1.Datasource) *Datasource {
 	case v1.DataWarehouseType:
 		if obj.Spec.DataWarehouse != nil {
 			ds.DataWarehouse = &dw.Database{
-				Name: obj.Spec.DataWarehouse.Name,
+				Name:               obj.Spec.DataWarehouse.Name,
+				DisplayName:        obj.Spec.DataWarehouse.DisplayName,
+				SubjectName:        obj.Spec.DataWarehouse.SubjectName,
+				SubjectDisplayName: obj.Spec.DataWarehouse.SubjectDisplayName,
 			}
 		} else {
 			klog.Errorf("datasource %s in type datawarehouse has no datawarehouse instance", obj.ObjectMeta.Name)

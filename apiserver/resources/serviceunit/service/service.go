@@ -51,7 +51,11 @@ func (s *Service) ListServiceunit(group string, opts ...util.OpOption) ([]*Servi
 	if err != nil {
 		return nil, fmt.Errorf("get groups error: %+v", err)
 	}
-	return ToListModel(sus, groupMap, opts...), nil
+	dataMap, err := s.GetDatasourceMap()
+	if err != nil {
+		return nil, fmt.Errorf("get datasource error: %+v", err)
+	}
+	return ToListModel(sus, groupMap, dataMap, opts...), nil
 }
 
 func (s *Service) GetServiceunit(id string) (*Serviceunit, error) {
@@ -105,7 +109,7 @@ func (s *Service) PublishServiceunit(id string, published bool) (*Serviceunit, e
 
 func (s *Service) Create(su *v1.Serviceunit) (*v1.Serviceunit, error) {
 	if group, ok := su.ObjectMeta.Labels[v1.GroupLabel]; !ok {
-		return nil, fmt.Errorf("group not found")
+		//return nil, fmt.Errorf("group not found")
 	} else {
 		if _, err := s.GetGroup(group); err != nil {
 			return nil, fmt.Errorf("get group error: %+v", err)
@@ -139,6 +143,7 @@ func (s *Service) PatchServiceunit(id string, data interface{}) (*Serviceunit, e
 	if err = s.assignment(su, data); err != nil {
 		return nil, err
 	}
+	su.Status.Status = v1.Update
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(su)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -279,6 +284,35 @@ func (s *Service) GetGroupMap() (map[string]string, error) {
 	m := make(map[string]string)
 	for _, su := range sus.Items {
 		m[su.ObjectMeta.Name] = su.Spec.Name
+	}
+	return m, nil
+}
+
+func (s *Service) GetDatasourceMap() (map[string]v1.Datasource, error) {
+	crd, err := s.datasourceClient.Namespace(crdNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	datas := &datav1.DatasourceList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), datas); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.datasourcelist: %+v", datas)
+	m := make(map[string]v1.Datasource)
+	for _, data := range datas.Items {
+		ds := v1.Datasource{
+			ID:   data.ObjectMeta.Name,
+			Name: data.Spec.Name,
+		}
+		if data.Spec.Type == datav1.DataWarehouseType && data.Spec.DataWarehouse != nil {
+			ds.DataWarehouse = &v1.DataWarehouse{
+				DatabaseName:        data.Spec.DataWarehouse.Name,
+				DatabaseDisplayName: data.Spec.DataWarehouse.DisplayName,
+				SubjectName:         data.Spec.DataWarehouse.SubjectName,
+				SubjectDisplayName:  data.Spec.DataWarehouse.SubjectDisplayName,
+			}
+		}
+		m[data.ObjectMeta.Name] = ds
 	}
 	return m, nil
 }

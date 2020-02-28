@@ -29,6 +29,10 @@ type ServerRunOptions struct {
 
 	Datasource  *DatasourceOptions
 	Dataservice *DataserviceOptions
+
+	Topic *TopicOptions
+
+
 }
 
 func NewServerRunOptions() *ServerRunOptions {
@@ -38,6 +42,7 @@ func NewServerRunOptions() *ServerRunOptions {
 
 		Datasource:  DefaultDatasourceOptions(),
 		Dataservice: DefaultDataserviceOptions(),
+		Topic: DefaultTopicOptions(),
 	}
 	if len(s.CrdNamespace) == 0 {
 		klog.Infof("cannot find environmnent MY_POD_NAMESPACE, use default")
@@ -50,6 +55,7 @@ func (s *ServerRunOptions) Flags() cliflag.NamedFlagSets {
 	fss := cliflag.NamedFlagSets{}
 	s.Datasource.AddFlags(fss.FlagSet("data source"))
 	s.Dataservice.AddFlags(fss.FlagSet("data service"))
+	s.Topic.AddFlags(fss.FlagSet("topic"))
 	kfset := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(kfset)
 	fss.FlagSet("klog").AddGoFlagSet(kfset)
@@ -105,6 +111,8 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 
 		DatasourceConfig:  appconfig.NewDatasourceConfig(s.Datasource.Supported),
 		DataserviceConfig: appconfig.NewDataserviceConfig(s.Dataservice.Host, s.Dataservice.Port),
+
+		TopicConfig: appconfig.NewTopicConfig(s.Topic.Host, s.Topic.Port),
 	}
 	return c, nil
 }

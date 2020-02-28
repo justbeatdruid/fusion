@@ -94,32 +94,38 @@ func ToListModel(items *v1.ApplicationList, groups map[string]string, opts ...ut
 		nameLike := util.OpList(opts...).NameLike()
 		if len(nameLike) > 0 {
 			var apps []*Application = make([]*Application, 0)
-			for i := range items.Items {
-				app := ToModel(&items.Items[i])
-				if gname, ok := groups[app.Group]; ok {
-					app.GroupName = gname
+			for _, item := range items.Items {
+				if !strings.Contains(item.Spec.Name, nameLike) {
+					continue
 				}
-				if strings.Contains(app.Name, nameLike) {
-					apps = append(apps, app)
+				if gid, ok := item.ObjectMeta.Labels[v1.GroupLabel]; ok {
+					item.Spec.Group.ID = gid
 				}
+				if gname, ok := groups[item.Spec.Group.ID]; ok {
+					item.Spec.Group.Name = gname
+				}
+				app := ToModel(&item)
+				apps = append(apps, app)
 			}
 			return apps
 		}
 	}
 	var apps []*Application = make([]*Application, len(items.Items))
-	for i := range items.Items {
-		apps[i] = ToModel(&items.Items[i])
-		if gname, ok := groups[apps[i].Group]; ok {
-			apps[i].GroupName = gname
+	for i, item := range items.Items {
+		if gid, ok := item.ObjectMeta.Labels[v1.GroupLabel]; ok {
+			item.Spec.Group.ID = gid
 		}
+		if gname, ok := groups[item.Spec.Group.ID]; ok {
+			item.Spec.Group.Name = gname
+		}
+		apps[i] = ToModel(&item)
 	}
 	return apps
 }
 
 func (s *Service) Validate(a *Application) error {
 	for k, v := range map[string]string{
-		"name":        a.Name,
-		"description": a.Description,
+		"name": a.Name,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
