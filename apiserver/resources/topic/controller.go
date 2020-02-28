@@ -176,58 +176,173 @@ func (ts TopicList) GetItem(i int) (interface{}, error) {
 
 //查询topic的消息
 func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) {
-	topicUrl := req.QueryParameter("topicUrl")
+	topicName := req.QueryParameter("topicName")
 	startTime := req.QueryParameter("startTime")
 	endTime := req.QueryParameter("endTime")
-	page := req.QueryParameter("page")
-	size := req.QueryParameter("size")
-	//startTime、endTime参数都存在
-	if len(startTime) > 0 && len(endTime) > 0 {
-		start, _ := strconv.ParseInt(startTime, 10, 64)
-		end, _ := strconv.ParseInt(endTime, 10, 64)
-		if messages, err := c.service.ListMessagesTime(topicUrl, start, end); err != nil {
-			return http.StatusInternalServerError, &MessageResponse{
-				Code:    1,
-				Message: fmt.Errorf("list database error: %+v", err).Error(),
-			}
-		} else {
-			var ms MessageList = messages
-			data, err := util.PageWrap(ms, page, size)
-			if err != nil {
-				return http.StatusInternalServerError, &MessageResponse{
-					Code:    1,
-					Message: fmt.Sprintf("page parameter error: %+v", err),
-				}
-			}
-			return http.StatusOK, &MessageResponse{
-				Code:     0,
-				Messages: data,
-			}
-		}
-	} else {
-		if messages, err := c.service.ListMessages(topicUrl); err != nil {
-			return http.StatusInternalServerError, &MessageResponse{
-				Code:    1,
-				Message: fmt.Errorf("list database error: %+v", err).Error(),
-			}
-		} else {
-			var ms MessageList = messages
-			data, err := util.PageWrap(ms, page, size)
-			if err != nil {
-				return http.StatusInternalServerError, &MessageResponse{
-					Code:    1,
-					Message: fmt.Sprintf("page parameter error: %+v", err),
-				}
-			}
-			return http.StatusOK, &MessageResponse{
-				Code:     0,
-				Messages: data,
-			}
+	topicGroup := req.QueryParameter("topicGroup")
+	//先查出所有topic的信息
+	tp, err := c.service.ListTopic()
+	if err!=nil{
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:    1,
+			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	}
-
+	//接收参数只有topicName
+	if len(topicName)>0&&len(topicGroup)==0&&len(startTime)==0&&len(endTime)==0 {
+		//通过topicName字段来匹配topic
+		tps := c.ListTopicByTopicName(topicName, tp)
+		var tpUrls []string
+		//获取topic的url
+		for _, tp := range tps{
+			tpUrls = append(tpUrls, tp.URL)
+		}
+		httpStatus, messageResponse := c.ListMessagesByTopicUrl(tpUrls,req)
+		return httpStatus,messageResponse
+	}else if len(topicGroup)>0&&len(topicName)==0&&len(startTime)==0&&len(endTime)==0{//接收参数只有topicGroup
+		//通过topicGroup字段来匹配topic
+		tps := c.ListTopicByTopicGroup(topicGroup, tp)
+		var tpUrls []string
+		for _, tp := range tps{
+			tpUrls = append(tpUrls, tp.URL)
+		}
+		httpStatus, messageResponse := c.ListMessagesByTopicUrl(tpUrls,req)
+		return httpStatus,messageResponse
+	} else if len(startTime)>0 && len(endTime)>0 && len(topicGroup)==0&&len(topicName)==0{//接收参数只有时间
+		start, _ := strconv.ParseInt(startTime, 10, 64)
+		end, _ := strconv.ParseInt(endTime, 10, 64)
+		var tpUrls []string
+		for _, tp := range tp{
+			tpUrls = append(tpUrls, tp.URL)
+		}
+		httpStatus, messageResponse := c.ListMessagesByTopicUrlTime(tpUrls, start, end, req)
+		return httpStatus,messageResponse
+	}else if len(topicName)>0 && len(topicGroup)>0 && len(startTime)==0 && len(endTime)==0{//接收参数有topicName,topicGroup
+		tps := c.ListTopicByTopicGroupAndName(topicGroup, topicName, tp)
+		var tpUrls []string
+		for _, tp := range tps{
+			tpUrls = append(tpUrls, tp.URL)
+		}
+		httpStatus, messageResponse := c.ListMessagesByTopicUrl(tpUrls,req)
+		return httpStatus,messageResponse
+	}else if len(topicGroup)>0 && len(topicName)==0 && len(startTime)>0 && len(endTime)>0{//接收参数有topicGroup和时间
+		start, _ := strconv.ParseInt(startTime, 10, 64)
+		end, _ := strconv.ParseInt(endTime, 10, 64)
+		tps := c.ListTopicByTopicGroup(topicGroup, tp)
+		var tpUrls []string
+		for _, tp := range tps{
+			tpUrls = append(tpUrls, tp.URL)
+		}
+		httpStatus, messageResponse := c.ListMessagesByTopicUrlTime(tpUrls, start, end, req)
+		return httpStatus,messageResponse
+	}else if len(topicGroup)==0 && len(topicName)>0 && len(startTime)>0 && len(endTime)>0{//接收参数有topicName和时间
+		start, _ := strconv.ParseInt(startTime, 10, 64)
+		end, _ := strconv.ParseInt(endTime, 10, 64)
+		tps := c.ListTopicByTopicName(topicName, tp)
+		var tpUrls []string
+		for _, tp := range tps{
+			tpUrls = append(tpUrls, tp.URL)
+		}
+		httpStatus, messageResponse := c.ListMessagesByTopicUrlTime(tpUrls, start, end, req)
+		return httpStatus,messageResponse
+	}else if len(topicName)>0 && len(topicGroup)>0 && len(startTime)>0 && len(endTime)>0{//接收参数有topicName、topicGroup、时间
+		start, _ := strconv.ParseInt(startTime, 10, 64)
+		end, _ := strconv.ParseInt(endTime, 10, 64)
+		tps := c.ListTopicByTopicGroupAndName(topicGroup, topicName, tp)
+		var tpUrls []string
+		for _, tp := range tps{
+			tpUrls = append(tpUrls, tp.URL)
+		}
+		httpStatus, messageResponse := c.ListMessagesByTopicUrlTime(tpUrls, start, end, req)
+		return httpStatus,messageResponse
+	}else {//没有参数
+		var tpUrls []string
+		for _, tp := range tp{
+			tpUrls = append(tpUrls, tp.URL)
+		}
+		httpStatus, messageResponse := c.ListMessagesByTopicUrl(tpUrls,req)
+		return httpStatus,messageResponse
+	}
+}
+//通过topicUrl查询topic的消息(不带时间)
+func (c *controller) ListMessagesByTopicUrl(topicUrls []string,req *restful.Request) (int, *MessageResponse) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	if messages, err := c.service.ListMessages(topicUrls); err != nil {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:    1,
+			Message: fmt.Errorf("list database error: %+v", err).Error(),
+		}
+	} else {
+		var ms MessageList = messages
+		data, err := util.PageWrap(ms, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:    1,
+				Message: fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
+		return http.StatusOK, &MessageResponse{
+			Code:     0,
+			Messages: data,
+		}
+	}
+}
+//通过topicUrl查询topic的消息(带时间)
+func (c *controller) ListMessagesByTopicUrlTime(topicUrls []string, start int64, end int64, req *restful.Request) (int, *MessageResponse) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	if messages, err := c.service.ListMessagesTime(topicUrls, start, end); err != nil {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:    1,
+			Message: fmt.Errorf("list database error: %+v", err).Error(),
+		}
+	} else {
+		var ms MessageList = messages
+		data, err := util.PageWrap(ms, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:    1,
+				Message: fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
+		return http.StatusOK, &MessageResponse{
+			Code:     0,
+			Messages: data,
+		}
+	}
+}
+//通过topicName匹配topic
+func (c *controller) ListTopicByTopicName(topicName string, tps []*service.Topic) []*service.Topic {
+	var tpsResult []*service.Topic
+	for _, tp := range tps {
+		if strings.Compare(tp.Name, topicName) == 0{
+			tpsResult = append(tpsResult, tp)
+		}
+	}
+	return tpsResult
+}
+//通过topicGroup匹配topic
+func (c *controller) ListTopicByTopicGroup(topicGroup string, tps []*service.Topic) []*service.Topic {
+	var tpsResult []*service.Topic
+	for _, tp := range tps {
+		if strings.Compare(tp.TopicGroup, topicGroup) == 0{
+			tpsResult = append(tpsResult, tp)
+		}
+	}
+	return tpsResult
 }
 
+//通过topicGroup和topicName匹配topic
+func (c *controller) ListTopicByTopicGroupAndName(topicGroup string, topicName string, tps []*service.Topic) []*service.Topic {
+	var tpsResult []*service.Topic
+	for _, tp := range tps {
+		if strings.Compare(tp.TopicGroup, topicGroup) == 0&&strings.Compare(tp.Name, topicName)==0{
+			tpsResult = append(tpsResult, tp)
+		}
+	}
+	return tpsResult
+}
 type MessageList []service.Message
 
 func (ms MessageList) Length() int {

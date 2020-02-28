@@ -11,7 +11,7 @@ type TopicOptions struct {
 
 func DefaultTopicOptions() *TopicOptions {
 	return &TopicOptions{
-		Host: "127.0.0.1",
+		Host: "10.160.32.24",
 		Port: 30003,
 	}
 }
