@@ -105,6 +105,7 @@ func (r *ApplyReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				ID: app.ObjectMeta.Name, AclID: aclId,
 			})
 			api.ObjectMeta.Labels[apiv1.ApplicationLabel(apply.Spec.SourceID)] = "true"
+			api.Status.ApplicationCount = api.Status.ApplicationCount + 1
 			if err := r.UpdateApi(ctx, api, appID, true, ""); err != nil {
 				goto failed
 			}
