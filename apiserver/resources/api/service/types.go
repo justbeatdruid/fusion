@@ -8,6 +8,7 @@ import (
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	dwv1 "github.com/chinamobile/nlpt/crds/api/datawarehouse/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 
@@ -24,7 +25,7 @@ type Api struct {
 
 	Serviceunit           v1.Serviceunit    `json:"serviceunit"`
 	Applications          []v1.Application  `json:"applications"`
-	Users                 []v1.User         `json:"users"`
+	Users                 user.Users        `json:"users"`
 	Frequency             int               `json:"frequency"`
 	Method                v1.Method         `json:"method"`
 	Protocol              v1.Protocol       `json:"protocol"`
@@ -68,7 +69,6 @@ func ToAPI(api *Api) *v1.Api {
 		Description:  api.Description,
 		Serviceunit:  api.Serviceunit,
 		Applications: api.Applications,
-		Users:        api.Users,
 		Frequency:    api.Frequency,
 		Method:       api.Method,
 		Protocol:     api.Protocol,
@@ -91,6 +91,8 @@ func ToAPI(api *Api) *v1.Api {
 		ApplicationCount: api.ApplicationCount,
 		CalledCount:      api.CalledCount,
 	}
+	// add user labels
+	crd.ObjectMeta.Labels = user.AddUsersLabels(api.Users, crd.ObjectMeta.Labels)
 	return crd
 }
 
@@ -103,7 +105,6 @@ func ToModel(obj *v1.Api) *Api {
 		Description:  obj.Spec.Description,
 		Serviceunit:  obj.Spec.Serviceunit,
 		Applications: obj.Spec.Applications,
-		Users:        obj.Spec.Users,
 		Frequency:    obj.Spec.Frequency,
 		Method:       obj.Spec.Method,
 		Protocol:     obj.Spec.Protocol,
@@ -172,6 +173,7 @@ func ToModel(obj *v1.Api) *Api {
 			model.ApplicationCount = model.ApplicationCount + 1
 		}
 	}
+	model.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
 	return model
 }
 
@@ -199,6 +201,9 @@ func ToListModel(items *v1.ApiList, opts ...util.OpOption) []*Api {
 func (s *Service) Validate(a *Api) error {
 	if len(a.Name) == 0 {
 		return fmt.Errorf("name is null")
+	}
+	if len(a.Users.Owner.ID) == 0 {
+		return fmt.Errorf("owner not set")
 	}
 	if len(a.Serviceunit.ID) == 0 {
 		return fmt.Errorf("serviceunit id is null")
@@ -328,9 +333,11 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	if _, ok := data["applications"]; ok {
 		target.Spec.Applications = source.Applications
 	}
-	if _, ok = data["users"]; ok {
-		target.Spec.Users = source.Users
-	}
+	/*
+		if _, ok = data["users"]; ok {
+			target.Spec.Users = source.Users
+		}
+	*/
 	if _, ok := data["frequency"]; ok {
 		target.Spec.Frequency = source.Frequency
 	}

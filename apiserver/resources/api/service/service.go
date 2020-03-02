@@ -14,6 +14,7 @@ import (
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	dsv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 	"github.com/chinamobile/nlpt/pkg/util"
 
@@ -101,7 +102,7 @@ func (s *Service) PatchApi(id string, data interface{}) (*Api, error) {
 }
 
 func (s *Service) ListApi(suid, appid string, opts ...util.OpOption) ([]*Api, error) {
-	apis, err := s.List(suid, appid)
+	apis, err := s.List(suid, appid, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
@@ -194,8 +195,17 @@ func (s *Service) Create(api *v1.Api) (*v1.Api, error) {
 	return api, nil
 }
 
-func (s *Service) List(suid, appid string) (*v1.ApiList, error) {
+func (s *Service) List(suid, appid string, opts ...util.OpOption) (*v1.ApiList, error) {
+	op := util.OpList(opts...)
+	group := op.Group()
+	u := op.User()
 	conditions := []string{}
+	if len(group) > 0 {
+		conditions = append(conditions, fmt.Sprintf("%s=%s", appv1.GroupLabel, group))
+	}
+	if len(u) > 0 {
+		conditions = append(conditions, user.GetLabelSelector(u))
+	}
 	if len(suid) > 0 {
 		conditions = append(conditions, fmt.Sprintf("%s=%s", v1.ServiceunitLabel, suid))
 	}
