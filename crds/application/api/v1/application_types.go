@@ -16,13 +16,14 @@ limitations under the License.
 package v1
 
 import (
-	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
-const GroupLabel = "nlpt.cmcc.com/group"
+const (
+	GroupLabel = "nlpt.cmcc.com/group"
+)
 
 // ApplicationSpec defines the desired state of Application
 type ApplicationSpec struct {
@@ -33,7 +34,6 @@ type ApplicationSpec struct {
 	Name            string       `json:"name"`
 	Description     string       `json:"description"`
 	Group           Group        `json:"group"`
-	Users           []apiv1.User `json:"users"`
 	AccessKey       string       `json:"accessKey"`
 	AccessSecretKey string       `json:"accessSecretKey"`
 	APIs            []Api        `json:"apis"`
@@ -41,8 +41,8 @@ type ApplicationSpec struct {
 }
 
 type Api struct {
-	ID   string
-	Name string
+	ID   string `json:"id"`
+	Name string `json:"name"`
 }
 
 type Group struct {

@@ -6,6 +6,8 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/application/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/emicklei/go-restful"
@@ -52,6 +54,14 @@ func (c *controller) CreateApplication(req *restful.Request) (int, *CreateRespon
 			Message: "read entity error: data is null",
 		}
 	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	body.Data.Users = user.InitWithOwner(authuser.Name)
 	if app, err := c.service.CreateApplication(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
@@ -128,7 +138,14 @@ func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) 
 	size := req.QueryParameter("size")
 	group := req.QueryParameter("group")
 	name := req.QueryParameter("name")
-	if app, err := c.service.ListApplication(group, util.WithNameLike(name)); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if app, err := c.service.ListApplication(util.WithGroup(group), util.WithNameLike(name), util.WithUser(authuser.Name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list application error: %+v", err).Error(),

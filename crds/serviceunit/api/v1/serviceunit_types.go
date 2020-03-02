@@ -16,7 +16,6 @@ limitations under the License.
 package v1
 
 import (
-	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	//datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -35,11 +34,9 @@ type ServiceunitSpec struct {
 	Name         string      `json:"name"`
 	Group        Group       `json:"group"`
 	Type         ServiceType `json:"type"`
-	DatasourceID Datasource  `json:"datasourcesID,omitempty"`
-	//Datasource   datav1.DatasourceSpec `json:"datasources,omitempty"`
-	Users       []apiv1.User `json:"users"`
-	APIs        []Api        `json:"apis"`
-	Description string       `json:"description"`
+	DatasourceID *Datasource `json:"datasourcesID,omitempty"`
+	APIs         []Api       `json:"apis"`
+	Description  string      `json:"description"`
 	//KongInfo
 	KongService KongServiceInfo `json:"kongServiceInfo"`
 }

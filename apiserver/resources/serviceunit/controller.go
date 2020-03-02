@@ -6,6 +6,8 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/emicklei/go-restful"
@@ -56,6 +58,14 @@ func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateRespon
 			Message: "read entity error: data is null",
 		}
 	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	body.Data.Users = user.InitWithOwner(authuser.Name)
 	if su, err := c.service.CreateServiceunit(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
@@ -132,7 +142,14 @@ func (c *controller) ListServiceunit(req *restful.Request) (int, *ListResponse) 
 	size := req.QueryParameter("size")
 	group := req.QueryParameter("group")
 	name := req.QueryParameter("name")
-	if su, err := c.service.ListServiceunit(group, util.WithNameLike(name)); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if su, err := c.service.ListServiceunit(util.WithGroup(group), util.WithNameLike(name), util.WithUser(authuser.Name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list serviceunit error: %+v", err).Error(),
@@ -192,6 +209,12 @@ func (c *controller) PublishServiceunit(req *restful.Request) (int, *CreateRespo
 
 // +update_sunyu
 func (c *controller) UpdateServiceunit(req *restful.Request) (int, *UpdateResponse) {
+	if true {
+		return http.StatusNotImplemented, &UpdateResponse{
+			Code:    1,
+			Message: "interface not supported",
+		}
+	}
 	body := &UpdateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &UpdateResponse{

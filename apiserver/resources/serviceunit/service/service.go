@@ -2,10 +2,12 @@ package service
 
 import (
 	"fmt"
+	"strings"
 
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	groupv1 "github.com/chinamobile/nlpt/crds/serviceunitgroup/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,8 +44,8 @@ func (s *Service) CreateServiceunit(model *Serviceunit) (*Serviceunit, error) {
 	return ToModel(su), nil
 }
 
-func (s *Service) ListServiceunit(group string, opts ...util.OpOption) ([]*Serviceunit, error) {
-	sus, err := s.List(group)
+func (s *Service) ListServiceunit(opts ...util.OpOption) ([]*Serviceunit, error) {
+	sus, err := s.List(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
@@ -157,11 +159,20 @@ func (s *Service) PatchServiceunit(id string, data interface{}) (*Serviceunit, e
 	return ToModel(su), err
 }
 
-func (s *Service) List(group string) (*v1.ServiceunitList, error) {
+func (s *Service) List(opts ...util.OpOption) (*v1.ServiceunitList, error) {
 	var options metav1.ListOptions
+	op := util.OpList(opts...)
+	group := op.Group()
+	u := op.User()
+	var labels []string
 	if len(group) > 0 {
-		options.LabelSelector = fmt.Sprintf("%s=%s", v1.GroupLabel, group)
+		labels = append(labels, fmt.Sprintf("%s=%s", v1.GroupLabel, group))
 	}
+	if len(u) > 0 {
+		labels = append(labels, user.GetLabelSelector(u))
+	}
+	options.LabelSelector = strings.Join(labels, ",")
+	klog.V(5).Infof("list with label selector: %s", options.LabelSelector)
 	crd, err := s.client.Namespace(crdNamespace).List(options)
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
@@ -288,7 +299,7 @@ func (s *Service) GetGroupMap() (map[string]string, error) {
 	return m, nil
 }
 
-func (s *Service) GetDatasourceMap() (map[string]v1.Datasource, error) {
+func (s *Service) GetDatasourceMap() (map[string]*v1.Datasource, error) {
 	crd, err := s.datasourceClient.Namespace(crdNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
@@ -298,9 +309,9 @@ func (s *Service) GetDatasourceMap() (map[string]v1.Datasource, error) {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.datasourcelist: %+v", datas)
-	m := make(map[string]v1.Datasource)
+	m := make(map[string]*v1.Datasource)
 	for _, data := range datas.Items {
-		ds := v1.Datasource{
+		ds := &v1.Datasource{
 			ID:   data.ObjectMeta.Name,
 			Name: data.Spec.Name,
 		}

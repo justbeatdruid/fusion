@@ -1,1 +1,2 @@
-curl localhost:8001/api/v1/serviceunits?$* -v -H 'X-auth-Token:8c06d2a4d87a8e4df280589889d85f67e6d755b2fb33538fd724ba6f700361a0'
+curl localhost:8001/api/v1/serviceunits?$* -v \
+  -H'X-auth-Token:3df7da2cea083eaab0cfbaaff9883a932cf7af92cea37f9b3b74ba9e5aee4fe8' -H'user:demo'

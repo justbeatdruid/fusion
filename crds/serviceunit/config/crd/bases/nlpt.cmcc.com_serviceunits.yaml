@@ -120,19 +120,6 @@ spec:
               type: string
             type:
               type: string
-            users:
-              description: Datasource   datav1.DatasourceSpec `json:"datasources,omitempty"`
-              items:
-                properties:
-                  inCharge:
-                    type: boolean
-                  name:
-                    type: string
-                required:
-                - inCharge
-                - name
-                type: object
-              type: array
           required:
           - apis
           - description
@@ -140,7 +127,6 @@ spec:
           - kongServiceInfo
           - name
           - type
-          - users
           type: object
         status:
           description: ServiceunitStatus defines the observed state of Serviceunit
