@@ -31,8 +31,6 @@ type ServerRunOptions struct {
 	Dataservice *DataserviceOptions
 
 	Topic *TopicOptions
-
-
 }
 
 func NewServerRunOptions() *ServerRunOptions {
@@ -42,7 +40,7 @@ func NewServerRunOptions() *ServerRunOptions {
 
 		Datasource:  DefaultDatasourceOptions(),
 		Dataservice: DefaultDataserviceOptions(),
-		Topic: DefaultTopicOptions(),
+		Topic:       DefaultTopicOptions(),
 	}
 	if len(s.CrdNamespace) == 0 {
 		klog.Infof("cannot find environmnent MY_POD_NAMESPACE, use default")

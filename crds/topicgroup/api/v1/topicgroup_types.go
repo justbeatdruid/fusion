@@ -33,72 +33,24 @@ type TopicgroupSpec struct {
 	Namespace string   `json:"namespace"`
 	Tenant    string   `json:"tenant"` //namespace的所属租户名称
 	Url       string   `json:"url"`
-	Policies  Policies `json:"policies"`
+	Policies  Policies `json:"policies,omitempty"`
 }
 type Policies struct {
-	AuthPolicies                          AuthPolicies             `json:"auth_policies"`
-	ReplicationClusters                   []string                 `json:"replication_clusters"`
-	Bundles                               BundlesData              `json:"bundles"`
-	BacklogQuotaMap                       map[string]BacklogQuota  `json:"backlog_quota_map"`
-	TopicDispatchRate                     map[string]DispatchRate  `json:"topicDispatchRate"`
-	SubscriptionDispatchRate              map[string]DispatchRate  `json:"subscriptionDispatchRate"`
-	ReplicatorDispatchRate                map[string]DispatchRate  `json:"replicatorDispatchRate"`
-	ClusterSubscribeRate                  map[string]SubscribeRate `json:"clusterSubscribeRate"`
-	Persistence                           PersistencePolicies      `json:"persistence"`
-	DeduplicationEnabled                  bool                     `json:"deduplicationEnabled"`
-	LatencyStatsSampleRate                map[string]int           `json:"latency_stats_sample_rate"`
-	MessageTtlInSeconds                   int                      `json:"message_ttl_in_seconds"`
-	RetentionPolicies                     RetentionPolicies        `json:"retention_policies"`
-	Deleted                               bool                     `json:"deleted"`
-	AntiAffinityGroup                     string                   `json:"antiAffinityGroup"`
-	EncryptionRequired                    bool                     `json:"encryption_required"`
-	SubscriptionAuthMode                  string                   `json:"subscription_auth_mode"` //None, Prefix
-	MaxProducersPerTopic                  int                      `json:"max_producers_per_topic"`
-	MaxConsumersPerTopic                  int                      `json:"max_consumers_per_topic"`
-	MaxConsumersPerSubscription           int                      `json:"max_consumers_per_subscription"`
-	CompactionThreshold                   int64                    `json:"compaction_threshold"`
-	OffloadThreshold                      int64                    `json:"offload_threshold"`
-	OffloadDeletionLagMS                  int64                    `json:"offload_deletion_lag_ms"`
-	SchemaAutoUpdateCompatibilityStrategy string                   `json:"schema_auto_update_compatibility_strategy"`
-	SchemaValidationEnforced              bool                     `json:"schema_validation_enforced"`
-}
-
-type AuthPolicies struct {
-	NamespaceAuth         map[string][]string            `json:"namespace_auth"`
-	DestinationAuth       map[string]map[string][]string `json:"destination_auth"`
-	SubscriptionAuthRoles map[string][]string            `json:"subscription_auth_roles"`
-}
-
-type BundlesData struct {
-	Boundaries []string `json:"boundaries"`
-	NumBundles int      `json:"numBundles"`
-}
-
-type BacklogQuota struct {
-	Limit  int64  `json:"limit"`
-	Policy string `json:"policy"` //producer_request_hold,producer_exception,consumer_backlog_eviction
-}
-
-type DispatchRate struct {
-	DispatchThrottlingRateInMsg  int   `json:"dispatchThrottlingRateInMsg"`
-	DispatchThrottlingRateInByte int64 `json:"dispatchThrottlingRateInByte"`
-	RatePeriodInSecond           int   `json:"ratePeriodInSecond"`
-}
-
-type SubscribeRate struct {
-	SubscribeThrottlingRatePerConsumer int `json:"subscribeThrottlingRatePerConsumer"`
-	RatePeriodInSecond                 int `json:"ratePeriodInSecond"`
-}
-type PersistencePolicies struct {
-	BookkeeperEnsemble             int     `json:"bookkeeperEnsemble"`
-	BookkeeperWriteQuorum          int     `json:"bookkeeperWriteQuorum"`
-	BookkeeperAckQuorum            int     `json:"bookkeeperAckQuorum"`
-	ManagedLedgerMaxMarkDeleteRate float64 `json:"managedLedgerMaxMarkDeleteRate"`
+	RetentionPolicies   RetentionPolicies `json:"retentionPolicies,omitempty"` //消息保留策略
+	MessageTtlInSeconds int               `json:"messageTtlInSeconds"`         //未确认消息的最长保留时长
+	BacklogQuota        BacklogQuota      `json:"backlogQuota"`
+	NumBundles          int               `json:"numBundles"`
 }
 
 type RetentionPolicies struct {
-	RetentionTimeInMinutes int `json:"retentionTimeInMinutes"`
-	RetentionSizeInMB      int `json:"retentionSizeInMB"`
+	RetentionTimeInMinutes int   `json:"retentionTimeInMinutes"`
+	RetentionSizeInMB      int64 `json:"retentionSizeInMB"`
+}
+
+type BacklogQuota struct {
+	Limit  int64  `json:"limit"`  //未确认消息的积压大小
+	Policy string `json:"policy"` //producer_request_hold,producer_exception,consumer_backlog_eviction
+
 }
 type Status string
 
@@ -107,8 +59,8 @@ const (
 	Creating Status = "creating"
 	Created  Status = "created"
 	Delete   Status = "delete"
-	//Deleting Status = "deleting"
-	Error Status = "error"
+	Deleting Status = "deleting"
+	Error    Status = "error"
 )
 
 // TopicgroupStatus defines the observed state of Topicgroup

@@ -25,8 +25,8 @@ var oofsGVR = schema.GroupVersionResource{
 
 type Service struct {
 	client dynamic.NamespaceableResourceInterface
-	ip string
-	host int
+	ip     string
+	host   int
 }
 
 func NewService(client dynamic.Interface, topConfig *config.TopicConfig) *Service {
@@ -126,7 +126,7 @@ func (s *Service) List() (*v1.TopicList, error) {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.topicList: %+v", tps)
+	//klog.V(5).Infof("get v1.topicList: %+v", tps)
 	return tps, nil
 }
 
@@ -214,7 +214,7 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 	ip := s.ip
 	host := s.host
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://"+ip+":"+strconv.Itoa(host),
+		URL: "pulsar://" + ip + ":" + strconv.Itoa(host),
 	})
 	if err != nil {
 		fmt.Printf("Could not create client: %v", err)
@@ -261,7 +261,7 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 	ip := s.ip
 	host := s.host
 	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://"+ip+":"+strconv.Itoa(host),
+		URL: "pulsar://" + ip + ":" + strconv.Itoa(host),
 	})
 	if err != nil {
 		fmt.Printf("Could not create client: %v", err)
