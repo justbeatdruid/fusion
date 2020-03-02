@@ -381,6 +381,9 @@ func (s *Service) BindOrRelease(apiid, appid, operation string) (*Api, error) {
 }
 
 func (s *Service) BindApi(apiid, appid string) (*Api, error) {
+	if true {
+		return nil, fmt.Errorf("do not bind api directly. make an application.")
+	}
 	api, err := s.Get(apiid)
 	if err != nil {
 		return nil, fmt.Errorf("get api error: %+v", err)
@@ -397,6 +400,7 @@ func (s *Service) BindApi(apiid, appid string) (*Api, error) {
 	api.Spec.Applications = append(api.Spec.Applications, v1.Application{
 		ID: appid,
 	})
+	api.Status.ApplicationCount = api.Status.ApplicationCount + 1
 	api, err = s.UpdateSpec(api)
 	//if _, err = s.updateApplicationApi(appid, api.ObjectMeta.Name, api.Spec.Name); err != nil {
 	//	return fmt.Errorf("cannot update")
@@ -424,6 +428,7 @@ func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
 
 	//解绑的时候先设置false TODO 之后controller 里面删除
 	api.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "false"
+	api.Status.ApplicationCount = api.Status.ApplicationCount - 1
 	api, err = s.UpdateSpec(api)
 	//if _, err = s.updateApplicationApi(appid, api.ObjectMeta.Name, api.Spec.Name); err != nil {
 	//	return fmt.Errorf("cannot update")
