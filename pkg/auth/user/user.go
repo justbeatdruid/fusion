@@ -136,6 +136,17 @@ func IsManager(id string, labels map[string]string) bool {
 	return contains(managers, id)
 }
 
+func IsUser(id string, labels map[string]string) bool {
+	_, ok := labels[userLabel(id)]
+	return ok
+}
+
+var ReadPermitted = IsUser
+
+func WritePermitted(id string, labels map[string]string) bool {
+	return IsManager(id, labels) || IsOwner(id, labels)
+}
+
 func AddUserLabels(d *Data, labels map[string]string) (map[string]string, error) {
 	if labels == nil {
 		labels = make(map[string]string)
