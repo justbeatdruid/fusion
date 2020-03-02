@@ -29,15 +29,15 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-const ServiceunitLabel = "serviceunit"
-const applicationLabel = "application"
+const ServiceunitLabel = "nlpt.cmcc.com/serviceunit"
+const applicationLabel = "nlpt.cmcc.com/application"
 
 func ApplicationLabel(id string) string {
-	return strings.Join([]string{applicationLabel, id}, "/")
+	return strings.Join([]string{applicationLabel, id}, ".")
 }
 
 func IsApplicationLabel(l string) bool {
-	match, _ := regexp.MatchString(fmt.Sprintf("%s/([0-9a-f]{16})", applicationLabel), l)
+	match, _ := regexp.MatchString(fmt.Sprintf("%s.([0-9a-f]{16})", applicationLabel), l)
 	return match
 }
 
