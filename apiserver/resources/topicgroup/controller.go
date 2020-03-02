@@ -141,7 +141,7 @@ func (c *controller) ListTopicgroup(req *restful.Request) (int, *ListResponse) {
 		data, err := util.PageWrap(tps, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
-				Code:    1,
+				Code:    fail,
 				Message: fmt.Sprintf("page parameter error: %+v", err),
 			}
 		} else {
