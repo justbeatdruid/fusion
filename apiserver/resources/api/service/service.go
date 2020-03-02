@@ -58,6 +58,9 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get serviceunit error: %+v", err)
 	}
+	if !user.WritePermitted(model.Users.Owner.ID, su.ObjectMeta.Labels) {
+		return nil, fmt.Errorf("user %s has no permission for writting serviceunit %s", model.Users.Owner.ID, su.ObjectMeta.Name)
+	}
 	model.Serviceunit.KongID = su.Spec.KongService.ID
 	model.Serviceunit.Port = su.Spec.KongService.Port
 	model.Serviceunit.Host = su.Spec.KongService.Host
@@ -102,6 +105,29 @@ func (s *Service) PatchApi(id string, data interface{}) (*Api, error) {
 }
 
 func (s *Service) ListApi(suid, appid string, opts ...util.OpOption) ([]*Api, error) {
+	if len(suid) > 0 && len(appid) > 0 {
+		return nil, fmt.Errorf("i am not sure if it is suitable to get api with application id and service unit id, but it make no sense")
+	}
+	// check opts.user is permitted for application and serviceunit
+	userid := util.OpList(opts...).User()
+	if len(appid) > 0 {
+		app, err := s.getApplication(appid)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get application: %+v", err)
+		}
+		if !user.ReadPermitted(userid, app.ObjectMeta.Labels) {
+			return nil, fmt.Errorf("permitted denied of application %s", appid)
+		}
+	}
+	if len(suid) > 0 {
+		su, err := s.getServiceunit(suid)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get serviceunit: %+v", err)
+		}
+		if !user.ReadPermitted(userid, su.ObjectMeta.Labels) {
+			return nil, fmt.Errorf("permitted denied of service unit %s", suid)
+		}
+	}
 	apis, err := s.List(suid, appid, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
@@ -196,15 +222,10 @@ func (s *Service) Create(api *v1.Api) (*v1.Api, error) {
 }
 
 func (s *Service) List(suid, appid string, opts ...util.OpOption) (*v1.ApiList, error) {
-	op := util.OpList(opts...)
-	group := op.Group()
-	u := op.User()
+	group := util.OpList(opts...).Group()
 	conditions := []string{}
 	if len(group) > 0 {
 		conditions = append(conditions, fmt.Sprintf("%s=%s", appv1.GroupLabel, group))
-	}
-	if len(u) > 0 {
-		conditions = append(conditions, user.GetLabelSelector(u))
 	}
 	if len(suid) > 0 {
 		conditions = append(conditions, fmt.Sprintf("%s=%s", v1.ServiceunitLabel, suid))
