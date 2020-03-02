@@ -327,3 +327,88 @@ func (s *Service) GetDatasourceMap() (map[string]*v1.Datasource, error) {
 	}
 	return m, nil
 }
+
+func (s *Service) AddUser(id, operator string, data *user.Data) error {
+	crd, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	if !user.IsOwner(operator, labels) && !user.IsManager(operator, labels) {
+		return fmt.Errorf("only owner or manager can add user")
+	}
+	labels, err = user.AddUserLabels(data, labels)
+	if err != nil {
+		return fmt.Errorf("add user labels error: %+v", err)
+	}
+	crd.ObjectMeta.Labels = labels
+	_, err = s.UpdateSpec(crd)
+	if err != nil {
+		return fmt.Errorf("update crd error: %+v", err)
+	}
+	return nil
+}
+
+func (s *Service) RemoveUser(id, operator, target string) error {
+	crd, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	if !user.IsOwner(operator, labels) && !user.IsManager(operator, labels) {
+		return fmt.Errorf("only owner or manager can remove user")
+	}
+	labels, err = user.RemoveUserLabels(target, labels)
+	if err != nil {
+		return fmt.Errorf("remove user labels error: %+v", err)
+	}
+	crd.ObjectMeta.Labels = labels
+	_, err = s.UpdateSpec(crd)
+	if err != nil {
+		return fmt.Errorf("update crd error: %+v", err)
+	}
+	return nil
+}
+
+func (s *Service) ChangeOwner(id, operator string, data *user.Data) error {
+	klog.V(5).Infof("change owner appid=%s, operator=%s, data=%+v", id, operator, *data)
+	crd, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	if !user.IsOwner(operator, labels) {
+		return fmt.Errorf("only owner or can change owner")
+	}
+	labels, err = user.ChangeOwner(data.ID, labels)
+	if err != nil {
+		return fmt.Errorf("change owner labels error: %+v", err)
+	}
+	crd.ObjectMeta.Labels = labels
+	_, err = s.UpdateSpec(crd)
+	if err != nil {
+		return fmt.Errorf("update crd error: %+v", err)
+	}
+	return nil
+}
+
+func (s *Service) ChangeUser(id, operator string, data *user.Data) error {
+	crd, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	if !user.IsOwner(operator, labels) && !user.IsManager(operator, labels) {
+		return fmt.Errorf("only owner or manager can add user")
+	}
+	labels, err = user.ChangeUser(data, labels)
+	if err != nil {
+		return fmt.Errorf("change user labels error: %+v", err)
+	}
+	crd.ObjectMeta.Labels = labels
+	_, err = s.UpdateSpec(crd)
+	if err != nil {
+		return fmt.Errorf("update crd error: %+v", err)
+	}
+	return nil
+}
