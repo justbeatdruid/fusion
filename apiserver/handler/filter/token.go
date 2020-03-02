@@ -5,6 +5,8 @@ import (
 
 	"github.com/emicklei/go-restful"
 	"net/http"
+
+	"github.com/chinamobile/nlpt/pkg/auth"
 )
 
 type TokenFilter struct {
@@ -46,9 +48,30 @@ func (o *TokenFilter) Filter(req *restful.Request, resp *restful.Response, chain
 	token := req.HeaderParameter("X-auth-Token")
 	for _, t := range tokenList {
 		if t == token {
+			//TODO set username here
+			auth.SetAuthUser(req, auth.AuthUser{
+				Name:      o.getUserName(req),
+				Namespace: o.getUserNamespace(req),
+			})
 			chain.ProcessFilter(req, resp)
 			return
 		}
 	}
 	resp.WriteHeader(http.StatusUnauthorized)
+}
+
+func (o *TokenFilter) getUserName(req *restful.Request) string {
+	u := req.HeaderParameter("user")
+	if len(u) > 0 {
+		return u
+	}
+	return "admin"
+}
+
+func (o *TokenFilter) getUserNamespace(req *restful.Request) string {
+	u := req.HeaderParameter("tenant")
+	if len(u) > 0 {
+		return u
+	}
+	return "default"
 }

@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 
@@ -16,15 +16,14 @@ import (
 )
 
 type Serviceunit struct {
-	ID           string         `json:"id"`
-	Name         string         `json:"name"`
-	Namespace    string         `json:"namespace"`
-	Type         v1.ServiceType `json:"type"`
-	DatasourceID v1.Datasource  `json:"datasources,omitempty"`
-	//Datasource   datav1.DatasourceSpec `json:"-"`
-	KongSevice  v1.KongServiceInfo `json:"kongService"`
-	Users       []apiv1.User       `json:"users"`
-	Description string             `json:"description"`
+	ID           string             `json:"id"`
+	Name         string             `json:"name"`
+	Namespace    string             `json:"namespace"`
+	Type         v1.ServiceType     `json:"type"`
+	DatasourceID *v1.Datasource     `json:"datasources,omitempty"`
+	KongSevice   v1.KongServiceInfo `json:"kongService"`
+	Users        user.Users         `json:"users"`
+	Description  string             `json:"description"`
 
 	Status    v1.Status `json:"status"`
 	UpdatedAt time.Time `json:"time"`
@@ -49,7 +48,6 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 		DatasourceID: app.DatasourceID,
 		//Datasource:   app.Datasource,
 		KongService: app.KongSevice,
-		Users:       app.Users,
 		Description: app.Description,
 	}
 	status := app.Status
@@ -58,9 +56,6 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 	}
 	if crd.Spec.APIs == nil {
 		crd.Spec.APIs = make([]v1.Api, 0)
-	}
-	if crd.Spec.Users == nil {
-		crd.Spec.Users = make([]apiv1.User, 0)
 	}
 	crd.Status = v1.ServiceunitStatus{
 		Status:    status,
@@ -74,6 +69,8 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 		}
 		crd.ObjectMeta.Labels[v1.GroupLabel] = app.Group
 	}
+	// add user labels
+	crd.ObjectMeta.Labels = user.AddUsersLabels(app.Users, crd.ObjectMeta.Labels)
 	return crd
 }
 
@@ -86,7 +83,6 @@ func ToAPIUpdate(su *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 		DatasourceID: su.DatasourceID,
 		//Datasource:   su.Datasource,
 		KongService: su.KongSevice,
-		Users:       su.Users,
 		Description: su.Description,
 	}
 	crd.Spec.KongService.ID = id
@@ -96,9 +92,6 @@ func ToAPIUpdate(su *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 	}
 	if crd.Spec.APIs == nil {
 		crd.Spec.APIs = make([]v1.Api, 0)
-	}
-	if crd.Spec.Users == nil {
-		crd.Spec.Users = make([]apiv1.User, 0)
 	}
 	crd.Status = v1.ServiceunitStatus{
 		Status:    status,
@@ -117,7 +110,6 @@ func ToModel(obj *v1.Serviceunit) *Serviceunit {
 		Type:         obj.Spec.Type,
 		DatasourceID: obj.Spec.DatasourceID,
 		KongSevice:   obj.Spec.KongService,
-		Users:        obj.Spec.Users,
 		Description:  obj.Spec.Description,
 
 		Status:    obj.Status.Status,
@@ -125,6 +117,8 @@ func ToModel(obj *v1.Serviceunit) *Serviceunit {
 		APICount:  obj.Status.APICount,
 		Published: obj.Status.Published,
 	}
+	su.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
+	//TODO UserCount
 	if group, ok := obj.ObjectMeta.Labels[v1.GroupLabel]; ok {
 		su.Group = group
 		su.GroupName = obj.Spec.Group.Name
@@ -132,7 +126,7 @@ func ToModel(obj *v1.Serviceunit) *Serviceunit {
 	return su
 }
 
-func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[string]v1.Datasource, opts ...util.OpOption) []*Serviceunit {
+func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[string]*v1.Datasource, opts ...util.OpOption) []*Serviceunit {
 	if len(opts) > 0 {
 		nameLike := util.OpList(opts...).NameLike()
 		if len(nameLike) > 0 {
@@ -181,13 +175,16 @@ func (s *Service) Validate(a *Serviceunit) error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
+	if len(a.Users.Owner.ID) == 0 {
+		return fmt.Errorf("owner not set")
+	}
 
 	switch a.Type {
 	case v1.DataService:
 		if len(a.DatasourceID.ID) == 0 {
 			return fmt.Errorf("datasource is null")
 		} else {
-			if _, err := s.checkDatasource(&a.DatasourceID); err != nil {
+			if _, err := s.checkDatasource(a.DatasourceID); err != nil {
 				return fmt.Errorf("error datasource: %+v", err)
 			} else {
 				//a.Datasource = *ds
@@ -280,9 +277,6 @@ func (s *Service) assignment(target *v1.Serviceunit, reqData interface{}) error 
 	}
 	if _, ok := data["datasources"]; ok {
 		target.Spec.DatasourceID.ID = source.DatasourceID.ID
-	}
-	if target.Spec.Users == nil {
-		target.Spec.Users = make([]apiv1.User, 0)
 	}
 	if target.Spec.APIs == nil {
 		target.Spec.APIs = make([]v1.Api, 0)

@@ -53,6 +53,34 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.listApplication).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	ws.Route(ws.POST("/applications/{id}/users").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("add user").
+		To(r.addUser).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	ws.Route(ws.DELETE("/applications/{id}/users/{userid}").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("remove user").
+		To(r.removeUser).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	ws.Route(ws.PUT("/applications/{id}/users/{userid}").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("change user role").
+		To(r.changeUser).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	ws.Route(ws.PUT("/applications/{id}/owner").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("change ower").
+		To(r.changeOwner).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func (r *router) createApplication(request *restful.Request, response *restful.Response) {
@@ -77,5 +105,25 @@ func (r *router) patchApplication(request *restful.Request, response *restful.Re
 
 func (r *router) listApplication(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListApplication(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) addUser(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.AddUser(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) removeUser(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.RemoveUser(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) changeUser(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ChangeUser(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) changeOwner(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ChangeOwner(request)
 	response.WriteHeaderAndEntity(code, result)
 }

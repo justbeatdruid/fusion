@@ -6,6 +6,8 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/emicklei/go-restful"
@@ -56,6 +58,14 @@ func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateRespon
 			Message: "read entity error: data is null",
 		}
 	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	body.Data.Users = user.InitWithOwner(authuser.Name)
 	if su, err := c.service.CreateServiceunit(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
@@ -132,7 +142,14 @@ func (c *controller) ListServiceunit(req *restful.Request) (int, *ListResponse) 
 	size := req.QueryParameter("size")
 	group := req.QueryParameter("group")
 	name := req.QueryParameter("name")
-	if su, err := c.service.ListServiceunit(group, util.WithNameLike(name)); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if su, err := c.service.ListServiceunit(util.WithGroup(group), util.WithNameLike(name), util.WithUser(authuser.Name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list serviceunit error: %+v", err).Error(),
@@ -192,6 +209,12 @@ func (c *controller) PublishServiceunit(req *restful.Request) (int, *CreateRespo
 
 // +update_sunyu
 func (c *controller) UpdateServiceunit(req *restful.Request) (int, *UpdateResponse) {
+	if true {
+		return http.StatusNotImplemented, &UpdateResponse{
+			Code:    1,
+			Message: "interface not supported",
+		}
+	}
 	body := &UpdateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &UpdateResponse{
@@ -215,6 +238,186 @@ func (c *controller) UpdateServiceunit(req *restful.Request) (int, *UpdateRespon
 		return http.StatusOK, &UpdateResponse{
 			Code: 0,
 			Data: su,
+		}
+	}
+}
+
+func (c *controller) AddUser(req *restful.Request) (int, *user.UserResponse) {
+	id := req.PathParameter("id")
+	body := &user.UserRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "read entity error: data is null",
+		}
+	}
+	if len(body.Data.ID) == 0 {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "read entity error: id in data is null",
+		}
+	}
+	if len(body.Data.Role) == 0 {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "read entity error: role in data is null",
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if err := c.service.AddUser(id, authuser.Name, body.Data); err != nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    2,
+			Message: fmt.Errorf("add user error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &user.UserResponse{
+			Code: 0,
+		}
+	}
+}
+
+func (c *controller) RemoveUser(req *restful.Request) (int, *user.UserResponse) {
+	id := req.PathParameter("id")
+	userid := req.PathParameter("userid")
+	if len(id) == 0 {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "id in path parameter is null",
+		}
+	}
+	if len(userid) == 0 {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "user id in path parameter is null",
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if err := c.service.RemoveUser(id, authuser.Name, userid); err != nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    2,
+			Message: fmt.Errorf("remove user error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &user.UserResponse{
+			Code: 0,
+		}
+	}
+}
+
+func (c *controller) ChangeOwner(req *restful.Request) (int, *user.UserResponse) {
+	id := req.PathParameter("id")
+	if len(id) == 0 {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "id in path parameter is null",
+		}
+	}
+	body := &user.UserRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "read entity error: data is null",
+		}
+	}
+	if len(body.Data.ID) == 0 {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "read entity error: id in data is null",
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if err := c.service.ChangeOwner(id, authuser.Name, body.Data); err != nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    2,
+			Message: fmt.Errorf("change owner error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &user.UserResponse{
+			Code: 0,
+		}
+	}
+}
+
+func (c *controller) ChangeUser(req *restful.Request) (int, *user.UserResponse) {
+	id := req.PathParameter("id")
+	userid := req.PathParameter("userid")
+	if len(id) == 0 {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "id in path parameter is null",
+		}
+	}
+	if len(userid) == 0 {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "user id in path parameter is null",
+		}
+	}
+	body := &user.UserRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "read entity error: data is null",
+		}
+	}
+	if len(body.Data.Role) == 0 {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "read entity error: role in data is null",
+		}
+	}
+	body.Data.ID = userid
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if err := c.service.ChangeUser(id, authuser.Name, body.Data); err != nil {
+		return http.StatusInternalServerError, &user.UserResponse{
+			Code:    2,
+			Message: fmt.Errorf("change user error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &user.UserResponse{
+			Code: 0,
 		}
 	}
 }
