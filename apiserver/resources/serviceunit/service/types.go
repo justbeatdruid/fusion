@@ -141,8 +141,10 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[
 				if gname, ok := groups[item.Spec.Group.ID]; ok {
 					item.Spec.Group.Name = gname
 				}
-				if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
-					item.Spec.DatasourceID = data
+				if item.Spec.Type == v1.DataService && item.Spec.DatasourceID != nil {
+					if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
+						item.Spec.DatasourceID = data
+					}
 				}
 				su := ToModel(&item)
 				sus = append(sus, su)
@@ -158,8 +160,10 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[
 		if gname, ok := groups[item.Spec.Group.ID]; ok {
 			item.Spec.Group.Name = gname
 		}
-		if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
-			item.Spec.DatasourceID = data
+		if item.Spec.Type == v1.DataService && item.Spec.DatasourceID != nil {
+			if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
+				item.Spec.DatasourceID = data
+			}
 		}
 		sus[i] = ToModel(&item)
 	}

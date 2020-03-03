@@ -30,10 +30,11 @@ type Api struct {
 	Method                v1.Method         `json:"method"`
 	Protocol              v1.Protocol       `json:"protocol"`
 	ReturnType            v1.ReturnType     `json:"returnType"`
-	ApiFields             []v1.Field        `json:"apiFields"`
+	RDBQuery              *v1.RDBQuery      `json:"rdbQuery,omitempty"`
 	Query                 *dwv1.Query       `json:"dataserviceQuery,omitempty"`
 	ApiRequestParameters  []v1.ApiParameter `json:"apiRequestParameters"`
 	ApiResponseParameters []v1.ApiParameter `json:"apiResponseParameters"`
+	ApiPublicParameters   []v1.ApiParameter `json:"apiPublicParameters"`
 	WebParams             []v1.WebParams    `json:"webParams"`
 	ApiType               v1.ApiType        `json:"apiType"`
 	AuthType              v1.AuthType       `json:"authType"`
@@ -73,7 +74,7 @@ func ToAPI(api *Api) *v1.Api {
 		Method:       api.Method,
 		Protocol:     api.Protocol,
 		ReturnType:   api.ReturnType,
-		ApiFields:    api.ApiFields,
+		RDBQuery:     api.RDBQuery,
 		Query:        api.Query,
 		WebParams:    api.WebParams,
 		KongApi:      api.KongApi,
@@ -109,7 +110,6 @@ func ToModel(obj *v1.Api) *Api {
 		Method:       obj.Spec.Method,
 		Protocol:     obj.Spec.Protocol,
 		ReturnType:   obj.Spec.ReturnType,
-		ApiFields:    obj.Spec.ApiFields,
 		WebParams:    obj.Spec.WebParams,
 		KongApi:      obj.Spec.KongApi,
 		ApiType:      obj.Spec.ApiType,
@@ -128,19 +128,22 @@ func ToModel(obj *v1.Api) *Api {
 	if model.Applications == nil {
 		model.Applications = []v1.Application{}
 	}
-	if model.ApiFields == nil {
-		model.ApiFields = []v1.Field{}
-	}
 
 	// for data service (rdb)
-	if len(model.ApiFields) > 0 {
+	if obj.Spec.RDBQuery != nil {
 		p := []v1.ApiParameter{}
-		for _, f := range model.ApiFields {
-			if f.ParameterInfo != nil {
-				p = append(p, *f.ParameterInfo)
-			}
+		for _, f := range obj.Spec.RDBQuery.QueryFields {
+			p = append(p, v1.RDBParameterFromQuery(f))
 		}
 		model.ApiRequestParameters = p
+
+		q := []v1.ApiParameter{}
+		for _, f := range obj.Spec.RDBQuery.WhereFields {
+			q = append(q, v1.RDBParameterFromWhere(f))
+		}
+		model.ApiResponseParameters = q
+
+		model.ApiPublicParameters = publicParameters()
 	}
 
 	// web params
@@ -152,10 +155,10 @@ func ToModel(obj *v1.Api) *Api {
 	if obj.Spec.Query != nil {
 		klog.V(5).Infof("api query field not null, ready to build api parameters")
 		p := []v1.ApiParameter{}
-		for _, w := range obj.Spec.Query.WhereFieldInfo {
-			klog.V(5).Infof("build req params from where %+v", w)
-			if w.ParameterEnabled {
-				p = append(p, v1.ParameterFromWhere(w))
+		for _, f := range obj.Spec.Query.WhereFieldInfo {
+			klog.V(5).Infof("build req params from where %+v", f)
+			if f.ParameterEnabled {
+				p = append(p, v1.ParameterFromWhere(f))
 			}
 		}
 		model.ApiRequestParameters = p
@@ -166,6 +169,8 @@ func ToModel(obj *v1.Api) *Api {
 			q = append(q, v1.ParameterFromQuery(f))
 		}
 		model.ApiResponseParameters = q
+
+		model.ApiPublicParameters = publicParameters()
 	}
 
 	for l := range obj.ObjectMeta.Labels {
@@ -175,6 +180,18 @@ func ToModel(obj *v1.Api) *Api {
 	}
 	model.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
 	return model
+}
+
+func publicParameters() []v1.ApiParameter {
+	return []v1.ApiParameter{
+		{
+			Name:        "Authorization",
+			Type:        "string",
+			Example:     "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX",
+			Description: "请求token，位于headers",
+			Required:    true,
+		},
+	}
 }
 
 func ToListModel(items *v1.ApiList, opts ...util.OpOption) []*Api {
@@ -234,28 +251,16 @@ func (s *Service) Validate(a *Api) error {
 		default:
 			return fmt.Errorf("wrong method type: %s. only %s and %s are allowed", a.Method, v1.GET, v1.LIST)
 		}
-		for i, f := range a.ApiFields {
-			p := f.ParameterInfo
-			if p == nil {
-				continue
+		if a.RDBQuery != nil {
+			for _, p := range a.RDBQuery.QueryFields {
+				if err := p.Validate(); err != nil {
+					return fmt.Errorf("rdb query field error: %+v", err)
+				}
 			}
-			if len(p.Name) == 0 {
-				return fmt.Errorf("%dth parameter name is null", i)
-			}
-			if len(p.Type) == 0 {
-				p.Type = v1.ParameterType("null")
-			}
-			switch p.Type {
-			case v1.String, v1.Int, v1.Bool, v1.Float:
-			default:
-				return fmt.Errorf("%dth parameter type is wrong: %s", i, p.Type)
-			}
-			p.Operator = v1.Equal
-			if len(p.Example) == 0 {
-				return fmt.Errorf("%dth parameter example is null", i)
-			}
-			if len(p.Description) == 0 {
-				return fmt.Errorf("%dth parameter description is null", i)
+			for _, p := range a.RDBQuery.WhereFields {
+				if err := p.Validate(); err != nil {
+					return fmt.Errorf("rdb where field error: %+v", err)
+				}
 			}
 		}
 		if a.Query != nil {
@@ -350,8 +355,8 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		target.Spec.Protocol = source.Protocol
 		target.Spec.KongApi.Protocols = []string{strings.ToLower(string(target.Spec.Protocol))}
 	}
-	if _, ok := data["apiFields"]; ok {
-		target.Spec.ApiFields = source.ApiFields
+	if _, ok := data["rdbQuery"]; ok {
+		target.Spec.RDBQuery = source.RDBQuery
 	}
 	if _, ok = data["returnType"]; ok {
 		target.Spec.ReturnType = source.ReturnType
