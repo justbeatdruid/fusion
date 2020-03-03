@@ -1,0 +1,108 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fusion-application-controller-manager
+  namespace: default
+  labels:
+    app: fusion-application-controller-manager
+    version: v0.1-alpha
+spec:
+  type: ClusterIP
+  ports:
+    - name: service
+      port: 8080
+      protocol: TCP
+      targetPort: 8080
+  selector:
+    app: fusion-application-controller-manager
+    version: v0.1-alpha
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: fusion-application-controller-manager
+    version: v0.1-alpha
+  name: fusion-application-controller-manager
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: fusion-application-controller-manager
+      version: v0.1-alpha
+  serviceName: fusion-application-controller-manager
+  template:
+    metadata:
+      labels:
+        app: fusion-application-controller-manager
+        version: v0.1-alpha
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - fusion-application-controller-manager
+              - key: version
+                operator: In
+                values:
+                - v0.1-alpha
+            topologyKey: "kubernetes.io/hostname"
+      serviceAccount: fusion-application-controller-manager
+      containers:
+      - command:
+        - fusion-application-controller-manager
+        - --operator-host=119.3.248.187
+        - --operator-port=30081
+        - -enable-leader-election
+        image: registry.cmcc.com/library/fusion-application-controller-manager:0.1.0
+        imagePullPolicy: Always
+        name: fusion-application-controller-manager
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        #resources:
+        #  requests:
+        #    cpu: 0.1
+        #    memory: 100Mi
+        volumeMounts:
+        - mountPath: /data
+          name: data
+      restartPolicy: Always
+      securityContext:
+        fsGroup: 0
+        runAsUser: 0
+      volumes:
+      - emptyDir: {}
+        name: data
+---
+apiVersion: rbac.authorization.k8s.io/v1beta1
+kind: ClusterRoleBinding
+metadata:
+  name: fusion-application-controller-manager
+  labels:
+    app: fusion-application-controller-manager
+    version: v0.1-alpha
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cluster-admin
+subjects:
+- kind: ServiceAccount
+  name: fusion-application-controller-manager
+  namespace: default
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: fusion-application-controller-manager
+  namespace: default
+  labels:
+    app: fusion-application-controller-manager
+    version: v0.1-alpha
