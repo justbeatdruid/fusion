@@ -62,16 +62,21 @@ type ApiSpec struct {
 	Method       Method        `json:"method"`
 	Protocol     Protocol      `json:"protocol"`
 	ReturnType   ReturnType    `json:"returnType"`
-	ApiFields    []Field       `json:"apiFields"`
-	Query        *dwv1.Query   `json:"dataserviceQuery,omitempty"`
-	WebParams    []WebParams   `json:"webParams"`
-	KongApi      KongApiInfo   `json:"kongApi"`
-	PublishInfo  PublishInfo   `json:"publishInfo"`
-	ApiType      ApiType       `json:"apiType"` //API类型
-	AuthType     AuthType      `json:"authType"`
-	Traffic      Traffic       `json:"traffic"`
-	ApiAttribute Attribute     `json:"apiAttribute"`
-	Restriction  Restriction   `json:"restriction"`
+
+	// Data API related attributes
+	// Simple RDB API
+	RDBQuery *RDBQuery `json:"rdbQuery,omitempty"`
+	// Datawarehouse API, define a query
+	Query *dwv1.Query `json:"dataserviceQuery,omitempty"`
+
+	WebParams    []WebParams `json:"webParams"`
+	KongApi      KongApiInfo `json:"kongApi"`
+	PublishInfo  PublishInfo `json:"publishInfo"`
+	ApiType      ApiType     `json:"apiType"` //API类型
+	AuthType     AuthType    `json:"authType"`
+	Traffic      Traffic     `json:"traffic"`
+	ApiAttribute Attribute   `json:"apiAttribute"`
+	Restriction  Restriction `json:"restriction"`
 }
 
 type KongApiInfo struct {
@@ -170,22 +175,58 @@ const (
 	Json ReturnType = "json"
 )
 
-type Field struct {
-	TableName     string        `json:"table"`
-	OriginType    ParameterType `json:"originType"`
-	OriginField   string        `json:"originField"`
-	ServiceType   ParameterType `json:"serviceType"`
-	ServiceField  string        `json:"serviceField"`
-	ParameterInfo *ApiParameter `json:"parameterInfo,omitempty"`
+type RDBQuery struct {
+	Table       string       `json:"table"`
+	QueryFields []QueryField `json:"queryFields"`
+	WhereFields []WhereField `json:"whereFields"`
+}
+
+type QueryField struct {
+	Field       string `json:"field"`
+	Type        string `json:"type"`
+	Operator    string `json:"operator"`
+	Description string `json:"description"`
+}
+
+type WhereField struct {
+	Field            string   `json:"field"`
+	Type             string   `json:"type"`
+	Operator         string   `json:"operator"`
+	Values           []string `json:"values"`
+	ParameterEnabled bool     `json:"parameterEnabled"`
+	Example          string   `json:"example"`
+	Description      string   `json:"description"`
+	Required         bool     `json:"required"`
 }
 
 type ApiParameter struct {
-	Name        string        `json:"name"`
-	Type        ParameterType `json:"type"`
-	Operator    Operator      `json:"operator"`
-	Example     string        `json:"example"`
-	Description string        `json:"description"`
-	Required    bool          `json:"required"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Operator    string `json:"operator"`
+	Example     string `json:"example"`
+	Description string `json:"description"`
+	Required    bool   `json:"required"`
+}
+
+func RDBParameterFromQuery(q QueryField) ApiParameter {
+	ap := ApiParameter{
+		Name:        q.Field,
+		Type:        q.Type,
+		Description: q.Description,
+	}
+	return ap
+}
+
+func RDBParameterFromWhere(q WhereField) ApiParameter {
+	ap := ApiParameter{
+		Name:        q.Field,
+		Type:        q.Type,
+		Operator:    q.Operator,
+		Example:     q.Example,
+		Description: q.Description,
+		Required:    q.Required,
+	}
+	return ap
 }
 
 type Attribute struct {
@@ -200,7 +241,7 @@ func ParameterFromWhere(w dwv1.WhereField) ApiParameter {
 	ap := ApiParameter{
 		Name:        w.ParamName(),
 		Type:        "TODO",
-		Operator:    Operator(w.Operator),
+		Operator:    w.Operator,
 		Example:     w.Example,
 		Description: w.Description,
 		Required:    w.Required,
@@ -227,23 +268,25 @@ const (
 	String ParameterType = "string"
 )
 
-func (f Field) Validate() error {
+func (f QueryField) Validate() error {
 	for k, v := range map[string]string{
-		"origin field":  f.OriginField,
-		"service field": f.ServiceField,
+		"field": f.Field,
+		"type":  f.Type,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
-	for k, v := range map[string]ParameterType{
-		"origin type":  f.OriginType,
-		"service type": f.ServiceType,
+	return nil
+}
+
+func (f WhereField) Validate() error {
+	for k, v := range map[string]string{
+		"field": f.Field,
+		"type":  f.Type,
 	} {
-		switch v {
-		case Int, Bool, Float, String:
-		default:
-			return fmt.Errorf("%s type is unknown: %s", k, v)
+		if len(v) == 0 {
+			return fmt.Errorf("%s is null", k)
 		}
 	}
 	return nil
