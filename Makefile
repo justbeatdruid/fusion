@@ -59,7 +59,7 @@ serviceunit-image:
 
 application-image: appimg := ${REG}/library/fusion-application-controller-manager:0.1.0
 application-image:
-	docker build . -f crds/api/Dockerfile -t ${appimg}
+	docker build . -f crds/application/Dockerfile -t ${appimg}
 	docker push ${appimg}
 	
 # Run go fmt against code
