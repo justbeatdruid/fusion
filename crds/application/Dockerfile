@@ -5,14 +5,16 @@ WORKDIR /go/src/github.com/chinamobile/nlpt/
 # Copy the Go Modules manifests
 COPY cmd/ cmd/
 COPY crds/application crds/application
-COPY crds/api crds/api
 COPY pkg/ pkg/
 COPY vendor/ vendor/
+
 # cache deps before building and copying source so that we don't need to re-download as much
 # and so that source changes don't invalidate our downloaded layer
+#RUN go mod download
 RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=off go build -a -o /go/bin/fusion-application-controller-manager cmd/application-controller-manager/application-controller-manager.go
 
-# Copy the go source
+# Use distroless as minimal base image to package the manager binary
+# Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
 WORKDIR /
 COPY --from=builder /go/bin/fusion-application-controller-manager /bin/

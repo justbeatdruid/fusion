@@ -7,6 +7,8 @@ import (
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"github.com/chinamobile/nlpt/crds/apply/api/v1"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -46,18 +48,24 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 				return fmt.Errorf("get serviceunit error: %+v", err)
 			}
 			r.Name = su.Spec.Name
+			r.Owner = user.GetOwner(su.ObjectMeta.Labels)
+			r.Labels = su.ObjectMeta.Labels
 		case v1.Api:
 			api, err := s.getApi(r.ID)
 			if err != nil {
 				return fmt.Errorf("get api error: %+v", err)
 			}
 			r.Name = api.Spec.Name
+			r.Owner = user.GetOwner(api.ObjectMeta.Labels)
+			r.Labels = api.ObjectMeta.Labels
 		case v1.Application:
 			app, err := s.getApplication(r.ID)
 			if err != nil {
 				return fmt.Errorf("get application error: %+v", err)
 			}
 			r.Name = app.Spec.Name
+			r.Owner = user.GetOwner(app.ObjectMeta.Labels)
+			r.Labels = app.ObjectMeta.Labels
 		default:
 			return fmt.Errorf("unknown target type: %s", r.Type)
 		}
@@ -73,6 +81,17 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 	}
 	//TODO check if target api already bound to source application
 
+	klog.V(5).Infof("applicant: %s", model.Users.AppliedBy.ID)
+	if !user.WritePermitted(model.Users.AppliedBy.ID, model.Source.Labels) {
+		return nil, fmt.Errorf("user has no permission for source %s", model.Source.Name)
+	}
+	model.Users.ApprovedBy.ID = model.Target.Owner
+	if len(model.Users.ApprovedBy.ID) == 0 {
+		return nil, fmt.Errorf("cannot get approved user")
+	}
+	if len(model.Users.AppliedBy.ID) == 0 {
+		return nil, fmt.Errorf("cannot get applied user")
+	}
 	apl, err := s.Create(ToAPI(model))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
@@ -80,8 +99,8 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 	return s.ToModel(apl)
 }
 
-func (s *Service) ListApply() ([]*Apply, error) {
-	apls, err := s.List()
+func (s *Service) ListApply(role string, opts ...util.OpOption) ([]*Apply, error) {
+	apls, err := s.List(role, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
@@ -122,8 +141,21 @@ func (s *Service) Create(apl *v1.Apply) (*v1.Apply, error) {
 	return apl, nil
 }
 
-func (s *Service) List() (*v1.ApplyList, error) {
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
+func (s *Service) List(role string, opts ...util.OpOption) (*v1.ApplyList, error) {
+	var labels string
+	operator := util.OpList(opts...).User()
+	switch role {
+	case "approver":
+		labels = user.GetApproverLabelSelector(operator)
+	case "applicant":
+		labels = user.GetApplicantLabelSelector(operator)
+	default:
+		return nil, fmt.Errorf("wrong role: %s", role)
+	}
+	klog.V(5).Infof("list api with label selector: %s", labels)
+	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{
+		LabelSelector: labels,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
@@ -195,7 +227,24 @@ func (s *Service) getApi(id string) (*apiv1.Api, error) {
 	return api, nil
 }
 
-func (s *Service) ApproveApply(id string, admitted bool, reason string) (*v1.Apply, error) {
+func (s *Service) getApiOwners(id string) (map[string]string, error) {
+	crd, err := s.apiClient.Namespace(crdNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	apis := &apiv1.ApiList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apis); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.apiList: %+v", apis)
+	m := make(map[string]string)
+	for _, api := range apis.Items {
+		m[api.ObjectMeta.Name] = user.GetOwner(api.ObjectMeta.Labels)
+	}
+	return m, nil
+}
+
+func (s *Service) ApproveApply(id string, admitted bool, reason string, opts ...util.OpOption) (*v1.Apply, error) {
 	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -205,6 +254,13 @@ func (s *Service) ApproveApply(id string, admitted bool, reason string) (*v1.App
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.apply: %+v", apl)
+
+	apluser := user.GetApplyUserFromLabels(apl.ObjectMeta.Labels)
+	operator := util.OpList(opts...).User()
+	if apluser.ApprovedBy.ID != operator {
+		return nil, fmt.Errorf("user %s has no permission to approve this apply", operator)
+	}
+
 	if apl.Status.Status != v1.Waiting {
 		return nil, fmt.Errorf("wrong apply status, expect %s, have %s", v1.Waiting, apl.Status.Status)
 	}

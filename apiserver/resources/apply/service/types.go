@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/chinamobile/nlpt/crds/apply/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/names"
 
@@ -16,14 +17,13 @@ type Apply struct {
 	ID        string `json:"id"`
 	Namespace string `json:"namespace"`
 
-	Target          Resource  `json:"target"`
-	Source          Resource  `json:"source"`
-	Action          v1.Action `json:"action"`
-	Message         string    `json:"message"`
-	ExpireAt        time.Time `json:"expireAt"`
-	ExpireTimestamp int64     `json:"expireTimestamp,omitempty"`
-	AppliedBy       string    `json:"appliedBy"`
-	ApprovedBy      string    `json:"approvedBy"`
+	Target          Resource       `json:"target"`
+	Source          Resource       `json:"source"`
+	Action          v1.Action      `json:"action"`
+	Message         string         `json:"message"`
+	ExpireAt        time.Time      `json:"expireAt"`
+	ExpireTimestamp int64          `json:"expireTimestamp,omitempty"`
+	Users           user.ApplyUser `json:"users"`
 
 	Status     v1.Status `json:"status"`
 	Reason     string    `json:"reason"`
@@ -38,6 +38,8 @@ type Resource struct {
 	Owner     string    `json:"owner"`
 	Status    string    `json:"status"`
 	CreatedAt time.Time `json:"createdAt"`
+
+	Labels map[string]string `json:"-"`
 }
 
 // only used in creation options
@@ -56,8 +58,6 @@ func ToAPI(app *Apply) *v1.Apply {
 		SourceID:   app.Source.ID,
 		Action:     app.Action,
 		ExpireAt:   metav1.NewTime(app.ExpireAt),
-		AppliedBy:  app.AppliedBy,
-		ApprovedBy: app.ApprovedBy,
 		Message:    app.Message,
 	}
 	crd.Status = v1.ApplyStatus{
@@ -65,6 +65,8 @@ func ToAPI(app *Apply) *v1.Apply {
 		AppliedAt:  metav1.Now(),
 		ApprovedAt: metav1.Unix(0, 0),
 	}
+	// add user labels
+	crd.ObjectMeta.Labels = user.AddApplyLabel(app.Users, crd.ObjectMeta.Labels)
 	return crd
 }
 
@@ -109,9 +111,12 @@ func (s *Service) ToModel(obj *v1.Apply) (*Apply, error) {
 	if err != nil {
 		return nil, err
 	}
+	a.Users = user.GetApplyUserFromLabels(obj.ObjectMeta.Labels)
 	return a, nil
 }
 
+// bad method!!!!
+// TODO list all api/app and then complete
 func (s *Service) Completion(r Resource) (Resource, error) {
 	switch r.Type {
 	case v1.Api:
@@ -123,8 +128,8 @@ func (s *Service) Completion(r Resource) (Resource, error) {
 			}
 			return r, fmt.Errorf("get api error: %+v", err)
 		}
-		r.Owner = "TODO"
 		r.Name = api.Spec.Name
+		r.Owner = user.GetOwner(api.ObjectMeta.Labels)
 		r.CreatedAt = api.ObjectMeta.CreationTimestamp.Time
 		r.Status = string(api.Status.Status)
 	case v1.Application:
@@ -136,8 +141,8 @@ func (s *Service) Completion(r Resource) (Resource, error) {
 			}
 			return r, fmt.Errorf("get application error: %+v", err)
 		}
-		r.Owner = "TODO"
 		r.Name = app.Spec.Name
+		r.Owner = user.GetOwner(app.ObjectMeta.Labels)
 		r.CreatedAt = app.ObjectMeta.CreationTimestamp.Time
 		r.Status = string(app.Status.Status)
 	}
