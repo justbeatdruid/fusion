@@ -6,19 +6,19 @@ import (
 	"strings"
 	"time"
 
-	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	v1 "github.com/chinamobile/nlpt/crds/application/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 )
 
 type Application struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Namespace string `json:"namespace"`
+	ID        string     `json:"id"`
+	Name      string     `json:"name"`
+	Namespace string     `json:"namespace"`
+	Users     user.Users `json:"users"`
 
 	Description     string          `json:"description"`
-	Users           []apiv1.User    `json:"users"`
 	AccessKey       string          `json:"accessKey"`
 	AccessSecretKey string          `json:"accessSecretKey"`
 	APIs            []v1.Api        `json:"apis"`
@@ -44,7 +44,6 @@ func ToAPI(app *Application) *v1.Application {
 	crd.ObjectMeta.Namespace = crdNamespace
 	crd.Spec = v1.ApplicationSpec{
 		Name:            app.Name,
-		Users:           app.Users,
 		Description:     app.Description,
 		AccessKey:       app.AccessKey,
 		AccessSecretKey: app.AccessSecretKey,
@@ -60,6 +59,8 @@ func ToAPI(app *Application) *v1.Application {
 		}
 		crd.ObjectMeta.Labels[v1.GroupLabel] = app.Group
 	}
+	// add user labels
+	crd.ObjectMeta.Labels = user.AddUsersLabels(app.Users, crd.ObjectMeta.Labels)
 	return crd
 }
 
@@ -70,18 +71,18 @@ func ToModel(obj *v1.Application) *Application {
 		Namespace: obj.ObjectMeta.Namespace,
 
 		Description:     obj.Spec.Description,
-		Users:           obj.Spec.Users,
 		AccessKey:       obj.Spec.AccessKey,
 		AccessSecretKey: obj.Spec.AccessSecretKey,
 		APIs:            obj.Spec.APIs,
 		ConsumerInfo:    obj.Spec.ConsumerInfo,
 
-		Status:    obj.Status.Status,
-		UserCount: len(obj.Spec.Users),
-		APICount:  len(obj.Spec.APIs),
+		Status:   obj.Status.Status,
+		APICount: len(obj.Spec.APIs),
 
 		CreatedAt: obj.ObjectMeta.CreationTimestamp.Time,
 	}
+	app.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
+	//TODO UserCount
 	if group, ok := obj.ObjectMeta.Labels[v1.GroupLabel]; ok {
 		app.Group = group
 		app.GroupName = obj.Spec.Group.Name
@@ -131,6 +132,19 @@ func (s *Service) Validate(a *Application) error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
+	appList, errs := s.List()
+	if errs != nil {
+		return fmt.Errorf("cannot list app object: %+v", errs)
+	}
+	for _, p := range appList.Items {
+		if p.Spec.Name == a.Name {
+			return fmt.Errorf("app name cannot be repeated: %s", p.Spec.Name)
+		}
+	}
+
+	if len(a.Users.Owner.ID) == 0 {
+		return fmt.Errorf("owner not set")
+	}
 	a.ID = names.NewID()
 	var err error
 	a.AccessKey, a.AccessSecretKey, err = s.getKeyPairs()
@@ -158,7 +172,19 @@ func (s *Service) assignment(target *v1.Application, reqData interface{}) error 
 		return fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
 	if _, ok := data["name"]; ok {
+		if target.Spec.Name != source.Name {
+			appList, errs := s.List()
+			if errs != nil {
+				return fmt.Errorf("cannot list app object: %+v", errs)
+			}
+			for _, p := range appList.Items {
+				if p.Spec.Name == source.Name {
+					return fmt.Errorf("app name cannot be repeated: %s", p.Spec.Name)
+				}
+			}
+		}
 		target.Spec.Name = source.Name
+
 	}
 	if _, ok := data["description"]; ok {
 		target.Spec.Description = source.Description
@@ -168,9 +194,6 @@ func (s *Service) assignment(target *v1.Application, reqData interface{}) error 
 			target.ObjectMeta.Labels = make(map[string]string)
 		}
 		target.ObjectMeta.Labels[v1.GroupLabel] = source.Group
-	}
-	if target.Spec.Users == nil {
-		target.Spec.Users = make([]apiv1.User, 0)
 	}
 	if target.Spec.APIs == nil {
 		target.Spec.APIs = make([]v1.Api, 0)

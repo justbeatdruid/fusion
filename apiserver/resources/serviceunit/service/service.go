@@ -2,10 +2,12 @@ package service
 
 import (
 	"fmt"
+	"strings"
 
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	groupv1 "github.com/chinamobile/nlpt/crds/serviceunitgroup/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,8 +44,8 @@ func (s *Service) CreateServiceunit(model *Serviceunit) (*Serviceunit, error) {
 	return ToModel(su), nil
 }
 
-func (s *Service) ListServiceunit(group string, opts ...util.OpOption) ([]*Serviceunit, error) {
-	sus, err := s.List(group)
+func (s *Service) ListServiceunit(opts ...util.OpOption) ([]*Serviceunit, error) {
+	sus, err := s.List(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
@@ -62,6 +64,25 @@ func (s *Service) GetServiceunit(id string) (*Serviceunit, error) {
 	su, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	if su.Spec.Type == v1.DataService && len(su.Spec.DatasourceID.ID) > 0 {
+		data, err := s.getDatasource(su.Spec.DatasourceID.ID)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get datasource: %+v", err)
+		}
+		ds := &v1.Datasource{
+			ID:   data.ObjectMeta.Name,
+			Name: data.Spec.Name,
+		}
+		if data.Spec.Type == datav1.DataWarehouseType && data.Spec.DataWarehouse != nil {
+			ds.DataWarehouse = &v1.DataWarehouse{
+				DatabaseName:        data.Spec.DataWarehouse.Name,
+				DatabaseDisplayName: data.Spec.DataWarehouse.DisplayName,
+				SubjectName:         data.Spec.DataWarehouse.SubjectName,
+				SubjectDisplayName:  data.Spec.DataWarehouse.SubjectDisplayName,
+			}
+		}
+		su.Spec.DatasourceID = ds
 	}
 	return ToModel(su), nil
 }
@@ -157,11 +178,20 @@ func (s *Service) PatchServiceunit(id string, data interface{}) (*Serviceunit, e
 	return ToModel(su), err
 }
 
-func (s *Service) List(group string) (*v1.ServiceunitList, error) {
+func (s *Service) List(opts ...util.OpOption) (*v1.ServiceunitList, error) {
 	var options metav1.ListOptions
+	op := util.OpList(opts...)
+	group := op.Group()
+	u := op.User()
+	var labels []string
 	if len(group) > 0 {
-		options.LabelSelector = fmt.Sprintf("%s=%s", v1.GroupLabel, group)
+		labels = append(labels, fmt.Sprintf("%s=%s", v1.GroupLabel, group))
 	}
+	if len(u) > 0 {
+		labels = append(labels, user.GetLabelSelector(u))
+	}
+	options.LabelSelector = strings.Join(labels, ",")
+	klog.V(5).Infof("list with label selector: %s", options.LabelSelector)
 	crd, err := s.client.Namespace(crdNamespace).List(options)
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
@@ -245,7 +275,7 @@ func (s *Service) UpdateStatus(su *v1.Serviceunit) (*v1.Serviceunit, error) {
 	return su, nil
 }
 
-func (s *Service) getDatasource(id string) (*datav1.DatasourceSpec, error) {
+func (s *Service) getDatasource(id string) (*datav1.Datasource, error) {
 	crd, err := s.datasourceClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -255,7 +285,7 @@ func (s *Service) getDatasource(id string) (*datav1.DatasourceSpec, error) {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.datasource: %+v", ds)
-	return &ds.Spec, nil
+	return ds, nil
 }
 
 func (s *Service) GetGroup(id string) (*groupv1.ServiceunitGroup, error) {
@@ -288,7 +318,7 @@ func (s *Service) GetGroupMap() (map[string]string, error) {
 	return m, nil
 }
 
-func (s *Service) GetDatasourceMap() (map[string]v1.Datasource, error) {
+func (s *Service) GetDatasourceMap() (map[string]*v1.Datasource, error) {
 	crd, err := s.datasourceClient.Namespace(crdNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
@@ -298,9 +328,9 @@ func (s *Service) GetDatasourceMap() (map[string]v1.Datasource, error) {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.datasourcelist: %+v", datas)
-	m := make(map[string]v1.Datasource)
+	m := make(map[string]*v1.Datasource)
 	for _, data := range datas.Items {
-		ds := v1.Datasource{
+		ds := &v1.Datasource{
 			ID:   data.ObjectMeta.Name,
 			Name: data.Spec.Name,
 		}
@@ -315,4 +345,89 @@ func (s *Service) GetDatasourceMap() (map[string]v1.Datasource, error) {
 		m[data.ObjectMeta.Name] = ds
 	}
 	return m, nil
+}
+
+func (s *Service) AddUser(id, operator string, data *user.Data) error {
+	crd, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	if !user.IsOwner(operator, labels) && !user.IsManager(operator, labels) {
+		return fmt.Errorf("only owner or manager can add user")
+	}
+	labels, err = user.AddUserLabels(data, labels)
+	if err != nil {
+		return fmt.Errorf("add user labels error: %+v", err)
+	}
+	crd.ObjectMeta.Labels = labels
+	_, err = s.UpdateSpec(crd)
+	if err != nil {
+		return fmt.Errorf("update crd error: %+v", err)
+	}
+	return nil
+}
+
+func (s *Service) RemoveUser(id, operator, target string) error {
+	crd, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	if !user.IsOwner(operator, labels) && !user.IsManager(operator, labels) {
+		return fmt.Errorf("only owner or manager can remove user")
+	}
+	labels, err = user.RemoveUserLabels(target, labels)
+	if err != nil {
+		return fmt.Errorf("remove user labels error: %+v", err)
+	}
+	crd.ObjectMeta.Labels = labels
+	_, err = s.UpdateSpec(crd)
+	if err != nil {
+		return fmt.Errorf("update crd error: %+v", err)
+	}
+	return nil
+}
+
+func (s *Service) ChangeOwner(id, operator string, data *user.Data) error {
+	klog.V(5).Infof("change owner appid=%s, operator=%s, data=%+v", id, operator, *data)
+	crd, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	if !user.IsOwner(operator, labels) {
+		return fmt.Errorf("only owner or can change owner")
+	}
+	labels, err = user.ChangeOwner(data.ID, labels)
+	if err != nil {
+		return fmt.Errorf("change owner labels error: %+v", err)
+	}
+	crd.ObjectMeta.Labels = labels
+	_, err = s.UpdateSpec(crd)
+	if err != nil {
+		return fmt.Errorf("update crd error: %+v", err)
+	}
+	return nil
+}
+
+func (s *Service) ChangeUser(id, operator string, data *user.Data) error {
+	crd, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	if !user.IsOwner(operator, labels) && !user.IsManager(operator, labels) {
+		return fmt.Errorf("only owner or manager can add user")
+	}
+	labels, err = user.ChangeUser(data, labels)
+	if err != nil {
+		return fmt.Errorf("change user labels error: %+v", err)
+	}
+	crd.ObjectMeta.Labels = labels
+	_, err = s.UpdateSpec(crd)
+	if err != nil {
+		return fmt.Errorf("update crd error: %+v", err)
+	}
+	return nil
 }

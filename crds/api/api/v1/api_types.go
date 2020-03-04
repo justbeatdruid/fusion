@@ -29,15 +29,15 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
-const ServiceunitLabel = "serviceunit"
-const applicationLabel = "application"
+const ServiceunitLabel = "nlpt.cmcc.com/serviceunit"
+const applicationLabel = "nlpt.cmcc.com/application"
 
 func ApplicationLabel(id string) string {
-	return strings.Join([]string{applicationLabel, id}, "/")
+	return strings.Join([]string{applicationLabel, id}, ".")
 }
 
 func IsApplicationLabel(l string) bool {
-	match, _ := regexp.MatchString(fmt.Sprintf("%s/([0-9a-f]{16})", applicationLabel), l)
+	match, _ := regexp.MatchString(fmt.Sprintf("%s.([0-9a-f]{16})", applicationLabel), l)
 	return match
 }
 
@@ -53,44 +53,34 @@ type ApiSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Name         string        `json:"name"`
-	Description  string        `json:"description"`
-	Serviceunit  Serviceunit   `json:"serviceunit"`
-	Applications []Application `json:"applications"`
-	Users        []User        `json:"users"`
-	Frequency    int           `json:"frequency"`
-	Method       Method        `json:"method"`
-	Protocol     Protocol      `json:"protocol"`
-	ReturnType   ReturnType    `json:"returnType"`
-	ApiFields    []Field       `json:"apiFields"`
-	Query        *dwv1.Query   `json:"dataserviceQuery,omitempty"`
-	WebParams    []WebParams   `json:"webParams"`
-	KongApi      KongApiInfo   `json:"kongApi"`
-	PublishInfo  PublishInfo   `json:"publishInfo"`
-	ApiType      ApiType       `json:"apiType"` //API类型
-	AuthType     AuthType      `json:"authType"`
-	Traffic      Traffic       `json:"traffic"`
-	ApiAttribute Attribute     `json:"apiAttribute"`
-	Restriction  Restriction   `json:"restriction"`
-}
+	Name           string        `json:"name"`
+	Description    string        `json:"description"`
+	Serviceunit    Serviceunit   `json:"serviceunit"`
+	Applications   []Application `json:"applications"`
+	Users          []User        `json:"users"`
+	Frequency      int           `json:"frequency"`
+	ApiType        ApiType       `json:"apiType"` //API类型
+	AuthType       AuthType      `json:"authType"`
+	Tags           string        `json:"tags"`
+	ApiBackendType string        `json:"apiBackendType"`
+	//data api
+	Method     Method      `json:"method"`
+	Protocol   Protocol    `json:"protocol"`
+	ReturnType ReturnType  `json:"returnType"`
+	// Data API related attributes
+	// Simple RDB API
+	RDBQuery *RDBQuery `json:"rdbQuery,omitempty"`
+	// Datawarehouse API, define a query
+	Query      *dwv1.Query `json:"dataserviceQuery,omitempty"`
+	//web api
+	ApiDefineInfo ApiDefineInfo `json:"apiDefineInfo"`
+	KongApi       KongApiInfo   `json:"kongApi"`
+	ApiReturnInfo ApiReturnInfo `json:"apiReturnInfo"`
+	//api publishInfo
+	PublishInfo PublishInfo `json:"publishInfo"`
 
-type KongApiInfo struct {
-	//Kong变量
-	//A list of domain names that match this Route. With form-encoded, the notation is hosts[]=example.com&hosts[]=foo.test. With JSON, use an Array.
-	Hosts         []string `json:"hosts"`
-	Paths         []string `json:"paths"`
-	Headers       []string `json:"Headers"`
-	Methods       []string `json:"methods"`
-	HttpsCode     int      `json:"https_redirect_status_code"`
-	RegexPriority int      `json:"regex_priority"`
-	StripPath     bool     `json:"strip_path"`
-	PreserveHost  bool     `json:"preserve_host"`
-	Snis          []string `json:"snis"`
-	Protocols     []string `json:"protocols"`
-	KongID        string   `json:"kong_id"`
-	JwtID         string   `json:"jwt_id"`
-	AclID         string   `json:"acl_id"`
-	CorsID        string   `json:"cors_id"`
+	Traffic     Traffic     `json:"traffic"`
+	Restriction Restriction `json:"restriction"`
 }
 
 type Serviceunit struct {
@@ -101,6 +91,8 @@ type Serviceunit struct {
 	Type   string `json:"Type"`
 	Host   string `json:"Host"`
 	Port   int    `json:"Port"`
+	//API的协议从服务单元获取
+	Protocol string `json:"protocol"`
 }
 
 type Traffic struct {
@@ -170,37 +162,100 @@ const (
 	Json ReturnType = "json"
 )
 
-type Field struct {
-	TableName     string        `json:"table"`
-	OriginType    ParameterType `json:"originType"`
-	OriginField   string        `json:"originField"`
-	ServiceType   ParameterType `json:"serviceType"`
-	ServiceField  string        `json:"serviceField"`
-	ParameterInfo *ApiParameter `json:"parameterInfo,omitempty"`
+type RDBQuery struct {
+	Table       string       `json:"table"`
+	QueryFields []QueryField `json:"queryFields"`
+	WhereFields []WhereField `json:"whereFields"`
+}
+
+type QueryField struct {
+	Field       string `json:"field"`
+	Type        string `json:"type"`
+	Operator    string `json:"operator"`
+	Description string `json:"description"`
+}
+
+type WhereField struct {
+	Field            string   `json:"field"`
+	Type             string   `json:"type"`
+	Operator         string   `json:"operator"`
+	Values           []string `json:"values"`
+	ParameterEnabled bool     `json:"parameterEnabled"`
+	Example          string   `json:"example"`
+	Description      string   `json:"description"`
+	Required         bool     `json:"required"`
 }
 
 type ApiParameter struct {
-	Name        string        `json:"name"`
-	Type        ParameterType `json:"type"`
-	Operator    Operator      `json:"operator"`
-	Example     string        `json:"example"`
-	Description string        `json:"description"`
-	Required    bool          `json:"required"`
+	Name        string `json:"name"`
+	Type        string `json:"type"`
+	Operator    string `json:"operator"`
+	Example     string `json:"example"`
+	Description string `json:"description"`
+	Required    bool   `json:"required"`
 }
 
-type Attribute struct {
-	MatchMode      string `json:"matchMode"`
-	Tags           string `json:"tags"`
-	Cors           string `json:"cors"`
+func RDBParameterFromQuery(q QueryField) ApiParameter {
+	ap := ApiParameter{
+		Name:        q.Field,
+		Type:        q.Type,
+		Description: q.Description,
+	}
+	return ap
+}
+
+func RDBParameterFromWhere(q WhereField) ApiParameter {
+	ap := ApiParameter{
+		Name:        q.Field,
+		Type:        q.Type,
+		Operator:    q.Operator,
+		Example:     q.Example,
+		Description: q.Description,
+		Required:    q.Required,
+	}
+	return ap
+}
+//define api
+type ApiDefineInfo struct {
+	Path      string      `json:"path"`
+	MatchMode string      `json:"matchMode"`
+	Method    Method      `json:"method"`
+	Protocol  Protocol    `json:"protocol"` //直接从服务单元里面获取不需要前台传入
+	Cors      string      `json:"cors"`
+	WebParams []WebParams `json:"webParams"`
+}
+
+//define api return
+type ApiReturnInfo struct {
 	NormalExample  string `json:"normalExample"`
 	FailureExample string `json:"failureExample"`
+}
+
+//define webbackend info
+type KongApiInfo struct {
+	//Kong变量
+	//A list of domain names that match this Route. With form-encoded, the notation is hosts[]=example.com&hosts[]=foo.test. With JSON, use an Array.
+	Hosts         []string `json:"hosts"`
+	Paths         []string `json:"paths"` //kong 是数组 界面是字符串
+	Headers       []string `json:"Headers"`
+	Methods       []string `json:"methods"`
+	HttpsCode     int      `json:"https_redirect_status_code"`
+	RegexPriority int      `json:"regex_priority"`
+	StripPath     bool     `json:"strip_path"`
+	PreserveHost  bool     `json:"preserve_host"`
+	Snis          []string `json:"snis"`
+	Protocols     []string `json:"protocols"`
+	KongID        string   `json:"kong_id"`
+	JwtID         string   `json:"jwt_id"`
+	AclID         string   `json:"acl_id"`
+	CorsID        string   `json:"cors_id"`
 }
 
 func ParameterFromWhere(w dwv1.WhereField) ApiParameter {
 	ap := ApiParameter{
 		Name:        w.ParamName(),
 		Type:        "TODO",
-		Operator:    Operator(w.Operator),
+		Operator:    w.Operator,
 		Example:     w.Example,
 		Description: w.Description,
 		Required:    w.Required,
@@ -227,23 +282,24 @@ const (
 	String ParameterType = "string"
 )
 
-func (f Field) Validate() error {
+func (f QueryField) Validate() error {
 	for k, v := range map[string]string{
-		"origin field":  f.OriginField,
-		"service field": f.ServiceField,
+		"field": f.Field,
+		"type":  f.Type,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
-	for k, v := range map[string]ParameterType{
-		"origin type":  f.OriginType,
-		"service type": f.ServiceType,
+	return nil
+}
+func (f WhereField) Validate() error {
+	for k, v := range map[string]string{
+		"field": f.Field,
+		"type":  f.Type,
 	} {
-		switch v {
-		case Int, Bool, Float, String:
-		default:
-			return fmt.Errorf("%s type is unknown: %s", k, v)
+		if len(v) == 0 {
+			return fmt.Errorf("%s is null", k)
 		}
 	}
 	return nil
@@ -270,6 +326,7 @@ const (
 	Path   LocationType = "path"
 	Query  LocationType = "query"
 	Header LocationType = "header"
+	Body   LocationType = "body"
 )
 
 type Operator string

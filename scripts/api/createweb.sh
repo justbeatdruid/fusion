@@ -1,26 +1,27 @@
-curl localhost:8001/api/v1/apis -H 'content-type:application/json' \
+curl localhost:8001/api/v1/apis -H 'content-type:application/json' -H 'X-auth-Token:8c06d2a4d87a8e4df280589889d85f67e6d755b2fb33538fd724ba6f700361a0' \
   -d'
 {
   "data": {
     "name": "xuxutest",
     "apiType":"public",
     "authType":"APPAUTH",
+    "tag":"apitest",
     "serviceunit": {
-      "id": "16b77388f08a46b4",
+      "id": "44f747227d7e85a5",
       "name": "test",
       "group": "testgroup"
     },
     "frequency": 10,
-    "method": "GET",
-    "protocol": "HTTP",
-    "returnType": "json",
     "KongApi":{
       "paths":[
-      "/api/v1/webapi",
-      "/nlstore/v1/"
+      "/api/v1/webapi"
       ]
     },
-    "webParams": [
+    "apiDefineInfo":{
+    "path":"/api/v1/webapi/test",
+     "method":"GET",
+     "cors":"false",
+     "webParams": [
       {
         "name": "para1",
 	"type": "int",
@@ -38,9 +39,9 @@ curl localhost:8001/api/v1/apis -H 'content-type:application/json' \
 	"example": "hello",
 	"valueDefault":"hello",
 	"required": false
-  }
-    ],
-  "apiAttribute" :{
+  }]
+    },
+  "apiReturnInfo" :{
   "normalExample":"{code:0}" 
   }
   }

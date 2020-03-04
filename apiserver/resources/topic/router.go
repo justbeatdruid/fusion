@@ -70,6 +70,12 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.exportTopics).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+
+	ws.Route(ws.POST("/topics/import").
+		Doc("import topics from excel files").
+		To(r.importTopics).Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func (r *router) createTopic(request *restful.Request, response *restful.Response) {
@@ -102,6 +108,7 @@ func (r *router) listMessages(request *restful.Request, response *restful.Respon
 	code, result := r.controller.ListMessages(request)
 	response.WriteHeaderAndEntity(code, result)
 }
+
 //导出关于topics的信息
 func (r *router) exportTopics(request *restful.Request, response *restful.Response) {
 	r.controller.ExportTopics(request)
@@ -109,3 +116,8 @@ func (r *router) exportTopics(request *restful.Request, response *restful.Respon
 	response.Header().Add("Content-Type","application/vnd.ms-excel")
 	http.ServeFile(response.ResponseWriter,request.Request,"/tmp/topics.xlsx")
 }
+
+
+func (r *router) importTopics(request *restful.Request, response *restful.Response) {
+}
+

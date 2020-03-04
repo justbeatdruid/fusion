@@ -56,7 +56,7 @@ func (r *router) Install(ws *restful.WebService) {
 }
 
 func (r *router) createTopicgroup(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.CreateTopicGroup(request)
+	code, result := r.controller.CreateTopicgroup(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 

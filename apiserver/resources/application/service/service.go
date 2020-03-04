@@ -2,9 +2,11 @@ package service
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/chinamobile/nlpt/crds/application/api/v1"
 	groupv1 "github.com/chinamobile/nlpt/crds/applicationgroup/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -39,8 +41,8 @@ func (s *Service) CreateApplication(model *Application) (*Application, error) {
 	return ToModel(app), nil
 }
 
-func (s *Service) ListApplication(group string, opts ...util.OpOption) ([]*Application, error) {
-	apps, err := s.List(group)
+func (s *Service) ListApplication(opts ...util.OpOption) ([]*Application, error) {
+	apps, err := s.List(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
@@ -113,11 +115,20 @@ func (s *Service) PatchApplication(id string, data interface{}) (*Application, e
 	return ToModel(app), err
 }
 
-func (s *Service) List(group string) (*v1.ApplicationList, error) {
+func (s *Service) List(opts ...util.OpOption) (*v1.ApplicationList, error) {
 	var options metav1.ListOptions
+	op := util.OpList(opts...)
+	group := op.Group()
+	u := op.User()
+	var labels []string
 	if len(group) > 0 {
-		options.LabelSelector = fmt.Sprintf("%s=%s", v1.GroupLabel, group)
+		labels = append(labels, fmt.Sprintf("%s=%s", v1.GroupLabel, group))
 	}
+	if len(u) > 0 {
+		labels = append(labels, user.GetLabelSelector(u))
+	}
+	options.LabelSelector = strings.Join(labels, ",")
+	klog.V(5).Infof("list with label selector: %s", options.LabelSelector)
 	crd, err := s.client.Namespace(crdNamespace).List(options)
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
@@ -224,4 +235,89 @@ func (s *Service) GetGroupMap() (map[string]string, error) {
 		m[app.ObjectMeta.Name] = app.Spec.Name
 	}
 	return m, nil
+}
+
+func (s *Service) AddUser(id, operator string, data *user.Data) error {
+	crd, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	if !user.IsOwner(operator, labels) && !user.IsManager(operator, labels) {
+		return fmt.Errorf("only owner or manager can add user")
+	}
+	labels, err = user.AddUserLabels(data, labels)
+	if err != nil {
+		return fmt.Errorf("add user labels error: %+v", err)
+	}
+	crd.ObjectMeta.Labels = labels
+	_, err = s.UpdateSpec(crd)
+	if err != nil {
+		return fmt.Errorf("update crd error: %+v", err)
+	}
+	return nil
+}
+
+func (s *Service) RemoveUser(id, operator, target string) error {
+	crd, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	if !user.IsOwner(operator, labels) && !user.IsManager(operator, labels) {
+		return fmt.Errorf("only owner or manager can remove user")
+	}
+	labels, err = user.RemoveUserLabels(target, labels)
+	if err != nil {
+		return fmt.Errorf("remove user labels error: %+v", err)
+	}
+	crd.ObjectMeta.Labels = labels
+	_, err = s.UpdateSpec(crd)
+	if err != nil {
+		return fmt.Errorf("update crd error: %+v", err)
+	}
+	return nil
+}
+
+func (s *Service) ChangeOwner(id, operator string, data *user.Data) error {
+	klog.V(5).Infof("change owner appid=%s, operator=%s, data=%+v", id, operator, *data)
+	crd, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	if !user.IsOwner(operator, labels) {
+		return fmt.Errorf("only owner or can change owner")
+	}
+	labels, err = user.ChangeOwner(data.ID, labels)
+	if err != nil {
+		return fmt.Errorf("change owner labels error: %+v", err)
+	}
+	crd.ObjectMeta.Labels = labels
+	_, err = s.UpdateSpec(crd)
+	if err != nil {
+		return fmt.Errorf("update crd error: %+v", err)
+	}
+	return nil
+}
+
+func (s *Service) ChangeUser(id, operator string, data *user.Data) error {
+	crd, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	if !user.IsOwner(operator, labels) && !user.IsManager(operator, labels) {
+		return fmt.Errorf("only owner or manager can add user")
+	}
+	labels, err = user.ChangeUser(data, labels)
+	if err != nil {
+		return fmt.Errorf("change user labels error: %+v", err)
+	}
+	crd.ObjectMeta.Labels = labels
+	_, err = s.UpdateSpec(crd)
+	if err != nil {
+		return fmt.Errorf("update crd error: %+v", err)
+	}
+	return nil
 }

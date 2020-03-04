@@ -64,6 +64,18 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			klog.Errorf("update namespace error: %+v", namespace)
 		}
 	}
+
+	if namespace.Status.Status == nlptv1.Delete {
+		namespace.Status.Status = nlptv1.Deleting
+		if err := r.Operator.DeleteNamespace(namespace); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = err.Error()
+		} else {
+			r.Delete(ctx, namespace)
+		}
+		klog.Infof("Final Namespace: %+v", *namespace)
+
+	}
 	return ctrl.Result{}, nil
 }
 

@@ -6,6 +6,8 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/apply/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/emicklei/go-restful"
@@ -64,10 +66,18 @@ func (c *controller) CreateApply(req *restful.Request) (int, *CreateResponse) {
 			Message: "read entity error: data is null",
 		}
 	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	body.Data.Users = user.InitWithApplicant(authuser.Name)
 	if apl, err := c.service.CreateApply(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
-			Message: fmt.Errorf("create database error: %+v", err).Error(),
+			Message: fmt.Errorf("create apply error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -82,7 +92,7 @@ func (c *controller) GetApply(req *restful.Request) (int, *GetResponse) {
 	if apl, err := c.service.GetApply(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
-			Message: fmt.Errorf("get database error: %+v", err).Error(),
+			Message: fmt.Errorf("get apply error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -97,7 +107,7 @@ func (c *controller) DeleteApply(req *restful.Request) (int, *DeleteResponse) {
 	if err := c.service.DeleteApply(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
-			Message: fmt.Errorf("delete database error: %+v", err).Error(),
+			Message: fmt.Errorf("delete apply error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
@@ -110,7 +120,21 @@ func (c *controller) DeleteApply(req *restful.Request) (int, *DeleteResponse) {
 func (c *controller) ListApply(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-	if apl, err := c.service.ListApply(); err != nil {
+	role := req.QueryParameter("role")
+	if len(role) == 0 {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: "need role in query parameter: applicant or approver",
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if apl, err := c.service.ListApply(role, util.WithUser(authuser.Name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list applies error: %+v", err).Error(),
@@ -159,10 +183,17 @@ func (c *controller) ApproveApply(req *restful.Request) (int, *ApproveResponse) 
 			Message: "read entity error: data is null",
 		}
 	}
-	if _, err := c.service.ApproveApply(id, body.Data.Admitted, body.Data.Reason); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ApproveResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if _, err := c.service.ApproveApply(id, body.Data.Admitted, body.Data.Reason, util.WithUser(authuser.Name)); err != nil {
 		return http.StatusInternalServerError, &ApproveResponse{
 			Code:    2,
-			Message: fmt.Errorf("create database error: %+v", err).Error(),
+			Message: fmt.Errorf("create apply error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &ApproveResponse{

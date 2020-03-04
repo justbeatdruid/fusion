@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 
+	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunitgroup/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,11 +23,15 @@ var oofsGVR = schema.GroupVersionResource{
 }
 
 type Service struct {
-	client dynamic.NamespaceableResourceInterface
+	client   dynamic.NamespaceableResourceInterface
+	suClient dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface) *Service {
-	return &Service{client: client.Resource(oofsGVR)}
+	return &Service{
+		client:   client.Resource(oofsGVR),
+		suClient: client.Resource(suv1.GetOOFSGVR()),
+	}
 }
 
 func (s *Service) CreateServiceunitGroup(model *ServiceunitGroup) (*ServiceunitGroup, error) {
@@ -57,6 +62,14 @@ func (s *Service) GetServiceunitGroup(id string) (*ServiceunitGroup, error) {
 }
 
 func (s *Service) DeleteServiceunitGroup(id string) error {
+	sus, err := s.getServiceunitList(id)
+	klog.V(5).Infof("get %d serviceunits in group", len(sus.Items))
+	if err != nil {
+		return fmt.Errorf("cannot get serviceunit list: %+v", err)
+	}
+	if len(sus.Items) > 0 {
+		return fmt.Errorf("%d serviceunit(s) still in group %s", len(sus.Items), id)
+	}
 	return s.Delete(id)
 }
 
@@ -151,4 +164,21 @@ func (s *Service) UpdateSpec(sug *v1.ServiceunitGroup) (*v1.ServiceunitGroup, er
 	klog.V(5).Infof("get v1.serviceunitgroup: %+v", sug)
 
 	return sug, nil
+}
+
+func (s *Service) getServiceunitList(groupid string) (*suv1.ServiceunitList, error) {
+	labelSelector := fmt.Sprintf("%s=%s", suv1.GroupLabel, groupid)
+	klog.V(5).Infof("list with label selector: %s", labelSelector)
+	crd, err := s.suClient.Namespace(crdNamespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	sus := &suv1.ServiceunitList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), sus); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.serviceunitList: %+v", sus)
+	return sus, nil
 }

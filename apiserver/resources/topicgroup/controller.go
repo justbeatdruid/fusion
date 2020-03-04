@@ -2,6 +2,7 @@ package topicgroup
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/topicgroup/service"
@@ -20,6 +21,11 @@ func newController(cfg *config.Config) *controller {
 	}
 }
 
+const (
+	success = iota
+	fail
+)
+
 type Wrapped struct {
 	Code    int                 `json:"code"`
 	Message string              `json:"message"`
@@ -36,13 +42,26 @@ type DeleteResponse = Wrapped
 }*/
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int                   `json:"code"`
-	Message string                `json:"message"`
-	Data    []*service.Topicgroup `json:"data"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
 
-func (c *controller) CreateTopicGroup(req *restful.Request) (int, *CreateResponse) {
+type TopicgroupList []*service.Topicgroup
+
+func (tgs TopicgroupList) Length() int {
+	return len(tgs)
+}
+
+func (tgs TopicgroupList) GetItem(i int) (interface{}, error) {
+	if i >= len(tgs) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return tgs[i], nil
+}
+
+func (c *controller) CreateTopicgroup(req *restful.Request) (int, *CreateResponse) {
 	body := &service.Topicgroup{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
@@ -50,15 +69,15 @@ func (c *controller) CreateTopicGroup(req *restful.Request) (int, *CreateRespons
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
-	if tp, err := c.service.CreateTopicGroup(body); err != nil {
+	if tg, err := c.service.CreateTopicgroup(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
 			Message: fmt.Errorf("create database error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
-			Code: 0,
-			Data: tp,
+			Code: success,
+			Data: tg,
 		}
 	}
 }
@@ -67,12 +86,12 @@ func (c *controller) GetTopicgroup(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
 	if tp, err := c.service.GetTopicgroup(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
-			Code:    1,
+			Code:    fail,
 			Message: fmt.Errorf("get database error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
-			Code: 0,
+			Code: success,
 			Data: tp,
 		}
 	}
@@ -87,7 +106,7 @@ func (c *controller) DeleteAllTopicgroups(req *restful.Request) (int, *ListRespo
 		}
 	} else {
 		return http.StatusOK, &ListResponse{
-			Code: 0,
+			Code: success,
 			Data: tps,
 		}
 	}
@@ -96,27 +115,40 @@ func (c *controller) DeleteTopicgroup(req *restful.Request) (int, *DeleteRespons
 	id := req.PathParameter("id")
 	if tp, err := c.service.DeleteTopicgroup(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
-			Code:    1,
+			Code:    fail,
 			Message: fmt.Errorf("delete topicgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
-			Code: 0,
+			Code: success,
 			Data: tp,
 		}
 	}
 }
 
 func (c *controller) ListTopicgroup(req *restful.Request) (int, *ListResponse) {
-	if tp, err := c.service.ListTopicgroup(); err != nil {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+
+	if tg, err := c.service.ListTopicgroup(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
-			Code:    1,
+			Code:    fail,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
-		return http.StatusOK, &ListResponse{
-			Code: 0,
-			Data: tp,
+		var tps TopicgroupList = tg
+
+		data, err := util.PageWrap(tps, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:    fail,
+				Message: fmt.Sprintf("page parameter error: %+v", err),
+			}
+		} else {
+			return http.StatusOK, &ListResponse{
+				Code: success,
+				Data: data,
+			}
 		}
 	}
 }

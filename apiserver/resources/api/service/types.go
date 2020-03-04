@@ -8,6 +8,7 @@ import (
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	dwv1 "github.com/chinamobile/nlpt/crds/api/datawarehouse/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 
@@ -22,24 +23,29 @@ type Api struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 
-	Serviceunit           v1.Serviceunit    `json:"serviceunit"`
-	Applications          []v1.Application  `json:"applications"`
-	Users                 []v1.User         `json:"users"`
-	Frequency             int               `json:"frequency"`
+	Serviceunit    v1.Serviceunit   `json:"serviceunit"`
+	Applications   []v1.Application `json:"applications"`
+	Users          user.Users       `json:"users"`
+	Frequency      int              `json:"frequency"`
+	ApiType        v1.ApiType       `json:"apiType"`
+	AuthType       v1.AuthType      `json:"authType"`
+	Tags           string           `json:"tags"`
+	ApiBackendType string           `json:"apiBackendType"`
+
 	Method                v1.Method         `json:"method"`
 	Protocol              v1.Protocol       `json:"protocol"`
 	ReturnType            v1.ReturnType     `json:"returnType"`
-	ApiFields             []v1.Field        `json:"apiFields"`
+	RDBQuery              *v1.RDBQuery      `json:"rdbQuery,omitempty"`
 	Query                 *dwv1.Query       `json:"dataserviceQuery,omitempty"`
 	ApiRequestParameters  []v1.ApiParameter `json:"apiRequestParameters"`
 	ApiResponseParameters []v1.ApiParameter `json:"apiResponseParameters"`
-	WebParams             []v1.WebParams    `json:"webParams"`
-	ApiType               v1.ApiType        `json:"apiType"`
-	AuthType              v1.AuthType       `json:"authType"`
-	ApiAttribute          v1.Attribute      `json:"apiAttribute"`
-	Traffic               v1.Traffic        `json:"traffic"`
+	ApiPublicParameters   []v1.ApiParameter `json:"apiPublicParameters"`
+	ApiDefineInfo         v1.ApiDefineInfo  `json:"apiDefineInfo"`
 	KongApi               v1.KongApiInfo    `json:"KongApi"`
-	Restriction           v1.Restriction    `json:"restriction"`
+	ApiReturnInfo         v1.ApiReturnInfo  `json:"apiReturnInfo"`
+
+	Traffic     v1.Traffic     `json:"traffic"`
+	Restriction v1.Restriction `json:"restriction"`
 
 	Status v1.Status `json:"status"`
 	//Publish          v1.Publish    `json:"publish"`
@@ -64,24 +70,25 @@ func ToAPI(api *Api) *v1.Api {
 	crd.ObjectMeta.Labels = make(map[string]string)
 	crd.ObjectMeta.Labels[v1.ServiceunitLabel] = api.Serviceunit.ID
 	crd.Spec = v1.ApiSpec{
-		Name:         api.Name,
-		Description:  api.Description,
-		Serviceunit:  api.Serviceunit,
-		Applications: api.Applications,
-		Users:        api.Users,
-		Frequency:    api.Frequency,
-		Method:       api.Method,
-		Protocol:     api.Protocol,
-		ReturnType:   api.ReturnType,
-		ApiFields:    api.ApiFields,
-		Query:        api.Query,
-		WebParams:    api.WebParams,
-		KongApi:      api.KongApi,
-		ApiType:      api.ApiType,
-		AuthType:     api.AuthType,
-		ApiAttribute: api.ApiAttribute,
-		Traffic:      api.Traffic,
-		Restriction:  api.Restriction,
+		Name:           api.Name,
+		Description:    api.Description,
+		Serviceunit:    api.Serviceunit,
+		Applications:   api.Applications,
+		Frequency:      api.Frequency,
+		ApiType:        api.ApiType,
+		AuthType:       api.AuthType,
+		Tags:           api.Tags,
+		ApiBackendType: api.Serviceunit.Type,
+		Method:         api.Method,
+		Protocol:       api.Protocol,
+		ReturnType:     api.ReturnType,
+		RDBQuery:       api.RDBQuery,
+		Query:          api.Query,
+		ApiDefineInfo:  api.ApiDefineInfo,
+		KongApi:        api.KongApi,
+		ApiReturnInfo:  api.ApiReturnInfo,
+		Traffic:        api.Traffic,
+		Restriction:    api.Restriction,
 	}
 	crd.Status = v1.ApiStatus{
 		Status:           v1.Init,
@@ -91,6 +98,8 @@ func ToAPI(api *Api) *v1.Api {
 		ApplicationCount: api.ApplicationCount,
 		CalledCount:      api.CalledCount,
 	}
+	// add user labels
+	crd.ObjectMeta.Labels = user.AddUsersLabels(api.Users, crd.ObjectMeta.Labels)
 	return crd
 }
 
@@ -99,23 +108,23 @@ func ToModel(obj *v1.Api) *Api {
 		ID:        obj.ObjectMeta.Name,
 		Namespace: obj.ObjectMeta.Namespace,
 
-		Name:         obj.Spec.Name,
-		Description:  obj.Spec.Description,
-		Serviceunit:  obj.Spec.Serviceunit,
-		Applications: obj.Spec.Applications,
-		Users:        obj.Spec.Users,
-		Frequency:    obj.Spec.Frequency,
-		Method:       obj.Spec.Method,
-		Protocol:     obj.Spec.Protocol,
-		ReturnType:   obj.Spec.ReturnType,
-		ApiFields:    obj.Spec.ApiFields,
-		WebParams:    obj.Spec.WebParams,
-		KongApi:      obj.Spec.KongApi,
-		ApiType:      obj.Spec.ApiType,
-		AuthType:     obj.Spec.AuthType,
-		ApiAttribute: obj.Spec.ApiAttribute,
-		Traffic:      obj.Spec.Traffic,
-		Restriction:  obj.Spec.Restriction,
+		Name:           obj.Spec.Name,
+		Description:    obj.Spec.Description,
+		Serviceunit:    obj.Spec.Serviceunit,
+		Applications:   obj.Spec.Applications,
+		Frequency:      obj.Spec.Frequency,
+		ApiType:        obj.Spec.ApiType,
+		AuthType:       obj.Spec.AuthType,
+		Tags:           obj.Spec.Tags,
+		ApiBackendType: obj.Spec.Serviceunit.Type,
+		Method:         obj.Spec.Method,
+		Protocol:       obj.Spec.Protocol,
+		ReturnType:     obj.Spec.ReturnType,
+		ApiDefineInfo:  obj.Spec.ApiDefineInfo,
+		KongApi:        obj.Spec.KongApi,
+		ApiReturnInfo:  obj.Spec.ApiReturnInfo,
+		Traffic:        obj.Spec.Traffic,
+		Restriction:    obj.Spec.Restriction,
 
 		Status:           obj.Status.Status,
 		AccessLink:       obj.Status.AccessLink,
@@ -127,34 +136,37 @@ func ToModel(obj *v1.Api) *Api {
 	if model.Applications == nil {
 		model.Applications = []v1.Application{}
 	}
-	if model.ApiFields == nil {
-		model.ApiFields = []v1.Field{}
-	}
 
 	// for data service (rdb)
-	if len(model.ApiFields) > 0 {
+	if obj.Spec.RDBQuery != nil {
 		p := []v1.ApiParameter{}
-		for _, f := range model.ApiFields {
-			if f.ParameterInfo != nil {
-				p = append(p, *f.ParameterInfo)
-			}
+		for _, f := range obj.Spec.RDBQuery.QueryFields {
+			p = append(p, v1.RDBParameterFromQuery(f))
 		}
 		model.ApiRequestParameters = p
+
+		q := []v1.ApiParameter{}
+		for _, f := range obj.Spec.RDBQuery.WhereFields {
+			q = append(q, v1.RDBParameterFromWhere(f))
+		}
+		model.ApiResponseParameters = q
+
+		model.ApiPublicParameters = publicParameters()
 	}
 
 	// web params
-	if model.WebParams == nil {
-		model.WebParams = []v1.WebParams{}
+	if model.ApiDefineInfo.WebParams == nil {
+		model.ApiDefineInfo.WebParams = []v1.WebParams{}
 	}
 
 	// for data service (datawarehouse api)
 	if obj.Spec.Query != nil {
 		klog.V(5).Infof("api query field not null, ready to build api parameters")
 		p := []v1.ApiParameter{}
-		for _, w := range obj.Spec.Query.WhereFieldInfo {
-			klog.V(5).Infof("build req params from where %+v", w)
-			if w.ParameterEnabled {
-				p = append(p, v1.ParameterFromWhere(w))
+		for _, f := range obj.Spec.Query.WhereFieldInfo {
+			klog.V(5).Infof("build req params from where %+v", f)
+			if f.ParameterEnabled {
+				p = append(p, v1.ParameterFromWhere(f))
 			}
 		}
 		model.ApiRequestParameters = p
@@ -165,6 +177,8 @@ func ToModel(obj *v1.Api) *Api {
 			q = append(q, v1.ParameterFromQuery(f))
 		}
 		model.ApiResponseParameters = q
+
+		model.ApiPublicParameters = publicParameters()
 	}
 
 	for l := range obj.ObjectMeta.Labels {
@@ -172,7 +186,20 @@ func ToModel(obj *v1.Api) *Api {
 			model.ApplicationCount = model.ApplicationCount + 1
 		}
 	}
+	model.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
 	return model
+}
+
+func publicParameters() []v1.ApiParameter {
+	return []v1.ApiParameter{
+		{
+			Name:        "Authorization",
+			Type:        "string",
+			Example:     "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX",
+			Description: "请求token，位于headers",
+			Required:    true,
+		},
+	}
 }
 
 func ToListModel(items *v1.ApiList, opts ...util.OpOption) []*Api {
@@ -199,6 +226,21 @@ func ToListModel(items *v1.ApiList, opts ...util.OpOption) []*Api {
 func (s *Service) Validate(a *Api) error {
 	if len(a.Name) == 0 {
 		return fmt.Errorf("name is null")
+	}
+
+	apiList, err := s.ListApis()
+	if err != nil {
+		return fmt.Errorf("cannot list api object: %+v", err)
+	}
+	for _, p := range apiList.Items {
+		if p.Spec.Name == a.Name {
+			return fmt.Errorf("api name cannot be repeated: %s", p.Spec.Name)
+		}
+
+	}
+
+	if len(a.Users.Owner.ID) == 0 {
+		return fmt.Errorf("owner not set")
 	}
 	if len(a.Serviceunit.ID) == 0 {
 		return fmt.Errorf("serviceunit id is null")
@@ -229,28 +271,16 @@ func (s *Service) Validate(a *Api) error {
 		default:
 			return fmt.Errorf("wrong method type: %s. only %s and %s are allowed", a.Method, v1.GET, v1.LIST)
 		}
-		for i, f := range a.ApiFields {
-			p := f.ParameterInfo
-			if p == nil {
-				continue
+		if a.RDBQuery != nil {
+			for _, p := range a.RDBQuery.QueryFields {
+				if err := p.Validate(); err != nil {
+					return fmt.Errorf("rdb query field error: %+v", err)
+				}
 			}
-			if len(p.Name) == 0 {
-				return fmt.Errorf("%dth parameter name is null", i)
-			}
-			if len(p.Type) == 0 {
-				p.Type = v1.ParameterType("null")
-			}
-			switch p.Type {
-			case v1.String, v1.Int, v1.Bool, v1.Float:
-			default:
-				return fmt.Errorf("%dth parameter type is wrong: %s", i, p.Type)
-			}
-			p.Operator = v1.Equal
-			if len(p.Example) == 0 {
-				return fmt.Errorf("%dth parameter example is null", i)
-			}
-			if len(p.Description) == 0 {
-				return fmt.Errorf("%dth parameter description is null", i)
+			for _, p := range a.RDBQuery.WhereFields {
+				if err := p.Validate(); err != nil {
+					return fmt.Errorf("rdb where field error: %+v", err)
+				}
 			}
 		}
 		if a.Query != nil {
@@ -261,12 +291,12 @@ func (s *Service) Validate(a *Api) error {
 	}
 	//参数校验
 	if su.Spec.Type == "web" {
-		switch a.Method {
+		switch a.ApiDefineInfo.Method {
 		case v1.GET, v1.POST, v1.PUT, v1.DELETE, v1.PATCH:
 		default:
 			return fmt.Errorf("wrong method type: %s. ", a.Method)
 		}
-		for i, p := range a.WebParams {
+		for i, p := range a.ApiDefineInfo.WebParams {
 			if len(p.Name) == 0 {
 				return fmt.Errorf("%dth parameter name is null", i)
 			}
@@ -279,7 +309,7 @@ func (s *Service) Validate(a *Api) error {
 				return fmt.Errorf("%dth parameter type is wrong: %s", i, p.Type)
 			}
 			switch p.Location {
-			case v1.Path, v1.Header, v1.Query:
+			case v1.Path, v1.Header, v1.Query, v1.Body:
 			default:
 				return fmt.Errorf("%dth parameter location is wrong: %s", i, p.Location)
 			}
@@ -288,7 +318,7 @@ func (s *Service) Validate(a *Api) error {
 		if len(a.KongApi.Paths) == 0 {
 			return fmt.Errorf("api paths is null. ")
 		}
-		if len(a.ApiAttribute.NormalExample) == 0 {
+		if len(a.ApiReturnInfo.NormalExample) == 0 {
 			return fmt.Errorf("normal example is null.")
 		}
 	}
@@ -320,6 +350,17 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		return fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
 	if _, ok := data["name"]; ok {
+		if target.Spec.Name != source.Name {
+			apiList, err := s.ListApis()
+			if err != nil {
+				return fmt.Errorf("cannot list api object: %+v", err)
+			}
+			for _, p := range apiList.Items {
+				if p.Spec.Name == source.Name {
+					return fmt.Errorf("api name cannot be repeated: %s", p.Spec.Name)
+				}
+			}
+		}
 		target.Spec.Name = source.Name
 	}
 	if _, ok := data["namespace"]; ok {
@@ -328,29 +369,35 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	if _, ok := data["applications"]; ok {
 		target.Spec.Applications = source.Applications
 	}
-	if _, ok = data["users"]; ok {
-		target.Spec.Users = source.Users
-	}
+	/*
+		if _, ok = data["users"]; ok {
+			target.Spec.Users = source.Users
+		}
+	*/
 	if _, ok := data["frequency"]; ok {
 		target.Spec.Frequency = source.Frequency
 	}
 	if _, ok := data["method"]; ok {
 		target.Spec.Method = source.Method
-		target.Spec.KongApi.Methods = []string{strings.ToUpper(string(target.Spec.Method))}
+		if target.Spec.Serviceunit.Type == "data" {
+			target.Spec.KongApi.Methods = []string{strings.ToUpper(string(target.Spec.Method))}
+		}
 	}
-	//更新协议
+	//协议是从服务单元继承所以暂不支持更新暂时保留
 	if _, ok := data["protocol"]; ok {
 		target.Spec.Protocol = source.Protocol
-		target.Spec.KongApi.Protocols = []string{strings.ToLower(string(target.Spec.Protocol))}
+		if target.Spec.Serviceunit.Type == "data" {
+			target.Spec.KongApi.Protocols = []string{strings.ToLower(string(target.Spec.Protocol))}
+		}
 	}
-	if _, ok := data["apiFields"]; ok {
-		target.Spec.ApiFields = source.ApiFields
+	if _, ok := data["rdbQuery"]; ok {
+		target.Spec.RDBQuery = source.RDBQuery
 	}
 	if _, ok = data["returnType"]; ok {
 		target.Spec.ReturnType = source.ReturnType
 	}
 	if _, ok = data["webParams"]; ok {
-		target.Spec.WebParams = source.WebParams
+		target.Spec.ApiDefineInfo.WebParams = source.ApiDefineInfo.WebParams
 	}
 	if _, ok = data["apiType"]; ok {
 		target.Spec.ApiType = source.ApiType
@@ -359,10 +406,34 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		target.Spec.AuthType = source.AuthType
 	}
 
+	if apiInfo, ok := data["apiDefineInfo"]; ok {
+		if config, ok := apiInfo.(map[string]interface{}); ok {
+			if _, ok = config["path"]; ok {
+				target.Spec.ApiDefineInfo.Path = source.ApiDefineInfo.Path
+			}
+			if _, ok = config["matchMode"]; ok {
+				target.Spec.ApiDefineInfo.MatchMode = source.ApiDefineInfo.MatchMode
+			}
+			if _, ok = config["method"]; ok {
+				target.Spec.ApiDefineInfo.Method = source.ApiDefineInfo.Method
+			}
+			if _, ok = config["cors"]; ok {
+				target.Spec.ApiDefineInfo.Cors = source.ApiDefineInfo.Cors
+			}
+			if _, ok = config["webParams"]; ok {
+				target.Spec.ApiDefineInfo.WebParams = source.ApiDefineInfo.WebParams
+			}
+		}
+	}
+
 	if kongInfo, ok := data["KongApi"]; ok {
 		if config, ok := kongInfo.(map[string]interface{}); ok {
+			//web 类型直接使用kong传入的参数  path method
 			if _, ok = config["paths"]; ok {
 				target.Spec.KongApi.Paths = source.KongApi.Paths
+			}
+			if target.Spec.Serviceunit.Type == "web" {
+				target.Spec.KongApi.Methods = []string{strings.ToUpper(string(source.ApiDefineInfo.Method))}
 			}
 			if _, ok = config["hosts"]; ok {
 				target.Spec.KongApi.Hosts = source.KongApi.Hosts
@@ -370,22 +441,13 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		}
 	}
 
-	if apiInfo, ok := data["apiAttribute"]; ok {
+	if apiInfo, ok := data["apiReturnInfo"]; ok {
 		if config, ok := apiInfo.(map[string]interface{}); ok {
-			if _, ok = config["matchMode"]; ok {
-				target.Spec.ApiAttribute.MatchMode = source.ApiAttribute.MatchMode
-			}
-			if _, ok = config["tags"]; ok {
-				target.Spec.ApiAttribute.Tags = source.ApiAttribute.Tags
-			}
-			if _, ok = config["cors"]; ok {
-				target.Spec.ApiAttribute.Cors = source.ApiAttribute.Cors
-			}
 			if _, ok = config["normalExample"]; ok {
-				target.Spec.ApiAttribute.NormalExample = source.ApiAttribute.NormalExample
+				target.Spec.ApiReturnInfo.NormalExample = source.ApiReturnInfo.NormalExample
 			}
 			if _, ok = config["failureExample"]; ok {
-				target.Spec.ApiAttribute.FailureExample = source.ApiAttribute.FailureExample
+				target.Spec.ApiReturnInfo.FailureExample = source.ApiReturnInfo.FailureExample
 			}
 		}
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/chinamobile/nlpt/pkg/names"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -14,6 +15,7 @@ import (
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	dsv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 	"github.com/chinamobile/nlpt/pkg/util"
 
@@ -33,7 +35,6 @@ type Service struct {
 	datasourceClient  dynamic.NamespaceableResourceInterface
 
 	dataService dw.Connector
-
 }
 
 func NewService(client dynamic.Interface, dsConfig *config.DataserviceConfig) *Service {
@@ -44,7 +45,6 @@ func NewService(client dynamic.Interface, dsConfig *config.DataserviceConfig) *S
 		datasourceClient:  client.Resource(dsv1.GetOOFSGVR()),
 
 		dataService: dw.NewConnector(dsConfig.Host, dsConfig.Port),
-
 	}
 }
 
@@ -59,10 +59,22 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get serviceunit error: %+v", err)
 	}
+	if !user.WritePermitted(model.Users.Owner.ID, su.ObjectMeta.Labels) {
+		return nil, fmt.Errorf("user %s has no permission for writting serviceunit %s", model.Users.Owner.ID, su.ObjectMeta.Name)
+	}
 	model.Serviceunit.KongID = su.Spec.KongService.ID
 	model.Serviceunit.Port = su.Spec.KongService.Port
 	model.Serviceunit.Host = su.Spec.KongService.Host
+	model.Serviceunit.Protocol = su.Spec.KongService.Protocol
 	model.Serviceunit.Type = string(su.Spec.Type)
+	//api协议依赖服务单元
+	if model.Serviceunit.Protocol == "https" {
+		model.Protocol = v1.HTTPS               //data type
+		model.ApiDefineInfo.Protocol = v1.HTTPS //web type
+	} else {
+		model.Protocol = v1.HTTP
+		model.ApiDefineInfo.Protocol = v1.HTTP
+	}
 
 	// create api
 	api, err := s.Create(ToAPI(model))
@@ -103,7 +115,30 @@ func (s *Service) PatchApi(id string, data interface{}) (*Api, error) {
 }
 
 func (s *Service) ListApi(suid, appid string, opts ...util.OpOption) ([]*Api, error) {
-	apis, err := s.List(suid, appid)
+	if len(suid) > 0 && len(appid) > 0 {
+		return nil, fmt.Errorf("i am not sure if it is suitable to get api with application id and service unit id, but it make no sense")
+	}
+	// check opts.user is permitted for application and serviceunit
+	userid := util.OpList(opts...).User()
+	if len(appid) > 0 {
+		app, err := s.getApplication(appid)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get application: %+v", err)
+		}
+		if !user.ReadPermitted(userid, app.ObjectMeta.Labels) {
+			return nil, fmt.Errorf("permitted denied of application %s", appid)
+		}
+	}
+	if len(suid) > 0 {
+		su, err := s.getServiceunit(suid)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get serviceunit: %+v", err)
+		}
+		if !user.ReadPermitted(userid, su.ObjectMeta.Labels) {
+			return nil, fmt.Errorf("permitted denied of service unit %s", suid)
+		}
+	}
+	apis, err := s.List(suid, appid, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
@@ -139,7 +174,7 @@ func (s *Service) PublishApi(id string) (*Api, error) {
 	//发布API时将API的状态修改为
 	api.Status.Status = v1.Creating
 	//TODO version随机生成
-	api.Spec.PublishInfo.Version = "11111"
+	api.Spec.PublishInfo.Version = names.NewID()
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -196,8 +231,12 @@ func (s *Service) Create(api *v1.Api) (*v1.Api, error) {
 	return api, nil
 }
 
-func (s *Service) List(suid, appid string) (*v1.ApiList, error) {
+func (s *Service) List(suid, appid string, opts ...util.OpOption) (*v1.ApiList, error) {
+	group := util.OpList(opts...).Group()
 	conditions := []string{}
+	if len(group) > 0 {
+		conditions = append(conditions, fmt.Sprintf("%s=%s", appv1.GroupLabel, group))
+	}
 	if len(suid) > 0 {
 		conditions = append(conditions, fmt.Sprintf("%s=%s", v1.ServiceunitLabel, suid))
 	}
@@ -215,6 +254,19 @@ func (s *Service) List(suid, appid string) (*v1.ApiList, error) {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.apiList: %+v", apis)
+	return apis, nil
+}
+
+func (s *Service) ListApis() (*v1.ApiList, error) {
+	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	apis := &v1.ApiList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apis); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("====test get v1.ApiList: %+v", apis)
 	return apis, nil
 }
 
@@ -383,6 +435,9 @@ func (s *Service) BindOrRelease(apiid, appid, operation string) (*Api, error) {
 }
 
 func (s *Service) BindApi(apiid, appid string) (*Api, error) {
+	if true {
+		return nil, fmt.Errorf("do not bind api directly. make an application.")
+	}
 	api, err := s.Get(apiid)
 	if err != nil {
 		return nil, fmt.Errorf("get api error: %+v", err)
@@ -399,6 +454,7 @@ func (s *Service) BindApi(apiid, appid string) (*Api, error) {
 	api.Spec.Applications = append(api.Spec.Applications, v1.Application{
 		ID: appid,
 	})
+	api.Status.ApplicationCount = api.Status.ApplicationCount + 1
 	api, err = s.UpdateSpec(api)
 	//if _, err = s.updateApplicationApi(appid, api.ObjectMeta.Name, api.Spec.Name); err != nil {
 	//	return fmt.Errorf("cannot update")
@@ -426,6 +482,7 @@ func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
 
 	//解绑的时候先设置false TODO 之后controller 里面删除
 	api.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "false"
+	api.Status.ApplicationCount = api.Status.ApplicationCount - 1
 	api, err = s.UpdateSpec(api)
 	//if _, err = s.updateApplicationApi(appid, api.ObjectMeta.Name, api.Spec.Name); err != nil {
 	//	return fmt.Errorf("cannot update")
@@ -483,8 +540,8 @@ func (s *Service) TestApi(model *Api) (interface{}, error) {
 	}
 
 	body := map[string]interface{}{}
-	for i := range model.WebParams {
-		body[model.WebParams[i].Name] = model.WebParams[i].Example
+	for i := range model.ApiDefineInfo.WebParams {
+		body[model.ApiDefineInfo.WebParams[i].Name] = model.ApiDefineInfo.WebParams[i].Example
 	}
 	bytesData, _ := json.Marshal(body)
 
