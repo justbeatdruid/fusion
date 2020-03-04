@@ -220,10 +220,11 @@ func (s *Service) checkDatasource(d *v1.Datasource) (*datav1.DatasourceSpec, err
 	if d == nil {
 		return nil, fmt.Errorf("datasource is null")
 	}
-	ds, err := s.getDatasource(d.ID)
+	data, err := s.getDatasource(d.ID)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get datasource: %+v", err)
 	}
+	ds := &data.Spec
 
 	for k, v := range map[string]string{
 		"name": ds.Name,
