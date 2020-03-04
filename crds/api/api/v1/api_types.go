@@ -53,44 +53,31 @@ type ApiSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Name         string        `json:"name"`
-	Description  string        `json:"description"`
-	Serviceunit  Serviceunit   `json:"serviceunit"`
-	Applications []Application `json:"applications"`
-	Users        []User        `json:"users"`
-	Frequency    int           `json:"frequency"`
-	Method       Method        `json:"method"`
-	Protocol     Protocol      `json:"protocol"`
-	ReturnType   ReturnType    `json:"returnType"`
-	ApiFields    []Field       `json:"apiFields"`
-	Query        *dwv1.Query   `json:"dataserviceQuery,omitempty"`
-	WebParams    []WebParams   `json:"webParams"`
-	KongApi      KongApiInfo   `json:"kongApi"`
-	PublishInfo  PublishInfo   `json:"publishInfo"`
-	ApiType      ApiType       `json:"apiType"` //API类型
-	AuthType     AuthType      `json:"authType"`
-	Traffic      Traffic       `json:"traffic"`
-	ApiAttribute Attribute     `json:"apiAttribute"`
-	Restriction  Restriction   `json:"restriction"`
-}
+	Name           string        `json:"name"`
+	Description    string        `json:"description"`
+	Serviceunit    Serviceunit   `json:"serviceunit"`
+	Applications   []Application `json:"applications"`
+	Users          []User        `json:"users"`
+	Frequency      int           `json:"frequency"`
+	ApiType        ApiType       `json:"apiType"` //API类型
+	AuthType       AuthType      `json:"authType"`
+	Tags           string        `json:"tags"`
+	ApiBackendType string        `json:"apiBackendType"`
+	//data api
+	Method     Method      `json:"method"`
+	Protocol   Protocol    `json:"protocol"`
+	ReturnType ReturnType  `json:"returnType"`
+	ApiFields  []Field     `json:"apiFields"`
+	Query      *dwv1.Query `json:"dataserviceQuery,omitempty"`
+	//web api
+	ApiDefineInfo ApiDefineInfo `json:"apiDefineInfo"`
+	KongApi       KongApiInfo   `json:"kongApi"`
+	ApiReturnInfo ApiReturnInfo `json:"apiReturnInfo"`
+	//api publishInfo
+	PublishInfo PublishInfo `json:"publishInfo"`
 
-type KongApiInfo struct {
-	//Kong变量
-	//A list of domain names that match this Route. With form-encoded, the notation is hosts[]=example.com&hosts[]=foo.test. With JSON, use an Array.
-	Hosts         []string `json:"hosts"`
-	Paths         []string `json:"paths"`
-	Headers       []string `json:"Headers"`
-	Methods       []string `json:"methods"`
-	HttpsCode     int      `json:"https_redirect_status_code"`
-	RegexPriority int      `json:"regex_priority"`
-	StripPath     bool     `json:"strip_path"`
-	PreserveHost  bool     `json:"preserve_host"`
-	Snis          []string `json:"snis"`
-	Protocols     []string `json:"protocols"`
-	KongID        string   `json:"kong_id"`
-	JwtID         string   `json:"jwt_id"`
-	AclID         string   `json:"acl_id"`
-	CorsID        string   `json:"cors_id"`
+	Traffic     Traffic     `json:"traffic"`
+	Restriction Restriction `json:"restriction"`
 }
 
 type Serviceunit struct {
@@ -101,6 +88,8 @@ type Serviceunit struct {
 	Type   string `json:"Type"`
 	Host   string `json:"Host"`
 	Port   int    `json:"Port"`
+	//API的协议从服务单元获取
+	Protocol string `json:"protocol"`
 }
 
 type Traffic struct {
@@ -188,12 +177,40 @@ type ApiParameter struct {
 	Required    bool          `json:"required"`
 }
 
-type Attribute struct {
-	MatchMode      string `json:"matchMode"`
-	Tags           string `json:"tags"`
-	Cors           string `json:"cors"`
+//define api
+type ApiDefineInfo struct {
+	Path      string      `json:"path"`
+	MatchMode string      `json:"matchMode"`
+	Method    Method      `json:"method"`
+	Protocol  Protocol    `json:"protocol"` //直接从服务单元里面获取不需要前台传入
+	Cors      string      `json:"cors"`
+	WebParams []WebParams `json:"webParams"`
+}
+
+//define api return
+type ApiReturnInfo struct {
 	NormalExample  string `json:"normalExample"`
 	FailureExample string `json:"failureExample"`
+}
+
+//define webbackend info
+type KongApiInfo struct {
+	//Kong变量
+	//A list of domain names that match this Route. With form-encoded, the notation is hosts[]=example.com&hosts[]=foo.test. With JSON, use an Array.
+	Hosts         []string `json:"hosts"`
+	Paths         []string `json:"paths"` //kong 是数组 界面是字符串
+	Headers       []string `json:"Headers"`
+	Methods       []string `json:"methods"`
+	HttpsCode     int      `json:"https_redirect_status_code"`
+	RegexPriority int      `json:"regex_priority"`
+	StripPath     bool     `json:"strip_path"`
+	PreserveHost  bool     `json:"preserve_host"`
+	Snis          []string `json:"snis"`
+	Protocols     []string `json:"protocols"`
+	KongID        string   `json:"kong_id"`
+	JwtID         string   `json:"jwt_id"`
+	AclID         string   `json:"acl_id"`
+	CorsID        string   `json:"cors_id"`
 }
 
 func ParameterFromWhere(w dwv1.WhereField) ApiParameter {
@@ -270,6 +287,7 @@ const (
 	Path   LocationType = "path"
 	Query  LocationType = "query"
 	Header LocationType = "header"
+	Body   LocationType = "body"
 )
 
 type Operator string
