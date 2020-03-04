@@ -103,11 +103,11 @@ func (s *Service) ToModel(obj *v1.Apply) (*Apply, error) {
 		ApprovedAt: obj.Status.ApprovedAt.Time,
 	}
 	var err error
-	a.Source, err = s.Completion(a.Source)
+	a.Source, err = s.FakeCompletion(a.Source)
 	if err != nil {
 		return nil, err
 	}
-	a.Target, err = s.Completion(a.Target)
+	a.Target, err = s.FakeCompletion(a.Target)
 	if err != nil {
 		return nil, err
 	}
@@ -146,6 +146,11 @@ func (s *Service) Completion(r Resource) (Resource, error) {
 		r.CreatedAt = app.ObjectMeta.CreationTimestamp.Time
 		r.Status = string(app.Status.Status)
 	}
+	return r, nil
+}
+
+func (s *Service) FakeCompletion(r Resource) (Resource, error) {
+	r.Name = "TODO"
 	return r, nil
 }
 

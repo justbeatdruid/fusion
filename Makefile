@@ -54,13 +54,13 @@ api-image:
 	
 serviceunit-image: simg := ${REG}/library/fusion-serviceunit-controller-manager:0.1.0
 serviceunit-image:
-	docker build . -f crds/api/Dockerfile -t ${simg}
+	docker build . -f crds/serviceunit/Dockerfile -t ${simg}
 	docker push ${simg}
 
-application-image: appimg := ${REG}/library/fusion-application-controller-manager:0.1.0
-application-image:
-	docker build . -f crds/application/Dockerfile -t ${appimg}
-	docker push ${appimg}
+apply-image: aplimg := ${REG}/library/fusion-apply-controller-manager:0.1.0
+apply-image:
+	docker build . -f crds/apply/Dockerfile -t ${aplimg}
+	docker push ${aplimg}
 	
 # Run go fmt against code
 fmt:

@@ -24,6 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
+	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	// +kubebuilder:scaffold:imports
@@ -39,6 +40,7 @@ func init() {
 
 	_ = nlptv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
+	klog.InitFlags(nil)
 }
 
 func main() {
@@ -58,11 +60,17 @@ func main() {
 		o.Development = true
 	}))
 
+	namespace := os.Getenv("MY_POD_NAMESPACE")
+	if len(namespace) == 0 {
+		namespace = "default"
+	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		LeaderElection:     enableLeaderElection,
-		Port:               9443,
+		Scheme:                  scheme,
+		MetricsBindAddress:      metricsAddr,
+		LeaderElection:          enableLeaderElection,
+		LeaderElectionNamespace: namespace,
+		LeaderElectionID:        "fusion-topicgroup-controller-manager",
+		Port:                    9443,
 	})
 
 	operator := &controllers.Operator{
