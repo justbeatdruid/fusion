@@ -2,14 +2,14 @@ package topic
 
 import (
 	"fmt"
+	"github.com/emicklei/go-restful/log"
 	"net/http"
 	"strconv"
 	"strings"
-
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/util"
-
+    "github.com/360EntSecGroup-Skylar/excelize"
 	"github.com/emicklei/go-restful"
 )
 
@@ -364,6 +364,39 @@ func (ms MessageList) GetItem(i int) (interface{}, error) {
 		return struct{}{}, fmt.Errorf("index overflow")
 	}
 	return ms[i], nil
+}
+
+//导出topics的信息
+func (c *controller) ExportTopics(req *restful.Request) {
+	topicIds := req.QueryParameters("topicIds")
+    file := excelize.NewFile()
+	index := file.NewSheet("Sheet1")
+	s := []string{"topic租户名称","topic组名称","topic名称","分区数量","非持久化"}
+	j:=0
+	for i :=65; i<70; i++  {
+		file.SetCellValue("Sheet1",string(i)+"1",s[j])
+		j++
+	}
+	row:=1
+	for _, topicId := range topicIds {
+		row++
+		cell := 65
+       if topic, err := c.service.GetTopic(topicId);err!=nil{
+          log.Printf("list database error: %+v", err)
+	   }else {
+	   	//以坐标位置写入
+	   	file.SetCellValue("Sheet1",string(cell)+strconv.Itoa(row),topic.Tenant)
+	   	file.SetCellValue("Sheet1",string(cell+1)+strconv.Itoa(row),topic.TopicGroup)
+	   	file.SetCellValue("Sheet1",string(cell+2)+strconv.Itoa(row),topic.Name)
+	   	file.SetCellValue("Sheet1",string(cell+3)+strconv.Itoa(row),topic.Partition)
+	   	file.SetCellValue("Sheet1",string(cell+4)+strconv.Itoa(row),topic.IsNonPersistent)
+	   }
+	}
+	file.SetActiveSheet(index)
+	err := file.SaveAs("/tmp/topics.xlsx")
+	if err !=nil {
+		log.Printf("save file error: %+v", err)
+	}
 }
 
 func returns200(b *restful.RouteBuilder) {

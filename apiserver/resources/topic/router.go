@@ -2,6 +2,7 @@ package topic
 
 import (
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"net/http"
 
 	"github.com/emicklei/go-restful"
 )
@@ -61,6 +62,15 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.listMessages).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+	//导出topics信息
+	ws.Route(ws.GET("/topics/export").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("export information of topics ").
+		To(r.exportTopics).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 
 	ws.Route(ws.POST("/topics/import").
 		Doc("import topics from excel files").
@@ -99,5 +109,15 @@ func (r *router) listMessages(request *restful.Request, response *restful.Respon
 	response.WriteHeaderAndEntity(code, result)
 }
 
+//导出关于topics的信息
+func (r *router) exportTopics(request *restful.Request, response *restful.Response) {
+	r.controller.ExportTopics(request)
+	response.Header().Add("Content-Disposition","attachment;filename=topics.xlsx")
+	response.Header().Add("Content-Type","application/vnd.ms-excel")
+	http.ServeFile(response.ResponseWriter,request.Request,"/tmp/topics.xlsx")
+}
+
+
 func (r *router) importTopics(request *restful.Request, response *restful.Response) {
 }
+
