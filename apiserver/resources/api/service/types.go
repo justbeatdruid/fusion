@@ -23,10 +23,15 @@ type Api struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 
-	Serviceunit           v1.Serviceunit    `json:"serviceunit"`
-	Applications          []v1.Application  `json:"applications"`
-	Users                 user.Users        `json:"users"`
-	Frequency             int               `json:"frequency"`
+	Serviceunit    v1.Serviceunit   `json:"serviceunit"`
+	Applications   []v1.Application `json:"applications"`
+	Users          user.Users       `json:"users"`
+	Frequency      int              `json:"frequency"`
+	ApiType        v1.ApiType       `json:"apiType"`
+	AuthType       v1.AuthType      `json:"authType"`
+	Tags           string           `json:"tags"`
+	ApiBackendType string           `json:"apiBackendType"`
+
 	Method                v1.Method         `json:"method"`
 	Protocol              v1.Protocol       `json:"protocol"`
 	ReturnType            v1.ReturnType     `json:"returnType"`
@@ -35,13 +40,12 @@ type Api struct {
 	ApiRequestParameters  []v1.ApiParameter `json:"apiRequestParameters"`
 	ApiResponseParameters []v1.ApiParameter `json:"apiResponseParameters"`
 	ApiPublicParameters   []v1.ApiParameter `json:"apiPublicParameters"`
-	WebParams             []v1.WebParams    `json:"webParams"`
-	ApiType               v1.ApiType        `json:"apiType"`
-	AuthType              v1.AuthType       `json:"authType"`
-	ApiAttribute          v1.Attribute      `json:"apiAttribute"`
-	Traffic               v1.Traffic        `json:"traffic"`
+	ApiDefineInfo         v1.ApiDefineInfo  `json:"apiDefineInfo"`
 	KongApi               v1.KongApiInfo    `json:"KongApi"`
-	Restriction           v1.Restriction    `json:"restriction"`
+	ApiReturnInfo         v1.ApiReturnInfo  `json:"apiReturnInfo"`
+
+	Traffic     v1.Traffic     `json:"traffic"`
+	Restriction v1.Restriction `json:"restriction"`
 
 	Status v1.Status `json:"status"`
 	//Publish          v1.Publish    `json:"publish"`
@@ -66,23 +70,25 @@ func ToAPI(api *Api) *v1.Api {
 	crd.ObjectMeta.Labels = make(map[string]string)
 	crd.ObjectMeta.Labels[v1.ServiceunitLabel] = api.Serviceunit.ID
 	crd.Spec = v1.ApiSpec{
-		Name:         api.Name,
-		Description:  api.Description,
-		Serviceunit:  api.Serviceunit,
-		Applications: api.Applications,
-		Frequency:    api.Frequency,
-		Method:       api.Method,
-		Protocol:     api.Protocol,
-		ReturnType:   api.ReturnType,
-		RDBQuery:     api.RDBQuery,
-		Query:        api.Query,
-		WebParams:    api.WebParams,
-		KongApi:      api.KongApi,
-		ApiType:      api.ApiType,
-		AuthType:     api.AuthType,
-		ApiAttribute: api.ApiAttribute,
-		Traffic:      api.Traffic,
-		Restriction:  api.Restriction,
+		Name:           api.Name,
+		Description:    api.Description,
+		Serviceunit:    api.Serviceunit,
+		Applications:   api.Applications,
+		Frequency:      api.Frequency,
+		ApiType:        api.ApiType,
+		AuthType:       api.AuthType,
+		Tags:           api.Tags,
+		ApiBackendType: api.Serviceunit.Type,
+		Method:         api.Method,
+		Protocol:       api.Protocol,
+		ReturnType:     api.ReturnType,
+		RDBQuery:       api.RDBQuery,
+		Query:          api.Query,
+		ApiDefineInfo:  api.ApiDefineInfo,
+		KongApi:        api.KongApi,
+		ApiReturnInfo:  api.ApiReturnInfo,
+		Traffic:        api.Traffic,
+		Restriction:    api.Restriction,
 	}
 	crd.Status = v1.ApiStatus{
 		Status:           v1.Init,
@@ -102,21 +108,23 @@ func ToModel(obj *v1.Api) *Api {
 		ID:        obj.ObjectMeta.Name,
 		Namespace: obj.ObjectMeta.Namespace,
 
-		Name:         obj.Spec.Name,
-		Description:  obj.Spec.Description,
-		Serviceunit:  obj.Spec.Serviceunit,
-		Applications: obj.Spec.Applications,
-		Frequency:    obj.Spec.Frequency,
-		Method:       obj.Spec.Method,
-		Protocol:     obj.Spec.Protocol,
-		ReturnType:   obj.Spec.ReturnType,
-		WebParams:    obj.Spec.WebParams,
-		KongApi:      obj.Spec.KongApi,
-		ApiType:      obj.Spec.ApiType,
-		AuthType:     obj.Spec.AuthType,
-		ApiAttribute: obj.Spec.ApiAttribute,
-		Traffic:      obj.Spec.Traffic,
-		Restriction:  obj.Spec.Restriction,
+		Name:           obj.Spec.Name,
+		Description:    obj.Spec.Description,
+		Serviceunit:    obj.Spec.Serviceunit,
+		Applications:   obj.Spec.Applications,
+		Frequency:      obj.Spec.Frequency,
+		ApiType:        obj.Spec.ApiType,
+		AuthType:       obj.Spec.AuthType,
+		Tags:           obj.Spec.Tags,
+		ApiBackendType: obj.Spec.Serviceunit.Type,
+		Method:         obj.Spec.Method,
+		Protocol:       obj.Spec.Protocol,
+		ReturnType:     obj.Spec.ReturnType,
+		ApiDefineInfo:  obj.Spec.ApiDefineInfo,
+		KongApi:        obj.Spec.KongApi,
+		ApiReturnInfo:  obj.Spec.ApiReturnInfo,
+		Traffic:        obj.Spec.Traffic,
+		Restriction:    obj.Spec.Restriction,
 
 		Status:           obj.Status.Status,
 		AccessLink:       obj.Status.AccessLink,
@@ -147,8 +155,8 @@ func ToModel(obj *v1.Api) *Api {
 	}
 
 	// web params
-	if model.WebParams == nil {
-		model.WebParams = []v1.WebParams{}
+	if model.ApiDefineInfo.WebParams == nil {
+		model.ApiDefineInfo.WebParams = []v1.WebParams{}
 	}
 
 	// for data service (datawarehouse api)
@@ -271,12 +279,12 @@ func (s *Service) Validate(a *Api) error {
 	}
 	//参数校验
 	if su.Spec.Type == "web" {
-		switch a.Method {
+		switch a.ApiDefineInfo.Method {
 		case v1.GET, v1.POST, v1.PUT, v1.DELETE, v1.PATCH:
 		default:
 			return fmt.Errorf("wrong method type: %s. ", a.Method)
 		}
-		for i, p := range a.WebParams {
+		for i, p := range a.ApiDefineInfo.WebParams {
 			if len(p.Name) == 0 {
 				return fmt.Errorf("%dth parameter name is null", i)
 			}
@@ -289,7 +297,7 @@ func (s *Service) Validate(a *Api) error {
 				return fmt.Errorf("%dth parameter type is wrong: %s", i, p.Type)
 			}
 			switch p.Location {
-			case v1.Path, v1.Header, v1.Query:
+			case v1.Path, v1.Header, v1.Query, v1.Body:
 			default:
 				return fmt.Errorf("%dth parameter location is wrong: %s", i, p.Location)
 			}
@@ -298,7 +306,7 @@ func (s *Service) Validate(a *Api) error {
 		if len(a.KongApi.Paths) == 0 {
 			return fmt.Errorf("api paths is null. ")
 		}
-		if len(a.ApiAttribute.NormalExample) == 0 {
+		if len(a.ApiReturnInfo.NormalExample) == 0 {
 			return fmt.Errorf("normal example is null.")
 		}
 	}
@@ -348,12 +356,16 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	}
 	if _, ok := data["method"]; ok {
 		target.Spec.Method = source.Method
-		target.Spec.KongApi.Methods = []string{strings.ToUpper(string(target.Spec.Method))}
+		if target.Spec.Serviceunit.Type == "data" {
+			target.Spec.KongApi.Methods = []string{strings.ToUpper(string(target.Spec.Method))}
+		}
 	}
-	//更新协议
+	//协议是从服务单元继承所以暂不支持更新暂时保留
 	if _, ok := data["protocol"]; ok {
 		target.Spec.Protocol = source.Protocol
-		target.Spec.KongApi.Protocols = []string{strings.ToLower(string(target.Spec.Protocol))}
+		if target.Spec.Serviceunit.Type == "data" {
+			target.Spec.KongApi.Protocols = []string{strings.ToLower(string(target.Spec.Protocol))}
+		}
 	}
 	if _, ok := data["rdbQuery"]; ok {
 		target.Spec.RDBQuery = source.RDBQuery
@@ -362,7 +374,7 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		target.Spec.ReturnType = source.ReturnType
 	}
 	if _, ok = data["webParams"]; ok {
-		target.Spec.WebParams = source.WebParams
+		target.Spec.ApiDefineInfo.WebParams = source.ApiDefineInfo.WebParams
 	}
 	if _, ok = data["apiType"]; ok {
 		target.Spec.ApiType = source.ApiType
@@ -371,10 +383,34 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		target.Spec.AuthType = source.AuthType
 	}
 
+	if apiInfo, ok := data["apiDefineInfo"]; ok {
+		if config, ok := apiInfo.(map[string]interface{}); ok {
+			if _, ok = config["path"]; ok {
+				target.Spec.ApiDefineInfo.Path = source.ApiDefineInfo.Path
+			}
+			if _, ok = config["matchMode"]; ok {
+				target.Spec.ApiDefineInfo.MatchMode = source.ApiDefineInfo.MatchMode
+			}
+			if _, ok = config["method"]; ok {
+				target.Spec.ApiDefineInfo.Method = source.ApiDefineInfo.Method
+			}
+			if _, ok = config["cors"]; ok {
+				target.Spec.ApiDefineInfo.Cors = source.ApiDefineInfo.Cors
+			}
+			if _, ok = config["webParams"]; ok {
+				target.Spec.ApiDefineInfo.WebParams = source.ApiDefineInfo.WebParams
+			}
+		}
+	}
+
 	if kongInfo, ok := data["KongApi"]; ok {
 		if config, ok := kongInfo.(map[string]interface{}); ok {
+			//web 类型直接使用kong传入的参数  path method
 			if _, ok = config["paths"]; ok {
 				target.Spec.KongApi.Paths = source.KongApi.Paths
+			}
+			if target.Spec.Serviceunit.Type == "web" {
+				target.Spec.KongApi.Methods = []string{strings.ToUpper(string(source.ApiDefineInfo.Method))}
 			}
 			if _, ok = config["hosts"]; ok {
 				target.Spec.KongApi.Hosts = source.KongApi.Hosts
@@ -382,22 +418,13 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		}
 	}
 
-	if apiInfo, ok := data["apiAttribute"]; ok {
+	if apiInfo, ok := data["apiReturnInfo"]; ok {
 		if config, ok := apiInfo.(map[string]interface{}); ok {
-			if _, ok = config["matchMode"]; ok {
-				target.Spec.ApiAttribute.MatchMode = source.ApiAttribute.MatchMode
-			}
-			if _, ok = config["tags"]; ok {
-				target.Spec.ApiAttribute.Tags = source.ApiAttribute.Tags
-			}
-			if _, ok = config["cors"]; ok {
-				target.Spec.ApiAttribute.Cors = source.ApiAttribute.Cors
-			}
 			if _, ok = config["normalExample"]; ok {
-				target.Spec.ApiAttribute.NormalExample = source.ApiAttribute.NormalExample
+				target.Spec.ApiReturnInfo.NormalExample = source.ApiReturnInfo.NormalExample
 			}
 			if _, ok = config["failureExample"]; ok {
-				target.Spec.ApiAttribute.FailureExample = source.ApiAttribute.FailureExample
+				target.Spec.ApiReturnInfo.FailureExample = source.ApiReturnInfo.FailureExample
 			}
 		}
 	}

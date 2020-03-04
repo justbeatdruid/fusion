@@ -99,7 +99,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				return ctrl.Result{}, nil
 			}
 		}
-		if api.Spec.ApiAttribute.Cors == "true" {
+		if api.Spec.ApiDefineInfo.Cors == "true" {
 			if err := r.Operator.AddRouteCorsByKong(api); err != nil {
 				api.Status.Status = nlptv1.Error
 				api.Status.Message = err.Error()
@@ -109,7 +109,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 		api.Status.Status = nlptv1.Created
 		api.Status.AccessLink = nlptv1.AccessLink(fmt.Sprintf("%s://%s:%d%s",
-			strings.ToLower(string(api.Spec.Protocol)),
+			strings.ToLower(string(api.Spec.ApiDefineInfo.Protocol)),
 			r.Operator.Host, r.Operator.KongPortalPort, api.Spec.KongApi.Paths[0]))
 		api.Status.Message = "success"
 		r.Update(ctx, api)
