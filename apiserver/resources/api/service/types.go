@@ -227,6 +227,18 @@ func (s *Service) Validate(a *Api) error {
 	if len(a.Name) == 0 {
 		return fmt.Errorf("name is null")
 	}
+
+	apiList, err := s.ListApis()
+	if err != nil {
+		return fmt.Errorf("cannot list api object: %+v", err)
+	}
+	for _, p := range apiList.Items {
+		if p.Spec.Name == a.Name {
+			return fmt.Errorf("api name cannot be repeated: %s", p.Spec.Name)
+		}
+
+	}
+
 	if len(a.Users.Owner.ID) == 0 {
 		return fmt.Errorf("owner not set")
 	}
@@ -338,6 +350,17 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		return fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
 	if _, ok := data["name"]; ok {
+		if target.Spec.Name != source.Name {
+			apiList, err := s.ListApis()
+			if err != nil {
+				return fmt.Errorf("cannot list api object: %+v", err)
+			}
+			for _, p := range apiList.Items {
+				if p.Spec.Name == source.Name {
+					return fmt.Errorf("api name cannot be repeated: %s", p.Spec.Name)
+				}
+			}
+		}
 		target.Spec.Name = source.Name
 	}
 	if _, ok := data["namespace"]; ok {
