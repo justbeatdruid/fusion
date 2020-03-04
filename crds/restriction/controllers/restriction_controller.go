@@ -32,6 +32,7 @@ type RestrictionReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	Operator *Operator
 }
 
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=restrictions,verbs=get;list;watch;create;update;patch;delete
@@ -39,7 +40,7 @@ type RestrictionReconciler struct {
 
 func (r *RestrictionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	ctx := context.Background()
-	_ = r.Log.WithValues("trafficcontrol", req.NamespacedName)
+	_ = r.Log.WithValues("restriction", req.NamespacedName)
 
 	restriction := &nlptv1.Restriction{}
 	if err := r.Get(ctx, req.NamespacedName, restriction); err != nil {
