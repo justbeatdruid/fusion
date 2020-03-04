@@ -279,11 +279,11 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 			fmt.Println("create reader error")
 			continue
 		}
-		ctx := context.Background()
 		for {
 			if flag, _ := reader.HasNext(); flag == false {
 				break
 			}
+			ctx := context.Background()
 			msg, err := reader.Next(ctx)
 			if err != nil {
 				fmt.Printf("Error reading from topic: %v", err)
