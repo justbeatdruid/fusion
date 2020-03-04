@@ -42,6 +42,24 @@ func PageWrap(items listable, pagestr, sizestr string) (*PageStruct, error) {
 	if err != nil {
 		return nil, fmt.Errorf("catnot parse size to int: %+v", err)
 	}
+	if page < 0 || size < 0 {
+		l := items.Length()
+		content := make([]interface{}, l)
+		for i := 0; i < l; i++ {
+			content[i], err = items.GetItem(i)
+			if err != nil {
+				return nil, fmt.Errorf("get item error: %+v", err)
+			}
+		}
+		return &PageStruct{
+			Page:      1,
+			Size:      l,
+			TotalPage: 1,
+			TotalSize: l,
+			//Content:   items[offset:end],
+			Content: content,
+		}, nil
+	}
 	if page <= 0 || size <= 0 {
 		return nil, fmt.Errorf("page or size not positive")
 	}
