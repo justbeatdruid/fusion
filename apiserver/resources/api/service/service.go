@@ -257,6 +257,19 @@ func (s *Service) List(suid, appid string, opts ...util.OpOption) (*v1.ApiList, 
 	return apis, nil
 }
 
+func (s *Service) ListApis() (*v1.ApiList, error) {
+	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	apis := &v1.ApiList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apis); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("====test get v1.ApiList: %+v", apis)
+	return apis, nil
+}
+
 func (s *Service) Get(id string) (*v1.Api, error) {
 	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {

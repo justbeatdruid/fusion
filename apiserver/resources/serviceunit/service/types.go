@@ -179,6 +179,16 @@ func (s *Service) Validate(a *Serviceunit) error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
+	suList, errs := s.List()
+	if errs != nil {
+		return fmt.Errorf("cannot list serviceunit object: %+v", errs)
+	}
+	for _, p := range suList.Items {
+		if p.Spec.Name == a.Name {
+			return fmt.Errorf("servieunit name cannot be repeated when create: %s", p.Spec.Name)
+		}
+	}
+
 	if len(a.Users.Owner.ID) == 0 {
 		return fmt.Errorf("owner not set")
 	}
@@ -258,6 +268,17 @@ func (s *Service) assignment(target *v1.Serviceunit, reqData interface{}) error 
 		return fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
 	if _, ok := data["name"]; ok {
+		if target.Spec.Name != source.Name {
+			suList, errs := s.List()
+			if errs != nil {
+				return fmt.Errorf("cannot list servieunit object: %+v", errs)
+			}
+			for _, p := range suList.Items {
+				if p.Spec.Name == source.Name {
+					return fmt.Errorf("servieunit name cannot be repeated when update: %s", p.Spec.Name)
+				}
+			}
+		}
 		target.Spec.Name = source.Name
 	}
 	if _, ok := data["description"]; ok {
