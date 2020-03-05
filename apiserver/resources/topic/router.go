@@ -2,12 +2,11 @@ package topic
 
 import (
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
-
 	"github.com/emicklei/go-restful"
 )
 
 type router struct {
-	controller *controller
+	controller *controller "github.com/emicklei/go-restful"
 }
 
 func NewRouter(cfg *config.Config) *router {
@@ -62,9 +61,13 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.POST("/topics/import").
+}
+
+func (r *router) InstallImport(ws *restful.WebService) {
+
+	ws.Route(ws.POST("/topics").
 		Doc("import topics from excel files").
-		To(r.importTopics).Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		To(r.importTopics).
 		Do(returns200, returns500))
 }
 
@@ -100,4 +103,6 @@ func (r *router) listMessages(request *restful.Request, response *restful.Respon
 }
 
 func (r *router) importTopics(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ImportTopics(request, response)
+	response.WriteHeaderAndEntity(code, result)
 }

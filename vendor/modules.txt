@@ -1,5 +1,7 @@
 # cloud.google.com/go v0.38.0
 cloud.google.com/go/compute/metadata
+# github.com/360EntSecGroup-Skylar/excelize v1.4.1
+github.com/360EntSecGroup-Skylar/excelize
 # github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78
 github.com/Azure/go-ansiterm
 github.com/Azure/go-ansiterm/winterm
@@ -109,6 +111,8 @@ github.com/matttproud/golang_protobuf_extensions/pbutil
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
+# github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826
+github.com/mohae/deepcopy
 # github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822
 github.com/munnerz/goautoneg
 # github.com/onsi/ginkgo v1.10.1
@@ -168,6 +172,8 @@ github.com/sirupsen/logrus
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
+# github.com/tealeg/xlsx v1.0.5
+github.com/tealeg/xlsx
 # go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738
 go.etcd.io/etcd/auth/authpb
 go.etcd.io/etcd/clientv3

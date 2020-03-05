@@ -2,6 +2,7 @@ package topic
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/apiserver/resources/topic/parser"
 	"net/http"
 	"strconv"
 	"strings"
@@ -49,6 +50,18 @@ type MessageResponse = struct {
 	Messages interface{} `json:"messages"`
 }
 type PingResponse = DeleteResponse
+
+type ImportResponse struct {
+	Code    int          `json:"code"`
+	Message string       `json:"message"`
+	Data    []ImportData `json:"data"`
+}
+
+type ImportData struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Url     string `json:"url"`
+}
 
 func (c *controller) CreateTopic(req *restful.Request) (int, *CreateResponse) {
 	body := &service.Topic{}
@@ -175,8 +188,41 @@ func (ts TopicList) GetItem(i int) (interface{}, error) {
 }
 
 //TODO 导入Topic待完善
-func (c *controller) ImportTopics(req *restful.Request) int {
-	return 1
+func (c *controller) ImportTopics(req *restful.Request, response *restful.Response) (int, *ImportResponse) {
+	spec := &parser.TopicExcelSpec{
+		SheetName:                "topics",
+		MultiPartFileKey:         "uploadfile",
+		TopicExcelDefinitionList: []string{"Tenant", "TopicGroup", "Name", "Partition", "IsNonPersistent"},
+		TitleRowSpecList:         []string{"topic租户名称", "topic组名称", "topic名称", "分区数量", "非持久化"},
+	}
+	tps, err := parser.ParseTopicsFromExcel(req, response, spec)
+	if err != nil {
+		return http.StatusInternalServerError, &ImportResponse{
+			Code:    1,
+			Message: fmt.Errorf("import topics error: %+v", err).Error(),
+		}
+	}
+
+	ids := []ImportData{}
+	for _, tp := range *tps {
+		id := ImportData{}
+		if t, err := c.service.CreateTopic(&tp); err != nil {
+			id.Code = 1
+			id.Message = "create database error"
+		} else {
+			id.Code = 0
+			id.Message = "success"
+			id.Url = t.URL
+		}
+		ids = append(ids, id)
+	}
+
+	return http.StatusOK, &ImportResponse{
+		Code:    0,
+		Message: "success",
+		Data:    ids,
+	}
+
 }
 
 //查询topic的消息

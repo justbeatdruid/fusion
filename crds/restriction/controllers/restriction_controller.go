@@ -82,7 +82,7 @@ func (r *RestrictionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 				restriction.Status.Status = nlptv1.UnBinded
 				restriction.Status.Message = "success"
 			}
-		} else  if  restriction.Spec.Type == nlptv1.USER {
+		} else if restriction.Spec.Type == nlptv1.USER {
 			//ToDo
 		}
 		// update status

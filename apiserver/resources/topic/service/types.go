@@ -8,6 +8,11 @@ import (
 	"time"
 )
 
+const (
+	DefaultTenant    = "public"
+	DefaultNamespace = "default"
+)
+
 type Topic struct {
 	ID              string    `json:"id"`
 	Name            string    `json:"name"` //topic名称
@@ -47,10 +52,18 @@ func ToAPI(app *Topic) *v1.Topic {
 		IsNonPersistent: app.IsNonPersistent,
 		CreatTime:       app.CreateTime,
 	}
+
+	if len(crd.Spec.Tenant) == 0 {
+		crd.Spec.Tenant = DefaultTenant
+	}
+	if len(crd.Spec.TopicGroup) == 0 {
+		crd.Spec.TopicGroup = DefaultNamespace
+	}
 	status := app.Status
 	if len(status) == 0 {
 		status = v1.Init
 	}
+
 	crd.Status = v1.TopicStatus{
 		Status:  status,
 		Message: app.Message,
