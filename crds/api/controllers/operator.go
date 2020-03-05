@@ -279,6 +279,7 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	(*db).Spec.KongApi.Hosts = responseBody.Hosts
 	(*db).Spec.KongApi.Protocols = responseBody.Protocols
 	(*db).Spec.KongApi.Paths = responseBody.Paths
+	(*db).Spec.KongApi.Methods = responseBody.Methods
 	(*db).Spec.KongApi.KongID = responseBody.ID
 	return nil
 }

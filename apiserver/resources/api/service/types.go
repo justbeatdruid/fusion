@@ -31,7 +31,7 @@ type Api struct {
 	AuthType       v1.AuthType      `json:"authType"`
 	Tags           string           `json:"tags"`
 	ApiBackendType string           `json:"apiBackendType"`
-
+	//data api
 	Method                v1.Method         `json:"method"`
 	Protocol              v1.Protocol       `json:"protocol"`
 	ReturnType            v1.ReturnType     `json:"returnType"`
@@ -40,9 +40,10 @@ type Api struct {
 	ApiRequestParameters  []v1.ApiParameter `json:"apiRequestParameters"`
 	ApiResponseParameters []v1.ApiParameter `json:"apiResponseParameters"`
 	ApiPublicParameters   []v1.ApiParameter `json:"apiPublicParameters"`
-	ApiDefineInfo         v1.ApiDefineInfo  `json:"apiDefineInfo"`
-	KongApi               v1.KongApiInfo    `json:"KongApi"`
-	ApiReturnInfo         v1.ApiReturnInfo  `json:"apiReturnInfo"`
+	//web api
+	ApiDefineInfo v1.ApiDefineInfo `json:"apiDefineInfo"`
+	KongApi       v1.KongApiInfo   `json:"kongApi"`
+	ApiReturnInfo v1.ApiReturnInfo `json:"apiReturnInfo"`
 
 	Traffic     v1.Traffic     `json:"traffic"`
 	Restriction v1.Restriction `json:"restriction"`
@@ -253,9 +254,6 @@ func (s *Service) Validate(a *Api) error {
 	}
 	a.Applications = []v1.Application{}
 
-	if a.Frequency == 0 {
-		return fmt.Errorf("frequency is null")
-	}
 	if a.Protocol != v1.HTTPS {
 		a.Protocol = v1.HTTP
 	}
@@ -266,6 +264,9 @@ func (s *Service) Validate(a *Api) error {
 		return fmt.Errorf("cannot get serviceunit: %+v", err)
 	}
 	if su.Spec.Type == "data" {
+		if a.Frequency == 0 {
+			return fmt.Errorf("frequency is null")
+		}
 		switch a.Method {
 		case v1.GET, v1.LIST:
 		default:
@@ -304,7 +305,7 @@ func (s *Service) Validate(a *Api) error {
 				p.Type = v1.ParameterType("null")
 			}
 			switch p.Type {
-			case v1.String, v1.Int:
+			case v1.String, v1.Int, v1.Bool:
 			default:
 				return fmt.Errorf("%dth parameter type is wrong: %s", i, p.Type)
 			}
@@ -319,12 +320,13 @@ func (s *Service) Validate(a *Api) error {
 			return fmt.Errorf("api paths is null. ")
 		}
 		if len(a.ApiReturnInfo.NormalExample) == 0 {
-			return fmt.Errorf("normal example is null.")
+			return fmt.Errorf("normal example is null. ")
 		}
 	}
 	a.UpdatedAt = time.Now()
 
-	if !su.Status.Published {
+	//data api need service unit publish
+	if su.Spec.Type == "data" && !su.Status.Published {
 		return fmt.Errorf("serviceunit %s is unpublished", a.Serviceunit.ID)
 	}
 	a.Serviceunit = v1.Serviceunit{
@@ -426,7 +428,7 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		}
 	}
 
-	if kongInfo, ok := data["KongApi"]; ok {
+	if kongInfo, ok := data["kongApi"]; ok {
 		if config, ok := kongInfo.(map[string]interface{}); ok {
 			//web 类型直接使用kong传入的参数  path method
 			if _, ok = config["paths"]; ok {
