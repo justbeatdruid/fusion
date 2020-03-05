@@ -18,7 +18,6 @@ package controllers
 import (
 	"context"
 	"fmt"
-
 	"github.com/go-logr/logr"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,6 +27,7 @@ import (
 	nlptv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	dwv1 "github.com/chinamobile/nlpt/crds/datasource/datawarehouse/api/v1"
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
+	v1 "github.com/chinamobile/nlpt/pkg/datawarehouse/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
 
 	"k8s.io/klog"
@@ -61,6 +61,28 @@ func GenerateName(db *dwv1.Database) string {
 	return fmt.Sprintf("%s/%s-%s/%s", db.Name, db.SubjectName, db.Id, db.SubjectId)
 }
 
+func checkDatasource(existedDatawarehouses map[string]nlptv1.Datasource, datawarehouse *v1.Datawarehouse, r *DatasourceReconciler, ctx context.Context) error {
+
+	for k, v := range existedDatawarehouses { //遍历本地资源 在最新资源中筛选已删除资源
+		sine := false
+		for _, d := range datawarehouse.Databases {
+			if d.Id == v.Spec.DataWarehouse.Id {
+				sine = true
+				break
+			}
+		}
+		//如果没有在最新资源中查到该资源 删除本地该资源
+		if !sine {
+			e := r.Delete(ctx, &v)
+			if e != nil {
+				return fmt.Errorf("cannot delete datasource: %+v", e)
+			}
+		}
+		delete(existedDatawarehouses, k)
+	}
+	return nil
+}
+
 func (r *DatasourceReconciler) SyncDatasources() error {
 	klog.Infof("sync datasources")
 	ctx := context.Background()
@@ -79,16 +101,24 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 		}
 	}
 
-	datawarehouse, err := r.DataConnector.GetExampleDatawarehouse()
+	datawarehouse, err := r.DataConnector.GetExampleDatawarehouse() //查询新的数据
 	if err != nil {
 		return fmt.Errorf("get datawarehouse error: %+v", err)
 	}
 	klog.Infof("get %d datawarehouse", len(datawarehouse.Databases))
-	//TODO remove deleted datawarehouse
+	// remove deleted datawarehouse
+	err = checkDatasource(existedDatawarehouses, datawarehouse, r, ctx)
+	if err != nil {
+		return fmt.Errorf("delete dataresource err: %+v", err)
+	}
 	for _, d := range datawarehouse.Databases {
 		db := dwv1.FromApiDatabase(d)
 		if apiDs, ok := existedDatawarehouses[GenerateName(&db)]; ok {
-			if !nlptv1.DeepCompareDataWarehouse(apiDs.Spec.DataWarehouse, &db) {
+			result, err := nlptv1.DeepCompareDataWarehouse(apiDs.Spec.DataWarehouse, &db)
+			if err != nil {
+				return fmt.Errorf("time err: %+v", err)
+			}
+			if !result {
 				klog.V(4).Infof("need to update datawarehouse %s", db.Name)
 				apiDs.Spec.DataWarehouse = &db
 				apiDs.Status.UpdatedAt = metav1.Now()
