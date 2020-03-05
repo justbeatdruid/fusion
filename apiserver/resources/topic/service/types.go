@@ -5,6 +5,7 @@ import (
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"strings"
 	"time"
 )
 
@@ -102,6 +103,25 @@ func (a *Topic) Validate() error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
+
 	a.ID = names.NewID()
 	return nil
+}
+
+func (a *Topic) GetUrl() (url string) {
+
+	var build strings.Builder
+	if a.IsNonPersistent {
+		build.WriteString("non-persistent://")
+	} else {
+		build.WriteString("persistent://")
+	}
+
+	build.WriteString(a.Tenant)
+	build.WriteString("/")
+	build.WriteString(a.TopicGroup)
+	build.WriteString("/")
+	build.WriteString(a.Name)
+
+	return build.String()
 }
