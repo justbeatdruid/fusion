@@ -190,9 +190,9 @@ func (ts TopicList) GetItem(i int) (interface{}, error) {
 //TODO 导入Topic待完善
 func (c *controller) ImportTopics(req *restful.Request, response *restful.Response) (int, *ImportResponse) {
 	spec := &parser.TopicExcelSpec{
-		SheetName:                "topics",
-		MultiPartFileKey:         "uploadfile",
-		TitleRowSpecList:         []string{"topic租户名称", "topic组名称", "topic名称", "分区数量", "非持久化"},
+		SheetName:        "topics",
+		MultiPartFileKey: "uploadfile",
+		TitleRowSpecList: []string{"topic租户名称", "topic组名称", "topic名称", "分区数量", "非持久化"},
 	}
 	tps, err := parser.ParseTopicsFromExcel(req, response, spec)
 	if err != nil {

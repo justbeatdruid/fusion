@@ -1,7 +1,7 @@
 package parser
 
 type TopicExcelSpec struct {
-	MultiPartFileKey         string
-	SheetName                string
-	TitleRowSpecList         []string
+	MultiPartFileKey string
+	SheetName        string
+	TitleRowSpecList []string
 }

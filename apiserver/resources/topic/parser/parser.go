@@ -32,7 +32,6 @@ func ParseTopicsFromExcel(req *restful.Request, response *restful.Response, spec
 		return ParseResponse{}, err
 	}
 
-
 	//获取已拷贝文件的绝对路径
 	fp, err := filepath.Abs(filepath.Dir(f.Name()))
 	fp = fp + "/" + handler.Filename
@@ -60,13 +59,13 @@ func ParseTopicsFromExcel(req *restful.Request, response *restful.Response, spec
 					return ParseResponse{}, errors.New("invalid file format.")
 				}
 			}
-			for  i := 1; i < len(sheet.Rows); i++ {
+			for i := 1; i < len(sheet.Rows); i++ {
 				var tp []string
 				for j := 0; j < len(spec.TitleRowSpecList); j++ {
 					cell := sheet.Cell(i, j)
 					klog.Info(cell.Value)
 					if len(cell.Value) == 0 {
-						continue;
+						continue
 					}
 					tp = append(tp, cell.Value)
 
@@ -74,7 +73,6 @@ func ParseTopicsFromExcel(req *restful.Request, response *restful.Response, spec
 
 				tps = append(tps, tp)
 			}
-
 
 		}
 	}
