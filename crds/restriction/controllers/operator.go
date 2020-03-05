@@ -160,7 +160,7 @@ func (r *Operator) AddRestrictionByKong(db *nlptv1.Restriction) (err error) {
 func (r *Operator) DeleteRestrictionByKong(db *nlptv1.Restriction) (err error) {
 	for index := 0; index < len(db.Spec.Apis); {
 		apiSource := db.Spec.Apis[index]
-		if db.ObjectMeta.Labels[apiSource.ID] == "true" && len(apiSource.PluginID) != 0 {
+		if db.ObjectMeta.Labels[apiSource.ID] == "false" && len(apiSource.PluginID) != 0 {
 			restrictionID := apiSource.PluginID
 			klog.Infof("begin delete rate-limiting , the RestrictionID is %s", restrictionID)
 			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)

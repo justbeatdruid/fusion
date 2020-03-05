@@ -168,7 +168,7 @@ func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) 
 
 type ApplicationList []*service.Application
 
-func (apps ApplicationList) Length() int {
+func (apps ApplicationList) Len() int {
 	return len(apps)
 }
 

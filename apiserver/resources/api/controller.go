@@ -215,7 +215,7 @@ func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 
 type ApiList []*service.Api
 
-func (apis ApiList) Length() int {
+func (apis ApiList) Len() int {
 	return len(apis)
 }
 
