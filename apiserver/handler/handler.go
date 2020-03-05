@@ -37,7 +37,7 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 
 	filters := []restful.FilterFunction{
 		filter.NewOptionsFilter(wsContainer).Filter,
-		filter.NewTokenFilter().Filter,
+		//filter.NewTokenFilter().Filter,
 	}
 	for _, f := range filters {
 		wsContainer.Filter(f)
@@ -53,7 +53,8 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 
 	apiV1WsImport := new(restful.WebService)
 	apiV1WsImport.Path("/api/v1/import").
-		Consumes("multipart/form-data")
+		Consumes("multipart/form-data").
+		Produces(restful.MIME_JSON)
 
 	wsContainer.Add(apiV1Ws)
 	wsContainer.Add(apiV1WsImport)
@@ -79,7 +80,14 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 		routerHandler.Install(apiV1Ws)
 
 	}
-	tp.InstallImport(apiV1WsImport)
+
+	importHandlers := []importInstaller{
+		tp,
+	}
+	for _, routerHandler := range importHandlers {
+		routerHandler.InstallImport(apiV1WsImport)
+
+	}
 
 	applicationgroupHandler := applicationgroup.NewRouter(h.config)
 	applicationgroupHandler.Install(apiV1Ws)

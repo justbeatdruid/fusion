@@ -221,6 +221,8 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 		if c.service.IsTopicExist(topic.GetUrl()) {
 			continue
 		}
+
+		topic.URL = topic.GetUrl()
 		if t, err := c.service.CreateTopic(topic); err != nil {
 			id.Code = 1
 			id.Message = "create database error"
