@@ -24,7 +24,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
+	"k8s.io/klog"
 	nlptv1 "github.com/chinamobile/nlpt/crds/restriction/api/v1"
 )
 

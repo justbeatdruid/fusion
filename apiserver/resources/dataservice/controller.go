@@ -124,7 +124,7 @@ func (c *controller) ListDataservice(req *restful.Request) (int, *ListResponse) 
 
 type DataserviceList []*service.Dataservice
 
-func (dss DataserviceList) Length() int {
+func (dss DataserviceList) Len() int {
 	return len(dss)
 }
 

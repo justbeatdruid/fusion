@@ -118,23 +118,23 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 func (r *Operator) AddRestrictionByKong(db *nlptv1.Restriction) (err error) {
 	for index := 0; index < len(db.Spec.Apis); {
 		apiSource := db.Spec.Apis[index]
-		if len(apiSource.PluginID) == 0 {
+		if db.ObjectMeta.Labels[apiSource.ID] == "true" && len(apiSource.PluginID) == 0 {
 			routeId := apiSource.KongID
 			klog.Infof("begin create restriction , the routeID is %s", routeId)
 			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 			schema := "http"
-			request = request.Post(fmt.Sprintf("%s://%s:%d%s%s/%s", schema, "192.168.1.207", 30081, "/routes/", routeId, path))
+			request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, "192.168.1.207", 30081, "/routes/", routeId, path))
 			for k, v := range headers {
 				request = request.Set(k, v)
 			}
 			request = request.Retry(3, 5*time.Second, retryStatus...)
 			requestBody := &RestrictionRequestBody{}
 			requestBody.Name = "ip-restriction"
-			requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, "54.13.21.1")
-			requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, "143.1.0.0/24")
-			requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, "54.13.21.2")
-			requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, "144.1.0.0/24")
-
+			if db.Spec.Action == "white" {
+				requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, db.Spec.Config.Ip)
+			} else if db.Spec.Action == "black" {
+				requestBody.Config.BlackList = append(requestBody.Config.BlackList, db.Spec.Config.Ip)
+			}
 			responseBody := &RestrictionResponseBody{}
 			response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 			if len(errs) > 0 {
@@ -159,15 +159,15 @@ func (r *Operator) AddRestrictionByKong(db *nlptv1.Restriction) (err error) {
 func (r *Operator) DeleteRestrictionByKong(db *nlptv1.Restriction) (err error) {
 	for index := 0; index < len(db.Spec.Apis); {
 		apiSource := db.Spec.Apis[index]
-		if len(apiSource.PluginID) != 0 {
-			restrictionID := apiSource.PluginID //_id
+		if db.ObjectMeta.Labels[apiSource.ID] == "false" && len(apiSource.PluginID) != 0 {
+			restrictionID := apiSource.PluginID
 			klog.Infof("begin delete rate-limiting , the RestrictionID is %s", restrictionID)
 			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 			schema := "http"
 			for k, v := range headers {
 				request = request.Set(k, v)
 			}
-			response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, restrictionID)).End()
+			response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, "192.168.1.207",30081, path, restrictionID)).End()
 			request = request.Retry(3, 5*time.Second, retryStatus...)
 
 			if len(errs) > 0 {
@@ -180,11 +180,10 @@ func (r *Operator) DeleteRestrictionByKong(db *nlptv1.Restriction) (err error) {
 				return fmt.Errorf("request for delete ip-restriction error: receive wrong status code: %d", response.StatusCode)
 			}
 			db.Spec.Apis[index].Result = nlptv1.SUCCESS
-			//  apis[index]
-			db.Spec.Apis = append(db.Spec.Apis[:index], db.Spec.Apis[index+1:]...)
-		} else {
-			db.Spec.Apis = append(db.Spec.Apis[:index], db.Spec.Apis[index+1:]...)
+			db.Spec.Apis[index].PluginID = ""
 		}
+		db.Spec.Apis = append(db.Spec.Apis[:index], db.Spec.Apis[index+1:]...)
+
 	}
 	return nil
 }
