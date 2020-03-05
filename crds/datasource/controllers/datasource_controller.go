@@ -63,7 +63,7 @@ func GenerateName(db *dwv1.Database) string {
 
 func checkDatasource(existedDatawarehouses map[string]nlptv1.Datasource, datawarehouse *v1.Datawarehouse, r *DatasourceReconciler, ctx context.Context) error {
 
-	for k, v := range existedDatawarehouses { //遍历本地资源 在最新资源中筛选已删除资源
+	for key, v := range existedDatawarehouses { //遍历本地资源 在最新资源中筛选已删除资源
 		sine := false
 		for _, d := range datawarehouse.Databases {
 			if d.Id == v.Spec.DataWarehouse.Id {
@@ -78,7 +78,7 @@ func checkDatasource(existedDatawarehouses map[string]nlptv1.Datasource, datawar
 				return fmt.Errorf("cannot delete datasource: %+v", e)
 			}
 		}
-		delete(existedDatawarehouses, k)
+		delete(existedDatawarehouses, key)
 	}
 	return nil
 }
