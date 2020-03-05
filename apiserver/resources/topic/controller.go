@@ -176,7 +176,7 @@ func (c *controller) ListTopicByField(req *restful.Request, tps []*service.Topic
 
 type TopicList []*service.Topic
 
-func (ts TopicList) Length() int {
+func (ts TopicList) Len() int {
 	return len(ts)
 }
 
@@ -418,7 +418,7 @@ func (c *controller) ListTopicByTopicGroupAndName(topicGroup string, topicName s
 
 type MessageList []service.Message
 
-func (ms MessageList) Length() int {
+func (ms MessageList) Len() int {
 	return len(ms)
 }
 

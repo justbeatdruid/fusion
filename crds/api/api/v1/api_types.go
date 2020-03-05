@@ -238,7 +238,7 @@ type KongApiInfo struct {
 	//A list of domain names that match this Route. With form-encoded, the notation is hosts[]=example.com&hosts[]=foo.test. With JSON, use an Array.
 	Hosts         []string `json:"hosts"`
 	Paths         []string `json:"paths"` //kong 是数组 界面是字符串
-	Headers       []string `json:"Headers"`
+	Headers       []string `json:"headers"`
 	Methods       []string `json:"methods"`
 	HttpsCode     int      `json:"https_redirect_status_code"`
 	RegexPriority int      `json:"regex_priority"`
@@ -277,9 +277,8 @@ func ParameterFromQuery(q dwv1.QueryField) ApiParameter {
 type ParameterType string
 
 const (
-	Int    ParameterType = "int"
+	Int    ParameterType = "number"
 	Bool   ParameterType = "bool"
-	Float  ParameterType = "float"
 	String ParameterType = "string"
 )
 
@@ -372,7 +371,7 @@ type Status string
 const (
 	Init     Status = "init"
 	Creating Status = "creating"
-	Created  Status = "created"
+	Created  Status = "created" //publish
 	Offing   Status = "offing"
 	Offline  Status = "offline"
 	Delete   Status = "delete"

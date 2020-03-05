@@ -132,7 +132,7 @@ func (c *controller) ListTrafficcontrol(req *restful.Request) (int, *ListRespons
 
 type TrafficcontrolList []*service.Trafficcontrol
 
-func (tcs TrafficcontrolList) Length() int {
+func (tcs TrafficcontrolList) Len() int {
 	return len(tcs)
 }
 
