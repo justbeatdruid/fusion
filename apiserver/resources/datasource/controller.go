@@ -145,7 +145,7 @@ func (c *controller) DeleteDatasource(req *restful.Request) (int, *DeleteRespons
 
 type DataSourceList []*service.Datasource
 
-func (dsl DataSourceList) Length() int {
+func (dsl DataSourceList) Len() int {
 	return len(dsl)
 }
 

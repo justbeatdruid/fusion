@@ -2,6 +2,7 @@ package util
 
 import (
 	"fmt"
+	"sort"
 	"strconv"
 )
 
@@ -19,11 +20,18 @@ type PageStruct struct {
 }
 
 type listable interface {
-	Length() int
+	Len() int
 	GetItem(i int) (interface{}, error)
 }
 
+type sortable interface {
+	listable
+	Less(i, j int) bool
+	Swap(i, j int)
+}
+
 func PageWrap(items listable, pagestr, sizestr string) (*PageStruct, error) {
+	// parse parameters
 	var err error
 	var page, size int
 	if len(pagestr) == 0 {
@@ -42,8 +50,17 @@ func PageWrap(items listable, pagestr, sizestr string) (*PageStruct, error) {
 	if err != nil {
 		return nil, fmt.Errorf("catnot parse size to int: %+v", err)
 	}
+
+	// if need sort
+	if sitems, ok := items.(sortable); ok {
+		sort.Sort(sitems)
+		items = sitems.(listable)
+	}
+
+	// select items
+	// 1st case: select all
 	if page < 0 || size < 0 {
-		l := items.Length()
+		l := items.Len()
 		content := make([]interface{}, l)
 		for i := 0; i < l; i++ {
 			content[i], err = items.GetItem(i)
@@ -56,15 +73,12 @@ func PageWrap(items listable, pagestr, sizestr string) (*PageStruct, error) {
 			Size:      l,
 			TotalPage: 1,
 			TotalSize: l,
-			//Content:   items[offset:end],
-			Content: content,
+			Content:   content,
 		}, nil
 	}
-	if page <= 0 || size <= 0 {
-		return nil, fmt.Errorf("page or size not positive")
-	}
 	offset := (page - 1) * size
-	leng := items.Length()
+	// 2nd case: select pages
+	leng := items.Len()
 	if leng == 0 {
 		return &PageStruct{
 			Page:      page,
