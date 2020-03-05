@@ -65,6 +65,25 @@ func (s *Service) GetServiceunit(id string) (*Serviceunit, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
+	if su.Spec.Type == v1.DataService && len(su.Spec.DatasourceID.ID) > 0 {
+		data, err := s.getDatasource(su.Spec.DatasourceID.ID)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get datasource: %+v", err)
+		}
+		ds := &v1.Datasource{
+			ID:   data.ObjectMeta.Name,
+			Name: data.Spec.Name,
+		}
+		if data.Spec.Type == datav1.DataWarehouseType && data.Spec.DataWarehouse != nil {
+			ds.DataWarehouse = &v1.DataWarehouse{
+				DatabaseName:        data.Spec.DataWarehouse.Name,
+				DatabaseDisplayName: data.Spec.DataWarehouse.DisplayName,
+				SubjectName:         data.Spec.DataWarehouse.SubjectName,
+				SubjectDisplayName:  data.Spec.DataWarehouse.SubjectDisplayName,
+			}
+		}
+		su.Spec.DatasourceID = ds
+	}
 	return ToModel(su), nil
 }
 
@@ -256,7 +275,7 @@ func (s *Service) UpdateStatus(su *v1.Serviceunit) (*v1.Serviceunit, error) {
 	return su, nil
 }
 
-func (s *Service) getDatasource(id string) (*datav1.DatasourceSpec, error) {
+func (s *Service) getDatasource(id string) (*datav1.Datasource, error) {
 	crd, err := s.datasourceClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -266,7 +285,7 @@ func (s *Service) getDatasource(id string) (*datav1.DatasourceSpec, error) {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.datasource: %+v", ds)
-	return &ds.Spec, nil
+	return ds, nil
 }
 
 func (s *Service) GetGroup(id string) (*groupv1.ServiceunitGroup, error) {

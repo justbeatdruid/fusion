@@ -236,26 +236,32 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 	//API创建时路由信息 数据后端使用 /api/v1/apis/{id}/data web后端使用传入参数
 	protocols := []string{}
-	protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
 	methods := []string{}
-	methods = append(methods, strings.ToUpper(string(db.Spec.Method)))
 	paths := []string{}
 	//替换ID
 	id := db.Spec.Serviceunit.KongID
 	requestBody := &RequestBody{}
 	requestBody.Service = ServiceID{id}
 	//请求协议及方法使用公共请求参数
-	requestBody.Protocols = protocols
-	requestBody.Methods = methods
 	requestBody.Name = db.ObjectMeta.Name
 	//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
 	requestBody.StripPath = false
 	if db.Spec.Serviceunit.Type == "data" {
+		//data 类型使用 Spec.Method Spec.Protocol
+		methods = append(methods, strings.ToUpper(string(db.Spec.Method)))
+		protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
+		requestBody.Protocols = protocols
+		requestBody.Methods = methods
 		queryPath := fmt.Sprintf("%s%s%s", "/api/v1/apis/", db.ObjectMeta.Name, "/data")
 		paths = append(paths, queryPath)
 		requestBody.Paths = paths
 	} else {
+		////web 类型使用 KongApi.Method KongApi.Protocol
 		requestBody.Paths = db.Spec.KongApi.Paths
+		methods = append(methods, strings.ToUpper(string(db.Spec.ApiDefineInfo.Method)))
+		protocols = append(protocols, strings.ToLower(string(db.Spec.ApiDefineInfo.Protocol)))
+		requestBody.Protocols = protocols
+		requestBody.Methods = methods
 		if len(db.Spec.KongApi.Hosts) != 0 {
 			requestBody.Hosts = db.Spec.KongApi.Hosts
 		}
@@ -479,7 +485,7 @@ func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api) (err error) {
 	}
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 	protocols := []string{}
-	protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
+	methods := []string{}
 	paths := []string{}
 	id := db.Spec.Serviceunit.KongID
 	requestBody := &RequestBody{}
@@ -492,10 +498,18 @@ func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api) (err error) {
 	//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
 	requestBody.StripPath = false
 	if db.Spec.Serviceunit.Type == "data" {
+		methods = append(methods, strings.ToUpper(string(db.Spec.Method)))
+		protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
+		requestBody.Protocols = protocols
+		requestBody.Methods = methods
 		queryPath := fmt.Sprintf("%s%s%s", "/api/v1/apis/", db.ObjectMeta.Name, "/data")
 		paths = append(paths, queryPath)
 		requestBody.Paths = paths
 	} else {
+		methods = append(methods, strings.ToUpper(string(db.Spec.ApiDefineInfo.Method)))
+		protocols = append(protocols, strings.ToLower(string(db.Spec.ApiDefineInfo.Protocol)))
+		requestBody.Protocols = protocols
+		requestBody.Methods = methods
 		requestBody.Paths = db.Spec.KongApi.Paths
 		if len(db.Spec.KongApi.Hosts) != 0 {
 			requestBody.Hosts = db.Spec.KongApi.Hosts

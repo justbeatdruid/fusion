@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/emicklei/go-restful"
 	"io/ioutil"
 	"net/http"
@@ -66,7 +67,16 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	model.Serviceunit.KongID = su.Spec.KongService.ID
 	model.Serviceunit.Port = su.Spec.KongService.Port
 	model.Serviceunit.Host = su.Spec.KongService.Host
+	model.Serviceunit.Protocol = su.Spec.KongService.Protocol
 	model.Serviceunit.Type = string(su.Spec.Type)
+	//api协议依赖服务单元
+	if model.Serviceunit.Protocol == "https" {
+		model.Protocol = v1.HTTPS               //data type
+		model.ApiDefineInfo.Protocol = v1.HTTPS //web type
+	} else {
+		model.Protocol = v1.HTTP
+		model.ApiDefineInfo.Protocol = v1.HTTP
+	}
 
 	// create api
 	api, err := s.Create(ToAPI(model))
@@ -166,7 +176,7 @@ func (s *Service) PublishApi(id string) (*Api, error) {
 	//发布API时将API的状态修改为
 	api.Status.Status = v1.Creating
 	//TODO version随机生成
-	api.Spec.PublishInfo.Version = "11111"
+	api.Spec.PublishInfo.Version = names.NewID()
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -246,6 +256,19 @@ func (s *Service) List(suid, appid string, opts ...util.OpOption) (*v1.ApiList, 
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.apiList: %+v", apis)
+	return apis, nil
+}
+
+func (s *Service) ListApis() (*v1.ApiList, error) {
+	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	apis := &v1.ApiList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apis); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("====test get v1.ApiList: %+v", apis)
 	return apis, nil
 }
 
@@ -563,8 +586,8 @@ func (s *Service) TestApi(model *Api) (interface{}, error) {
 	}
 
 	body := map[string]interface{}{}
-	for i := range model.WebParams {
-		body[model.WebParams[i].Name] = model.WebParams[i].Example
+	for i := range model.ApiDefineInfo.WebParams {
+		body[model.ApiDefineInfo.WebParams[i].Name] = model.ApiDefineInfo.WebParams[i].Example
 	}
 	bytesData, _ := json.Marshal(body)
 

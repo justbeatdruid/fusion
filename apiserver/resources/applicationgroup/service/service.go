@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 
+	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"github.com/chinamobile/nlpt/crds/applicationgroup/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,17 +23,32 @@ var oofsGVR = schema.GroupVersionResource{
 }
 
 type Service struct {
-	client dynamic.NamespaceableResourceInterface
+	client    dynamic.NamespaceableResourceInterface
+	appClient dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface) *Service {
-	return &Service{client: client.Resource(oofsGVR)}
+	return &Service{
+		client:    client.Resource(oofsGVR),
+		appClient: client.Resource(appv1.GetOOFSGVR()),
+	}
 }
 
 func (s *Service) CreateApplicationGroup(model *ApplicationGroup) (*ApplicationGroup, error) {
 	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
+	// check if unique
+	list, err := s.List()
+	if err != nil {
+		return nil, fmt.Errorf("cannot get application group list: %+v", err)
+	}
+	for _, item := range list.Items {
+		if item.Spec.Name == model.Name {
+			return nil, fmt.Errorf("name %s already exists", model.Name)
+		}
+	}
+
 	app, err := s.Create(ToAPI(model))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
@@ -57,6 +73,14 @@ func (s *Service) GetApplicationGroup(id string) (*ApplicationGroup, error) {
 }
 
 func (s *Service) DeleteApplicationGroup(id string) error {
+	apps, err := s.getApplicationList(id)
+	klog.V(5).Infof("get %d applications in group", len(apps.Items))
+	if err != nil {
+		return fmt.Errorf("cannot get application list: %+v", err)
+	}
+	if len(apps.Items) > 0 {
+		return fmt.Errorf("%d application(s) still in group %s", len(apps.Items), id)
+	}
 	return s.Delete(id)
 }
 
@@ -66,6 +90,16 @@ func (s *Service) UpdateApplicationGroup(id string, model *ApplicationGroup) (*A
 		return nil, fmt.Errorf("get applicationgroup error: %+v", err)
 	}
 	if len(model.Name) > 0 {
+		// check if unique
+		list, err := s.List()
+		if err != nil {
+			return nil, fmt.Errorf("cannot get application group list: %+v", err)
+		}
+		for _, item := range list.Items {
+			if item.Spec.Name == model.Name {
+				return nil, fmt.Errorf("name %s already exists", item.Name)
+			}
+		}
 		app.Spec.Name = model.Name
 	}
 	if len(model.Description) > 0 {
@@ -151,4 +185,21 @@ func (s *Service) UpdateSpec(app *v1.ApplicationGroup) (*v1.ApplicationGroup, er
 	klog.V(5).Infof("get v1.applicationgroup: %+v", app)
 
 	return app, nil
+}
+
+func (s *Service) getApplicationList(groupid string) (*appv1.ApplicationList, error) {
+	labelSelector := fmt.Sprintf("%s=%s", appv1.GroupLabel, groupid)
+	klog.V(5).Infof("list with label selector: %s", labelSelector)
+	crd, err := s.appClient.Namespace(crdNamespace).List(metav1.ListOptions{
+		LabelSelector: labelSelector,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	apps := &appv1.ApplicationList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apps); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.applicationList: %+v", apps)
+	return apps, nil
 }
