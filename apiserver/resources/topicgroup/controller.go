@@ -50,7 +50,7 @@ type PingResponse = DeleteResponse
 
 type TopicgroupList []*service.Topicgroup
 
-func (tgs TopicgroupList) Length() int {
+func (tgs TopicgroupList) Len() int {
 	return len(tgs)
 }
 

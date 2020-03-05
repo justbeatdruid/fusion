@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	//"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -21,14 +22,14 @@ type Apply struct {
 	Source          Resource       `json:"source"`
 	Action          v1.Action      `json:"action"`
 	Message         string         `json:"message"`
-	ExpireAt        time.Time      `json:"expireAt"`
+	ExpireAt        util.Time      `json:"expireAt"`
 	ExpireTimestamp int64          `json:"expireTimestamp,omitempty"`
 	Users           user.ApplyUser `json:"users"`
 
 	Status     v1.Status `json:"status"`
 	Reason     string    `json:"reason"`
-	AppliedAt  time.Time `json:"appliedAt"`
-	ApprovedAt time.Time `json:"approvedAt"`
+	AppliedAt  util.Time `json:"appliedAt"`
+	ApprovedAt util.Time `json:"approvedAt"`
 }
 
 type Resource struct {
@@ -57,7 +58,7 @@ func ToAPI(app *Apply) *v1.Apply {
 		SourceType: app.Source.Type,
 		SourceID:   app.Source.ID,
 		Action:     app.Action,
-		ExpireAt:   metav1.NewTime(app.ExpireAt),
+		ExpireAt:   metav1.NewTime(app.ExpireAt.Time),
 		Message:    app.Message,
 	}
 	crd.Status = v1.ApplyStatus{
@@ -95,12 +96,12 @@ func (s *Service) ToModel(obj *v1.Apply) (*Apply, error) {
 		},
 		Action:   obj.Spec.Action,
 		Message:  obj.Spec.Message,
-		ExpireAt: obj.Spec.ExpireAt.Time,
+		ExpireAt: util.NewTime(obj.Spec.ExpireAt.Time),
 
 		Status:     obj.Status.Status,
 		Reason:     obj.Status.Reason,
-		AppliedAt:  obj.Status.AppliedAt.Time,
-		ApprovedAt: obj.Status.ApprovedAt.Time,
+		AppliedAt:  util.NewTime(obj.Status.AppliedAt.Time),
+		ApprovedAt: util.NewTime(obj.Status.ApprovedAt.Time),
 	}
 	var err error
 	a.Source, err = s.FakeCompletion(a.Source)
@@ -208,7 +209,7 @@ func (a *Apply) Validate() error {
 			return fmt.Errorf("wrong expireTimestamp: wrong timestamp format, expect 10 or 13 digits")
 		}
 		fmt.Println(sec, nano)
-		a.ExpireAt = time.Unix(sec, nano)
+		a.ExpireAt = util.NewTime(time.Unix(sec, nano))
 	}
 	if a.ExpireAt.IsZero() {
 		return fmt.Errorf("expire time not set")

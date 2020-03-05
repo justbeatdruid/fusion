@@ -133,7 +133,7 @@ func (c *controller) ListRestriction(req *restful.Request) (int, *ListResponse) 
 
 type RestrictionList []*service.Restriction
 
-func (tcs RestrictionList) Length() int {
+func (tcs RestrictionList) Len() int {
 	return len(tcs)
 }
 

@@ -38,6 +38,17 @@ func (s *Service) CreateApplicationGroup(model *ApplicationGroup) (*ApplicationG
 	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
+	// check if unique
+	list, err := s.List()
+	if err != nil {
+		return nil, fmt.Errorf("cannot get application group list: %+v", err)
+	}
+	for _, item := range list.Items {
+		if item.Spec.Name == model.Name {
+			return nil, fmt.Errorf("name %s already exists", model.Name)
+		}
+	}
+
 	app, err := s.Create(ToAPI(model))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
@@ -79,6 +90,16 @@ func (s *Service) UpdateApplicationGroup(id string, model *ApplicationGroup) (*A
 		return nil, fmt.Errorf("get applicationgroup error: %+v", err)
 	}
 	if len(model.Name) > 0 {
+		// check if unique
+		list, err := s.List()
+		if err != nil {
+			return nil, fmt.Errorf("cannot get application group list: %+v", err)
+		}
+		for _, item := range list.Items {
+			if item.Spec.Name == model.Name {
+				return nil, fmt.Errorf("name %s already exists", item.Name)
+			}
+		}
 		app.Spec.Name = model.Name
 	}
 	if len(model.Description) > 0 {

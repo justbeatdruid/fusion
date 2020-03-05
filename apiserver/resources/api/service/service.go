@@ -5,11 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/emicklei/go-restful"
 	"io/ioutil"
 	"net/http"
 	"strconv"
 	"strings"
 
+	datasource "github.com/chinamobile/nlpt/apiserver/resources/datasource/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
@@ -490,7 +492,7 @@ func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
 	return ToModel(api), err
 }
 
-func (s *Service) Query(apiid string, params map[string][]string) (Data, error) {
+func (s *Service) Query(apiid string, params map[string][]string, req *restful.Request) (Data, error) {
 	d := Data{
 		Headers: make([]string, 0),
 		Columns: make(map[string]string, 0),
@@ -525,6 +527,50 @@ func (s *Service) Query(apiid string, params map[string][]string) (Data, error) 
 		d.Columns = data.ColumnDic
 		d.Data = data.Data
 		return d, nil
+	} else if api.Spec.RDBQuery != nil {
+		su, err := s.getServiceunit(api.Spec.Serviceunit.ID)
+		if err != nil {
+			return d, fmt.Errorf("get serviceunit error: %+v", err)
+		}
+		ds, err := s.getDatasource(su.Spec.DatasourceID.ID)
+		if err != nil {
+			return d, fmt.Errorf("get datasource error: %+v", err)
+		}
+		if ds.Spec.Type == "mysql" { //mysql查询
+			//获取数据源连接信息
+			queryFields := api.Spec.RDBQuery.QueryFields //查询字段
+			whereFields := api.Spec.RDBQuery.WhereFields //查询条件
+			sql := strings.Builder{}
+			sql.WriteString("select ")
+			for _, v := range queryFields {
+				sql.WriteString(v.Field + ", ")
+			}
+			newSql := sql.String()
+			newSql = newSql[0 : len(newSql)-2] //窃取多余的","
+			fmt.Println("newSql:" + newSql)
+			sqlEnd := strings.Builder{}
+			sqlEnd.WriteString(newSql)
+			sqlEnd.WriteString(" from " + api.Spec.RDBQuery.Table)
+			if len(whereFields) > 0 {
+				sqlEnd.WriteString(" where ")
+				for _, v := range whereFields {
+					if v.ParameterEnabled {
+						sqlEnd.WriteString(v.Field + "=" + "'" + v.Values[0] + "'" + " and ")
+					} else {
+						sqlEnd.WriteString(v.Field + "=" + "'" + req.QueryParameter(v.Field) + "'" + " and ")
+					}
+				}
+			}
+			sqlFanal := sqlEnd.String()
+			sqlFanal = sqlFanal[0 : len(sqlFanal)-4]
+			MysqlData, err := datasource.ConnectMysql(ds, sqlFanal)
+			if err != nil {
+				return d, fmt.Errorf("get mysqldata error: %+v", err)
+			}
+			d.Data = MysqlData
+			return d, nil
+		}
+
 	} else {
 		klog.V(4).Infof("api %s is not dataservice api", apiid)
 	}

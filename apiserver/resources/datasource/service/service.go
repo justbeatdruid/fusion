@@ -154,7 +154,7 @@ func (s *Service) Delete(id string) error {
 	}
 	return nil
 }
-func connectMysql(ds *v1.Datasource, querySql string) ([]map[string]string, error) {
+func ConnectMysql(ds *v1.Datasource, querySql string) ([]map[string]string, error) {
 	buildPath := strings.Builder{}
 	buildPath.WriteString(ds.Spec.RDB.Connect.Username)
 	buildPath.WriteString(":")
@@ -205,7 +205,7 @@ func (s *Service) GetTables(id string) (*Tables, error) {
 		//mysql类型
 		if ds.Spec.RDB.Type == "mysql" {
 			querySql := "SELECT distinct table_name FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + ds.Spec.RDB.Database + "'"
-			mysqlData, err := connectMysql(ds, querySql)
+			mysqlData, err := ConnectMysql(ds, querySql)
 			if err != nil {
 				return nil, err
 			}
@@ -249,7 +249,7 @@ func (s *Service) GetFields(id, table string) (*Fields, error) {
 				"'(', IF(EXTRA='auto_increment','自增长',EXTRA),')'),COLUMN_KEY) '主外键',IS_NULLABLE '空标识',COLUMN_COMMENT " +
 				"'字段说明' from information_schema.columns where table_name='" + table + "'" +
 				" and table_schema='" + ds.Spec.RDB.Database + "'"
-			mysqlData, err := connectMysql(ds, querySql)
+			mysqlData, err := ConnectMysql(ds, querySql)
 			if err != nil {
 				return nil, err
 			}
@@ -268,7 +268,7 @@ func (s *Service) GetFields(id, table string) (*Fields, error) {
 			}
 			//查询索引sql
 			querySql = "show keys  from " + table
-			data, err := connectMysql(ds, querySql)
+			data, err := ConnectMysql(ds, querySql)
 			if err != nil {
 				return nil, err
 			}

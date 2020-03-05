@@ -215,7 +215,7 @@ func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 
 type ApiList []*service.Api
 
-func (apis ApiList) Length() int {
+func (apis ApiList) Len() int {
 	return len(apis)
 }
 
@@ -254,7 +254,7 @@ func (c *controller) Query(req *restful.Request) (int, interface{}) {
 	req.Request.ParseForm()
 	// pass an array to query parameter example:
 	// http://localhost:8080?links[]=http://www.baidu.com&links[]=http://www.google.cn
-	if data, err := c.service.Query(apiid, req.Request.Form); err == nil {
+	if data, err := c.service.Query(apiid, req.Request.Form, req); err == nil {
 		return http.StatusOK, struct {
 			Code    int          `json:"code"`
 			Message string       `json:"message"`
