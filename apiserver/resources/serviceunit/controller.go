@@ -172,7 +172,7 @@ func (c *controller) ListServiceunit(req *restful.Request) (int, *ListResponse) 
 
 type ServiceunitList []*service.Serviceunit
 
-func (sus ServiceunitList) Length() int {
+func (sus ServiceunitList) Len() int {
 	return len(sus)
 }
 

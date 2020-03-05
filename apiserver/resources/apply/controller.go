@@ -157,7 +157,7 @@ func (c *controller) ListApply(req *restful.Request) (int, *ListResponse) {
 
 type ApplyList []*service.Apply
 
-func (apls ApplyList) Length() int {
+func (apls ApplyList) Len() int {
 	return len(apls)
 }
 
@@ -166,6 +166,14 @@ func (apls ApplyList) GetItem(i int) (interface{}, error) {
 		return struct{}{}, fmt.Errorf("index overflow")
 	}
 	return apls[i], nil
+}
+
+func (apls ApplyList) Less(i, j int) bool {
+	return apls[i].AppliedAt.Time.After(apls[j].AppliedAt.Time)
+}
+
+func (apls ApplyList) Swap(i, j int) {
+	apls[i], apls[j] = apls[j], apls[i]
 }
 
 func (c *controller) ApproveApply(req *restful.Request) (int, *ApproveResponse) {
