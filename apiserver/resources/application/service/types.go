@@ -132,6 +132,16 @@ func (s *Service) Validate(a *Application) error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
+	appList, errs := s.List()
+	if errs != nil {
+		return fmt.Errorf("cannot list app object: %+v", errs)
+	}
+	for _, p := range appList.Items {
+		if p.Spec.Name == a.Name {
+			return fmt.Errorf("app name cannot be repeated: %s", p.Spec.Name)
+		}
+	}
+
 	if len(a.Users.Owner.ID) == 0 {
 		return fmt.Errorf("owner not set")
 	}
@@ -162,7 +172,19 @@ func (s *Service) assignment(target *v1.Application, reqData interface{}) error 
 		return fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
 	if _, ok := data["name"]; ok {
+		if target.Spec.Name != source.Name {
+			appList, errs := s.List()
+			if errs != nil {
+				return fmt.Errorf("cannot list app object: %+v", errs)
+			}
+			for _, p := range appList.Items {
+				if p.Spec.Name == source.Name {
+					return fmt.Errorf("app name cannot be repeated: %s", p.Spec.Name)
+				}
+			}
+		}
 		target.Spec.Name = source.Name
+
 	}
 	if _, ok := data["description"]; ok {
 		target.Spec.Description = source.Description

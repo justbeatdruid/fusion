@@ -32,9 +32,12 @@ func ParseTopicsFromExcel(req *restful.Request, response *restful.Response, spec
 		return ParseResponse{}, err
 	}
 
+
 	//获取已拷贝文件的绝对路径
 	fp, err := filepath.Abs(filepath.Dir(f.Name()))
 	fp = fp + "/" + handler.Filename
+
+	defer os.Remove(fp)
 
 	excelf, err := xlsx.OpenFile(fp)
 	if err != nil {
@@ -44,29 +47,34 @@ func ParseTopicsFromExcel(req *restful.Request, response *restful.Response, spec
 	var tps [][]string
 	for _, sheet := range excelf.Sheets {
 		if sheet.Name == spec.SheetName {
+			for index, field := range spec.TitleRowSpecList {
+				cell := sheet.Cell(0, index)
+				klog.Info(cell.Value)
+				if len(cell.Value) == 0 {
+					klog.Error("invalid file format.")
+					return ParseResponse{}, errors.New("invalid file format.")
+				}
 
-			for rNum, _ := range sheet.Rows {
+				if cell.Value != field {
+					klog.Error("invalid file format.")
+					return ParseResponse{}, errors.New("invalid file format.")
+				}
+			}
+			for  i := 1; i < len(sheet.Rows); i++ {
 				var tp []string
-				for index, field := range spec.TopicExcelDefinitionList {
-					cell := sheet.Cell(rNum, index+1)
+				for j := 0; j < len(spec.TitleRowSpecList); j++ {
+					cell := sheet.Cell(i, j)
 					klog.Info(cell.Value)
 					if len(cell.Value) == 0 {
-						klog.Error("invalid file format.")
-						return ParseResponse{}, errors.New("invalid file format.")
+						continue;
 					}
+					tp = append(tp, cell.Value)
 
-					if rNum == 1 {
-						if cell.Value != field {
-							klog.Error("invalid file format.")
-							return ParseResponse{}, errors.New("invalid file format.")
-						}
-					} else {
-						tp = append(tp, cell.Value)
-					}
 				}
 
 				tps = append(tps, tp)
 			}
+
 
 		}
 	}

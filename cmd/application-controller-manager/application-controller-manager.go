@@ -40,6 +40,7 @@ func init() {
 
 	_ = nlptv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
+	klog.InitFlags(nil)
 }
 
 func main() {
@@ -61,11 +62,17 @@ func main() {
 		o.Development = true
 	}))
 
+	namespace := os.Getenv("MY_POD_NAMESPACE")
+	if len(namespace) == 0 {
+		namespace = "default"
+	}
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
-		Scheme:             scheme,
-		MetricsBindAddress: metricsAddr,
-		LeaderElection:     enableLeaderElection,
-		Port:               9443,
+		Scheme:                  scheme,
+		MetricsBindAddress:      metricsAddr,
+		LeaderElection:          enableLeaderElection,
+		LeaderElectionNamespace: namespace,
+		LeaderElectionID:        "fusion-application-controller-manager",
+		Port:                    9443,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")

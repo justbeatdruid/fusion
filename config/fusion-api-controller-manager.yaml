@@ -61,6 +61,12 @@ spec:
         - --operator-port=30081
         - --portal-port=31337
         - -enable-leader-election
+        - --v=5
+        env:
+        - name: MY_POD_NAMESPACE
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
         image: registry.cmcc.com/library/fusion-api-controller-manager:0.1.0
         imagePullPolicy: Always
         name: fusion-api-controller-manager

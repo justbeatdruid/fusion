@@ -2,11 +2,11 @@ package controllers
 
 import (
 	"fmt"
+	nlptv1 "github.com/chinamobile/nlpt/crds/restriction/api/v1"
 	"github.com/parnurzeal/gorequest"
 	"k8s.io/klog"
 	"net/http"
 	"time"
-	nlptv1 "github.com/chinamobile/nlpt/crds/restriction/api/v1"
 )
 
 const path string = "/plugins"
@@ -16,7 +16,6 @@ var headers = map[string]string{
 }
 var retryStatus = []int{http.StatusBadRequest, http.StatusInternalServerError}
 
-
 type Operator struct {
 	Host           string
 	Port           int
@@ -25,8 +24,8 @@ type Operator struct {
 }
 
 type Config struct {
-	WhiteList	[]string	`json:"whitelist"`
-	BlackList	[]string	`json:"blacklist"`
+	WhiteList []string `json:"whitelist"`
+	BlackList []string `json:"blacklist"`
 }
 
 type RouteID struct {
@@ -74,6 +73,7 @@ type RestrictionResponseBody struct {
 	Fields    interface{} `json:"fields"`
 	Code      int         `json:"code"`
 }
+
 /*
 {"message":"UNIQUE violation detected on '{service=null,name=\"rate-limiting\",route={id=\"9caa66ef-f71c-4588-b463-1efbc52ef2cd\"},consumer=null}'",
 "name":"unique constraint violation",
@@ -115,7 +115,6 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 	}, nil
 }
 
-
 func (r *Operator) AddRestrictionByKong(db *nlptv1.Restriction) (err error) {
 	for index := 0; index < len(db.Spec.Apis); {
 		apiSource := db.Spec.Apis[index]
@@ -131,10 +130,10 @@ func (r *Operator) AddRestrictionByKong(db *nlptv1.Restriction) (err error) {
 			request = request.Retry(3, 5*time.Second, retryStatus...)
 			requestBody := &RestrictionRequestBody{}
 			requestBody.Name = "ip-restriction"
-			requestBody.Config.WhiteList = append(requestBody.Config.WhiteList,"54.13.21.1")
-			requestBody.Config.WhiteList = append(requestBody.Config.WhiteList,"143.1.0.0/24")
-			requestBody.Config.WhiteList = append(requestBody.Config.WhiteList,"54.13.21.2")
-			requestBody.Config.WhiteList = append(requestBody.Config.WhiteList,"144.1.0.0/24")
+			requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, "54.13.21.1")
+			requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, "143.1.0.0/24")
+			requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, "54.13.21.2")
+			requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, "144.1.0.0/24")
 
 			responseBody := &RestrictionResponseBody{}
 			response, body, errs := request.Send(requestBody).EndStruct(responseBody)
@@ -161,7 +160,7 @@ func (r *Operator) DeleteRestrictionByKong(db *nlptv1.Restriction) (err error) {
 	for index := 0; index < len(db.Spec.Apis); {
 		apiSource := db.Spec.Apis[index]
 		if len(apiSource.PluginID) != 0 {
-			restrictionID := apiSource.PluginID //²å¼þ_id
+			restrictionID := apiSource.PluginID //_id
 			klog.Infof("begin delete rate-limiting , the RestrictionID is %s", restrictionID)
 			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 			schema := "http"
@@ -181,7 +180,7 @@ func (r *Operator) DeleteRestrictionByKong(db *nlptv1.Restriction) (err error) {
 				return fmt.Errorf("request for delete ip-restriction error: receive wrong status code: %d", response.StatusCode)
 			}
 			db.Spec.Apis[index].Result = nlptv1.SUCCESS
-			// É¾³ý apis[index]
+			//  apis[index]
 			db.Spec.Apis = append(db.Spec.Apis[:index], db.Spec.Apis[index+1:]...)
 		} else {
 			db.Spec.Apis = append(db.Spec.Apis[:index], db.Spec.Apis[index+1:]...)

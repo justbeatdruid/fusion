@@ -3,6 +3,7 @@ module github.com/chinamobile/nlpt
 go 1.12
 
 require (
+	github.com/360EntSecGroup-Skylar/excelize v1.4.1
 	github.com/apache/pulsar/pulsar-client-go v0.0.0-20200110015858-16b28cb63d57
 	github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible

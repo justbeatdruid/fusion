@@ -141,6 +141,10 @@ func IsUser(id string, labels map[string]string) bool {
 	return ok
 }
 
+func GetOwner(labels map[string]string) string {
+	return labels[ownerLabel]
+}
+
 var ReadPermitted = IsUser
 
 func WritePermitted(id string, labels map[string]string) bool {
