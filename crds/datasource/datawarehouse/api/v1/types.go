@@ -63,6 +63,43 @@ type Property struct {
 	Encrypt                   string `json:"encrypt"`
 }
 
+func (db *Database) GetTables(associationID string) (ts []Table) {
+	if db == nil {
+		return
+	}
+	if len(associationID) == 0 {
+		for _, t := range db.Tables {
+			if t.Info.Type == "" {
+				ts = append(ts, t)
+			}
+		}
+		return
+	} else {
+		for _, t := range db.Tables {
+			if t.Info.ID == associationID {
+				return db.GetRelatedTables(t)
+			}
+		}
+	}
+	return
+}
+
+func (db *Database) GetRelatedTables(t Table) (ts []Table) {
+	if db == nil {
+		return
+	}
+	for _, p := range t.Properties {
+		if len(p.ReferenceTableId) > 0 && len(p.ReferencePropertyId) > 0 {
+			for _, t := range db.Tables {
+				if t.Info.ID == p.ReferenceTableId {
+					ts = append(ts, t)
+				}
+			}
+		}
+	}
+	return
+}
+
 func FromApiDatabase(db v1.Database) Database {
 	d := Database{}
 	fromApi(&db, &d)

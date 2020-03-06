@@ -188,7 +188,7 @@ func ConnectMysql(ds *v1.Datasource, querySql string) ([]map[string]string, erro
 	}
 	return data, nil
 }
-func (s *Service) GetTables(id string) (*Tables, error) {
+func (s *Service) GetTables(id, associationID string) (*Tables, error) {
 	result := &Tables{}
 	ds, err := s.Get(id)
 	if err != nil {
@@ -214,15 +214,16 @@ func (s *Service) GetTables(id string) (*Tables, error) {
 				table.Name = v["table_name"]
 				result.RDBTables = append(result.RDBTables, table)
 			}
-			fmt.Println(result)
+			//fmt.Println(result)
 			return result, nil
 		}
 	case v1.DataWarehouseType:
 		if ds.Spec.DataWarehouse == nil {
 			return nil, fmt.Errorf("datasource %s in type datawarehouse has no datawarehouse instance", ds.ObjectMeta.Name)
 		}
+		ts := ds.Spec.DataWarehouse.GetTables(associationID)
 		result.DataWarehouseTables = make([]dw.Table, 0)
-		for _, t := range ds.Spec.DataWarehouse.Tables {
+		for _, t := range ts {
 			result.DataWarehouseTables = append(result.DataWarehouseTables, dw.FromApiTable(t))
 		}
 	default:
@@ -290,7 +291,7 @@ func (s *Service) GetFields(id, table string) (*Fields, error) {
 		}
 		result.DataWarehouseFields = make([]dw.Property, 0)
 		for _, apiTable := range ds.Spec.DataWarehouse.Tables {
-			if apiTable.Info.Name == table {
+			if apiTable.Info.ID == table {
 				for _, p := range apiTable.Properties {
 					result.DataWarehouseFields = append(result.DataWarehouseFields, dw.FromApiProperty(p))
 				}
