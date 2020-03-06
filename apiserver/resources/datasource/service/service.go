@@ -222,6 +222,7 @@ func (s *Service) GetTables(id, associationID string) (*Tables, error) {
 			return nil, fmt.Errorf("datasource %s in type datawarehouse has no datawarehouse instance", ds.ObjectMeta.Name)
 		}
 		ts := ds.Spec.DataWarehouse.GetTables(associationID)
+		klog.V(5).Infof("get tables: %+v", ts)
 		result.DataWarehouseTables = make([]dw.Table, 0)
 		for _, t := range ts {
 			result.DataWarehouseTables = append(result.DataWarehouseTables, dw.FromApiTable(t))

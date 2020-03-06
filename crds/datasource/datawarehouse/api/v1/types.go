@@ -69,7 +69,7 @@ func (db *Database) GetTables(associationID string) (ts []Table) {
 	}
 	if len(associationID) == 0 {
 		for _, t := range db.Tables {
-			if t.Info.Type == "" {
+			if t.Info.Type == "事实表" {
 				ts = append(ts, t)
 			}
 		}
