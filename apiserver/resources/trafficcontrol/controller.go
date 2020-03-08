@@ -152,7 +152,7 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 			Message: fmt.Errorf("cannot read entity: %+v, reqbody:%v, req:%v", err, reqBody, req).Error(),
 		}
 	}
-	data, ok := reqBody["data,omitempty"]
+	data, ok := reqBody["data"]
 	if !ok {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,

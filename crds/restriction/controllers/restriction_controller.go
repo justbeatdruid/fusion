@@ -51,6 +51,7 @@ func (r *RestrictionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 
 	if restriction.Status.Status == nlptv1.Bind {
 		restriction.Status.Status = nlptv1.Binding
+		r.Update(ctx, restriction)
 		klog.Infof("restriction is binding")
 		if restriction.Spec.Type == nlptv1.IP {
 			if err := r.Operator.AddRestrictionByKong(restriction); err != nil {
@@ -71,7 +72,7 @@ func (r *RestrictionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 
 	if restriction.Status.Status == nlptv1.UnBind {
 		restriction.Status.Status = nlptv1.UnBinding
-		//r.Update(ctx, trafficcontrol)
+		r.Update(ctx, restriction)
 		klog.Infof("restriction is unbinding")
 		if restriction.Spec.Type == nlptv1.IP {
 			if err := r.Operator.DeleteRestrictionByKong(restriction); err != nil {
