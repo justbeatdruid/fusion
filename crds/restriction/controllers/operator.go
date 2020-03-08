@@ -124,7 +124,7 @@ func (r *Operator) AddRestrictionByKong(db *nlptv1.Restriction) (err error) {
 			klog.Infof("begin create restriction , the routeID is %s", routeId)
 			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 			schema := "http"
-			request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, "192.168.1.207", 30081, "/routes/", routeId, path))
+			request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", routeId, path))
 			for k, v := range headers {
 				request = request.Set(k, v)
 			}
@@ -168,7 +168,7 @@ func (r *Operator) DeleteRestrictionByKong(db *nlptv1.Restriction) (err error) {
 			for k, v := range headers {
 				request = request.Set(k, v)
 			}
-			response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, "192.168.1.207",30081, path, restrictionID)).End()
+			response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, restrictionID)).End()
 			request = request.Retry(3, 5*time.Second, retryStatus...)
 
 			if len(errs) > 0 {
