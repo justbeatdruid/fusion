@@ -113,7 +113,7 @@ func (c *controller) PatchApi(req *restful.Request) (int, interface{}) {
 	if api, err := c.service.PatchApi(req.PathParameter("id"), data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
-			Message: fmt.Errorf("create api error: %+v", err).Error(),
+			Message: fmt.Errorf("patch api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
