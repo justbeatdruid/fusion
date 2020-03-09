@@ -44,8 +44,8 @@ trafficcontrol-image:
 
 restriction-image: resimg := ${REG}/library/fusion-restriction-controller-manager:0.1.0
 restriction-image:
-        docker build . -f crds/restriction/Dockerfile -t ${resimg}
-        docker push ${resimg}
+	docker build . -f crds/restriction/Dockerfile -t ${resimg}
+	docker push ${resimg}
 	
 topic-image: image := ${REG}/library/fusion-topic-controller-manager:0.1.0
 topic-image:
