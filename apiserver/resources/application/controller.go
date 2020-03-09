@@ -100,6 +100,9 @@ func (c *controller) PatchApplication(req *restful.Request) (int, *DeleteRespons
 	}
 	data, ok := reqBody["data"]
 	if !ok {
+		data, ok = reqBody["data,omitempty"]
+	}
+	if !ok {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,
 			Message: "read entity error: data is null",
