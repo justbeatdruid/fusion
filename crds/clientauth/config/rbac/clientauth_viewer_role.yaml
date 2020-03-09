@@ -1,0 +1,20 @@
+# permissions to do viewer clientauths.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: clientauth-viewer-role
+rules:
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - clientauths
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - nlpt.cmcc.com
+  resources:
+  - clientauths/status
+  verbs:
+  - get

@@ -1,0 +1,7 @@
+domain: cmcc.com
+repo: github.com/chinamobile/nlpt
+resources:
+- group: nlpt
+  kind: Clientauth
+  version: v1
+version: "2"

@@ -1,0 +1,7 @@
+apiVersion: nlpt.cmcc.com/v1
+kind: Clientauth
+metadata:
+  name: clientauth-sample
+spec:
+  # Add fields here
+  foo: bar
