@@ -48,13 +48,14 @@ type Api struct {
 	Traffic     v1.Traffic     `json:"traffic"`
 	Restriction v1.Restriction `json:"restriction"`
 
-	Status v1.Status `json:"status"`
-	//Publish          v1.Publish    `json:"publish"`
-	AccessLink       v1.AccessLink `json:"access"`
-	UpdatedAt        time.Time     `json:"updatedAt"`
-	ReleasedAt       time.Time     `json:"releasedAt"`
-	ApplicationCount int           `json:"applicationCount"`
-	CalledCount      int           `json:"calledCount"`
+	Status           v1.Status        `json:"status"`
+	Action           v1.Action        `json:"action"`
+	PublishStatus    v1.PublishStatus `json:"publishStatus"`
+	AccessLink       v1.AccessLink    `json:"access"`
+	UpdatedAt        time.Time        `json:"updatedAt"`
+	ReleasedAt       time.Time        `json:"releasedAt"`
+	ApplicationCount int              `json:"applicationCount"`
+	CalledCount      int              `json:"calledCount"`
 	PublishInfo      v1.PublishInfo
 
 	ApplicationBindStatus *v1.ApiApplicationStatus `json:"applicationBindStatus"`
@@ -90,9 +91,13 @@ func ToAPI(api *Api) *v1.Api {
 		ApiReturnInfo:  api.ApiReturnInfo,
 		Traffic:        api.Traffic,
 		Restriction:    api.Restriction,
+		PublishInfo:    api.PublishInfo,
 	}
 	crd.Status = v1.ApiStatus{
-		Status:           v1.Init,
+		Status: v1.Init,
+		Action: v1.Create,
+		//create api update status to unreleased
+		PublishStatus:    v1.UnRelease,
 		AccessLink:       api.AccessLink,
 		UpdatedAt:        metav1.Now(),
 		ReleasedAt:       metav1.Now(),
@@ -126,8 +131,11 @@ func ToModel(obj *v1.Api) *Api {
 		ApiReturnInfo:  obj.Spec.ApiReturnInfo,
 		Traffic:        obj.Spec.Traffic,
 		Restriction:    obj.Spec.Restriction,
+		PublishInfo:    obj.Spec.PublishInfo,
 
 		Status:           obj.Status.Status,
+		Action:           obj.Status.Action,
+		PublishStatus:    obj.Status.PublishStatus,
 		AccessLink:       obj.Status.AccessLink,
 		UpdatedAt:        obj.Status.UpdatedAt.Time,
 		ReleasedAt:       obj.Status.ReleasedAt.Time,

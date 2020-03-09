@@ -107,8 +107,9 @@ type Restriction struct {
 }
 
 type PublishInfo struct {
-	Version string `json:"version"`
-	Host    string `json:"host"`
+	Version      string `json:"version"`
+	Host         string `json:"host"`
+	PublishCount int    `json:"publishCount"`
 }
 
 type Application struct {
@@ -343,13 +344,15 @@ const (
 type ApiStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status           Status      `json:"status"`
-	AccessLink       AccessLink  `json:"access"`
-	UpdatedAt        metav1.Time `json:"updatedAt"`
-	ReleasedAt       metav1.Time `json:"releasedAt"`
-	ApplicationCount int         `json:"applicationCount"`
-	CalledCount      int         `json:"calledCount"`
-	Message          string      `json:"msg"`
+	Status           Status        `json:"status"`
+	Action           Action        `json:"action"`
+	PublishStatus    PublishStatus `json:"publishStatus"`
+	AccessLink       AccessLink    `json:"access"`
+	UpdatedAt        metav1.Time   `json:"updatedAt"`
+	ReleasedAt       metav1.Time   `json:"releasedAt"`
+	ApplicationCount int           `json:"applicationCount"`
+	CalledCount      int           `json:"calledCount"`
+	Message          string        `json:"msg"`
 
 	Applications map[string]ApiApplicationStatus `json:"applications"`
 }
@@ -369,24 +372,30 @@ func (a AccessLink) Parse() error {
 type Status string
 
 const (
-	Init     Status = "init"
-	Creating Status = "creating"
-	Created  Status = "created" //publish
-	Offing   Status = "offing"
-	Offline  Status = "offline"
-	Delete   Status = "delete"
-	Deleting Status = "deleting"
-	Error    Status = "error"
-	Updating Status = "updating"
-	Update   Status = "update"
+	Init    Status = "init"
+	Running Status = "running"
+	Success Status = "success"
+	Error   Status = "error"
 )
 
-type Publish string
+type Action string
 
 const (
-	UnPublished Publish = "unPublished"
-	Published   Publish = "published"
-	//Offline       Publish = "offline"
+	Create  Action = "create"  //create api
+	Update  Action = "update"  //update api
+	Delete  Action = "delete"  //delete api
+	Publish Action = "publish" //publish api
+	Offline Action = "offline" //offline api
+	UnBind  Action = "unbind"  //unbind api
+)
+
+type PublishStatus string
+
+// only update when exec publish or exec offline
+const (
+	UnRelease PublishStatus = "unRelease" //未发布
+	Released  PublishStatus = "released"  //已发布
+	Offlined  PublishStatus = "offlined"  //已下线
 )
 
 type ApiApplicationStatus struct {

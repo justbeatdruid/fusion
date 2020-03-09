@@ -432,28 +432,28 @@ func (ms MessageList) GetItem(i int) (interface{}, error) {
 //导出topics的信息
 func (c *controller) ExportTopics(req *restful.Request) {
 	topicIds := req.QueryParameters("topicIds")
-	file := excelize.NewFile()
-	index := file.NewSheet("Sheet1")
-	s := []string{"topic租户名称", "topic组名称", "topic名称", "分区数量", "非持久化"}
-	j := 0
-	for i := 65; i < 70; i++ {
-		file.SetCellValue("Sheet1", string(i)+"1", s[j])
+    file := excelize.NewFile()
+	index := file.NewSheet("topics")
+	s := []string{"topic租户名称","topic组名称","topic名称","分区数量","非持久化"}
+	j:=0
+	for i :=65; i<70; i++  {
+		file.SetCellValue("topics",string(i)+"1",s[j])
 		j++
 	}
 	row := 1
 	for _, topicId := range topicIds {
 		row++
 		cell := 65
-		if topic, err := c.service.GetTopic(topicId); err != nil {
-			log.Printf("list database error: %+v", err)
-		} else {
-			//以坐标位置写入
-			file.SetCellValue("Sheet1", string(cell)+strconv.Itoa(row), topic.Tenant)
-			file.SetCellValue("Sheet1", string(cell+1)+strconv.Itoa(row), topic.TopicGroup)
-			file.SetCellValue("Sheet1", string(cell+2)+strconv.Itoa(row), topic.Name)
-			file.SetCellValue("Sheet1", string(cell+3)+strconv.Itoa(row), topic.Partition)
-			file.SetCellValue("Sheet1", string(cell+4)+strconv.Itoa(row), topic.IsNonPersistent)
-		}
+       if topic, err := c.service.GetTopic(topicId);err!=nil{
+          log.Printf("list database error: %+v", err)
+	   }else {
+	   	//以坐标位置写入
+	   	file.SetCellValue("topics",string(cell)+strconv.Itoa(row),topic.Tenant)
+	   	file.SetCellValue("topics",string(cell+1)+strconv.Itoa(row),topic.TopicGroup)
+	   	file.SetCellValue("topics",string(cell+2)+strconv.Itoa(row),topic.Name)
+	   	file.SetCellValue("topics",string(cell+3)+strconv.Itoa(row),topic.Partition)
+	   	file.SetCellValue("topics",string(cell+4)+strconv.Itoa(row),topic.IsNonPersistent)
+	   }
 	}
 	file.SetActiveSheet(index)
 	err := file.SaveAs("/tmp/topics.xlsx")

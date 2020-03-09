@@ -27,7 +27,6 @@ import (
 	nlptv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	dwv1 "github.com/chinamobile/nlpt/crds/datasource/datawarehouse/api/v1"
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
-	v1 "github.com/chinamobile/nlpt/pkg/datawarehouse/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
 
 	"k8s.io/klog"
@@ -58,29 +57,14 @@ func GenerateName(db *dwv1.Database) string {
 	if db == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s/%s-%s/%s", db.Name, db.SubjectName, db.Id, db.SubjectId)
+	return fmt.Sprintf("%s/%s", db.Name, db.SubjectName)
 }
 
-func checkDatasource(existedDatawarehouses map[string]nlptv1.Datasource, datawarehouse *v1.Datawarehouse, r *DatasourceReconciler, ctx context.Context) error {
-
-	for key, v := range existedDatawarehouses { //遍历本地资源 在最新资源中筛选已删除资源
-		sine := false
-		for _, d := range datawarehouse.Databases {
-			if d.Id == v.Spec.DataWarehouse.Id {
-				sine = true
-				break
-			}
-		}
-		//如果没有在最新资源中查到该资源 删除本地该资源
-		if !sine {
-			e := r.Delete(ctx, &v)
-			if e != nil {
-				return fmt.Errorf("cannot delete datasource: %+v", e)
-			}
-		}
-		delete(existedDatawarehouses, key)
+func GetDataWarehouseKey(db *dwv1.Database) string {
+	if db == nil {
+		return ""
 	}
-	return nil
+	return fmt.Sprintf("%s-%s", db.Name, db.Id, db.SubjectId)
 }
 
 func (r *DatasourceReconciler) SyncDatasources() error {
@@ -97,23 +81,17 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 	for i, ds := range apiDatasourceList.Items {
 		klog.V(6).Infof("get datasources: %dth datasource: %+v", i, ds)
 		if ds.Spec.Type == nlptv1.DataWarehouseType {
-			existedDatawarehouses[ds.Spec.Name] = ds
+			existedDatawarehouses[GetDataWarehouseKey(ds.Spec.DataWarehouse)] = ds
 		}
 	}
-
 	datawarehouse, err := r.DataConnector.GetExampleDatawarehouse() //查询新的数据
 	if err != nil {
 		return fmt.Errorf("get datawarehouse error: %+v", err)
 	}
 	klog.Infof("get %d datawarehouse", len(datawarehouse.Databases))
-	// remove deleted datawarehouse
-	err = checkDatasource(existedDatawarehouses, datawarehouse, r, ctx)
-	if err != nil {
-		return fmt.Errorf("delete dataresource err: %+v", err)
-	}
 	for _, d := range datawarehouse.Databases {
 		db := dwv1.FromApiDatabase(d)
-		if apiDs, ok := existedDatawarehouses[GenerateName(&db)]; ok {
+		if apiDs, ok := existedDatawarehouses[GetDataWarehouseKey(&db)]; ok {
 			result, err := nlptv1.DeepCompareDataWarehouse(apiDs.Spec.DataWarehouse, &db)
 			if err != nil {
 				return fmt.Errorf("time err: %+v", err)
@@ -127,8 +105,8 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 				}
 			}
 		} else {
-			klog.V(4).Infof("need to create datawarehouse %s", db.Name)
-			klog.V(5).Infof("database=%+v", db)
+			klog.V(4).Infof("need to create datawarehouse %s", GenerateName(&db))
+			//klog.V(5).Infof("database=%+v", db)
 			if db.Tables == nil {
 				db.Tables = make([]dwv1.Table, 0)
 			}
@@ -156,6 +134,13 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 			if err = r.Create(ctx, ds); err != nil {
 				return fmt.Errorf("cannot create datasource: %+v", err)
 			}
+		}
+		delete(existedDatawarehouses, GetDataWarehouseKey(&db))
+	}
+	for _, v := range existedDatawarehouses { //遍历本地资源 在最新资源中筛选已删除资源
+		klog.V(4).Infof("need to delete datawarehouse %s", v.Spec.DataWarehouse.Name)
+		if err = r.Delete(ctx, &v); err != nil {
+			return fmt.Errorf("cannot delete datasource: %+v", err)
 		}
 	}
 	return nil

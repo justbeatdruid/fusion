@@ -98,7 +98,7 @@ func (c *controller) PatchApplication(req *restful.Request) (int, *DeleteRespons
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
-	data, ok := reqBody["data,omitempty"]
+	data, ok := reqBody["data"]
 	if !ok {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,
