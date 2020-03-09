@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
-	"time"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -19,12 +19,12 @@ type Trafficcontrol struct {
 	Apis        []v1.Api      `json:"apis"`
 	Description string        `json:"description"`
 	User        string        `json:"user"`
-	CreatedAt   time.Time     `json:"createdAt"`
+	CreatedAt   util.Time     `json:"createdAt"`
 
-	Status    v1.Status   `json:"status"`
-	UpdatedAt metav1.Time `json:"time"`
-	APICount  int         `json:"apiCount"`
-	Published bool        `json:"published"`
+	Status    v1.Status `json:"status"`
+	UpdatedAt util.Time `json:"time"`
+	APICount  int       `json:"apiCount"`
+	Published bool      `json:"published"`
 }
 
 // only used in creation options
@@ -87,11 +87,11 @@ func ToModel(obj *v1.Trafficcontrol) *Trafficcontrol {
 		Config:      obj.Spec.Config,
 		Apis:        obj.Spec.Apis,
 		User:        obj.Spec.User,
-		CreatedAt:   obj.ObjectMeta.CreationTimestamp.Time,
+		CreatedAt:   util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
 		Description: obj.Spec.Description,
 
 		Status:    obj.Status.Status,
-		UpdatedAt: obj.Status.UpdatedAt,
+		UpdatedAt: util.NewTime(obj.Status.UpdatedAt.Time),
 		APICount:  obj.Status.APICount,
 		Published: obj.Status.Published,
 	}
