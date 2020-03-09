@@ -77,6 +77,7 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 		model.Protocol = v1.HTTP
 		model.ApiDefineInfo.Protocol = v1.HTTP
 	}
+
 	//init publish count
 	model.PublishInfo.PublishCount = 0
 	// create api
@@ -220,9 +221,6 @@ func (s *Service) PublishApi(id string) (*Api, error) {
 	api.Status.Status = v1.Init
 	api.Status.Action = v1.Publish
 	api.Spec.PublishInfo.PublishCount = api.Spec.PublishInfo.PublishCount + 1
-	if err != nil {
-		return nil, fmt.Errorf("cannot get object: %+v", err)
-	}
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -569,8 +567,8 @@ func (s *Service) Query(apiid string, params map[string][]string, req *restful.R
 		return d, fmt.Errorf("get api error: %+v", err)
 	}
 	// data service API
-	if api.Spec.Query != nil {
-		q := api.Spec.Query.ToApiQuery(params)
+	if api.Spec.DataWarehouseQuery != nil {
+		q := api.Spec.DataWarehouseQuery.ToApiQuery(params)
 		q.UserID = "admin"
 		su, err := s.getServiceunit(api.Spec.Serviceunit.ID)
 		if err != nil {
@@ -605,7 +603,7 @@ func (s *Service) Query(apiid string, params map[string][]string, req *restful.R
 		if ds.Spec.Type == "mysql" { //mysql查询
 			//获取数据源连接信息
 			queryFields := api.Spec.RDBQuery.QueryFields //查询字段
-			whereFields := api.Spec.RDBQuery.WhereFields //查询条件
+			//whereFields := api.Spec.RDBQuery.WhereFields //查询条件
 			sql := strings.Builder{}
 			sql.WriteString("select ")
 			for _, v := range queryFields {
@@ -617,16 +615,18 @@ func (s *Service) Query(apiid string, params map[string][]string, req *restful.R
 			sqlEnd := strings.Builder{}
 			sqlEnd.WriteString(newSql)
 			sqlEnd.WriteString(" from " + api.Spec.RDBQuery.Table)
-			if len(whereFields) > 0 {
-				sqlEnd.WriteString(" where ")
-				for _, v := range whereFields {
-					if v.ParameterEnabled {
-						sqlEnd.WriteString(v.Field + "=" + "'" + v.Values[0] + "'" + " and ")
-					} else {
-						sqlEnd.WriteString(v.Field + "=" + "'" + req.QueryParameter(v.Field) + "'" + " and ")
+			/*
+				if len(whereFields) > 0 {
+					sqlEnd.WriteString(" where ")
+					for _, v := range whereFields {
+						if v.ParameterEnabled {
+							sqlEnd.WriteString(v.Field + "=" + "'" + v.Values[0] + "'" + " and ")
+						} else {
+							sqlEnd.WriteString(v.Field + "=" + "'" + req.QueryParameter(v.Field) + "'" + " and ")
+						}
 					}
 				}
-			}
+			*/
 			sqlFanal := sqlEnd.String()
 			sqlFanal = sqlFanal[0 : len(sqlFanal)-4]
 			MysqlData, err := datasource.ConnectMysql(ds, sqlFanal)
@@ -652,8 +652,8 @@ func (s *Service) TestApi(model *Api) (interface{}, error) {
 	}
 
 	body := map[string]interface{}{}
-	for i := range model.ApiDefineInfo.WebParams {
-		body[model.ApiDefineInfo.WebParams[i].Name] = model.ApiDefineInfo.WebParams[i].Example
+	for i := range model.ApiQueryInfo.WebParams {
+		body[model.ApiQueryInfo.WebParams[i].Name] = model.ApiQueryInfo.WebParams[i].Example
 	}
 	bytesData, _ := json.Marshal(body)
 
