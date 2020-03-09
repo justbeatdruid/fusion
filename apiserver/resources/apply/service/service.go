@@ -40,6 +40,10 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
 
+	var (
+		targetName string
+		sourceName string
+	)
 	check := func(r *Resource) error {
 		switch r.Type {
 		case v1.Serviceunit:
@@ -58,6 +62,7 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 			r.Name = api.Spec.Name
 			r.Owner = user.GetOwner(api.ObjectMeta.Labels)
 			r.Labels = api.ObjectMeta.Labels
+			targetName = api.Spec.Name
 		case v1.Application:
 			app, err := s.getApplication(r.ID)
 			if err != nil {
@@ -66,6 +71,7 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 			r.Name = app.Spec.Name
 			r.Owner = user.GetOwner(app.ObjectMeta.Labels)
 			r.Labels = app.ObjectMeta.Labels
+			sourceName = app.Spec.Name
 		default:
 			return fmt.Errorf("unknown target type: %s", r.Type)
 		}
@@ -96,6 +102,8 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
 	}
+	apl.Spec.TargetName = targetName
+	apl.Spec.SourceName = sourceName
 	return s.ToModel(apl)
 }
 
@@ -103,6 +111,36 @@ func (s *Service) ListApply(role string, opts ...util.OpOption) ([]*Apply, error
 	apls, err := s.List(role, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
+	}
+	// this part limit that source is application and target is api
+	// do some merge things
+	{
+		appMaps, err := s.getApplications()
+		if err != nil {
+			return nil, fmt.Errorf("cannot get applications: %+v", err)
+		}
+		apiMaps, err := s.getApis()
+		if err != nil {
+			return nil, fmt.Errorf("cannot get apis: %+v", err)
+		}
+		for i, item := range apls.Items {
+			var sobj Object
+			if item.Spec.SourceType == "api" {
+				sobj = apiMaps[item.Spec.SourceID]
+			} else if item.Spec.SourceType == "application" {
+				sobj = appMaps[item.Spec.SourceID]
+			}
+			apls.Items[i].Spec.SourceName = sobj.Name
+			apls.Items[i].Spec.SourceGroup = sobj.Group
+			var tobj Object
+			if item.Spec.TargetType == "api" {
+				tobj = apiMaps[item.Spec.TargetID]
+			} else if item.Spec.TargetType == "application" {
+				tobj = appMaps[item.Spec.TargetID]
+			}
+			apls.Items[i].Spec.TargetName = tobj.Name
+			apls.Items[i].Spec.TargetGroup = tobj.Group
+		}
 	}
 	return s.ToListModel(apls)
 }
@@ -112,6 +150,16 @@ func (s *Service) GetApply(id string) (*Apply, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
+	app, err := s.getApplication(apl.Spec.SourceID)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get application: %+v", err)
+	}
+	apl.Spec.SourceName = app.Spec.Name
+	api, err := s.getApi(apl.Spec.TargetID)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get api: %+v", err)
+	}
+	apl.Spec.TargetName = api.Spec.Name
 	return s.ToModel(apl)
 }
 
@@ -225,6 +273,45 @@ func (s *Service) getApi(id string) (*apiv1.Api, error) {
 	}
 	klog.V(5).Infof("get v1.api: %+v", api)
 	return api, nil
+}
+
+func (s *Service) getApplications() (map[string]Object, error) {
+	crd, err := s.applicationClient.Namespace(crdNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	apps := &appv1.ApplicationList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apps); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.applicationList: %+v", apps)
+	result := make(map[string]Object)
+	for _, app := range apps.Items {
+		result[app.ObjectMeta.Name] = Object{
+			Group: app.ObjectMeta.Labels[appv1.GroupLabel],
+			Name:  app.Spec.Name,
+		}
+	}
+	return result, nil
+}
+
+func (s *Service) getApis() (map[string]Object, error) {
+	crd, err := s.apiClient.Namespace(crdNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	apis := &apiv1.ApiList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apis); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.apiList: %+v", apis)
+	result := make(map[string]Object)
+	for _, api := range apis.Items {
+		result[api.ObjectMeta.Name] = Object{
+			Name: api.Spec.Name,
+		}
+	}
+	return result, nil
 }
 
 func (s *Service) getApiOwners(id string) (map[string]string, error) {

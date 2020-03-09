@@ -28,18 +28,20 @@ type ApplySpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Apply. Edit Apply_types.go to remove/update
-	Name       string      `json:"name,omitempty"`
-	TargetType Type        `json:"targetType"`
-	TargetID   string      `json:"targetID"`
-	TargetName string      `json:"targetName"`
-	SourceType Type        `json:"sourceType"`
-	SourceID   string      `json:"sourceID"`
-	SourceName string      `json:"sourceName"`
-	Action     Action      `json:"action"`
-	Message    string      `json:"message"`
-	ExpireAt   metav1.Time `json:"expireAt"`
-	AppliedBy  string      `json:"appliedBy"`
-	ApprovedBy string      `json:"approvedBy"`
+	Name        string      `json:"name,omitempty"`
+	TargetType  Type        `json:"targetType"`
+	TargetID    string      `json:"targetID"`
+	TargetName  string      `json:"-"`
+	TargetGroup string      `json:"-"`
+	SourceType  Type        `json:"sourceType"`
+	SourceID    string      `json:"sourceID"`
+	SourceName  string      `json:"-"`
+	SourceGroup string      `json:"-"`
+	Action      Action      `json:"action"`
+	Message     string      `json:"message"`
+	ExpireAt    metav1.Time `json:"expireAt"`
+	AppliedBy   string      `json:"appliedBy"`
+	ApprovedBy  string      `json:"approvedBy"`
 }
 
 type Type string

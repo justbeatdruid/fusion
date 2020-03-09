@@ -12,6 +12,7 @@ import (
 
 	//"k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 type Apply struct {
@@ -35,6 +36,7 @@ type Apply struct {
 type Resource struct {
 	Type      v1.Type   `json:"type"`
 	ID        string    `json:"id"`
+	Group     string    `json:"group"`
 	Name      string    `json:"name"`
 	Owner     string    `json:"owner"`
 	Status    string    `json:"status"`
@@ -85,14 +87,16 @@ func (s *Service) ToModel(obj *v1.Apply) (*Apply, error) {
 		Namespace: obj.ObjectMeta.Namespace,
 
 		Target: Resource{
-			Type: obj.Spec.TargetType,
-			ID:   obj.Spec.TargetID,
-			Name: obj.Spec.TargetName,
+			Type:  obj.Spec.TargetType,
+			ID:    obj.Spec.TargetID,
+			Name:  obj.Spec.TargetName,
+			Group: obj.Spec.TargetGroup,
 		},
 		Source: Resource{
-			Type: obj.Spec.SourceType,
-			ID:   obj.Spec.SourceID,
-			Name: obj.Spec.SourceName,
+			Type:  obj.Spec.SourceType,
+			ID:    obj.Spec.SourceID,
+			Name:  obj.Spec.SourceName,
+			Group: obj.Spec.SourceGroup,
 		},
 		Action:   obj.Spec.Action,
 		Message:  obj.Spec.Message,
@@ -102,15 +106,6 @@ func (s *Service) ToModel(obj *v1.Apply) (*Apply, error) {
 		Reason:     obj.Status.Reason,
 		AppliedAt:  util.NewTime(obj.Status.AppliedAt.Time),
 		ApprovedAt: util.NewTime(obj.Status.ApprovedAt.Time),
-	}
-	var err error
-	a.Source, err = s.FakeCompletion(a.Source)
-	if err != nil {
-		return nil, err
-	}
-	a.Target, err = s.FakeCompletion(a.Target)
-	if err != nil {
-		return nil, err
 	}
 	a.Users = user.GetApplyUserFromLabels(obj.ObjectMeta.Labels)
 	return a, nil
@@ -216,4 +211,9 @@ func (a *Apply) Validate() error {
 	}
 	a.ID = names.NewID()
 	return nil
+}
+
+type Object struct {
+	Group string
+	Name  string
 }
