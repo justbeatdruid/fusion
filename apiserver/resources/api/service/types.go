@@ -32,17 +32,18 @@ type Api struct {
 	Tags           string           `json:"tags"`
 	ApiBackendType string           `json:"apiBackendType"`
 	//data api
-	Method                v1.Method         `json:"method"`
-	Protocol              v1.Protocol       `json:"protocol"`
-	ReturnType            v1.ReturnType     `json:"returnType"`
-	RDBQuery              *v1.RDBQuery      `json:"rdbQuery,omitempty"`
-	Query                 *dwv1.Query       `json:"dataserviceQuery,omitempty"`
-	ApiRequestParameters  []v1.ApiParameter `json:"apiRequestParameters"`
-	ApiResponseParameters []v1.ApiParameter `json:"apiResponseParameters"`
-	ApiPublicParameters   []v1.ApiParameter `json:"apiPublicParameters"`
+	Method                v1.Method                `json:"method"`
+	Protocol              v1.Protocol              `json:"protocol"`
+	ReturnType            v1.ReturnType            `json:"returnType"`
+	RDBQuery              *v1.RDBQuery             `json:"rdbQuery,omitempty"`
+	DataWarehouseQuery    *dwv1.DataWarehouseQuery `json:"datawarehouseQuery,omitempty"`
+	ApiRequestParameters  []v1.ApiParameter        `json:"apiRequestParameters"`
+	ApiResponseParameters []v1.ApiParameter        `json:"apiResponseParameters"`
+	ApiPublicParameters   []v1.ApiParameter        `json:"apiPublicParameters"`
 	//web api
 	ApiDefineInfo v1.ApiDefineInfo `json:"apiDefineInfo"`
 	KongApi       v1.KongApiInfo   `json:"kongApi"`
+	ApiQueryInfo  v1.ApiQueryInfo  `json:"apiQueryInfo"`
 	ApiReturnInfo v1.ApiReturnInfo `json:"apiReturnInfo"`
 
 	Traffic     v1.Traffic     `json:"traffic"`
@@ -72,26 +73,27 @@ func ToAPI(api *Api) *v1.Api {
 	crd.ObjectMeta.Labels = make(map[string]string)
 	crd.ObjectMeta.Labels[v1.ServiceunitLabel] = api.Serviceunit.ID
 	crd.Spec = v1.ApiSpec{
-		Name:           api.Name,
-		Description:    api.Description,
-		Serviceunit:    api.Serviceunit,
-		Applications:   api.Applications,
-		Frequency:      api.Frequency,
-		ApiType:        api.ApiType,
-		AuthType:       api.AuthType,
-		Tags:           api.Tags,
-		ApiBackendType: api.Serviceunit.Type,
-		Method:         api.Method,
-		Protocol:       api.Protocol,
-		ReturnType:     api.ReturnType,
-		RDBQuery:       api.RDBQuery,
-		Query:          api.Query,
-		ApiDefineInfo:  api.ApiDefineInfo,
-		KongApi:        api.KongApi,
-		ApiReturnInfo:  api.ApiReturnInfo,
-		Traffic:        api.Traffic,
-		Restriction:    api.Restriction,
-		PublishInfo:    api.PublishInfo,
+		Name:               api.Name,
+		Description:        api.Description,
+		Serviceunit:        api.Serviceunit,
+		Applications:       api.Applications,
+		Frequency:          api.Frequency,
+		ApiType:            api.ApiType,
+		AuthType:           api.AuthType,
+		Tags:               api.Tags,
+		ApiBackendType:     api.Serviceunit.Type,
+		Method:             api.Method,
+		Protocol:           api.Protocol,
+		ReturnType:         api.ReturnType,
+		RDBQuery:           api.RDBQuery,
+		DataWarehouseQuery: api.DataWarehouseQuery,
+		ApiDefineInfo:      api.ApiDefineInfo,
+		KongApi:            api.KongApi,
+		ApiQueryInfo:       api.ApiQueryInfo,
+		ApiReturnInfo:      api.ApiReturnInfo,
+		Traffic:            api.Traffic,
+		Restriction:        api.Restriction,
+		PublishInfo:        api.PublishInfo,
 	}
 	crd.Status = v1.ApiStatus{
 		Status: v1.Init,
@@ -128,6 +130,7 @@ func ToModel(obj *v1.Api) *Api {
 		ReturnType:     obj.Spec.ReturnType,
 		ApiDefineInfo:  obj.Spec.ApiDefineInfo,
 		KongApi:        obj.Spec.KongApi,
+		ApiQueryInfo:   obj.Spec.ApiQueryInfo,
 		ApiReturnInfo:  obj.Spec.ApiReturnInfo,
 		Traffic:        obj.Spec.Traffic,
 		Restriction:    obj.Spec.Restriction,
@@ -148,15 +151,11 @@ func ToModel(obj *v1.Api) *Api {
 
 	// for data service (rdb)
 	if obj.Spec.RDBQuery != nil {
-		p := []v1.ApiParameter{}
-		for _, f := range obj.Spec.RDBQuery.QueryFields {
-			p = append(p, v1.RDBParameterFromQuery(f))
-		}
-		model.ApiRequestParameters = p
+		model.ApiRequestParameters = model.ApiQueryInfo.WebParams
 
 		q := []v1.ApiParameter{}
-		for _, f := range obj.Spec.RDBQuery.WhereFields {
-			q = append(q, v1.RDBParameterFromWhere(f))
+		for _, f := range obj.Spec.RDBQuery.QueryFields {
+			q = append(q, v1.RDBParameterFromQuery(f))
 		}
 		model.ApiResponseParameters = q
 
@@ -164,26 +163,18 @@ func ToModel(obj *v1.Api) *Api {
 	}
 
 	// web params
-	if model.ApiDefineInfo.WebParams == nil {
-		model.ApiDefineInfo.WebParams = []v1.WebParams{}
+	if model.ApiQueryInfo.WebParams == nil {
+		model.ApiQueryInfo.WebParams = []v1.WebParams{}
 	}
 
 	// for data service (datawarehouse api)
-	if obj.Spec.Query != nil {
-		klog.V(5).Infof("api query field not null, ready to build api parameters")
-		p := []v1.ApiParameter{}
-		for _, f := range obj.Spec.Query.WhereFieldInfo {
-			klog.V(5).Infof("build req params from where %+v", f)
-			if f.ParameterEnabled {
-				p = append(p, v1.ParameterFromWhere(f))
-			}
-		}
-		model.ApiRequestParameters = p
+	if obj.Spec.DataWarehouseQuery != nil {
+		model.ApiRequestParameters = model.ApiQueryInfo.WebParams
 
 		q := []v1.ApiParameter{}
-		for _, f := range obj.Spec.Query.QueryFieldList {
+		for _, f := range obj.Spec.DataWarehouseQuery.Properties {
 			klog.V(5).Infof("build resp params from field %+v", f)
-			q = append(q, v1.ParameterFromQuery(f))
+			q = append(q, v1.ParameterFromDataWarehouseQuery(f))
 		}
 		model.ApiResponseParameters = q
 
@@ -286,14 +277,9 @@ func (s *Service) Validate(a *Api) error {
 					return fmt.Errorf("rdb query field error: %+v", err)
 				}
 			}
-			for _, p := range a.RDBQuery.WhereFields {
-				if err := p.Validate(); err != nil {
-					return fmt.Errorf("rdb where field error: %+v", err)
-				}
-			}
 		}
-		if a.Query != nil {
-			if err = a.Query.Validate(); err != nil {
+		if a.DataWarehouseQuery != nil {
+			if err = a.DataWarehouseQuery.Validate(); err != nil {
 				return fmt.Errorf("query field validate error: %+v", err)
 			}
 		}
@@ -305,7 +291,7 @@ func (s *Service) Validate(a *Api) error {
 		default:
 			return fmt.Errorf("wrong method type: %s. ", a.Method)
 		}
-		for i, p := range a.ApiDefineInfo.WebParams {
+		for i, p := range a.ApiQueryInfo.WebParams {
 			if len(p.Name) == 0 {
 				return fmt.Errorf("%dth parameter name is null", i)
 			}
@@ -327,9 +313,10 @@ func (s *Service) Validate(a *Api) error {
 		if len(a.KongApi.Paths) == 0 {
 			return fmt.Errorf("api paths is null. ")
 		}
-		if len(a.ApiReturnInfo.NormalExample) == 0 {
-			return fmt.Errorf("normal example is null. ")
-		}
+		// return example is not required
+		//if len(a.ApiReturnInfo.NormalExample) == 0 {
+		//	return fmt.Errorf("normal example is null. ")
+		//}
 	}
 	a.UpdatedAt = time.Now()
 
@@ -407,7 +394,7 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		target.Spec.ReturnType = source.ReturnType
 	}
 	if _, ok = data["webParams"]; ok {
-		target.Spec.ApiDefineInfo.WebParams = source.ApiDefineInfo.WebParams
+		target.Spec.ApiQueryInfo.WebParams = source.ApiQueryInfo.WebParams
 	}
 	if _, ok = data["apiType"]; ok {
 		target.Spec.ApiType = source.ApiType
@@ -429,9 +416,6 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 			}
 			if _, ok = config["cors"]; ok {
 				target.Spec.ApiDefineInfo.Cors = source.ApiDefineInfo.Cors
-			}
-			if _, ok = config["webParams"]; ok {
-				target.Spec.ApiDefineInfo.WebParams = source.ApiDefineInfo.WebParams
 			}
 		}
 	}
