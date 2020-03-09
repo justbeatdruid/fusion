@@ -70,6 +70,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	//导入topics
 	ws.Route(ws.POST("/topics/import").
 		Consumes("multipart/form-data").
 		Produces(restful.MIME_JSON).
@@ -77,14 +78,6 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.importTopics).
 		Do(returns200, returns500))
 
-}
-
-func (r *router) InstallImport(ws *restful.WebService) {
-
-	ws.Route(ws.POST("/topics").
-		Doc("import topics from excel files").
-		To(r.importTopics).
-		Do(returns200, returns500))
 }
 
 func (r *router) createTopic(request *restful.Request, response *restful.Response) {
