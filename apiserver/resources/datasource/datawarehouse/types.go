@@ -5,6 +5,8 @@ import (
 	"fmt"
 
 	"github.com/chinamobile/nlpt/crds/datasource/datawarehouse/api/v1"
+
+	"k8s.io/klog"
 )
 
 type Datawarehouse struct {
@@ -67,14 +69,18 @@ type Property struct {
 
 func FromApiTable(table v1.Table) Table {
 	t := Table{}
-	fromApi(&table, &t)
+	if err := fromApi(&table, &t); err != nil {
+		klog.Errorf("convert from api table error: %+v", err)
+	}
 	t.Properties = nil
 	return t
 }
 
 func FromApiProperty(property v1.Property) Property {
 	p := Property{}
-	fromApi(&property, &p)
+	if err := fromApi(&property, &p); err != nil {
+		klog.Errorf("convert from api property error: %+v", err)
+	}
 	return p
 }
 

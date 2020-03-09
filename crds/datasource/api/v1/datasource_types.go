@@ -17,7 +17,6 @@ package v1
 
 import (
 	"fmt"
-	"time"
 
 	dwv1 "github.com/chinamobile/nlpt/crds/datasource/datawarehouse/api/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -142,13 +141,15 @@ func init() {
 func DeepCompareDataWarehouse(d1, d2 *dwv1.Database) (bool, error) { //d1 local  d2 orgen
 	for _, d1v := range d1.Tables {
 		for _, d2v := range d2.Tables {
-			d1Time, e1 := time.Parse("2006-01-02 15:04:05", d1v.Info.LastUpdateTime)
-			d2Time, e2 := time.Parse("2006-01-02 15:04:05", d2v.Info.LastUpdateTime)
-			if e1 != nil || e2 != nil {
-				return true, fmt.Errorf("time formt err,need formt '2006-01-02 15:04:05'")
-			}
+			/*
+				d1Time, e1 := time.Parse("2006-01-02 15:04:05", d1v.Info.LastUpdateTime)
+				d2Time, e2 := time.Parse("2006-01-02 15:04:05", d2v.Info.LastUpdateTime)
+				if e1 != nil || e2 != nil {
+					return true, fmt.Errorf("time formt err,need formt '2006-01-02 15:04:05'")
+				}
+			*/
 			if d1v.Info.ID == d2v.Info.ID {
-				if d1Time.Before(d2Time) {
+				if d1v.Info.LastUpdateTime != d2v.Info.LastUpdateTime {
 					return false, nil
 				}
 				break

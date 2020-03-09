@@ -55,28 +55,35 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 	klog.Infof("get new api event: %+v", *api)
 	//遍历解绑api
-	for index := 0; index < len(api.Spec.Applications); {
-		app := api.Spec.Applications[index]
-		if api.ObjectMeta.Labels[nlptv1.ApplicationLabel(app.ID)] == "false" {
-			//consumer从acl中删除 TODO 失败后处理
-			if err := r.Operator.DeleteConsumerFromAcl(app.AclID, app.ID); err != nil {
-				api.Status.Status = nlptv1.Error
-				api.Status.Message = err.Error()
+	if api.Status.Action == nlptv1.UnBind {
+		api.Status.Status = nlptv1.Running
+		for index := 0; index < len(api.Spec.Applications); {
+			app := api.Spec.Applications[index]
+			if api.ObjectMeta.Labels[nlptv1.ApplicationLabel(app.ID)] == "false" {
+				//consumer从acl中删除 TODO 失败后处理
+				if err := r.Operator.DeleteConsumerFromAcl(app.AclID, app.ID); err != nil {
+					api.Status.Status = nlptv1.Error
+					api.Status.Message = err.Error()
+					r.Update(ctx, api)
+					//当前删除失败直接返回
+					return ctrl.Result{}, nil
+				}
+				//delete application
+				api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
+				delete(api.ObjectMeta.Labels, nlptv1.ApplicationLabel(app.ID))
 				r.Update(ctx, api)
-				//当前删除失败直接返回
-				return ctrl.Result{}, nil
+			} else {
+				index++
 			}
-			//delete application
-			api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
-			delete(api.ObjectMeta.Labels, nlptv1.ApplicationLabel(app.ID))
-			r.Update(ctx, api)
-		} else {
-			index++
 		}
+		api.Status.Status = nlptv1.Success
+		return ctrl.Result{}, nil
 	}
 
-	if api.Status.Status == nlptv1.Creating {
+	//first publish   UnRelease--> publish 未发布-->执行发布api-->已发布
+	if api.Status.Action == nlptv1.Publish && api.Status.PublishStatus == nlptv1.UnRelease {
 		// call kong api create
+		api.Status.Status = nlptv1.Running
 		klog.Infof("new api: %s:%d, cafile: %s", r.Operator.Host, r.Operator.Port, r.Operator.CAFile)
 		if err := r.Operator.CreateRouteByKong(api); err != nil {
 			api.Status.Status = nlptv1.Error
@@ -107,7 +114,8 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				return ctrl.Result{}, nil
 			}
 		}
-		api.Status.Status = nlptv1.Created
+		api.Status.Status = nlptv1.Success
+		api.Status.PublishStatus = nlptv1.Released
 		api.Status.AccessLink = nlptv1.AccessLink(fmt.Sprintf("%s://%s:%d%s",
 			strings.ToLower(string(api.Spec.ApiDefineInfo.Protocol)),
 			r.Operator.Host, r.Operator.KongPortalPort, api.Spec.KongApi.Paths[0]))
@@ -115,34 +123,44 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		r.Update(ctx, api)
 	}
 
-	if api.Status.Status == nlptv1.Offing {
+	//下线 api   已经发状态才可以执行下线   已发布-->执行下线api->已下线
+	if api.Status.Action == nlptv1.Offline && api.Status.PublishStatus == nlptv1.Released {
+		api.Status.Status = nlptv1.Running
 		// call kong api delete
 		if err := r.Operator.DeleteRouteByKong(api); err != nil {
 			//TODO 异常处理
 			api.Status.Status = nlptv1.Error
 			api.Status.Message = err.Error()
 		}
-		api.Status.Status = nlptv1.Offline
+		//PublishStatus -> offline
+		api.Status.Status = nlptv1.Success
+		api.Status.PublishStatus = nlptv1.Offlined
 		r.Update(ctx, api)
 	}
 
-	if api.Status.Status == nlptv1.Updating {
+	//发布后的API需要修改 需要先将API下线 之后更新 然后再执行发布  已下线-->执行更新然后发布-->已发布
+	if api.Status.Action == nlptv1.Publish && api.Status.PublishStatus == nlptv1.Offlined {
+		api.Status.Status = nlptv1.Running
 		// call kong api update
 		if err := r.Operator.UpdateRouteByKong(api); err != nil {
 			//TODO 异常处理
 			api.Status.Status = nlptv1.Error
 			api.Status.Message = err.Error()
 		}
-		api.Status.Status = nlptv1.Update
+		//PublishStatus -> Released
+		api.Status.Status = nlptv1.Success
+		api.Status.PublishStatus = nlptv1.Released
 		r.Update(ctx, api)
 	}
 
-	if api.Status.Status == nlptv1.Delete {
+	if api.Status.Action == nlptv1.Delete {
+		api.Status.Status = nlptv1.Running
 		// call kong api delete
 		if err := r.Operator.DeleteRouteByKong(api); err != nil {
 			api.Status.Status = nlptv1.Error
 			api.Status.Message = err.Error()
 		}
+		api.Status.Status = nlptv1.Success
 		r.Delete(ctx, api)
 	}
 

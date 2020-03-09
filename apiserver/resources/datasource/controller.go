@@ -197,7 +197,8 @@ func (c *controller) Ping(req *restful.Request) (int, *PingResponse) {
 
 func (c *controller) GetTables(req *restful.Request) (int, *Unstructured) {
 	id := req.PathParameter("id")
-	result, err := c.service.GetTables(id)
+	associationID := req.QueryParameter("association")
+	result, err := c.service.GetTables(id, associationID)
 	if err != nil {
 		return http.StatusInternalServerError, &Unstructured{
 			Code:    1,
@@ -212,6 +213,8 @@ func (c *controller) GetTables(req *restful.Request) (int, *Unstructured) {
 
 func (c *controller) GetFields(req *restful.Request) (int, *Unstructured) {
 	id := req.PathParameter("id")
+	// for quering RDB fields, pass table name in query parameter "table"
+	// for quering datawarehouse fields, pass table ID in parameter
 	table := req.PathParameter("table")
 	result, err := c.service.GetFields(id, table)
 	if err != nil {

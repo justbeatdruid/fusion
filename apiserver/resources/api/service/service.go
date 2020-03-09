@@ -77,7 +77,8 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 		model.Protocol = v1.HTTP
 		model.ApiDefineInfo.Protocol = v1.HTTP
 	}
-
+	//init publish count
+	model.PublishInfo.PublishCount = 0
 	// create api
 	api, err := s.Create(ToAPI(model))
 	if err != nil {
@@ -92,17 +93,47 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	//}
 	return ToModel(api), nil
 }
+func CanExeAction(api *v1.Api, action v1.Action) error {
+	if api.Status.Status == v1.Running {
+		klog.V(5).Infof("api status is running: %+v", api)
+		return fmt.Errorf("api status is running and retry latter")
+	}
+	switch action {
+	//API发布后不允许更新 发布 删除 解绑 只能先下线再操作最后重新发布
+	case v1.Update, v1.Publish, v1.Delete, v1.UnBind:
+		if api.Status.PublishStatus == v1.Released {
+			klog.Infof("api status is not ok %s", api.Status.PublishStatus)
+			return fmt.Errorf("api has published and cannot exec")
+		}
+	//只有API发布后才允许执行API下线
+	case v1.Offline:
+		if api.Status.PublishStatus != v1.Released {
+			klog.Infof("api status is not ok %s", api.Status.PublishStatus)
+			return fmt.Errorf("api has not published and cannot exec")
+		}
+	default:
+		klog.V(5).Infof("default api status is ok: %+v", api)
+	}
+	klog.Infof("api status is ok %+v", api)
+	return nil
+}
 
 func (s *Service) PatchApi(id string, data interface{}) (*Api, error) {
 	api, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
+	err = CanExeAction(api, v1.Update)
+	if err != nil {
+		return nil, fmt.Errorf("cannot exec: %+v", err)
+	}
 	if err = s.assignment(api, data); err != nil {
 		return nil, err
 	}
-	//更新API时将API的状态修改为 Updating
-	api.Status.Status = v1.Updating
+	//更新API
+	api.Status.Status = v1.Init
+	api.Status.Action = v1.Update
+
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -168,15 +199,27 @@ func (s *Service) GetApi(id string) (*Api, error) {
 
 func (s *Service) DeleteApi(id string) (*Api, error) {
 	api, err := s.Delete(id)
-	return ToModel(api), err
+	if err != nil {
+		return nil, err
+	}
+	return ToModel(api), nil
 }
 
 func (s *Service) PublishApi(id string) (*Api, error) {
 	api, err := s.Get(id)
-	//发布API时将API的状态修改为
-	api.Status.Status = v1.Creating
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	err = CanExeAction(api, v1.Publish)
+	if err != nil {
+		return nil, fmt.Errorf("cannot exec: %+v", err)
+	}
 	//TODO version随机生成
 	api.Spec.PublishInfo.Version = names.NewID()
+	//发布API
+	api.Status.Status = v1.Init
+	api.Status.Action = v1.Publish
+	api.Spec.PublishInfo.PublishCount = api.Spec.PublishInfo.PublishCount + 1
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -190,16 +233,22 @@ func (s *Service) PublishApi(id string) (*Api, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error update crd: %+v", err)
 	}
+
 	return ToModel(api), err
 }
 
 func (s *Service) OfflineApi(id string) (*Api, error) {
 	api, err := s.Get(id)
-	//下线API时将API的状态修改为
-	api.Status.Status = v1.Offing
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
+	err = CanExeAction(api, v1.Offline)
+	if err != nil {
+		return nil, fmt.Errorf("cannot exec: %+v", err)
+	}
+	//下线API
+	api.Status.Status = v1.Init
+	api.Status.Action = v1.Offline
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -210,6 +259,7 @@ func (s *Service) OfflineApi(id string) (*Api, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error offline crd: %+v", err)
 	}
+
 	return ToModel(api), err
 }
 
@@ -298,8 +348,14 @@ func (s *Service) Delete(id string) (*v1.Api, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get crd by id error: %+v", err)
 	}
+	err = CanExeAction(api, v1.Delete)
+	if err != nil {
+		return nil, fmt.Errorf("cannot exec: %+v", err)
+	}
 	//TODO need check status !!!
-	api.Status.Status = v1.Delete
+	//删除API
+	api.Status.Status = v1.Init
+	api.Status.Action = v1.Delete
 	return s.UpdateStatus(api)
 }
 
@@ -325,7 +381,7 @@ func (s *Service) UpdateStatus(api *v1.Api) (*v1.Api, error) {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), api); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.serviceunit: %+v", api)
+	klog.V(5).Infof("get v1.api: %+v", api)
 
 	return api, nil
 }
@@ -461,6 +517,7 @@ func (s *Service) BindApi(apiid, appid string) (*Api, error) {
 	//if _, err = s.updateApplicationApi(appid, api.ObjectMeta.Name, api.Spec.Name); err != nil {
 	//	return fmt.Errorf("cannot update")
 	//}
+
 	return ToModel(api), err
 }
 
@@ -469,6 +526,7 @@ func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get api error: %+v", err)
 	}
+
 	if _, err = s.getApplication(appid); err != nil {
 		return nil, fmt.Errorf("get application error: %+v", err)
 	}
@@ -482,6 +540,13 @@ func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
 		return nil, fmt.Errorf("application not bound to api")
 	}
 
+	err = CanExeAction(api, v1.UnBind)
+	if err != nil {
+		return nil, fmt.Errorf("cannot exec: %+v", err)
+	}
+	//解绑API
+	api.Status.Status = v1.Init
+	api.Status.Action = v1.UnBind
 	//解绑的时候先设置false TODO 之后controller 里面删除
 	api.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "false"
 	api.Status.ApplicationCount = api.Status.ApplicationCount - 1
@@ -489,6 +554,7 @@ func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
 	//if _, err = s.updateApplicationApi(appid, api.ObjectMeta.Name, api.Spec.Name); err != nil {
 	//	return fmt.Errorf("cannot update")
 	//}
+
 	return ToModel(api), err
 }
 
