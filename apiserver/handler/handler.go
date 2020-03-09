@@ -37,7 +37,7 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 
 	filters := []restful.FilterFunction{
 		filter.NewOptionsFilter(wsContainer).Filter,
-		//filter.NewTokenFilter().Filter,
+		filter.NewTokenFilter().Filter,
 	}
 	for _, f := range filters {
 		wsContainer.Filter(f)
