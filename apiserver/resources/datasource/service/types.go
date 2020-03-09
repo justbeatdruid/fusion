@@ -2,12 +2,12 @@ package service
 
 import (
 	"fmt"
-	"time"
 
 	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
 	rdb "github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
@@ -24,8 +24,8 @@ type Datasource struct {
 	DataWarehouse *dw.Database `json:"datawarehouse,omitempty"`
 
 	Status    v1.Status `json:"status"`
-	UpdatedAt time.Time `json:"updatedAt"`
-	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt util.Time `json:"updatedAt"`
+	CreatedAt util.Time `json:"createdAt"`
 
 	CreateUser v1.User `json:"createdBy"`
 	UpdateUser v1.User `json:"updatedBy"`
@@ -101,8 +101,8 @@ func ToModel(obj *v1.Datasource) *Datasource {
 		//RDB: obj.Spec.RDB,
 
 		Status:    obj.Status.Status,
-		UpdatedAt: obj.Status.UpdatedAt.Time,
-		CreatedAt: obj.Status.CreatedAt.Time,
+		UpdatedAt: util.NewTime(obj.Status.UpdatedAt.Time),
+		CreatedAt: util.NewTime(obj.Status.CreatedAt.Time),
 	}
 	switch obj.Spec.Type {
 	case v1.RDBType:

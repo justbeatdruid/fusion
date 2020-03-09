@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	dwv1 "github.com/chinamobile/nlpt/crds/api/datawarehouse/api/v1"
@@ -53,8 +52,8 @@ type Api struct {
 	Action           v1.Action        `json:"action"`
 	PublishStatus    v1.PublishStatus `json:"publishStatus"`
 	AccessLink       v1.AccessLink    `json:"access"`
-	UpdatedAt        time.Time        `json:"updatedAt"`
-	ReleasedAt       time.Time        `json:"releasedAt"`
+	UpdatedAt        util.Time        `json:"updatedAt"`
+	ReleasedAt       util.Time        `json:"releasedAt"`
 	ApplicationCount int              `json:"applicationCount"`
 	CalledCount      int              `json:"calledCount"`
 	PublishInfo      v1.PublishInfo
@@ -140,8 +139,8 @@ func ToModel(obj *v1.Api) *Api {
 		Action:           obj.Status.Action,
 		PublishStatus:    obj.Status.PublishStatus,
 		AccessLink:       obj.Status.AccessLink,
-		UpdatedAt:        obj.Status.UpdatedAt.Time,
-		ReleasedAt:       obj.Status.ReleasedAt.Time,
+		UpdatedAt:        util.NewTime(obj.Status.UpdatedAt.Time),
+		ReleasedAt:       util.NewTime(obj.Status.ReleasedAt.Time),
 		ApplicationCount: 0,
 		CalledCount:      obj.Status.CalledCount,
 	}
@@ -318,7 +317,7 @@ func (s *Service) Validate(a *Api) error {
 		//	return fmt.Errorf("normal example is null. ")
 		//}
 	}
-	a.UpdatedAt = time.Now()
+	a.UpdatedAt = util.Now()
 
 	//data api need service unit publish
 	if su.Spec.Type == "data" && !su.Status.Published {

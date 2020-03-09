@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	v1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
@@ -28,7 +27,7 @@ type Application struct {
 	UserCount int       `json:"userCount"`
 	APICount  int       `json:"apiCount"`
 
-	CreatedAt time.Time `json:"createdAt"`
+	CreatedAt util.Time `json:"createdAt"`
 
 	Group     string `json:"group"`
 	GroupName string `json:"groupName"`
@@ -79,7 +78,7 @@ func ToModel(obj *v1.Application) *Application {
 		Status:   obj.Status.Status,
 		APICount: len(obj.Spec.APIs),
 
-		CreatedAt: obj.ObjectMeta.CreationTimestamp.Time,
+		CreatedAt: util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
 	}
 	app.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
 	//TODO UserCount

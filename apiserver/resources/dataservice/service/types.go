@@ -2,10 +2,10 @@ package service
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/chinamobile/nlpt/crds/dataservice/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
@@ -14,11 +14,11 @@ type Dataservice struct {
 	ID         string        `json:"id"`
 	Namespace  string        `json:"namespace"`
 	Type       v1.TaskType   `json:"type"`
-	CreatedAt  time.Time     `json:"createdAt"`
+	CreatedAt  util.Time     `json:"createdAt"`
 	CronConfig string        `json:"cronConfig"`
 	Status     v1.TaskStatus `json:"status"`
-	StartedAt  time.Time     `json:"startedAt"`
-	StoppedAt  time.Time     `json:"stoppedAt"`
+	StartedAt  util.Time     `json:"startedAt"`
+	StoppedAt  util.Time     `json:"stoppedAt"`
 }
 
 // only used in creation options
@@ -54,11 +54,11 @@ func ToModel(obj *v1.Dataservice) *Dataservice {
 	ds := &Dataservice{
 		ID:        obj.ObjectMeta.Name,
 		Namespace: obj.ObjectMeta.Namespace,
-		CreatedAt: obj.ObjectMeta.CreationTimestamp.Time,
+		CreatedAt: util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
 		Status:    obj.Status.Status,
 		Type:      obj.Spec.Task.Type,
-		StartedAt: obj.Status.StartedAt.Time,
-		StoppedAt: obj.Status.StoppedAt.Time,
+		StartedAt: util.NewTime(obj.Status.StartedAt.Time),
+		StoppedAt: util.NewTime(obj.Status.StoppedAt.Time),
 	}
 	switch ds.Type {
 	case v1.Realtime:
