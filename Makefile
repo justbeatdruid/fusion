@@ -13,11 +13,13 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: 
+all: clean apiserver-image datasource-image application-image trafficcontrol-image restriction-image topic-image api-image serviceunit-image apply-image
 
+deploy:
+	if test kubectl delete -f config;then test 0;fi
+	kubectl create -f config
 
 clean:
-	rm bin/fusion*
 
 # Run tests
 test: fmt vet
