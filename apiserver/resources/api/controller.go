@@ -105,6 +105,9 @@ func (c *controller) PatchApi(req *restful.Request) (int, interface{}) {
 	}
 	data, ok := reqBody["data"]
 	if !ok {
+		data, ok = reqBody["data,omitempty"]
+	}
+	if !ok {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,
 			Message: "read entity error: data is null",
