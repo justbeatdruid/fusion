@@ -22,11 +22,13 @@ import (
 // EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
+type Status string
 // ClientauthSpec defines the desired state of Clientauth
 type ClientauthSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	AuthUser string `json:"authUser"`
+	Name string `json:"name"`
+	Namespace string `json:"namespace"`
 	CreateTime int64 `json:"createTime"`
 }
 
@@ -34,7 +36,17 @@ type ClientauthSpec struct {
 type ClientauthStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
+	Status  Status `json:"status"`
+	Message string `json:"message"`
 }
+const (
+	Init     Status = "init"
+	Creating Status = "creating"
+	Created  Status = "created"
+	Delete   Status = "delete"
+	Deleting Status = "deleting"
+	Error    Status = "error"
+)
 
 // +kubebuilder:object:root=true
 

@@ -18,6 +18,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunitgroup"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic"
 	"github.com/chinamobile/nlpt/apiserver/resources/topicgroup"
+	"github.com/chinamobile/nlpt/apiserver/resources/clientauth"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 
 	"k8s.io/apiserver/pkg/server/healthz"
@@ -64,6 +65,7 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 		dataservice.NewRouter(h.config),
 		restriction.NewRouter(h.config),
 		topicgroup.NewRouter(h.config),
+		clientauth.NewRouter(h.config),
 	}
 
 	for _, routerHandler := range handlers {
