@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
-	"time"
 
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
@@ -26,9 +25,10 @@ type Serviceunit struct {
 	Description  string             `json:"description"`
 
 	Status    v1.Status `json:"status"`
-	UpdatedAt time.Time `json:"time"`
+	UpdatedAt util.Time `json:"time"`
 	APICount  int       `json:"apiCount"`
 	Published bool      `json:"published"`
+	CreatedAt util.Time `json:"createdAt"`
 
 	Group     string `json:"group"`
 	GroupName string `json:"groupName"`
@@ -113,7 +113,8 @@ func ToModel(obj *v1.Serviceunit) *Serviceunit {
 		Description:  obj.Spec.Description,
 
 		Status:    obj.Status.Status,
-		UpdatedAt: obj.Status.UpdatedAt.Time,
+		CreatedAt: util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
+		UpdatedAt: util.NewTime(obj.Status.UpdatedAt.Time),
 		APICount:  obj.Status.APICount,
 		Published: obj.Status.Published,
 	}
