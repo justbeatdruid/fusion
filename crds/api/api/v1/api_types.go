@@ -58,12 +58,12 @@ type ApiSpec struct {
 	Serviceunit    Serviceunit   `json:"serviceunit"`
 	Applications   []Application `json:"applications"`
 	Users          []User        `json:"users"`
-	Frequency      int           `json:"frequency"`
 	ApiType        ApiType       `json:"apiType"` //API类型
 	AuthType       AuthType      `json:"authType"`
 	Tags           string        `json:"tags"`
 	ApiBackendType string        `json:"apiBackendType"`
 	//data api
+	Frequency  int        `json:"frequency"`
 	Method     Method     `json:"method"`
 	Protocol   Protocol   `json:"protocol"`
 	ReturnType ReturnType `json:"returnType"`
@@ -71,11 +71,12 @@ type ApiSpec struct {
 	// Simple RDB API
 	RDBQuery *RDBQuery `json:"rdbQuery,omitempty"`
 	// Datawarehouse API, define a query
-	Query *dwv1.Query `json:"dataserviceQuery,omitempty"`
+	DataWarehouseQuery *dwv1.DataWarehouseQuery `json:"datawarehouseQuery,omitempty"`
 	//web api
 	ApiDefineInfo ApiDefineInfo `json:"apiDefineInfo"`
 	KongApi       KongApiInfo   `json:"kongApi"`
 	ApiReturnInfo ApiReturnInfo `json:"apiReturnInfo"`
+	ApiQueryInfo  ApiQueryInfo  `json:"apiQueryInfo"`
 	//api publishInfo
 	PublishInfo PublishInfo `json:"publishInfo"`
 
@@ -166,7 +167,6 @@ const (
 type RDBQuery struct {
 	Table       string       `json:"table"`
 	QueryFields []QueryField `json:"queryFields"`
-	WhereFields []WhereField `json:"whereFields"`
 }
 
 type QueryField struct {
@@ -176,55 +176,26 @@ type QueryField struct {
 	Description string `json:"description"`
 }
 
-type WhereField struct {
-	Field            string   `json:"field"`
-	Type             string   `json:"type"`
-	Operator         string   `json:"operator"`
-	Values           []string `json:"values"`
-	ParameterEnabled bool     `json:"parameterEnabled"`
-	Example          string   `json:"example"`
-	Description      string   `json:"description"`
-	Required         bool     `json:"required"`
-}
-
-type ApiParameter struct {
-	Name        string `json:"name"`
-	Type        string `json:"type"`
-	Operator    string `json:"operator"`
-	Example     string `json:"example"`
-	Description string `json:"description"`
-	Required    bool   `json:"required"`
-}
-
 func RDBParameterFromQuery(q QueryField) ApiParameter {
 	ap := ApiParameter{
 		Name:        q.Field,
-		Type:        q.Type,
+		Type:        ParameterType(q.Type),
 		Description: q.Description,
 	}
 	return ap
 }
 
-func RDBParameterFromWhere(q WhereField) ApiParameter {
-	ap := ApiParameter{
-		Name:        q.Field,
-		Type:        q.Type,
-		Operator:    q.Operator,
-		Example:     q.Example,
-		Description: q.Description,
-		Required:    q.Required,
-	}
-	return ap
+type ApiQueryInfo struct {
+	WebParams []WebParams `json:"webParams"`
 }
 
 //define api
 type ApiDefineInfo struct {
-	Path      string      `json:"path"`
-	MatchMode string      `json:"matchMode"`
-	Method    Method      `json:"method"`
-	Protocol  Protocol    `json:"protocol"` //直接从服务单元里面获取不需要前台传入
-	Cors      string      `json:"cors"`
-	WebParams []WebParams `json:"webParams"`
+	Path      string   `json:"path"`
+	MatchMode string   `json:"matchMode"`
+	Method    Method   `json:"method"`
+	Protocol  Protocol `json:"protocol"` //直接从服务单元里面获取不需要前台传入
+	Cors      string   `json:"cors"`
 }
 
 //define api return
@@ -253,24 +224,10 @@ type KongApiInfo struct {
 	CorsID        string   `json:"cors_id"`
 }
 
-func ParameterFromWhere(w dwv1.WhereField) ApiParameter {
+func ParameterFromDataWarehouseQuery(q dwv1.QueryProperty) ApiParameter {
 	ap := ApiParameter{
-		Name:        w.ParamName(),
-		Type:        "TODO",
-		Operator:    w.Operator,
-		Example:     w.Example,
-		Description: w.Description,
-		Required:    w.Required,
-	}
-	return ap
-}
-
-func ParameterFromQuery(q dwv1.QueryField) ApiParameter {
-	ap := ApiParameter{
-		Name:        q.ParamName(),
-		Type:        "TODO",
-		Example:     "TODO",
-		Description: "TODO",
+		Name: fmt.Sprintf("%s.%s", q.TableName, q.PropertyName),
+		Type: ParameterType(q.PhysicalType),
 	}
 	return ap
 }
@@ -294,27 +251,19 @@ func (f QueryField) Validate() error {
 	}
 	return nil
 }
-func (f WhereField) Validate() error {
-	for k, v := range map[string]string{
-		"field": f.Field,
-		"type":  f.Type,
-	} {
-		if len(v) == 0 {
-			return fmt.Errorf("%s is null", k)
-		}
-	}
-	return nil
-}
+
+type ApiParameter = WebParams
 
 type WebParams struct {
 	Name        string        `json:"name"`     //必须
 	Type        ParameterType `json:"type"`     //必须
 	Location    LocationType  `json:"location"` //必须
 	Required    bool          `json:"required"` //必须
-	DefValue    interface{}   `json:"valueDefault"`
-	Example     interface{}   `json:"example"`
+	Operator    string        `json:"operator"`
+	DefValue    string        `json:"valueDefault"`
+	Example     string        `json:"example"`
 	Description string        `json:"description"`
-	ValidEnable int           `json:"alidEnable"`
+	ValidEnable int           `json:"validEnable"`
 	MinNum      int           `json:"minNum"`
 	MaxNum      int           `json:"maxNum"`
 	MinSize     int           `json:"minSize"`

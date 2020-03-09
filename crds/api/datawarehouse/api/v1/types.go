@@ -8,6 +8,38 @@ import (
 	"github.com/chinamobile/nlpt/pkg/util"
 )
 
+type DataWarehouseQuery struct {
+	Properties []QueryProperty `json:"properties"`
+}
+
+type QueryProperty struct {
+	TableID      string `json:"tableId"`
+	TableName    string `json:"tableName"`
+	PropertyID   string `json:"propertyId"`
+	PropertyName string `json:"propertyName"`
+	PhysicalType string `json:"physicalType"`
+}
+
+func (d *DataWarehouseQuery) Validate() error {
+	if d == nil {
+		return nil
+	}
+	for _, p := range d.Properties {
+		for k, v := range map[string]string{
+			"table id":      p.TableID,
+			"property id":   p.PropertyID,
+			"table name":    p.TableName,
+			"property name": p.PropertyName,
+			"type":          p.PhysicalType,
+		} {
+			if len(v) == 0 {
+				return fmt.Errorf("%s is null", k)
+			}
+		}
+	}
+	return nil
+}
+
 type Query struct {
 	PrimaryTableName  string             `json:"primaryTableName"`
 	AssociationTables []AssociationTable `json:"associationTable"`
@@ -57,26 +89,8 @@ func (q QueryField) ParamName() string {
 	return fmt.Sprintf("%s/%s", q.TableName, q.PropertyName)
 }
 
-func (q *Query) ToApiQuery(params map[string][]string) v1.Query {
+func (q *DataWarehouseQuery) ToApiQuery(params map[string][]string) v1.Query {
 	wheres := make([]v1.WhereField, 0)
-	for _, w := range q.WhereFieldInfo {
-		apiWhere := v1.WhereField{
-			PropertyName: w.PropertyName,
-			TableName:    w.TableName,
-			Operator:     w.Operator,
-			Values:       w.Values,
-		}
-		if !w.ParameterEnabled {
-			wheres = append(wheres, apiWhere)
-		} else {
-			for k, v := range params {
-				if k == w.ParamName() {
-					apiWhere.Values = v
-					wheres = append(wheres, apiWhere)
-				}
-			}
-		}
-	}
 
 	apiQuery := v1.Query{}
 	toApi(q, &apiQuery)

@@ -32,8 +32,7 @@ func (t Time) MarshalJSON() ([]byte, error) {
 		return []byte("\"null\""), nil
 	}
 	if y := t.Year(); y < 0 || y >= 10000 {
-		// RFC 3339 is clear that years are 4 digits exactly.
-		// See golang.org/issue/4556#c15 for more discussion.
+		// years are 4 digits exactly.
 		return nil, errors.New("Time.MarshalJSON: year outside of range [0,9999]")
 	}
 
