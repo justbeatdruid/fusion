@@ -2,15 +2,16 @@ package topic
 
 import (
 	"fmt"
+	"github.com/360EntSecGroup-Skylar/excelize"
+	"github.com/chinamobile/nlpt/apiserver/resources/topic/parser"
+	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/util"
+	"github.com/emicklei/go-restful"
 	"github.com/emicklei/go-restful/log"
 	"net/http"
 	"strconv"
 	"strings"
-	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
-	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
-	"github.com/chinamobile/nlpt/pkg/util"
-    "github.com/360EntSecGroup-Skylar/excelize"
-	"github.com/emicklei/go-restful"
 )
 
 type controller struct {
@@ -49,6 +50,18 @@ type MessageResponse = struct {
 	Messages interface{} `json:"messages"`
 }
 type PingResponse = DeleteResponse
+
+type ImportResponse struct {
+	Code    int          `json:"code"`
+	Message string       `json:"message"`
+	Data    []ImportData `json:"data"`
+}
+
+type ImportData struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Url     string `json:"url"`
+}
 
 func (c *controller) CreateTopic(req *restful.Request) (int, *CreateResponse) {
 	body := &service.Topic{}
@@ -175,8 +188,58 @@ func (ts TopicList) GetItem(i int) (interface{}, error) {
 }
 
 //TODO 导入Topic待完善
-func (c *controller) ImportTopics(req *restful.Request) int {
-	return 1
+func (c *controller) ImportTopics(req *restful.Request, response *restful.Response) (int, *ImportResponse) {
+	spec := &parser.TopicExcelSpec{
+		SheetName:        "topics",
+		MultiPartFileKey: "uploadfile",
+		TitleRowSpecList: []string{"topic租户名称", "topic组名称", "topic名称", "分区数量", "非持久化"},
+	}
+	tps, err := parser.ParseTopicsFromExcel(req, response, spec)
+	if err != nil {
+		return http.StatusInternalServerError, &ImportResponse{
+			Code:    1,
+			Message: fmt.Errorf("import topics error: %+v", err).Error(),
+		}
+	}
+
+	ids := []ImportData{}
+	for _, tp := range tps.ParseData {
+
+		partition, _ := strconv.Atoi(tp[3])
+		isNonPersisten, _ := strconv.ParseBool(tp[4])
+		topic := &service.Topic{
+			Tenant:          tp[0],
+			TopicGroup:      tp[1],
+			Name:            tp[2],
+			Partition:       partition,
+			IsNonPersistent: isNonPersisten,
+		}
+
+		id := ImportData{}
+
+		//数据重复判断
+		if c.service.IsTopicExist(topic.GetUrl()) {
+			continue
+		}
+
+		topic.URL = topic.GetUrl()
+		if t, err := c.service.CreateTopic(topic); err != nil {
+			id.Code = 1
+			id.Message = "create database error"
+		} else {
+			id.Code = 0
+			id.Message = "success"
+			id.Url = t.URL
+		}
+		ids = append(ids, id)
+	}
+
+	return http.StatusOK, &ImportResponse{
+		Code:    0,
+		Message: "success",
+		Data:    ids,
+	}
+
 }
 
 //查询topic的消息
@@ -377,7 +440,7 @@ func (c *controller) ExportTopics(req *restful.Request) {
 		file.SetCellValue("topics",string(i)+"1",s[j])
 		j++
 	}
-	row:=1
+	row := 1
 	for _, topicId := range topicIds {
 		row++
 		cell := 65
@@ -394,7 +457,7 @@ func (c *controller) ExportTopics(req *restful.Request) {
 	}
 	file.SetActiveSheet(index)
 	err := file.SaveAs("/tmp/topics.xlsx")
-	if err !=nil {
+	if err != nil {
 		log.Printf("save file error: %+v", err)
 	}
 }

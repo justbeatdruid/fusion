@@ -50,7 +50,16 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 	apiV1Ws.Path("/api/v1").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON)
+
+	apiV1WsImport := new(restful.WebService)
+	apiV1WsImport.Path("/api/v1/import").
+		Consumes("multipart/form-data").
+		Produces(restful.MIME_JSON)
+
 	wsContainer.Add(apiV1Ws)
+	wsContainer.Add(apiV1WsImport)
+
+	tp := topic.NewRouter(h.config)
 
 	handlers := []installer{
 		api.NewRouter(h.config),
@@ -60,7 +69,7 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 		serviceunitgroup.NewRouter(h.config),
 		datasource.NewRouter(h.config),
 		apply.NewRouter(h.config),
-		topic.NewRouter(h.config),
+		tp,
 		trafficcontrol.NewRouter(h.config),
 		dataservice.NewRouter(h.config),
 		restriction.NewRouter(h.config),
@@ -69,6 +78,15 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 
 	for _, routerHandler := range handlers {
 		routerHandler.Install(apiV1Ws)
+
+	}
+
+	importHandlers := []importInstaller{
+		tp,
+	}
+	for _, routerHandler := range importHandlers {
+		routerHandler.InstallImport(apiV1WsImport)
+
 	}
 
 	applicationgroupHandler := applicationgroup.NewRouter(h.config)

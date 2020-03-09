@@ -39,6 +39,7 @@ func (s *Service) CreateTopic(model *Topic) (*Topic, error) {
 	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
+	//根据Topic url在数据库中查找
 	tp, err := s.Create(ToAPI(model))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
@@ -299,4 +300,24 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 	}
 
 	return messageStructs, err
+}
+
+func (s *Service) IsTopicExist(url string) bool {
+	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{
+		FieldSelector: url,
+	})
+	if err != nil {
+		return false
+	}
+	tps := &v1.TopicList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
+		return false
+	}
+
+	if len(tps.Items) == 0 {
+		return false
+	} else {
+		return true
+	}
+
 }

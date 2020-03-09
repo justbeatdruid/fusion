@@ -5,7 +5,13 @@ import (
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"strings"
 	"time"
+)
+
+const (
+	DefaultTenant    = "public"
+	DefaultNamespace = "default"
 )
 
 type Topic struct {
@@ -47,10 +53,18 @@ func ToAPI(app *Topic) *v1.Topic {
 		IsNonPersistent: app.IsNonPersistent,
 		CreatTime:       app.CreateTime,
 	}
+
+	if len(crd.Spec.Tenant) == 0 {
+		crd.Spec.Tenant = DefaultTenant
+	}
+	if len(crd.Spec.TopicGroup) == 0 {
+		crd.Spec.TopicGroup = DefaultNamespace
+	}
 	status := app.Status
 	if len(status) == 0 {
 		status = v1.Init
 	}
+
 	crd.Status = v1.TopicStatus{
 		Status:  status,
 		Message: app.Message,
@@ -89,6 +103,25 @@ func (a *Topic) Validate() error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
+
 	a.ID = names.NewID()
 	return nil
+}
+
+func (a *Topic) GetUrl() (url string) {
+
+	var build strings.Builder
+	if a.IsNonPersistent {
+		build.WriteString("non-persistent://")
+	} else {
+		build.WriteString("persistent://")
+	}
+
+	build.WriteString(a.Tenant)
+	build.WriteString("/")
+	build.WriteString(a.TopicGroup)
+	build.WriteString("/")
+	build.WriteString(a.Name)
+
+	return build.String()
 }

@@ -172,6 +172,8 @@ github.com/sirupsen/logrus
 github.com/spf13/cobra
 # github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
+# github.com/tealeg/xlsx v1.0.5
+github.com/tealeg/xlsx
 # go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738
 go.etcd.io/etcd/auth/authpb
 go.etcd.io/etcd/clientv3

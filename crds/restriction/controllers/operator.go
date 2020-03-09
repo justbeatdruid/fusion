@@ -2,11 +2,11 @@ package controllers
 
 import (
 	"fmt"
+	nlptv1 "github.com/chinamobile/nlpt/crds/restriction/api/v1"
 	"github.com/parnurzeal/gorequest"
 	"k8s.io/klog"
 	"net/http"
 	"time"
-	nlptv1 "github.com/chinamobile/nlpt/crds/restriction/api/v1"
 )
 
 const path string = "/plugins"
@@ -16,7 +16,6 @@ var headers = map[string]string{
 }
 var retryStatus = []int{http.StatusBadRequest, http.StatusInternalServerError}
 
-
 type Operator struct {
 	Host           string
 	Port           int
@@ -25,8 +24,8 @@ type Operator struct {
 }
 
 type Config struct {
-	WhiteList	[]string	`json:"whitelist"`
-	BlackList	[]string	`json:"blacklist"`
+	WhiteList []string `json:"whitelist"`
+	BlackList []string `json:"blacklist"`
 }
 
 type RouteID struct {
@@ -74,6 +73,7 @@ type RestrictionResponseBody struct {
 	Fields    interface{} `json:"fields"`
 	Code      int         `json:"code"`
 }
+
 /*
 {"message":"UNIQUE violation detected on '{service=null,name=\"rate-limiting\",route={id=\"9caa66ef-f71c-4588-b463-1efbc52ef2cd\"},consumer=null}'",
 "name":"unique constraint violation",
@@ -114,7 +114,6 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 		CAFile: cafile,
 	}, nil
 }
-
 
 func (r *Operator) AddRestrictionByKong(db *nlptv1.Restriction) (err error) {
 	for index := 0; index < len(db.Spec.Apis); {

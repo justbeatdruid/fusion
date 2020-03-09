@@ -2,13 +2,12 @@ package topic
 
 import (
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
-	"net/http"
-
 	"github.com/emicklei/go-restful"
+	"net/http"
 )
 
 type router struct {
-	controller *controller
+	controller *controller "github.com/emicklei/go-restful"
 }
 
 func NewRouter(cfg *config.Config) *router {
@@ -71,10 +70,13 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+}
 
-	ws.Route(ws.POST("/topics/import").
+func (r *router) InstallImport(ws *restful.WebService) {
+
+	ws.Route(ws.POST("/topics").
 		Doc("import topics from excel files").
-		To(r.importTopics).Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		To(r.importTopics).
 		Do(returns200, returns500))
 }
 
@@ -112,12 +114,12 @@ func (r *router) listMessages(request *restful.Request, response *restful.Respon
 //导出关于topics的信息
 func (r *router) exportTopics(request *restful.Request, response *restful.Response) {
 	r.controller.ExportTopics(request)
-	response.Header().Add("Content-Disposition","attachment;filename=topics.xlsx")
-	response.Header().Add("Content-Type","application/vnd.ms-excel")
-	http.ServeFile(response.ResponseWriter,request.Request,"/tmp/topics.xlsx")
+	response.Header().Add("Content-Disposition", "attachment;filename=topics.xlsx")
+	response.Header().Add("Content-Type", "application/vnd.ms-excel")
+	http.ServeFile(response.ResponseWriter, request.Request, "/tmp/topics.xlsx")
 }
-
 
 func (r *router) importTopics(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ImportTopics(request, response)
+	response.WriteHeaderAndEntity(code, result)
 }
-

@@ -18,6 +18,7 @@ package controllers
 
 import (
 	"context"
+	"k8s.io/klog"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -30,8 +31,8 @@ import (
 // RestrictionReconciler reconciles a Restriction object
 type RestrictionReconciler struct {
 	client.Client
-	Log    logr.Logger
-	Scheme *runtime.Scheme
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
 	Operator *Operator
 }
 
@@ -84,7 +85,7 @@ func (r *RestrictionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 				restriction.Status.Status = nlptv1.UnBinded
 				restriction.Status.Message = "success"
 			}
-		} else  if  restriction.Spec.Type == nlptv1.USER {
+		} else if restriction.Spec.Type == nlptv1.USER {
 			//ToDo
 		}
 		// update status
