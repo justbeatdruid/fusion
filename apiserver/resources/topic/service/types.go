@@ -5,8 +5,8 @@ import (
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
 	"strings"
-	"time"
 )
 
 const (
@@ -31,7 +31,7 @@ type Topic struct {
 type Message struct {
 	TopicName string           `json:"topicName"`
 	ID        pulsar.MessageID `json:"id"`
-	Time      time.Time        `json:"time"`
+	Time      util.Time        `json:"time"`
 	Messages  string           `json:"messages"`
 }
 

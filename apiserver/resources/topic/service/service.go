@@ -6,6 +6,7 @@ import (
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
+	"github.com/chinamobile/nlpt/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -291,7 +292,7 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 			}
 			// Process the message
 			messageStruct.TopicName = msg.Topic()
-			messageStruct.Time = msg.PublishTime()
+			messageStruct.Time = util.NewTime(msg.PublishTime())
 			messageStruct.ID = msg.ID()
 			messageStruct.Messages = string(msg.Payload()[:])
 			messageStructs = append(messageStructs, messageStruct)
