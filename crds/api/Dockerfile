@@ -5,6 +5,7 @@ WORKDIR /go/src/github.com/chinamobile/nlpt/
 # Copy the Go Modules manifests
 COPY cmd/ cmd/
 COPY crds/api crds/api
+COPY crds/datasource/datawarehouse/api/v1 crds/datasource/datawarehouse/api/v1
 COPY pkg/ pkg/
 COPY vendor/ vendor/
 
