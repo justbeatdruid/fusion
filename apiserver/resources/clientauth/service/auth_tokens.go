@@ -26,7 +26,7 @@ func (t *Token) Create() (string, error) {
 
 	var sp string
 	if path == "/" {
-		sp = "key/my-secret.key"
+		sp = "/key/my-secret.key"
 	} else {
 		sp = path + "/key/my-secret.key"
 	}
