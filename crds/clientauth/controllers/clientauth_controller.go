@@ -17,6 +17,7 @@ package controllers
 
 import (
 	"context"
+	"k8s.io/klog"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -37,11 +38,21 @@ type ClientauthReconciler struct {
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=clientauths/status,verbs=get;update;patch
 
 func (r *ClientauthReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+	ctx := context.Background()
 	_ = r.Log.WithValues("clientauth", req.NamespacedName)
 
 	// your logic here
+	clientAuth := &nlptv1.Clientauth{}
+	if err := r.Get(ctx, req.NamespacedName, clientAuth); err != nil{
+		klog.Errorf("cannot get clientauth of ctrl req: %+v", err)
+		return ctrl.Result{}, nil
+	}
+	if clientAuth.Status.Status == nlptv1.Init {
+		clientAuth.Status.Status = nlptv1.Created
+		clientAuth.Status.Message = "success"
+	}
 
+	r.Update(ctx, clientAuth)
 	return ctrl.Result{}, nil
 }
 

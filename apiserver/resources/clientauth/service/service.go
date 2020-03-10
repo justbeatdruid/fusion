@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/chinamobile/nlpt/crds/clientauth/api/v1"
 
@@ -33,6 +34,17 @@ func (s *Service) CreateClientauth(model *Clientauth) (*Clientauth, error) {
 	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
+	//判断用户名是否已经存在
+	cas, err := s.ListClientauth()
+	if err !=nil{
+		return nil, fmt.Errorf("cannot list object: %+v", err)
+	}
+	for _, ca := range cas {
+        if ca.Name == model.Name{
+        	return nil, fmt.Errorf("用户名已存在")
+		}
+	}
+	model.CreateTime = util.Now().Time.Unix()
 	ca, err := s.Create(ToAPI(model))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
