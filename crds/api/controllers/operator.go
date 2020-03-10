@@ -475,7 +475,7 @@ func SliceEq(a, b []string) bool {
 	return true
 }
 
-func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api) (err error) {
+func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api, isOffline bool) (err error) {
 	klog.Infof("begin update route info %s:%s", db.Spec.Name, db.Spec.KongApi.KongID)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -497,7 +497,7 @@ func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api) (err error) {
 	}
 	requestBody.Name = db.ObjectMeta.Name
 	//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
-	requestBody.StripPath = false
+	requestBody.StripPath = isOffline
 	if db.Spec.Serviceunit.Type == "data" {
 		methods = append(methods, strings.ToUpper(string(db.Spec.Method)))
 		protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
@@ -560,10 +560,11 @@ func (r *Operator) UpdateRouteByKong(db *nlptv1.Api) (err error) {
 		return fmt.Errorf("request for get route info error: %+v", errs)
 	}
 	if SliceEq(rsp.Hosts, db.Spec.KongApi.Hosts) && SliceEq(rsp.Paths, db.Spec.KongApi.Paths) &&
-		SliceEq(rsp.Methods, db.Spec.KongApi.Methods) && SliceEq(rsp.Protocols, db.Spec.KongApi.Protocols) {
+		SliceEq(rsp.Methods, db.Spec.KongApi.Methods) && SliceEq(rsp.Protocols, db.Spec.KongApi.Protocols) &&
+		rsp.StripPath == false {
 		klog.Infof("no need update route info")
 	} else {
-		if errs := r.UpdateRouteInfoFromKong(db); errs != nil {
+		if errs := r.UpdateRouteInfoFromKong(db, false); errs != nil {
 			return fmt.Errorf("request for get route info error: %+v", errs)
 		}
 	}
