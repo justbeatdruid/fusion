@@ -31,6 +31,9 @@ type ClientauthSpec struct {
 	Name       string `json:"name"`
 	Namespace  string `json:"namespace"`
 	CreateTime int64  `json:"createTime"`
+	TokenIat   int64  `json:"tokenIat"`
+	TokenExp   int64  `json:"tokenExp"`
+	Token      string `json:"token"`
 }
 
 // ClientauthStatus defines the observed state of Clientauth

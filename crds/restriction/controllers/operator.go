@@ -183,7 +183,7 @@ func (r *Operator) DeleteRestrictionByKong(db *nlptv1.Restriction) (err error) {
 			db.Spec.Apis[index].PluginID = ""
 			db.Spec.Apis = append(db.Spec.Apis[:index], db.Spec.Apis[index+1:]...)
 		} else {
-			index = index +1
+			index = index + 1
 		}
 	}
 	return nil

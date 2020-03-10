@@ -11,6 +11,9 @@ type Clientauth struct {
 	Name       string    `json:"name"`
 	Namespace  string    `json:"namespace"`
 	CreateTime int64     `json:"createTime"`
+	TokenIat   int64     `json:"tokenIat"`
+	TokenExp   int64     `json:"tokenExp"`
+	Token      string    `json:"token"`
 	Status     v1.Status `json:"status"`
 	Message    string    `json:"message"`
 }
@@ -27,6 +30,9 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 	crd.Spec = v1.ClientauthSpec{
 		Name:       app.Name,
 		CreateTime: app.CreateTime,
+		TokenExp:   app.TokenExp,
+		TokenIat:   app.TokenIat,
+		Token:      app.Token,
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -41,11 +47,15 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 
 func ToModel(obj *v1.Clientauth) *Clientauth {
 	return &Clientauth{
-		ID:        obj.ObjectMeta.Name,
-		Name:      obj.Spec.Name,
-		Namespace: obj.Spec.Namespace,
-		Status:    obj.Status.Status,
-		Message:   obj.Status.Message,
+		ID:         obj.ObjectMeta.Name,
+		Name:       obj.Spec.Name,
+		Namespace:  obj.Spec.Namespace,
+		CreateTime: obj.Spec.CreateTime,
+		TokenIat:   obj.Spec.TokenIat,
+		TokenExp:   obj.Spec.TokenExp,
+		Token:      obj.Spec.Token,
+		Status:     obj.Status.Status,
+		Message:    obj.Status.Message,
 	}
 }
 

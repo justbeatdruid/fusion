@@ -36,15 +36,27 @@ func (s *Service) CreateClientauth(model *Clientauth) (*Clientauth, error) {
 	}
 	//判断用户名是否已经存在
 	cas, err := s.ListClientauth()
-	if err !=nil{
+	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
 	for _, ca := range cas {
-        if ca.Name == model.Name{
-        	return nil, fmt.Errorf("用户名已存在")
+		if ca.Name == model.Name {
+			return nil, fmt.Errorf("用户名已存在")
 		}
 	}
-	model.CreateTime = util.Now().Time.Unix()
+	nowTime := util.Now().Unix()
+	model.CreateTime = nowTime
+	model.TokenIat = nowTime
+	//创建token
+	t := &Token{
+		Sub: model.Name,
+		Iat: model.TokenIat,
+		Exp: model.TokenExp,
+	}
+	model.Token, err = t.Create()
+	if err != nil {
+		return nil, fmt.Errorf("cannot create token: %+v", err)
+	}
 	ca, err := s.Create(ToAPI(model))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
