@@ -57,6 +57,7 @@ func (c *httpConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
 	return responseBody, nil
 }
 
+//const dataRequestPath = "/cmcc/data/service/SqlAssemble/getQueryResult"
 const dataRequestPath = "/cmcc/data/service/dataService/query/getQueryResult"
 
 func (c *httpConnector) QueryData(q v1.Query) (v1.Result, error) {

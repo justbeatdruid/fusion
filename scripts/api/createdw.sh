@@ -6,7 +6,7 @@ curl localhost:8001/api/v1/apis -H 'content-type:application/json' -H 'X-auth-To
     "apitype": "public",
     "authtype": "APPAUTH",
     "serviceunit": {
-      "id": "02c87fc4b8c3b506"
+      "id": "c716e0f728e9358b"
     },
     "apiDefineInfo": {
       "path": "",
@@ -20,6 +20,7 @@ curl localhost:8001/api/v1/apis -H 'content-type:application/json' -H 'X-auth-To
     "protocol": "HTTP",
     "returnType": "json",
     "datawarehouseQuery": {
+      "primaryTableId": "54d4a267dae14cf1a560e497986177e7",
       "properties": [
       {
         "tableId": "54d4a267dae14cf1a560e497986177e7",

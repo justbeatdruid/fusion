@@ -64,6 +64,18 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	if !user.WritePermitted(model.Users.Owner.ID, su.ObjectMeta.Labels) {
 		return nil, fmt.Errorf("user %s has no permission for writting serviceunit %s", model.Users.Owner.ID, su.ObjectMeta.Name)
 	}
+
+	// refill datawarehouse query
+	ds, err := s.getDatasource(su.Spec.DatasourceID.ID)
+	if err != nil {
+		return nil, fmt.Errorf("get datasource error: %+v", err)
+	}
+	if model.DataWarehouseQuery != nil && ds.Spec.Type == dsv1.DataWarehouseType {
+		if err := model.DataWarehouseQuery.RefillQuery(ds.Spec.DataWarehouse); err != nil {
+			return nil, fmt.Errorf("cannot refill datawarehouse query: %+v", err)
+		}
+	}
+
 	model.Serviceunit.KongID = su.Spec.KongService.ID
 	model.Serviceunit.Port = su.Spec.KongService.Port
 	model.Serviceunit.Host = su.Spec.KongService.Host
@@ -568,22 +580,14 @@ func (s *Service) Query(apiid string, params map[string][]string, req *restful.R
 	}
 	// data service API
 	if api.Spec.DataWarehouseQuery != nil {
-		q := api.Spec.DataWarehouseQuery.ToApiQuery(params)
-		q.UserID = "admin"
-		su, err := s.getServiceunit(api.Spec.Serviceunit.ID)
-		if err != nil {
-			return d, fmt.Errorf("get serviceunit error: %+v", err)
+		typesMap := make(map[string]string)
+		for _, w := range api.Spec.ApiQueryInfo.WebParams {
+			typesMap[w.Name] = string(w.Type)
 		}
-		ds, err := s.getDatasource(su.Spec.DatasourceID.ID)
-		if err != nil {
-			return d, fmt.Errorf("get datasource error: %+v", err)
-		}
-		if ds.Spec.DataWarehouse == nil {
-			return d, fmt.Errorf("datasource datawarehouse is null")
-		}
-		q.DatabaseName = ds.Spec.DataWarehouse.Name
+		api.Spec.DataWarehouseQuery.RefillWhereFields(typesMap, params)
+		q := api.Spec.DataWarehouseQuery.Query
 
-		data, err := s.dataService.QueryData(q)
+		data, err := s.dataService.QueryData(*q)
 		if err != nil {
 			return d, fmt.Errorf("query data error: %+v", err)
 		}
