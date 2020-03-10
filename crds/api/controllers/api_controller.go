@@ -54,6 +54,11 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, nil
 	}
 	klog.Infof("get new api event: %+v", *api)
+	//error 状态不处理  只有Init状态才需要执行
+	if api.Status.Status != nlptv1.Init {
+		klog.Infof("status is not init no need exec event: %+v", *api)
+		return ctrl.Result{}, nil
+	}
 	//遍历解绑api
 	if api.Status.Action == nlptv1.UnBind {
 		api.Status.Status = nlptv1.Running
