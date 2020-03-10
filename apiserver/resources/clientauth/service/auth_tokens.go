@@ -8,21 +8,23 @@ import (
 )
 
 const (
-	D_EXPTIME_IN_DAYS = 30
+	D_EXPTIME_IN_DAYS = 30 //token默认30天过期
 )
-
+//Token的结构体
 type Token struct {
-	Sub string `json:"sub"`
-	Alg string `json:"alg"`
-	Iat string `json:"iat"`
-	Exp string `json:"exp"`
+	Sub string `json:"sub"` //token的主题
+	Alg string `json:"alg"` //token签名算法
+	Iat string `json:"iat"` //token签发时间
+	Exp string `json:"exp"` //token过期时间
 }
 
 //创建token
 func (t *Token) Create() (string, error) {
 	//获取当前路径
-	path, _ := os.Getwd()
-
+	path, err := os.Getwd()
+	if err != nil {
+		return "", err
+	}
 	content, err := ioutil.ReadFile(path + "/key/my-secret.key")
 	if err != nil {
 		return "", err
