@@ -7,14 +7,13 @@ import (
 )
 
 type Clientauth struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Namespace string   `json:"namespace"`
-	CreateTime int64    `json:"createTime"`
-	Status    v1.Status `json:"status"`
-	Message   string    `json:"message"`
+	ID         string    `json:"id"`
+	Name       string    `json:"name"`
+	Namespace  string    `json:"namespace"`
+	CreateTime int64     `json:"createTime"`
+	Status     v1.Status `json:"status"`
+	Message    string    `json:"message"`
 }
-
 
 // only used in creation options
 func ToAPI(app *Clientauth) *v1.Clientauth {
@@ -26,8 +25,8 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 	crd.ObjectMeta.Namespace = crdNamespace
 
 	crd.Spec = v1.ClientauthSpec{
-		Name:      app.Name,
-		CreateTime:    app.CreateTime,
+		Name:       app.Name,
+		CreateTime: app.CreateTime,
 	}
 	status := app.Status
 	if len(status) == 0 {

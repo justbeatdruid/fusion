@@ -64,7 +64,6 @@ func (s *Service) DeleteClientauth(id string) (*Clientauth, error) {
 	return ToModel(ca), nil
 }
 
-
 func (s *Service) DeleteAllClientauths() ([]*Clientauth, error) {
 	cas, err := s.DeleteClientauths()
 	if err != nil {
