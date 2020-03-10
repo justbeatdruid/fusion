@@ -23,13 +23,14 @@ import (
 // NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 type Status string
+
 // ClientauthSpec defines the desired state of Clientauth
 type ClientauthSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Name string `json:"name"`
-	Namespace string `json:"namespace"`
-	CreateTime int64 `json:"createTime"`
+	Name       string `json:"name"`
+	Namespace  string `json:"namespace"`
+	CreateTime int64  `json:"createTime"`
 }
 
 // ClientauthStatus defines the observed state of Clientauth
@@ -39,6 +40,7 @@ type ClientauthStatus struct {
 	Status  Status `json:"status"`
 	Message string `json:"message"`
 }
+
 const (
 	Init     Status = "init"
 	Creating Status = "creating"
