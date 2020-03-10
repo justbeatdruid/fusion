@@ -25,15 +25,15 @@ curl localhost:8001/api/v1/apis -H 'content-type:application/json' -H 'X-auth-To
       {
         "tableId": "54d4a267dae14cf1a560e497986177e7",
 	"tableName": "fat_se_dwd_outpatient_diagnosis_di",
-        "propertyId": "2933",
-	"propertyName": "diagnosis_lx_code",
+        "propertyId": "2925",
+	"propertyName": "outpatient_diagnosis_pk",
 	"physicalType": "varchar"
       },
       {
-        "tableId": "54d4a267dae14cf1a560e497986177e7",
-	"tableName": "fat_se_dwd_outpatient_diagnosis_di",
-        "propertyId": "2934",
-	"propertyName": "diagnosis_lx",
+        "tableId": "2b7efd2a859f47da98ef5be248097a3a",
+	"tableName": "dim_se_doctor_info",
+        "propertyId": "2700",
+	"propertyName": "doctor_id_number",
 	"physicalType": "varchar"
       }
       ]
@@ -41,8 +41,8 @@ curl localhost:8001/api/v1/apis -H 'content-type:application/json' -H 'X-auth-To
     "apiQueryInfo": {
       "webParams": [
       {
-        "name": "id",
-	"type": "int",
+        "name": "dim_se_doctor_info.doctor_id_number",
+	"type": "varchar",
 	"location": "query",
 	"required": true,
 	"valueDefault": "",

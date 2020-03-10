@@ -173,6 +173,54 @@ func (dq *DataWarehouseQuery) RefillQuery(db *crdv1.Database) error {
 		}
 		addAssociations(tnroot)
 	}
+	// Step 2: 2nd way
+	{
+		dq.Query.AssociationTables = make([]v1.AssociationTable, 0)
+		tableMaps := make(map[string]crdv1.Table)
+		getTableByID := func(id string) crdv1.Table {
+			for _, t := range db.Tables {
+				if t.Info.ID == id {
+					return t
+				}
+			}
+			klog.Errorf("expect to find table with id %s in database id %s but not", id, db.Id)
+			return crdv1.Table{}
+		}
+		getPropertyByID := func(t crdv1.Table, pid string) crdv1.Property {
+			for _, p := range t.Properties {
+				if p.ID == pid {
+					return p
+				}
+			}
+			klog.Errorf("expect to find property with id %s in table id %s and database id %s but not", pid, t.Info.ID, db.Id)
+			return crdv1.Property{}
+		}
+		for _, p := range dq.Properties {
+			if _, ok := tableMaps[p.TableID]; !ok {
+				tableMaps[p.TableID] = getTableByID(p.TableID)
+			}
+		}
+		//klog.V(5).Infof("there are %d tables in map built", len(tableMaps))
+		for _, table := range tableMaps {
+			for _, property := range table.Properties {
+				//klog.V(5).Infof("finding referenced for table %s property %s", len(tableMaps))
+				if len(property.ReferenceTableId) > 0 && len(property.ReferencePropertyId) > 0 {
+					// means this property has a child
+					if childTable, ok := tableMaps[property.ReferenceTableId]; ok {
+						childProperty := getPropertyByID(childTable, property.ReferencePropertyId)
+						if len(childTable.Info.Name) > 0 && len(childProperty.Name) > 0 {
+							dq.Query.AssociationTables = append(dq.Query.AssociationTables, v1.AssociationTable{
+								AssociationPropertyName: property.Name,
+								AassociationTableName:   table.Info.Name,
+								PropertyName:            childProperty.Name,
+								TableName:               childTable.Info.Name,
+							})
+						}
+					}
+				}
+			}
+		}
+	}
 
 	// Step 3: build query field list
 	{
