@@ -652,14 +652,41 @@ func (s *Service) TestApi(model *Api) (interface{}, error) {
 	}
 
 	body := map[string]interface{}{}
-	for i := range model.ApiQueryInfo.WebParams {
-		body[model.ApiQueryInfo.WebParams[i].Name] = model.ApiQueryInfo.WebParams[i].Example
+	headers := map[string]string{}
+	querys := map[string]string{}
+	for _, v := range model.ApiQueryInfo.WebParams {
+		switch v.Location {
+		case v1.Body:
+			body[v.Name] = v.Example
+		case v1.Path:
+			strings.Replace(remoteUrl, "{"+v.Name+"}", v.Example, -1)
+
+		case v1.Header:
+			headers[v.Name] = v.Example
+
+		case v1.Query:
+			querys[v.Name] = v.Example
+		}
+
 	}
+	if len(querys) != 0 {
+		count := 0
+		remoteUrl += "?"
+		for k, v := range querys {
+			remoteUrl = remoteUrl + k + "=" + v
+			if count < len(querys)-1 {
+				remoteUrl += "&"
+				count += 1
+			}
+		}
+
+	}
+
 	bytesData, _ := json.Marshal(body)
 
 	reqest, err := http.NewRequest(string(model.Method), remoteUrl, bytes.NewReader(bytesData))
-	for i := range model.ApiRequestParameters {
-		reqest.Header.Add(model.ApiRequestParameters[i].Name, model.ApiRequestParameters[i].Example)
+	for k, v := range headers {
+		reqest.Header.Add(k, v)
 
 	}
 	response, err := client.Do(reqest)

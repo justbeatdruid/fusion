@@ -26,13 +26,13 @@ type Operator struct {
 }
 
 type Config struct {
-	Second  interface{} `json:"second"`
-	Minute  interface{} `json:"minute"`
-	Hour    interface{} `json:"hour"`
-	Day     interface{} `json:"day"`
-	Month   interface{} `json:"month"`
-	Year    interface{} `json:"year"`
-	LimitBy string      `json:"limit_by"`
+	Second  int    `json:"second"`
+	Minute  int    `json:"minute"`
+	Hour    int    `json:"hour"`
+	Day     int    `json:"day"`
+	Month   int    `json:"month"`
+	Year    int    `json:"year"`
+	LimitBy string `json:"limit_by"`
 }
 
 type RouteID struct {
@@ -40,8 +40,8 @@ type RouteID struct {
 }
 
 type RateLimitingRequestBody struct {
-	Name   string `json:"name"`
-	Config Config `json:"config"`
+	Name   string                 `json:"name"`
+	Config map[string]interface{} `json:"config"`
 }
 
 /*
@@ -145,6 +145,42 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 	}, nil
 }
 
+func (r *Operator) getRequestBody(spec nlptv1.TrafficcontrolSpec) *RateLimitingRequestBody {
+	requestBody := &RateLimitingRequestBody{}
+	requestBody.Name = "rate-limiting"
+	requestBody.Config = make(map[string]interface{})
+	switch spec.Type {
+	case nlptv1.APIC:
+		requestBody.Config["limit_by"] = "service"
+	case nlptv1.IPC:
+		requestBody.Config["limit_by"] = "ip"
+	case nlptv1.APPC:
+		requestBody.Config["limit_by"] = "consumer"
+	default:
+		requestBody.Config["limit_by"] = "consumer"
+	}
+
+	if spec.Config.Year != 0 {
+		requestBody.Config["year"] = spec.Config.Year
+	}
+	if spec.Config.Month != 0 {
+		requestBody.Config["month"] = spec.Config.Month
+	}
+	if spec.Config.Day != 0 {
+		requestBody.Config["day"] = spec.Config.Day
+	}
+	if spec.Config.Hour != 0 {
+		requestBody.Config["hour"] = spec.Config.Hour
+	}
+	if spec.Config.Minute != 0 {
+		requestBody.Config["minute"] = spec.Config.Minute
+	}
+	if spec.Config.Second != 0 {
+		requestBody.Config["second"] = spec.Config.Second
+	}
+	return requestBody
+}
+
 func (r *Operator) AddRouteRatelimitByKong(db *nlptv1.Trafficcontrol) (err error) {
 	for index := 0; index < len(db.Spec.Apis); {
 		api := db.Spec.Apis[index]
@@ -159,50 +195,7 @@ func (r *Operator) AddRouteRatelimitByKong(db *nlptv1.Trafficcontrol) (err error
 			}
 			klog.Infof(fmt.Sprintf("====%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, path))
 			request = request.Retry(3, 5*time.Second, retryStatus...)
-			requestBody := &RateLimitingRequestBody{}
-			requestBody.Name = "rate-limiting"
-			switch db.Spec.Type {
-			case nlptv1.APIC:
-				requestBody.Config.LimitBy = "service"
-			case nlptv1.IPC:
-				requestBody.Config.LimitBy = "ip"
-			case nlptv1.APPC:
-				requestBody.Config.LimitBy = "consumer"
-			default:
-				requestBody.Config.LimitBy = "consumer"
-			}
-
-			if db.Spec.Config.Year != 0 {
-				requestBody.Config.Year = db.Spec.Config.Year
-			} else {
-				requestBody.Config.Year = nil
-			}
-			if db.Spec.Config.Month != 0 {
-				requestBody.Config.Month = db.Spec.Config.Month
-			} else {
-				requestBody.Config.Month = nil
-			}
-			if db.Spec.Config.Day != 0 {
-				requestBody.Config.Day = db.Spec.Config.Day
-			} else {
-				requestBody.Config.Day = nil
-			}
-			if db.Spec.Config.Hour != 0 {
-				requestBody.Config.Hour = db.Spec.Config.Hour
-			} else {
-				requestBody.Config.Hour = nil
-			}
-			if db.Spec.Config.Minute != 0 {
-				requestBody.Config.Minute = db.Spec.Config.Minute
-			} else {
-				requestBody.Config.Minute = nil
-			}
-			if db.Spec.Config.Second != 0 {
-				requestBody.Config.Second = db.Spec.Config.Second
-			} else {
-				requestBody.Config.Second = nil
-			}
-
+			requestBody := r.getRequestBody(db.Spec)
 			responseBody := &RateResponseBody{}
 			response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 			if len(errs) > 0 {
@@ -349,6 +342,59 @@ func (r *Operator) DeleteRouteLimitByKong(db *nlptv1.Trafficcontrol) (err error)
 		} else {
 			index = index + 1
 		}
+	}
+	return nil
+}
+
+//UpdateRouteLimitByKong...
+func (r *Operator) UpdateRouteLimitByKong(db *nlptv1.Trafficcontrol) (err error) {
+	for index, value := range db.Spec.Apis {
+		if len(value.TrafficID) != 0 {
+			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+			for k, v := range headers {
+				request = request.Set(k, v)
+			}
+			request = request.Patch(fmt.Sprintf("http://%s:%d%s/%s", r.Host, r.Port, path, value.TrafficID))
+			request = request.Retry(3, 5*time.Second, retryStatus...)
+			requestBody := r.getRequestBody(db.Spec)
+			response, body, errs := request.Send(requestBody).EndStruct(&RateResponseBody{})
+			if len(errs) > 0 || response.StatusCode != 200 {
+				klog.Infof("request for update route error: %+v, response:%v,body:%v", errs, response, string(body))
+				db.Spec.Apis[index].Result = nlptv1.FAILED
+				return fmt.Errorf("request for update route error: %+v, code:%v", errs, response.StatusCode)
+			} else {
+				db.Spec.Apis[index].Result = nlptv1.SUCCESS
+			}
+		}
+	}
+	return nil
+}
+
+//UpdateSpecialAppRateLimitByKong...
+func (r *Operator) UpdateSpecialAppRateLimit(db *nlptv1.Trafficcontrol, consumer []string) (err error) {
+	for index, value := range db.Spec.Apis {
+		for _, v := range value.SpecialID {
+			for j := range consumer {
+				klog.Infof("begin update rate-limiting by conusmer %s %s", value.KongID, consumer)
+				request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+				request = request.Patch(fmt.Sprintf("http://%s:%d/routes/%s/plugins/%s", r.Host, r.Port, value.KongID, v))
+				for k, v := range headers {
+					request = request.Set(k, v)
+				}
+				request = request.Retry(3, 5*time.Second, retryStatus...)
+				requestBody := &RateRequestBody{}
+				requestBody.Name = "rate-limiting"
+				requestBody.Config.Minute = db.Spec.Config.Special[index].Minute
+				requestBody.Consumer.ID = consumer[j]
+				response, body, errs := request.Send(requestBody).EndStruct(&RateResponseBody{})
+				if len(errs) > 0 || response.StatusCode != 200 {
+					klog.Infof("create rate by consumer error: %+v", errs)
+					db.Spec.Apis[index].Result = nlptv1.FAILED
+					return fmt.Errorf("request for create rate by conusmer error: %+v, code:%v, body:%v", errs, response.StatusCode, string(body))
+				}
+			}
+		}
+		db.Spec.Apis[index].Result = nlptv1.SUCCESS
 	}
 	return nil
 }

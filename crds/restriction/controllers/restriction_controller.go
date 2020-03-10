@@ -90,6 +90,19 @@ func (r *RestrictionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		// update status
 		r.Update(ctx, restriction)
 	}
+	//UpdateRestrictionByKong
+	if restriction.Status.Status == nlptv1.Update {
+		restriction.Status.Status = nlptv1.Updating
+		r.Update(ctx, restriction)
+		klog.Infof("restriction is updating")
+		if restriction.Spec.Type == nlptv1.IP {
+			if err := r.Operator.UpdateRestrictionByKong(restriction); err != nil {
+				klog.Infof("restriction update err, err:%v", err)
+				restriction.Status.Status = nlptv1.Error
+				restriction.Status.Message = err.Error()
+			}
+		}
+	}
 	return ctrl.Result{}, nil
 }
 

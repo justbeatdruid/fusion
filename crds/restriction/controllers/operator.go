@@ -188,3 +188,34 @@ func (r *Operator) DeleteRestrictionByKong(db *nlptv1.Restriction) (err error) {
 	}
 	return nil
 }
+
+func (r *Operator) UpdateRestrictionByKong(db *nlptv1.Restriction) (err error) {
+	for index, value := range db.Spec.Apis {
+		if len(value.PluginID) != 0 {
+			request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+			for k, v := range headers {
+				request = request.Set(k, v)
+			}
+			request = request.Patch(fmt.Sprintf("http://%s:%d%s/%s", r.Host, r.Port, path, value.PluginID))
+			request = request.Retry(3, 5*time.Second, retryStatus...)
+			requestBody := &RestrictionRequestBody{}
+			requestBody.Name = "ip-restriction"
+			if db.Spec.Action == "white" {
+				requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, db.Spec.Config.Ip)
+			} else if db.Spec.Action == "black" {
+				requestBody.Config.BlackList = append(requestBody.Config.BlackList, db.Spec.Config.Ip)
+			}
+			response, body, errs := request.Send(requestBody).EndStruct(&RestrictionResponseBody{})
+
+			if len(errs) > 0 || response.StatusCode != 200 {
+				klog.Infof("request for update route error: %+v, response:%v,body:%v", errs, response, string(body))
+				db.Spec.Apis[index].Result = nlptv1.FAILED
+				return fmt.Errorf("request for update route error: %+v, code:%v", errs, response.StatusCode)
+			} else {
+				db.Spec.Apis[index].Result = nlptv1.SUCCESS
+			}
+		}
+
+	}
+	return nil
+}

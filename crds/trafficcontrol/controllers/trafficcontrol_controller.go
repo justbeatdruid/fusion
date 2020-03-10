@@ -68,22 +68,9 @@ func (r *TrafficcontrolReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 			}
 		} else {
 			//get special app consumerinfo
-			var consumerList []string
-			for i := 0; i < len(trafficcontrol.Spec.Config.Special); i++ {
-				app := &appv1.Application{}
-				appNamespacedName := types.NamespacedName{
-					Namespace: req.NamespacedName.Namespace,
-					Name:      trafficcontrol.Spec.Config.Special[i].ID,
-				}
-				if err := r.Get(ctx, appNamespacedName, app); err != nil {
-					klog.Errorf("cannot get app with name %s: %+v", appNamespacedName, err)
-					return ctrl.Result{}, nil
-				}
-				klog.Infof("get app %+v", *app)
-				consumer := app.Spec.ConsumerInfo.ConsumerID
-				klog.Infof("get consumer id %s", consumer)
-				consumerList = append(consumerList, consumer)
-				klog.Infof("get consumer list %s", consumerList)
+			consumerList, err := r.getConsumerList(trafficcontrol.Spec.Config.Special, req.NamespacedName.Namespace)
+			if err != nil {
+				return ctrl.Result{}, nil
 			}
 			if err := r.Operator.AddSpecialAppRateLimit(trafficcontrol, consumerList); err != nil {
 				klog.Infof("special app trafficcontrol bind err")
@@ -127,6 +114,38 @@ func (r *TrafficcontrolReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 		// update status
 		r.Update(ctx, trafficcontrol)
 	}
+	if trafficcontrol.Status.Status == nlptv1.Update {
+		trafficcontrol.Status.Status = nlptv1.Updating
+		r.Update(ctx, trafficcontrol)
+		klog.Infof("trafficcontrol is updating")
+		if trafficcontrol.Spec.Type != nlptv1.SPECAPPC {
+			if err := r.Operator.UpdateRouteLimitByKong(trafficcontrol); err != nil {
+				//TODO abnormal
+				klog.Infof("special app trafficcontrol unbind err")
+				trafficcontrol.Status.Status = nlptv1.Error
+				trafficcontrol.Status.Message = err.Error()
+			} else {
+				trafficcontrol.Status.Status = nlptv1.Update
+				trafficcontrol.Status.Message = "success"
+			}
+		} else {
+			//get special app consumerinfo
+			consumerList, err := r.getConsumerList(trafficcontrol.Spec.Config.Special, req.NamespacedName.Namespace)
+			if err != nil {
+				return ctrl.Result{}, nil
+			}
+			if err = r.Operator.UpdateSpecialAppRateLimit(trafficcontrol, consumerList); err != nil {
+				klog.Infof("special app trafficcontrol bind err")
+				trafficcontrol.Status.Status = nlptv1.Error
+				trafficcontrol.Status.Message = err.Error()
+			} else {
+				klog.Infof("special app trafficcontrol bind sunccess")
+				trafficcontrol.Status.Status = nlptv1.Update
+				trafficcontrol.Status.Message = "success"
+			}
+		}
+		r.Update(ctx, trafficcontrol)
+	}
 	return ctrl.Result{}, nil
 }
 
@@ -134,4 +153,21 @@ func (r *TrafficcontrolReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nlptv1.Trafficcontrol{}).
 		Complete(r)
+}
+
+func (r *TrafficcontrolReconciler) getConsumerList(special []nlptv1.Special, namespace string) (consumerList []string, err error) {
+	for i := range special {
+		app := &appv1.Application{}
+		appNamespacedName := types.NamespacedName{
+			Namespace: namespace,
+			Name:      special[i].ID,
+		}
+		if err = r.Get(context.Background(), appNamespacedName, app); err != nil {
+			klog.Errorf("cannot get app with name %s: %+v", appNamespacedName, err)
+			return
+		}
+		consumerList = append(consumerList, app.Spec.ConsumerInfo.ConsumerID)
+		klog.Infof("get app %+v, consumer list %v", *app, consumerList)
+	}
+	return
 }
