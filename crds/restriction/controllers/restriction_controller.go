@@ -20,11 +20,11 @@ import (
 	"context"
 	"k8s.io/klog"
 
+	nlptv1 "github.com/chinamobile/nlpt/crds/restriction/api/v1"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	nlptv1 "github.com/chinamobile/nlpt/crds/restriction/api/v1"
 )
 
 // RestrictionReconciler reconciles a Restriction object

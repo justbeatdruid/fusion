@@ -43,7 +43,7 @@ func (r *ClientauthReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 	// your logic here
 	clientAuth := &nlptv1.Clientauth{}
-	if err := r.Get(ctx, req.NamespacedName, clientAuth); err != nil{
+	if err := r.Get(ctx, req.NamespacedName, clientAuth); err != nil {
 		klog.Errorf("cannot get clientauth of ctrl req: %+v", err)
 		return ctrl.Result{}, nil
 	}
