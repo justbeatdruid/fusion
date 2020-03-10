@@ -43,19 +43,17 @@ spec:
             expireAt:
               format: date-time
               type: string
+            message:
+              type: string
             name:
               description: Foo is an example field of Apply. Edit Apply_types.go to
                 remove/update
               type: string
             sourceID:
               type: string
-            sourceName:
-              type: string
             sourceType:
               type: string
             targetID:
-              type: string
-            targetName:
               type: string
             targetType:
               type: string
@@ -64,11 +62,10 @@ spec:
           - appliedBy
           - approvedBy
           - expireAt
+          - message
           - sourceID
-          - sourceName
           - sourceType
           - targetID
-          - targetName
           - targetType
           type: object
         status:
