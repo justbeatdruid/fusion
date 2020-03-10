@@ -73,7 +73,7 @@ type Query struct {
 	QueryFieldList    []QueryField       `json:"queryFieldList"`
 	WhereFieldInfo    []WhereField       `json:"whereFieldInfo"`
 	GroupbyFieldInfo  []GroupbyField     `json:"groupByFieldInfo"`
-	Limit             int                `json:"limitNum"`
+	Limit             int                `json:"limitNum,omitempty"`
 }
 
 type AssociationTable struct {
@@ -85,16 +85,17 @@ type AssociationTable struct {
 
 type QueryField struct {
 	PropertyName        string `json:"propertyName"`
-	PropertyDisplayName string `json:"propertyDisplayName"`
+	PropertyDisplayName string `json:"propertyDisplayName,omitempty"`
 	TableName           string `json:"tableName"`
-	Operator            string `json:"operator"`
+	Operator            string `json:"queryOperator,omitempty"`
 }
 
 type WhereField struct {
 	//DataType     string   `json:"dataType"`
 	PropertyName string   `json:"propertyName"`
 	TableName    string   `json:"tableName"`
-	Operator     string   `json:"operator"`
+	Operator     string   `json:"whereOperator"`
+	DataType     string   `json:"dataType"`
 	Values       []string `json:"value"`
 }
 
