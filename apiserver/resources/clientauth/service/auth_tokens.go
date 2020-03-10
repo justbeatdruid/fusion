@@ -4,18 +4,14 @@ import (
 	"github.com/dgrijalva/jwt-go"
 	"io/ioutil"
 	"os"
-	"time"
 )
 
-const (
-	D_EXPTIME_IN_DAYS = 30 //token默认30天过期
-)
 //Token的结构体
 type Token struct {
 	Sub string `json:"sub"` //token的主题
 	Alg string `json:"alg"` //token签名算法
-	Iat string `json:"iat"` //token签发时间
-	Exp string `json:"exp"` //token过期时间
+	Iat int64  `json:"iat"` //token签发时间
+	Exp int64  `json:"exp"` //token过期时间
 }
 
 //创建token
@@ -44,14 +40,8 @@ func (t *Token) Create() (string, error) {
 	claims := make(jwt.MapClaims)
 	claims["sub"] = t.Sub
 
-	now := time.Now()
-	//token签发时间
-	claims["iat"] = now.Unix()
-	if len(t.Exp) == 0 {
-		//未设置过期时间，默认过期30天
-		claims["exp"] = now.AddDate(0, 0, D_EXPTIME_IN_DAYS).Unix()
-
-	} else {
+	if t.Exp != 0 {
+		claims["iat"] = t.Iat
 		claims["exp"] = t.Exp
 	}
 

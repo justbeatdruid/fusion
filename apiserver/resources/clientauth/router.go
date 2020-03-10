@@ -54,6 +54,13 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.deleteAllClientauths).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+	ws.Route(ws.GET("/clientauths/{id}/token").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("get token of auth user").
+		To(r.getToken).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func (r *router) createClientauth(request *restful.Request, response *restful.Response) {
@@ -79,4 +86,8 @@ func (r *router) listClientauth(request *restful.Request, response *restful.Resp
 func (r *router) deleteAllClientauths(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DeleteAllClientauths(request)
 	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) getToken(request *restful.Request, response *restful.Response) {
+
 }
