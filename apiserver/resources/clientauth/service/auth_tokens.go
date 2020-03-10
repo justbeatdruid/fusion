@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"io/ioutil"
 	"os"
@@ -18,10 +19,19 @@ type Token struct {
 func (t *Token) Create() (string, error) {
 	//获取当前路径
 	path, err := os.Getwd()
+	fmt.Println(path)
 	if err != nil {
 		return "", err
 	}
-	content, err := ioutil.ReadFile(path + "/key/my-secret.key")
+
+	var sp string
+	if path == "/" {
+		sp = "key/my-secret.key"
+	} else {
+		sp = path + "/key/my-secret.key"
+	}
+
+	content, err := ioutil.ReadFile(sp)
 	if err != nil {
 		return "", err
 	}
