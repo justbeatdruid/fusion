@@ -12,7 +12,6 @@ import (
 	"strings"
 
 	datasource "github.com/chinamobile/nlpt/apiserver/resources/datasource/service"
-	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	dsv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
@@ -39,14 +38,14 @@ type Service struct {
 	dataService dw.Connector
 }
 
-func NewService(client dynamic.Interface, dsConfig *config.DataserviceConfig) *Service {
+func NewService(client dynamic.Interface, dsConnector dw.Connector) *Service {
 	return &Service{
 		client:            client.Resource(v1.GetOOFSGVR()),
 		serviceunitClient: client.Resource(suv1.GetOOFSGVR()),
 		applicationClient: client.Resource(appv1.GetOOFSGVR()),
 		datasourceClient:  client.Resource(dsv1.GetOOFSGVR()),
 
-		dataService: dsConfig.Connector,
+		dataService: dsConnector,
 	}
 }
 
