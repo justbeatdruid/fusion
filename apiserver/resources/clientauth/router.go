@@ -46,12 +46,12 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.listClientauth).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
-	//删除所有clientauths
+	//批量删除clientauths
 	ws.Route(ws.DELETE("/clientauths").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
-		Doc("delete all clientauth").
-		To(r.deleteAllClientauths).
+		Doc("batch delete clientauth").
+		To(r.deleteClientauths).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 	ws.Route(ws.GET("/clientauths/{id}/token").
@@ -83,8 +83,8 @@ func (r *router) listClientauth(request *restful.Request, response *restful.Resp
 	response.WriteHeaderAndEntity(code, result)
 }
 
-func (r *router) deleteAllClientauths(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.DeleteAllClientauths(request)
+func (r *router) deleteClientauths(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.DeleteClientauths(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 

@@ -72,14 +72,6 @@ func (s *Service) DeleteTopic(id string) (*Topic, error) {
 	return ToModel(tp), nil
 }
 
-//删除全部topic
-func (s *Service) DeleteAllTopics() ([]*Topic, error) {
-	tps, err := s.DeleteTopics()
-	if err != nil {
-		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
-	}
-	return ToListModel(tps), nil
-}
 
 //带时间查询
 func (s *Service) ListMessagesTime(topicUrls []string, start int64, end int64) ([]Message, error) {
@@ -154,39 +146,6 @@ func (s *Service) Delete(id string) (*v1.Topic, error) {
 	return s.UpdateStatus(tp)
 }
 
-//将所有topic的status置为delete
-func (s *Service) DeleteTopics() (*v1.TopicList, error) {
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("error list crd: %+v", err)
-	}
-	tps := &v1.TopicList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	for i := range tps.Items {
-		tps.Items[i].Status.Status = v1.Delete
-	}
-	for j := range tps.Items {
-		content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&(tps.Items[j]))
-		if err != nil {
-			return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
-		}
-		crd := &unstructured.Unstructured{}
-		crd.SetUnstructuredContent(content)
-		klog.V(5).Infof("try to update status for crd: %+v", crd)
-		crd, err = s.client.Namespace(tps.Items[j].ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
-		if err != nil {
-			return nil, fmt.Errorf("error update crd status: %+v", err)
-		}
-	}
-	tps = &v1.TopicList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-
-	return tps, nil
-}
 
 //更新状态
 func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {

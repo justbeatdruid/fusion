@@ -97,19 +97,21 @@ func (c *controller) GetClientauth(req *restful.Request) (int, *GetResponse) {
 	}
 }
 
-//删除所有clientauths
-func (c *controller) DeleteAllClientauths(req *restful.Request) (int, *ListResponse) {
-	if cas, err := c.service.DeleteAllClientauths(); err != nil {
-		return http.StatusInternalServerError, &ListResponse{
-			Code:    1,
-			Message: fmt.Errorf("delete clientauth error: %+v", err).Error(),
+//批量删除clientauths
+func (c *controller) DeleteClientauths(req *restful.Request) (int, *ListResponse) {
+	ids := req.QueryParameters("ids")
+	for _, id := range ids {
+		if _, err := c.service.Delete(id);err !=nil{
+			return http.StatusInternalServerError, &ListResponse{
+				Code:    fail,
+				Message: fmt.Errorf("delete clientauth error: %+v", err).Error(),
+			}
 		}
-	} else {
+		}
 		return http.StatusOK, &ListResponse{
 			Code: success,
-			Data: cas,
+			Message: "delete clientauth success",
 		}
-	}
 }
 func (c *controller) DeleteClientauth(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
