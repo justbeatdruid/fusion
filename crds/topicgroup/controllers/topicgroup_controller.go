@@ -70,6 +70,7 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 		if err := r.Operator.DeleteNamespace(namespace); err != nil {
 			namespace.Status.Status = nlptv1.Error
 			namespace.Status.Message = err.Error()
+			r.Update(ctx, namespace)
 		} else {
 			r.Delete(ctx, namespace)
 		}

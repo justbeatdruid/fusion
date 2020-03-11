@@ -97,18 +97,20 @@ func (c *controller) GetTopicgroup(req *restful.Request) (int, *GetResponse) {
 	}
 }
 
-//删除所有topics
-func (c *controller) DeleteAllTopicgroups(req *restful.Request) (int, *ListResponse) {
-	if tps, err := c.service.DeleteAllTopicgroups(); err != nil {
-		return http.StatusInternalServerError, &ListResponse{
-			Code:    1,
-			Message: fmt.Errorf("delete topicgroup error: %+v", err).Error(),
+//批量删除topicgroups
+func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse) {
+	ids := req.QueryParameters("ids")
+	for _, id := range ids {
+		if _, err := c.service.DeleteTopicgroup(id);err!=nil{
+			return http.StatusInternalServerError, &ListResponse{
+				Code:    1,
+				Message: fmt.Errorf("delete topicgroup error: %+v", err).Error(),
+			}
 		}
-	} else {
-		return http.StatusOK, &ListResponse{
-			Code: success,
-			Data: tps,
-		}
+	}
+	return http.StatusOK, &ListResponse{
+		Code: 0,
+		Message: "delete success",
 	}
 }
 func (c *controller) DeleteTopicgroup(req *restful.Request) (int, *DeleteResponse) {

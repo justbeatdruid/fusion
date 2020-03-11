@@ -50,7 +50,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("delete all topics ").
-		To(r.deleteAllTopics).
+		To(r.deleteTopics).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 	//根据时间和id查询topic信息
@@ -82,7 +82,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("grant permissions ").
-		To(r.deleteAllTopics).
+		To(r.deleteTopics).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 }
@@ -108,8 +108,8 @@ func (r *router) listTopic(request *restful.Request, response *restful.Response)
 }
 
 //批量删除topics
-func (r *router) deleteAllTopics(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.DeleteAllTopics(request)
+func (r *router) deleteTopics(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.DeleteTopics(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 

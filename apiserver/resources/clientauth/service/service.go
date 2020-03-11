@@ -88,13 +88,6 @@ func (s *Service) DeleteClientauth(id string) (*Clientauth, error) {
 	return ToModel(ca), nil
 }
 
-func (s *Service) DeleteAllClientauths() ([]*Clientauth, error) {
-	cas, err := s.DeleteClientauths()
-	if err != nil {
-		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
-	}
-	return ToListModel(cas), nil
-}
 
 func (s *Service) Create(ca *v1.Clientauth) (*v1.Clientauth, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ca)
@@ -149,40 +142,6 @@ func (s *Service) Delete(id string) (*v1.Clientauth, error) {
 	}
 	ca.Status.Status = v1.Delete
 	return s.UpdateStatus(ca)
-}
-
-//将所有Clientauth的status置为delete
-func (s *Service) DeleteClientauths() (*v1.ClientauthList, error) {
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("error list crd: %+v", err)
-	}
-	cas := &v1.ClientauthList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), cas); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	for i := range cas.Items {
-		cas.Items[i].Status.Status = v1.Delete
-	}
-	for j := range cas.Items {
-		content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(&(cas.Items[j]))
-		if err != nil {
-			return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
-		}
-		crd := &unstructured.Unstructured{}
-		crd.SetUnstructuredContent(content)
-		klog.V(5).Infof("try to update status for crd: %+v", crd)
-		crd, err = s.client.Namespace(cas.Items[j].ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
-		if err != nil {
-			return nil, fmt.Errorf("error update crd status: %+v", err)
-		}
-	}
-	cas = &v1.ClientauthList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), cas); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-
-	return cas, nil
 }
 
 //更新状态
