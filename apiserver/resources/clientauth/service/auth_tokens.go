@@ -1,10 +1,7 @@
 package service
 
 import (
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
-	"io/ioutil"
-	"os"
 )
 
 //Token的结构体
@@ -18,24 +15,26 @@ type Token struct {
 //创建token
 func (t *Token) Create() (string, error) {
 	//获取当前路径
-	path, err := os.Getwd()
-	fmt.Println(path)
-	if err != nil {
-		return "", err
-	}
+	//path, err := os.Getwd()
+	//fmt.Println(path)
+	//if err != nil {
+	//	return "", err
+	//}
+	//
+	//var sp string
+	//if path == "/" {
+	//	sp = "/key/my-secret.key"
+	//} else {
+	//	sp = path + "/key/my-secret.key"
+	//}
+	//
+	//content, err := ioutil.ReadFile(sp)
+	//if err != nil {
+	//	return "", err
+	//}
 
-	var sp string
-	if path == "/" {
-		sp = "/key/my-secret.key"
-	} else {
-		sp = path + "/key/my-secret.key"
-	}
-
-	content, err := ioutil.ReadFile(sp)
-	if err != nil {
-		return "", err
-	}
-
+	//TODO 密钥如何导入
+	var content []byte = []byte("npjh/M3IJ7aKSOQ1928UT/LMOr7VsBty+taD2NSyVzg=")
 	jwtToken := jwt.New(jwt.SigningMethodHS256)
 
 	header := make(map[string]interface{})

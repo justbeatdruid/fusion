@@ -45,7 +45,7 @@ func (s *Service) CreateClientauth(model *Clientauth) (*Clientauth, error) {
 		}
 	}
 	nowTime := util.Now().Unix()
-	model.CreateTime = nowTime
+	//model.CreateTime = nowTime
 	model.TokenIat = nowTime
 	//创建token
 	t := &Token{
@@ -164,4 +164,36 @@ func (s *Service) UpdateStatus(ca *v1.Clientauth) (*v1.Clientauth, error) {
 	klog.V(5).Infof("get v1.clientauth: %+v", ca)
 
 	return ca, nil
+}
+
+func (s *Service) RegenerateToken(ca *Clientauth) (*Clientauth, error) {
+	cad, err := s.Get(ca.ID)
+	if err != nil {
+		return nil, fmt.Errorf("clientauth id is not exist, id : %+v, error : %+v", ca.ID, err)
+	}
+
+	cad.Spec.TokenIat = ca.TokenIat
+	cad.Spec.TokenExp = ca.TokenExp
+	//if err = ca.Validate(); err != nil {
+	//	return nil, fmt.Errorf("parameter is invalid, error: %+v ", err)
+	//}
+	t := &Token{
+		Sub: cad.Spec.Name,
+		Iat: cad.Spec.TokenIat,
+		Exp: cad.Spec.TokenExp,
+	}
+
+	token, err := t.Create()
+	if err != nil {
+		return nil, fmt.Errorf("generate token error, %+v", err)
+	}
+	cad.Spec.Token = token
+	cad.Status.Status = v1.Updated
+	cad.Status.Message = "success"
+	cad, err = s.UpdateStatus(cad)
+	if err != nil {
+		return nil, fmt.Errorf("update token error, %+v", err)
+	}
+	return ToModel(cad), nil
+
 }
