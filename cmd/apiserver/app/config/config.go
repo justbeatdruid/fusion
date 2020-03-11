@@ -5,6 +5,8 @@ import (
 	dynamicclient "k8s.io/client-go/dynamic"
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
+
+	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 )
 
 type Config struct {
@@ -18,8 +20,9 @@ type Config struct {
 
 	Kubeconfig *restclient.Config
 
-	DatasourceConfig  *DatasourceConfig
-	DataserviceConfig *DataserviceConfig
+	DatasourceConfig *DatasourceConfig
+
+	DataserviceConnector dw.Connector
 
 	TopicConfig *TopicConfig
 }
