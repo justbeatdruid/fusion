@@ -153,6 +153,32 @@ func (c *controller) ListClientauth(req *restful.Request) (int, *ListResponse) {
 	}
 }
 
+func (c *controller) RegenerateToken(req *restful.Request) (int, *CreateResponse) {
+	id := req.PathParameter("id")
+	body := &service.Clientauth{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    fail,
+			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	body.ID = id
+	ca, err := c.service.RegenerateToken(body)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    fail,
+			Message: fmt.Sprintf("regenerate token error: %+v", err),
+		}
+	}
+
+	return http.StatusOK, &CreateResponse{
+		Code:    success,
+		Data:    ca,
+		Message: "success",
+	}
+
+}
+
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
 }

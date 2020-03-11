@@ -28,12 +28,11 @@ type Status string
 type ClientauthSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Name       string `json:"name"`
-	Namespace  string `json:"namespace"`
-	CreateTime int64  `json:"createTime"`
-	TokenIat   int64  `json:"tokenIat"`
-	TokenExp   int64  `json:"tokenExp"`
-	Token      string `json:"token"`
+	Name      string `json:"name"`
+	Namespace string `json:"namespace"`
+	TokenIat  int64  `json:"tokenIat"`
+	TokenExp  int64  `json:"tokenExp"`
+	Token     string `json:"token"`
 }
 
 // ClientauthStatus defines the observed state of Clientauth
@@ -51,6 +50,7 @@ const (
 	Delete   Status = "delete"
 	Deleting Status = "deleting"
 	Error    Status = "error"
+	Updated  Status = "updated"
 )
 
 // +kubebuilder:object:root=true

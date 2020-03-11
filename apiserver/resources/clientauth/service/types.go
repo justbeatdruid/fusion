@@ -4,18 +4,20 @@ import (
 	"fmt"
 	"github.com/chinamobile/nlpt/crds/clientauth/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
+	"time"
 )
 
 type Clientauth struct {
-	ID         string    `json:"id"`
-	Name       string    `json:"name"`
-	Namespace  string    `json:"namespace"`
-	CreateTime int64     `json:"createTime"`
-	TokenIat   int64     `json:"tokenIat"`
-	TokenExp   int64     `json:"tokenExp"`
-	Token      string    `json:"token"`
-	Status     v1.Status `json:"status"`
-	Message    string    `json:"message"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Namespace string    `json:"namespace"`
+	CreatedAt util.Time `json:"createdAt"`
+	TokenIat  int64     `json:"tokenIat"`
+	TokenExp  int64     `json:"tokenExp"`
+	Token     string    `json:"token"`
+	Status    v1.Status `json:"status"`
+	Message   string    `json:"message"`
 }
 
 // only used in creation options
@@ -28,11 +30,9 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 	crd.ObjectMeta.Namespace = crdNamespace
 
 	crd.Spec = v1.ClientauthSpec{
-		Name:       app.Name,
-		CreateTime: app.CreateTime,
-		TokenExp:   app.TokenExp,
-		TokenIat:   app.TokenIat,
-		Token:      app.Token,
+		Name:     app.Name,
+		TokenExp: app.TokenExp,
+		TokenIat: app.TokenIat,
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -47,15 +47,15 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 
 func ToModel(obj *v1.Clientauth) *Clientauth {
 	return &Clientauth{
-		ID:         obj.ObjectMeta.Name,
-		Name:       obj.Spec.Name,
-		Namespace:  obj.Spec.Namespace,
-		CreateTime: obj.Spec.CreateTime,
-		TokenIat:   obj.Spec.TokenIat,
-		TokenExp:   obj.Spec.TokenExp,
-		Token:      obj.Spec.Token,
-		Status:     obj.Status.Status,
-		Message:    obj.Status.Message,
+		ID:        obj.ObjectMeta.Name,
+		Name:      obj.Spec.Name,
+		Namespace: obj.Spec.Namespace,
+		CreatedAt: util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
+		TokenIat:  obj.Spec.TokenIat,
+		TokenExp:  obj.Spec.TokenExp,
+		Token:     obj.Spec.Token,
+		Status:    obj.Status.Status,
+		Message:   obj.Status.Message,
 	}
 }
 
@@ -70,11 +70,25 @@ func ToListModel(items *v1.ClientauthList) []*Clientauth {
 func (a *Clientauth) Validate() error {
 	for k, v := range map[string]string{
 		"name": a.Name,
+		"iat":  string(a.TokenIat),
+		"exp":  string(a.TokenExp),
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
+
+	//签发时间必须不小于当前时间
+	now := time.Now().Unix()
+	if a.TokenIat < now {
+		return fmt.Errorf("token issued time:%d must be greater than now.", a.TokenIat)
+	}
+
+	//校验时间，token的过期时间必须大于签发时间
+	if a.TokenExp <= a.TokenIat {
+		return fmt.Errorf("token expire time:%d must be greater than issued time:%d.", a.TokenExp, a.TokenIat)
+	}
+
 	a.ID = names.NewID()
 	return nil
 }
