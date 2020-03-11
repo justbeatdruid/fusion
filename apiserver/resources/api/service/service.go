@@ -46,7 +46,7 @@ func NewService(client dynamic.Interface, dsConfig *config.DataserviceConfig) *S
 		applicationClient: client.Resource(appv1.GetOOFSGVR()),
 		datasourceClient:  client.Resource(dsv1.GetOOFSGVR()),
 
-		dataService: dw.NewConnector(dsConfig.Host, dsConfig.Port),
+		dataService: dsConfig.Connector,
 	}
 }
 

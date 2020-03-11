@@ -84,7 +84,7 @@ func main() {
 		Client:        mgr.GetClient(),
 		Log:           ctrl.Log.WithName("controllers").WithName("Datasource"),
 		Scheme:        mgr.GetScheme(),
-		DataConnector: dw.NewConnector(dataserviceHost, dataservicePort),
+		DataConnector: dw.NewConnector(dataserviceHost, dataservicePort, "", 0),
 	}
 	if dr.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Datasource")

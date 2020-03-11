@@ -18,8 +18,10 @@ type Connector interface {
 }
 
 type httpConnector struct {
-	Host string
-	Port int
+	MetadataHost string
+	MetadataPort int
+	DataHost     string
+	DataPort     int
 }
 
 var metadataRequestBody = struct {
@@ -37,7 +39,7 @@ const metadataRequestPath = "/cmcc/data/service/dataService/metadata/getMetadata
 func (c *httpConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
 	request := gorequest.New().SetLogger(logs.GetGoRequestLogger(6)).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, c.Host, c.Port, metadataRequestPath))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, c.MetadataHost, c.MetadataPort, metadataRequestPath))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -57,8 +59,16 @@ func (c *httpConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
 	return responseBody, nil
 }
 
-//const dataRequestPath = "/cmcc/data/service/SqlAssemble/getQueryResult"
-const dataRequestPath = "/cmcc/data/service/dataService/query/getQueryResult"
+const dataRequestPath = "/cmcc/data/service/SqlAssemble/getQueryResult"
+
+//const dataRequestPath = "/cmcc/data/service/dataService/query/getQueryResult"
+
+type WappedResult struct {
+	Success bool      `json:"success"`
+	Code    int       `json:"code"`
+	Message string    `json:"message"`
+	Data    v1.Result `json:"data"`
+}
 
 func (c *httpConnector) QueryData(q v1.Query) (v1.Result, error) {
 	q.UserID = "admin"
@@ -67,13 +77,13 @@ func (c *httpConnector) QueryData(q v1.Query) (v1.Result, error) {
 	}
 	request := gorequest.New().SetLogger(logs.GetGoRequestLogger(6)).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, c.Host, c.Port, dataRequestPath))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, c.DataHost, c.DataPort, dataRequestPath))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
 	request = request.Retry(3, 5*time.Second)
 
-	responseBody := &v1.Result{}
+	responseBody := &WappedResult{}
 	response, body, errs := request.Send(&q).EndStruct(responseBody)
 	if len(errs) > 0 {
 		return v1.Result{}, fmt.Errorf("request for quering data error: %+v", errs)
@@ -84,13 +94,15 @@ func (c *httpConnector) QueryData(q v1.Query) (v1.Result, error) {
 		return v1.Result{}, fmt.Errorf("request for quering data error: receive wrong status code: %s", string(body))
 	}
 
-	return *responseBody, nil
+	return responseBody.Data, nil
 }
 
-func NewConnector(host string, port int) Connector {
+func NewConnector(metadatahost string, metadataport int, datahost string, dataport int) Connector {
 	return &httpConnector{
-		Host: host,
-		Port: port,
+		MetadataHost: metadatahost,
+		MetadataPort: metadataport,
+		DataHost:     datahost,
+		DataPort:     dataport,
 	}
 }
 
