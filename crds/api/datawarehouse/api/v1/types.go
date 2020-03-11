@@ -22,6 +22,8 @@ type QueryProperty struct {
 	PropertyID   string `json:"propertyId"`
 	PropertyName string `json:"propertyName"`
 	PhysicalType string `json:"physicalType"`
+	WithGroupby  bool   `json:"withGroupby"`
+	Operator     string `json:"operator"`
 }
 
 func (d *DataWarehouseQuery) Validate() error {
@@ -79,7 +81,7 @@ func (dq *DataWarehouseQuery) RefillQuery(db *crdv1.Database) error {
 	dq.Query = NewQuery()
 
 	// Step 1: build basic info
-	dq.Query.DatabaseName = db.Name
+	dq.Query.DatabaseName = strings.ToLower(db.Name)
 	var primaryTable crdv1.Table
 	for _, t := range db.Tables {
 		if t.Info.ID == dq.PrimaryTableID {
@@ -95,7 +97,7 @@ func (dq *DataWarehouseQuery) RefillQuery(db *crdv1.Database) error {
 	// build a tree firstly
 	// IMPORTANT v1.Table should never be used
 	//           we use crdv1.Table to build v1.Query
-	{
+	if false {
 		selectedTables := make(map[string]crdv1.Table)
 		contains := func(t crdv1.Table) bool {
 			for _, p := range dq.Properties {
@@ -222,37 +224,55 @@ func (dq *DataWarehouseQuery) RefillQuery(db *crdv1.Database) error {
 		}
 	}
 
-	// Step 3: build query field list
-	{
-		dq.Query.QueryFieldList = make([]v1.QueryField, 0)
-		getFieldInfo := func(tableID, fieldID string) (string, string, string) {
-			for _, t := range db.Tables {
-				if t.Info.ID == tableID {
-					for _, p := range t.Properties {
-						if p.ID == fieldID {
-							return t.Info.Name, p.Name, p.DisplayName
-						}
+	getFieldInfo := func(tableID, fieldID string) (string, string, string) {
+		for _, t := range db.Tables {
+			if t.Info.ID == tableID {
+				for _, p := range t.Properties {
+					if p.ID == fieldID {
+						return t.Info.Name, p.Name, p.DisplayName
 					}
 				}
 			}
-			klog.Errorf("cannot find table with ID %s and property with ID %s in database with ID %s",
-				tableID, fieldID, db.Id)
-			return "", "", ""
 		}
+		klog.Errorf("cannot find table with ID %s and property with ID %s in database with ID %s",
+			tableID, fieldID, db.Id)
+		return "", "", ""
+	}
+
+	// Step 3: build query field list
+	{
+		dq.Query.QueryFieldList = make([]v1.QueryField, 0)
 		for _, p := range dq.Properties {
 			tn, pn, pdn := getFieldInfo(p.TableID, p.PropertyID)
-			dq.Query.QueryFieldList = append(dq.Query.QueryFieldList, v1.QueryField{
+			qf := v1.QueryField{
 				TableName:           tn,
 				PropertyName:        pn,
 				PropertyDisplayName: pdn,
-			})
+			}
+			if len(p.Operator) > 0 {
+				qf.Operator = p.Operator
+			}
+			dq.Query.QueryFieldList = append(dq.Query.QueryFieldList, qf)
 		}
 	}
 
-	// Step 4: don't leave other fields null
+	// Step 4: build groupby fields
+	{
+		dq.Query.GroupbyFieldInfo = make([]v1.GroupbyField, 0)
+		for _, p := range dq.Properties {
+			if p.WithGroupby {
+				tn, pn, _ := getFieldInfo(p.TableID, p.PropertyID)
+				dq.Query.GroupbyFieldInfo = append(dq.Query.GroupbyFieldInfo, v1.GroupbyField{
+					TableName:    tn,
+					PropertyName: pn,
+				})
+			}
+		}
+	}
+
+	// Step 5: don't leave other fields null
 	// Where fileds will be built when query with query params
 	dq.Query.WhereFieldInfo = make([]v1.WhereField, 0)
-	dq.Query.GroupbyFieldInfo = make([]v1.GroupbyField, 0)
 	return nil
 }
 

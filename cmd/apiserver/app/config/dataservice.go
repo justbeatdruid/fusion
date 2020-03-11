@@ -1,10 +1,15 @@
 package config
 
+import (
+	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
+)
+
 type DataserviceConfig struct {
-	Host string
-	Port int
+	Connector dw.Connector
 }
 
-func NewDataserviceConfig(host string, port int) *DataserviceConfig {
-	return &DataserviceConfig{host, port}
+func NewDataserviceConfig(metadatahost string, metadataport int, datahost string, dataport int) *DataserviceConfig {
+	return &DataserviceConfig{
+		Connector: dw.NewConnector(metadatahost, metadataport, datahost, dataport),
+	}
 }

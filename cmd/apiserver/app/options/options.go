@@ -108,7 +108,7 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		Kubeconfig: kubeconfig,
 
 		DatasourceConfig:  appconfig.NewDatasourceConfig(s.Datasource.Supported),
-		DataserviceConfig: appconfig.NewDataserviceConfig(s.Dataservice.Host, s.Dataservice.Port),
+		DataserviceConfig: appconfig.NewDataserviceConfig(s.Dataservice.MetadataHost, s.Dataservice.MetadataPort, s.Dataservice.DataHost, s.Dataservice.DataPort),
 
 		TopicConfig: appconfig.NewTopicConfig(s.Topic.Host, s.Topic.Port),
 	}

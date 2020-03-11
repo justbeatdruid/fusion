@@ -20,28 +20,50 @@ curl localhost:8001/api/v1/apis -H 'content-type:application/json' -H 'X-auth-To
     "protocol": "HTTP",
     "returnType": "json",
     "datawarehouseQuery": {
-      "primaryTableId": "54d4a267dae14cf1a560e497986177e7",
+      "primaryTableId": "d495cf88298e4467b74c3feb01371c03",
       "properties": [
       {
-        "tableId": "54d4a267dae14cf1a560e497986177e7",
-	"tableName": "fat_se_dwd_outpatient_diagnosis_di",
-        "propertyId": "2925",
-	"propertyName": "outpatient_diagnosis_pk",
-	"physicalType": "varchar"
+        "tableId": "9cc854934fc44e1e856690b0dd889fea",
+	"tableName": "tb_aqi_grade",
+        "propertyId": "1164",
+	"propertyName": "grddesc",
+	"physicalType": "varchar",
+	"operator": "",
+	"withGroupby": true
       },
       {
-        "tableId": "2b7efd2a859f47da98ef5be248097a3a",
-	"tableName": "dim_se_doctor_info",
-        "propertyId": "2700",
-	"propertyName": "doctor_id_number",
-	"physicalType": "varchar"
+        "tableId": "da57f73a052545efae92253032451765",
+	"tableName": "tb_monitor_place",
+        "propertyId": "1093",
+	"propertyName": "monpl_distdiv_nm",
+	"physicalType": "varchar",
+	"operator": "",
+	"withGroupby": true
+      },
+      {
+        "tableId": "d495cf88298e4467b74c3feb01371c03",
+	"tableName": "tb_air_quality",
+        "propertyId": "1091",
+	"propertyName": "aqi_grd_id",
+	"physicalType": "int",
+	"operator": "sum",
+	"withGroupby": false
+      },
+      {
+        "tableId": "d495cf88298e4467b74c3feb01371c03",
+	"tableName": "tb_air_quality",
+        "propertyId": "1056",
+	"propertyName": "id",
+	"physicalType": "int",
+	"operator": "sum",
+	"withGroupby": false
       }
       ]
     },
     "apiQueryInfo": {
       "webParams": [
       {
-        "name": "dim_se_doctor_info.doctor_id_number",
+        "name": "tb_aqi_grade.grddesc",
 	"type": "varchar",
 	"location": "query",
 	"required": true,
