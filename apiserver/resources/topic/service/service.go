@@ -72,7 +72,6 @@ func (s *Service) DeleteTopic(id string) (*Topic, error) {
 	return ToModel(tp), nil
 }
 
-
 //带时间查询
 func (s *Service) ListMessagesTime(topicUrls []string, start int64, end int64) ([]Message, error) {
 	messages, err := s.ListTopicMessagesTime(topicUrls, start, end)
@@ -145,7 +144,6 @@ func (s *Service) Delete(id string) (*v1.Topic, error) {
 	tp.Status.Status = v1.Delete
 	return s.UpdateStatus(tp)
 }
-
 
 //更新状态
 func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {

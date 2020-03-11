@@ -101,7 +101,7 @@ func (c *controller) GetTopicgroup(req *restful.Request) (int, *GetResponse) {
 func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse) {
 	ids := req.QueryParameters("ids")
 	for _, id := range ids {
-		if _, err := c.service.DeleteTopicgroup(id);err!=nil{
+		if _, err := c.service.DeleteTopicgroup(id); err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    1,
 				Message: fmt.Errorf("delete topicgroup error: %+v", err).Error(),
@@ -109,7 +109,7 @@ func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse
 		}
 	}
 	return http.StatusOK, &ListResponse{
-		Code: 0,
+		Code:    0,
 		Message: "delete success",
 	}
 }

@@ -88,7 +88,6 @@ func (s *Service) DeleteClientauth(id string) (*Clientauth, error) {
 	return ToModel(ca), nil
 }
 
-
 func (s *Service) Create(ca *v1.Clientauth) (*v1.Clientauth, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ca)
 	if err != nil {
