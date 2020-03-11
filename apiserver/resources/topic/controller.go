@@ -103,15 +103,15 @@ func (c *controller) GetTopic(req *restful.Request) (int, *GetResponse) {
 func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
 	ids := req.QueryParameters("ids")
 	for _, id := range ids {
-	 if _, err := c.service.DeleteTopic(id);err!=nil{
-		 return http.StatusInternalServerError, &ListResponse{
-			 Code:    1,
-			 Message: fmt.Errorf("delete topic error: %+v", err).Error(),
-		 }
-	 }
-}
+		if _, err := c.service.DeleteTopic(id); err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:    1,
+				Message: fmt.Errorf("delete topic error: %+v", err).Error(),
+			}
+		}
+	}
 	return http.StatusOK, &ListResponse{
-		Code: 0,
+		Code:    0,
 		Message: "delete topic success",
 	}
 }
@@ -125,7 +125,7 @@ func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 	} else {
 		return http.StatusOK, &DeleteResponse{
 			Code:    0,
-			Data: topic,
+			Data:    topic,
 			Message: "deleting",
 		}
 	}

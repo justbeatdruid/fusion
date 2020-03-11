@@ -12,7 +12,7 @@ type Clientauth struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
 	Namespace string    `json:"namespace"`
-	CreatedAt util.Time `json:"createdAt"`
+	CreatedAt int64     `json:"createdAt"`
 	TokenIat  int64     `json:"tokenIat"`
 	TokenExp  int64     `json:"tokenExp"`
 	Token     string    `json:"token"`
@@ -50,7 +50,7 @@ func ToModel(obj *v1.Clientauth) *Clientauth {
 		ID:        obj.ObjectMeta.Name,
 		Name:      obj.Spec.Name,
 		Namespace: obj.Spec.Namespace,
-		CreatedAt: util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
+		CreatedAt: util.NewTime(obj.ObjectMeta.CreationTimestamp.Time).Unix(),
 		TokenIat:  obj.Spec.TokenIat,
 		TokenExp:  obj.Spec.TokenExp,
 		Token:     obj.Spec.Token,

@@ -53,8 +53,8 @@ func (r *ClientauthReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 		r.Update(ctx, clientAuth)
 	}
 
-	if clientAuth.Status.Status == nlptv1.Delete{
-		r.Delete(ctx,clientAuth)
+	if clientAuth.Status.Status == nlptv1.Delete {
+		r.Delete(ctx, clientAuth)
 	}
 
 	return ctrl.Result{}, nil

@@ -64,7 +64,6 @@ func (s *Service) DeleteTopicgroup(id string) (*Topicgroup, error) {
 	return ToModel(tg), nil
 }
 
-
 func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
 	if err != nil {
@@ -119,7 +118,6 @@ func (s *Service) Delete(id string) (*v1.Topicgroup, error) {
 	tg.Status.Status = v1.Delete
 	return s.UpdateStatus(tg)
 }
-
 
 //更新状态
 func (s *Service) UpdateStatus(tg *v1.Topicgroup) (*v1.Topicgroup, error) {
