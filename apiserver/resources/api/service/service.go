@@ -66,13 +66,15 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	}
 
 	// refill datawarehouse query
-	ds, err := s.getDatasource(su.Spec.DatasourceID.ID)
-	if err != nil {
-		return nil, fmt.Errorf("get datasource error: %+v", err)
-	}
-	if model.DataWarehouseQuery != nil && ds.Spec.Type == dsv1.DataWarehouseType {
-		if err := model.DataWarehouseQuery.RefillQuery(ds.Spec.DataWarehouse); err != nil {
-			return nil, fmt.Errorf("cannot refill datawarehouse query: %+v", err)
+	if su.Spec.DatasourceID != nil {
+		ds, err := s.getDatasource(su.Spec.DatasourceID.ID)
+		if err != nil {
+			return nil, fmt.Errorf("get datasource error: %+v", err)
+		}
+		if model.DataWarehouseQuery != nil && ds.Spec.Type == dsv1.DataWarehouseType {
+			if err := model.DataWarehouseQuery.RefillQuery(ds.Spec.DataWarehouse); err != nil {
+				return nil, fmt.Errorf("cannot refill datawarehouse query: %+v", err)
+			}
 		}
 	}
 
