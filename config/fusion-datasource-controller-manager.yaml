@@ -59,6 +59,7 @@ spec:
         - fusion-datasource-controller-manager
         - --v=5
         - -enable-leader-election
+        - --dataservice-host=10.160.32.24
         env:
         - name: MY_POD_NAMESPACE
           valueFrom:

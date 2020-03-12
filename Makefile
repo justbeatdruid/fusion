@@ -15,9 +15,11 @@ endif
 
 all: clean apiserver-image datasource-image application-image trafficcontrol-image restriction-image topic-image api-image serviceunit-image apply-image
 
-deploy:
-	if test kubectl delete -f config;then test 0;fi
-	kubectl create -f config
+install:
+	kubectl delete -f config; kubectl create -f config; bash -c 'for i in crds/*;do echo $$i;kubectl create -f $$i/config/crd/bases;done'
+
+uninstall:
+	kubectl delete -f config; bash -c 'for i in crds/*;do echo $$i;kubectl delete -f $$i/config/crd/bases;done'
 
 clean:
 
