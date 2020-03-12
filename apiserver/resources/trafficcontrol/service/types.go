@@ -3,11 +3,13 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
+
+	v1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
-	"time"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 type Trafficcontrol struct {
@@ -19,12 +21,12 @@ type Trafficcontrol struct {
 	Apis        []v1.Api      `json:"apis"`
 	Description string        `json:"description"`
 	User        string        `json:"user"`
-	CreatedAt   time.Time     `json:"createdAt"`
+	CreatedAt   util.Time     `json:"createdAt"`
 
-	Status    v1.Status   `json:"status"`
-	UpdatedAt metav1.Time `json:"time"`
-	APICount  int         `json:"apiCount"`
-	Published bool        `json:"published"`
+	Status    v1.Status `json:"status"`
+	UpdatedAt util.Time `json:"time"`
+	APICount  int       `json:"apiCount"`
+	Published bool      `json:"published"`
 }
 
 // only used in creation options
@@ -87,11 +89,11 @@ func ToModel(obj *v1.Trafficcontrol) *Trafficcontrol {
 		Config:      obj.Spec.Config,
 		Apis:        obj.Spec.Apis,
 		User:        obj.Spec.User,
-		CreatedAt:   obj.ObjectMeta.CreationTimestamp.Time,
+		CreatedAt:   util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
 		Description: obj.Spec.Description,
 
 		Status:    obj.Status.Status,
-		UpdatedAt: obj.Status.UpdatedAt,
+		UpdatedAt: util.NewTime(obj.Status.UpdatedAt.Time),
 		APICount:  obj.Status.APICount,
 		Published: obj.Status.Published,
 	}
@@ -159,6 +161,7 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 	if err = json.Unmarshal(b, &source); err != nil {
 		return fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
+	klog.V(5).Infof("get update data : %+v", data)
 	if _, ok = data["name"]; ok {
 		target.Spec.Name = source.Name
 	}
@@ -167,7 +170,51 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 	}
 	if _, ok = data["type"]; ok {
 		target.Spec.Type = source.Type
+		switch target.Spec.Type {
+		case v1.APIC, v1.APPC, v1.IPC, v1.USERC:
+			if reqConfig, ok := data["config"]; ok {
+				klog.V(5).Infof("get config : %+v", reqConfig)
+				if config, ok := reqConfig.(map[string]interface{}); ok {
+					if _, ok = config["year"]; ok {
+						target.Spec.Config.Year = source.Config.Year
+					}
+					if _, ok = config["month"]; ok {
+						target.Spec.Config.Month = source.Config.Month
+					}
+					if _, ok = config["day"]; ok {
+						target.Spec.Config.Day = source.Config.Day
+					}
+					if _, ok = config["hour"]; ok {
+						target.Spec.Config.Hour = source.Config.Hour
+					}
+					if _, ok = config["minute"]; ok {
+						target.Spec.Config.Minute = source.Config.Minute
+					}
+					if _, ok = config["second"]; ok {
+						target.Spec.Config.Second = source.Config.Second
+					}
+				}
+				target.Spec.Config.Special = make([]v1.Special, 0)
+			}
+		case v1.SPECAPPC:
+			if reqConfig, ok := data["config"]; ok {
+				klog.V(5).Infof("get special config : %+v", reqConfig)
+				if config, ok := reqConfig.(map[string]interface{}); ok {
+					if _, ok = config["special"]; ok {
+						target.Spec.Config.Special = source.Config.Special
+						klog.V(5).Infof("get special config : %+v", target.Spec.Config.Special)
+					}
+					target.Spec.Config.Year = 0
+					target.Spec.Config.Month = 0
+					target.Spec.Config.Day = 0
+					target.Spec.Config.Hour = 0
+					target.Spec.Config.Minute = 0
+					target.Spec.Config.Second = 0
+				}
+			}
+		}
 	}
+
 	if _, ok = data["user"]; ok {
 		target.Spec.User = source.User
 	}
@@ -180,28 +227,7 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 	if _, ok := data["apis"]; ok {
 		target.Spec.Apis = source.Apis
 	}
-	if reqConfig, ok := data["config"]; ok {
-		if config, ok := reqConfig.(map[string]interface{}); ok {
-			if _, ok = config["year"]; ok {
-				target.Spec.Config.Year = source.Config.Year
-			}
-			if _, ok = config["month"]; ok {
-				target.Spec.Config.Month = source.Config.Month
-			}
-			if _, ok = config["day"]; ok {
-				target.Spec.Config.Day = source.Config.Day
-			}
-			if _, ok = config["hour"]; ok {
-				target.Spec.Config.Hour = source.Config.Hour
-			}
-			if _, ok = config["minute"]; ok {
-				target.Spec.Config.Minute = source.Config.Minute
-			}
-			if _, ok = config["second"]; ok {
-				target.Spec.Config.Second = source.Config.Second
-			}
-		}
-	}
+
 	target.Status.UpdatedAt = metav1.Now()
 	return nil
 }
