@@ -68,8 +68,11 @@ func (r *ServiceunitReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		if err := r.Operator.DeleteServiceByKong(serviceunit); err != nil {
 			serviceunit.Status.Status = nlptv1.Error
 			serviceunit.Status.Message = err.Error()
+			klog.Infof("delete service by kong failed: %s", serviceunit.Status.Message)
+			r.Update(ctx, serviceunit)
+		} else {
+			r.Delete(ctx, serviceunit)
 		}
-		r.Delete(ctx, serviceunit)
 	}
 
 	// + update_sunyu
