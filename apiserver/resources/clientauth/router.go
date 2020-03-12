@@ -62,7 +62,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 	//模糊查询
-	ws.Route(ws.GET("/clientauths").
+	ws.Route(ws.GET("/clientauths/conditional").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all clientauth").

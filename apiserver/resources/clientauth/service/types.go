@@ -16,6 +16,7 @@ type Clientauth struct {
 	IssuedAt  int64     `json:"issuedAt"`
 	ExpireAt  int64     `json:"expireAt"`
 	Token     string    `json:"token"`
+	Effective bool      `json:"effective"`
 	Status    v1.Status `json:"status"`
 	Message   string    `json:"message"`
 }
@@ -31,12 +32,13 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 
 	crd.Spec = v1.ClientauthSpec{
 		Name:     app.Name,
+		Token: app.Token,
 		ExipreAt: app.ExpireAt,
 		IssuedAt: app.IssuedAt,
 	}
 	status := app.Status
 	if len(status) == 0 {
-		status = v1.Init
+		status = v1.Created
 	}
 	crd.Status = v1.ClientauthStatus{
 		Status:  status,

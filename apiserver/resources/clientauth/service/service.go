@@ -42,7 +42,7 @@ func (s *Service) CreateClientauth(model *Clientauth) (*Clientauth, error) {
 	}
 	for _, ca := range cas {
 		if ca.Name == model.Name {
-			return nil, fmt.Errorf("用户名已存在")
+			return nil, fmt.Errorf("The username already exists. ")
 		}
 	}
 	nowTime := util.Now().Unix()
