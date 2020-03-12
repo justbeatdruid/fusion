@@ -16,6 +16,7 @@ type Clientauth struct {
 	TokenIat  int64     `json:"tokenIat"`
 	TokenExp  int64     `json:"tokenExp"`
 	Token     string    `json:"token"`
+	Effective bool      `json:"effective"`
 	Status    v1.Status `json:"status"`
 	Message   string    `json:"message"`
 }
@@ -33,10 +34,11 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 		Name:     app.Name,
 		TokenExp: app.TokenExp,
 		TokenIat: app.TokenIat,
+		Token: app.Token,
 	}
 	status := app.Status
 	if len(status) == 0 {
-		status = v1.Init
+		status = v1.Created
 	}
 	crd.Status = v1.ClientauthStatus{
 		Status:  status,
