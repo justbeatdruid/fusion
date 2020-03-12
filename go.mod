@@ -8,11 +8,11 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20190321100706-95778dfbb74e
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/docker/docker v0.7.3-0.20190327010347-be7ac8be2ae0
-	github.com/emicklei/go-restful v2.9.5+incompatible
 	github.com/go-logr/logr v0.1.0
 	github.com/go-sql-driver/mysql v1.5.0
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/google/btree v1.0.0
+	github.com/json-iterator/go v1.1.8
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
