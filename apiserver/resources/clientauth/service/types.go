@@ -42,7 +42,7 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 	}
 	crd.Status = v1.ClientauthStatus{
 		Status:  status,
-		Message: app.Message,
+		Message: "success",
 	}
 	return crd
 }
