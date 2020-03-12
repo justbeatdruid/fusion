@@ -13,13 +13,18 @@ else
 GOBIN=$(shell go env GOBIN)
 endif
 
-all: clean apiserver-image datasource-image application-image trafficcontrol-image restriction-image topic-image api-image serviceunit-image apply-image
+all: build uninstall install
+
+build: clean apiserver-image datasource-image application-image trafficcontrol-image restriction-image topic-image api-image serviceunit-image apply-image
 
 install:
-	kubectl delete -f config; kubectl create -f config; bash -c 'for i in crds/*;do echo $$i;kubectl create -f $$i/config/crd/bases;done'
+	kubectl create -f config
 
 uninstall:
-	kubectl delete -f config; bash -c 'for i in crds/*;do echo $$i;kubectl delete -f $$i/config/crd/bases;done'
+	kubectl delete -f config
+
+crd:
+	bash -c 'for i in crds/*;do echo $$i;kubectl apply -f $$i/config/crd/bases;done'
 
 clean:
 
