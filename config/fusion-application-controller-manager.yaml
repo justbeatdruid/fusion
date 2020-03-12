@@ -57,8 +57,8 @@ spec:
       containers:
       - command:
         - fusion-application-controller-manager
-        - --operator-host=119.3.248.187
-        - --operator-port=30081
+        - --operator-host=kong-kong-admin
+        - --operator-port=8001
         - -enable-leader-election
         - --v=5
         env:
