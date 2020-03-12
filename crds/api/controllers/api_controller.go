@@ -73,15 +73,18 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 					//当前删除失败直接返回
 					return ctrl.Result{}, nil
 				}
-				//delete application
+				//delete application, ApplicationLabel, Status.Applications
 				api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
 				delete(api.ObjectMeta.Labels, nlptv1.ApplicationLabel(app.ID))
+				delete(api.Status.Applications, app.ID)
 				r.Update(ctx, api)
 			} else {
 				index++
 			}
 		}
+
 		api.Status.Status = nlptv1.Success
+		r.Update(ctx, api)
 		return ctrl.Result{}, nil
 	}
 
