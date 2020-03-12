@@ -64,7 +64,7 @@ func GetDataWarehouseKey(db *dwv1.Database) string {
 	if db == nil {
 		return ""
 	}
-	return fmt.Sprintf("%s-%s", db.Name, db.Id, db.SubjectId)
+	return fmt.Sprintf("%s-%s", db.Id, db.SubjectId)
 }
 
 func (r *DatasourceReconciler) SyncDatasources() error {
@@ -94,14 +94,13 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 		if apiDs, ok := existedDatawarehouses[GetDataWarehouseKey(&db)]; ok {
 			result, err := nlptv1.DeepCompareDataWarehouse(apiDs.Spec.DataWarehouse, &db)
 			if err != nil {
-				return fmt.Errorf("time err: %+v", err)
-			}
-			if !result {
+				klog.Errorf("compare datasource %s err: %+v", db.Name, err)
+			} else if !result {
 				klog.V(4).Infof("need to update datawarehouse %s", db.Name)
 				apiDs.Spec.DataWarehouse = &db
 				apiDs.Status.UpdatedAt = metav1.Now()
 				if err = r.Update(ctx, &apiDs); err != nil {
-					return fmt.Errorf("cannot update datasource: %+v", err)
+					klog.Errorf("cannot update datasource: %+v", err)
 				}
 			}
 		} else {
@@ -132,7 +131,7 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 				},
 			}
 			if err = r.Create(ctx, ds); err != nil {
-				return fmt.Errorf("cannot create datasource: %+v", err)
+				klog.Errorf("cannot create datasource: %+v", err)
 			}
 		}
 		delete(existedDatawarehouses, GetDataWarehouseKey(&db))
@@ -140,7 +139,7 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 	for _, v := range existedDatawarehouses { //遍历本地资源 在最新资源中筛选已删除资源
 		klog.V(4).Infof("need to delete datawarehouse %s", v.Spec.DataWarehouse.Name)
 		if err = r.Delete(ctx, &v); err != nil {
-			return fmt.Errorf("cannot delete datasource: %+v", err)
+			klog.Errorf("cannot delete datasource: %+v", err)
 		}
 	}
 	return nil
