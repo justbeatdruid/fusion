@@ -34,16 +34,8 @@ func (r *router) Install(ws *restful.WebService) {
 	ws.Route(ws.POST("/trafficcontrols/{id}/apis").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
-		Doc("bind api to trafficcontrol").
-		To(r.bindApi).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
-		Do(returns200, returns500))
-
-	ws.Route(ws.DELETE("/trafficcontrols/{id}/apis").
-		Consumes(restful.MIME_JSON).
-		Produces(restful.MIME_JSON).
-		Doc("unbind api to trafficcontrol").
-		To(r.unbindApi).
+		Doc("bind/unbind apis to trafficcontrol").
+		To(r.bindOrUnbindApis).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
@@ -103,10 +95,6 @@ func process(f func(*restful.Request) (int, interface{}), request *restful.Reque
 	code, result := f(request)
 	response.WriteHeaderAndEntity(code, result)
 }
-func (r *router) bindApi(request *restful.Request, response *restful.Response) {
-	process(r.controller.BindApis, request, response)
-}
-
-func (r *router) unbindApi(request *restful.Request, response *restful.Response) {
-	process(r.controller.UnBindApis, request, response)
+func (r *router) bindOrUnbindApis(request *restful.Request, response *restful.Response) {
+	process(r.controller.BindOrUnbindApis, request, response)
 }

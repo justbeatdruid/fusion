@@ -44,9 +44,12 @@ type UpdateRequest = Wrapped
 type UpdateResponse = Wrapped
 
 type BindRequest struct {
-	Code    int      `json:"code"`
-	Message string   `json:"message"`
-	Data    []v1.Api `json:"data,omitempty"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    struct {
+		Operation string   `json:"operation"`
+		Apis      []v1.Api `json:"apis"`
+	} `json:"data,omitempty"`
 }
 type BindResponse = Wrapped
 
@@ -173,7 +176,7 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 	}
 }
 
-func (c *controller) BindApis(req *restful.Request) (int, interface{}) {
+func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 	body := &BindRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &BindResponse{
@@ -182,31 +185,10 @@ func (c *controller) BindApis(req *restful.Request) (int, interface{}) {
 		}
 	}
 	trafficID := req.PathParameter("id")
-	if api, err := c.service.BindApi(trafficID, body.Data); err != nil {
+	if api, err := c.service.BindOrUnbindApis(body.Data.Operation, trafficID, body.Data.Apis); err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:    2,
 			Message: fmt.Errorf("bind api error: %+v", err).Error(),
-		}
-	} else {
-		return http.StatusOK, &BindResponse{
-			Code: 0,
-			Data: api,
-		}
-	}
-}
-func (c *controller) UnBindApis(req *restful.Request) (int, interface{}) {
-	body := &BindRequest{}
-	if err := req.ReadEntity(body); err != nil {
-		return http.StatusInternalServerError, &BindResponse{
-			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
-		}
-	}
-	trafficID := req.PathParameter("id")
-	if api, err := c.service.UnBindApi(trafficID, body.Data); err != nil {
-		return http.StatusInternalServerError, &BindResponse{
-			Code:    2,
-			Message: fmt.Errorf("unbind api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &BindResponse{

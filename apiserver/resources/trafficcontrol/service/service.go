@@ -237,6 +237,18 @@ func (s *Service) updateApi(apiid string, traffic *v1.Trafficcontrol) (*apiv1.Ap
 	}
 	return api, nil
 }
+
+func (s *Service) BindOrUnbindApis(operation, id string, apis []v1.Api) (*Trafficcontrol, error) {
+	if operation == "unbind" {
+		return s.UnBindApi(id, apis)
+	} else if operation == "bind" {
+		return s.BindApi(id, apis)
+	} else {
+		return nil, fmt.Errorf("error operation type")
+	}
+
+}
+
 func (s *Service) BindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 	traffic, err := s.Get(id)
 	if err != nil {

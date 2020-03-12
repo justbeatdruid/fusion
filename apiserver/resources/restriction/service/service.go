@@ -139,9 +139,6 @@ func (s *Service) Delete(id string) error {
 		return fmt.Errorf("get crd by id error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.restriction: %+v", su)
-	if len(su.Spec.Apis) != 0 {
-		return fmt.Errorf("please unbind apis")
-	}
 	err = s.client.Namespace(crdNamespace).Delete(id, &metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("error delete crd: %+v", err)
@@ -225,6 +222,18 @@ func (s *Service) updateApi(apiid string, restriction *v1.Restriction) (*apiv1.A
 	}
 	return api, nil
 }
+
+func (s *Service) BindOrUnbindApis(operation, id string, apis []v1.Api) (*Restriction, error) {
+	if operation == "unbind" {
+		return s.UnBindApi(id, apis)
+	} else if operation == "bind" {
+		return s.BindApi(id, apis)
+	} else {
+		return nil, fmt.Errorf("error operation type")
+	}
+
+}
+
 func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
 	restriction, err := s.Get(id)
 	if err != nil {
