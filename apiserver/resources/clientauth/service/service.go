@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/chinamobile/nlpt/pkg/util"
+	"time"
 
 	"github.com/chinamobile/nlpt/crds/clientauth/api/v1"
 
@@ -46,12 +47,12 @@ func (s *Service) CreateClientauth(model *Clientauth) (*Clientauth, error) {
 	}
 	nowTime := util.Now().Unix()
 	//model.CreateTime = nowTime
-	model.TokenIat = nowTime
+	model.IssuedAt = nowTime
 	//创建token
 	t := &Token{
 		Sub: model.Name,
-		Iat: model.TokenIat,
-		Exp: model.TokenExp,
+		Iat: model.IssuedAt,
+		Exp: model.ExpireAt,
 	}
 	model.Token, err = t.Create()
 	if err != nil {
@@ -170,22 +171,23 @@ func (s *Service) RegenerateToken(ca *Clientauth) (*Clientauth, error) {
 	if err != nil {
 		return nil, fmt.Errorf("clientauth id is not exist, id : %+v, error : %+v", ca.ID, err)
 	}
-
-	cad.Spec.TokenIat = ca.TokenIat
-	cad.Spec.TokenExp = ca.TokenExp
-	//if err = ca.Validate(); err != nil {
-	//	return nil, fmt.Errorf("parameter is invalid, error: %+v ", err)
-	//}
+	//校验时间，token的过期时间必须大于当前时间
+	if ca.ExpireAt <= time.Now().Unix() {
+		return nil, fmt.Errorf("token expire time:%d must be greater than now", a.ExpireAt)
+	}
+	cad.Spec.ExipreAt = ca.ExpireAt
+	now := time.Now().Unix()
 	t := &Token{
 		Sub: cad.Spec.Name,
-		Iat: cad.Spec.TokenIat,
-		Exp: cad.Spec.TokenExp,
+		Iat: now,
+		Exp: cad.Spec.ExipreAt,
 	}
 
 	token, err := t.Create()
 	if err != nil {
 		return nil, fmt.Errorf("generate token error, %+v", err)
 	}
+	cad.Spec.IssuedAt = now
 	cad.Spec.Token = token
 	cad.Status.Status = v1.Updated
 	cad.Status.Message = "success"

@@ -8,9 +8,10 @@ metadata:
     app: fusion-apiserver
     version: v0.1-alpha
 spec:
-  type: ClusterIP
+  type: NodePort
   ports:
     - name: service
+      nodePort: 30800
       port: 8001
       protocol: TCP
       targetPort: 8001
@@ -57,6 +58,7 @@ spec:
       - command:
         - fusion-apiserver
         - --v=5
+        - --dataservice-data-host=10.160.32.24
         env:
         - name: MY_POD_NAMESPACE
           valueFrom:

@@ -312,7 +312,7 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 	}
 	//判断token是否有效
 	for _, cla := range ca {
-		if cla.TokenExp > util.Now().Unix(){
+		if cla.ExpireAt > util.Now().Unix(){
 			cla.Effective = true
 		}else {
 			cla.Effective = false
@@ -348,7 +348,7 @@ func (c *controller) ListTopicByauthUser(caName string, cas []*service.Clientaut
 func (c *controller) ListTopicBytokenExp(expireAtSta int64, expireAtEnd int64, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
 	for _, ca := range cas {
-		if ca.TokenExp < expireAtEnd && ca.TokenExp > expireAtSta {
+		if ca.ExpireAt < expireAtEnd && ca.ExpireAt > expireAtSta {
 			casResult = append(casResult, ca)
 		}
 	}

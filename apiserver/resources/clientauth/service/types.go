@@ -13,8 +13,8 @@ type Clientauth struct {
 	Name      string    `json:"name"`
 	Namespace string    `json:"namespace"`
 	CreatedAt int64     `json:"createdAt"`
-	TokenIat  int64     `json:"tokenIat"`
-	TokenExp  int64     `json:"tokenExp"`
+	IssuedAt  int64     `json:"issuedAt"`
+	ExpireAt  int64     `json:"expireAt"`
 	Token     string    `json:"token"`
 	Effective bool      `json:"effective"`
 	Status    v1.Status `json:"status"`
@@ -32,9 +32,9 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 
 	crd.Spec = v1.ClientauthSpec{
 		Name:     app.Name,
-		TokenExp: app.TokenExp,
-		TokenIat: app.TokenIat,
 		Token: app.Token,
+		ExipreAt: app.ExpireAt,
+		IssuedAt: app.IssuedAt,
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -53,8 +53,8 @@ func ToModel(obj *v1.Clientauth) *Clientauth {
 		Name:      obj.Spec.Name,
 		Namespace: obj.Spec.Namespace,
 		CreatedAt: util.NewTime(obj.ObjectMeta.CreationTimestamp.Time).Unix(),
-		TokenIat:  obj.Spec.TokenIat,
-		TokenExp:  obj.Spec.TokenExp,
+		IssuedAt:  obj.Spec.IssuedAt,
+		ExpireAt:  obj.Spec.ExipreAt,
 		Token:     obj.Spec.Token,
 		Status:    obj.Status.Status,
 		Message:   obj.Status.Message,
@@ -72,23 +72,16 @@ func ToListModel(items *v1.ClientauthList) []*Clientauth {
 func (a *Clientauth) Validate() error {
 	for k, v := range map[string]string{
 		"name": a.Name,
-		"iat":  string(a.TokenIat),
-		"exp":  string(a.TokenExp),
+		"exp":  string(a.ExpireAt),
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
 
-	//签发时间必须不小于当前时间
-	now := time.Now().Unix()
-	if a.TokenIat < now {
-		return fmt.Errorf("token issued time:%d must be greater than now.", a.TokenIat)
-	}
-
-	//校验时间，token的过期时间必须大于签发时间
-	if a.TokenExp <= a.TokenIat {
-		return fmt.Errorf("token expire time:%d must be greater than issued time:%d.", a.TokenExp, a.TokenIat)
+	//校验时间，token的过期时间必须大于当前时间
+	if a.ExpireAt <= time.Now().Unix() {
+		return fmt.Errorf("token expire time:%d must be greater than now", a.ExpireAt)
 	}
 
 	a.ID = names.NewID()

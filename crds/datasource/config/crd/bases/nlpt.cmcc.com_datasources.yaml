@@ -145,20 +145,26 @@ spec:
                         type: array
                       tableInfo:
                         properties:
+                          createTime:
+                            type: string
                           displayName:
                             type: string
                           englishName:
                             type: string
                           id:
                             type: string
+                          lastUpdateTime:
+                            type: string
                           name:
                             type: string
                           tableType:
                             type: string
                         required:
+                        - createTime
                         - displayName
                         - englishName
                         - id
+                        - lastUpdateTime
                         - name
                         - tableType
                         type: object

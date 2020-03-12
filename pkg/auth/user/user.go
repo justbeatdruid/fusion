@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/chinamobile/nlpt/pkg/auth/cas"
+
 	"k8s.io/klog"
 )
 
@@ -81,6 +83,11 @@ func getIdNamesMap() map[string]string {
 }
 
 func idnames(id string) string {
+	if name, err := cas.GetUserNameByID(id); err == nil {
+		return name
+	} else {
+		klog.Errorf("get user name by id error: %+v", err)
+	}
 	if name, ok := getIdNamesMap()[id]; ok {
 		return name
 	}

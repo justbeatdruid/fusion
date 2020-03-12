@@ -57,9 +57,9 @@ spec:
       containers:
       - command:
         - fusion-api-controller-manager
-        - -operator-host=119.3.248.187
-        - --operator-port=30081
-        - --portal-port=31337
+        - --operator-host=kong-kong-admin
+        - --operator-port=8001
+        - --portal-port=30080
         - -enable-leader-election
         - --v=5
         env:

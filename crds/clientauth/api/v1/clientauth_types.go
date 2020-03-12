@@ -30,8 +30,8 @@ type ClientauthSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 	Name      string `json:"name"`
 	Namespace string `json:"namespace"`
-	TokenIat  int64  `json:"tokenIat"`
-	TokenExp  int64  `json:"tokenExp"`
+	IssuedAt  int64  `json:"issuedAt"`
+	ExipreAt  int64  `json:"expireAt"`
 	Token     string `json:"token"`
 }
 
