@@ -3,7 +3,7 @@ package filter
 import (
 	//"strings"
 
-	"github.com/emicklei/go-restful"
+	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"net/http"
 
 	"github.com/chinamobile/nlpt/pkg/auth"
@@ -48,7 +48,6 @@ func (o *TokenFilter) Filter(req *restful.Request, resp *restful.Response, chain
 	token := req.HeaderParameter("X-auth-Token")
 	for _, t := range tokenList {
 		if t == token {
-			//TODO set username here
 			auth.SetAuthUser(req, auth.AuthUser{
 				Name:      o.getUserName(req),
 				Namespace: o.getUserNamespace(req),
@@ -61,6 +60,10 @@ func (o *TokenFilter) Filter(req *restful.Request, resp *restful.Response, chain
 }
 
 func (o *TokenFilter) getUserName(req *restful.Request) string {
+	uid := req.HeaderParameter("userId")
+	if len(uid) > 0 {
+		return uid
+	}
 	u := req.HeaderParameter("user")
 	if len(u) > 0 {
 		return u
@@ -69,7 +72,7 @@ func (o *TokenFilter) getUserName(req *restful.Request) string {
 }
 
 func (o *TokenFilter) getUserNamespace(req *restful.Request) string {
-	u := req.HeaderParameter("tenant")
+	u := req.HeaderParameter("tenantId")
 	if len(u) > 0 {
 		return u
 	}

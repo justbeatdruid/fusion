@@ -6,6 +6,7 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
+	"github.com/chinamobile/nlpt/pkg/audit"
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 )
 
@@ -25,6 +26,8 @@ type Config struct {
 	DataserviceConnector dw.Connector
 
 	TopicConfig *TopicConfig
+
+	Auditor *audit.Auditor
 }
 
 func (c *Config) GetDynamicClient() dynamicclient.Interface {

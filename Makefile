@@ -112,7 +112,7 @@ apply-binary:
 	go build -o bin/fusion-apply-controller-manager cmd/apply-controller-manager/apply-controller-manager.go
 
 apiserver-run:
-	LD_LIBRARY_PATH=$(shell pwd)/lib $(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5 --dataservice-data-host=10.160.32.24
+	LD_LIBRARY_PATH=$(shell pwd)/lib $(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5 --dataservice-data-host=10.160.32.24 --audit-host=10.160.32.24 --audit-port=30068 --cas-host=10.160.32.30 --cas-port=8000
 
 datasource-run:
 	$(shell pwd)/bin/fusion-datasource-controller-manager --kubeconfig=/root/.kube/config --v=5 --dataservice-host=10.160.32.24

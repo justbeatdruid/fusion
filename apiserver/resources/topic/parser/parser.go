@@ -2,7 +2,7 @@ package parser
 
 import (
 	"errors"
-	"github.com/emicklei/go-restful"
+	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"github.com/tealeg/xlsx"
 	"io"
 	"k8s.io/klog"

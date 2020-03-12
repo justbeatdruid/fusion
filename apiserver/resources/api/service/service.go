@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/chinamobile/nlpt/pkg/names"
-	"github.com/emicklei/go-restful"
+	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"io/ioutil"
 	"net/http"
 	"strconv"

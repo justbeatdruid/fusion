@@ -59,6 +59,10 @@ spec:
         - fusion-apiserver
         - --v=5
         - --dataservice-data-host=10.160.32.24
+        - --cas-host=10.160.32.30
+        - --cas-port=8000
+        - --audit-host=fusion-auditlog
+        - --audit-port=6868
         env:
         - name: MY_POD_NAMESPACE
           valueFrom:
