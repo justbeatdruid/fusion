@@ -173,7 +173,7 @@ func (s *Service) RegenerateToken(ca *Clientauth) (*Clientauth, error) {
 	}
 	//校验时间，token的过期时间必须大于当前时间
 	if ca.ExpireAt <= time.Now().Unix() {
-		return nil, fmt.Errorf("token expire time:%d must be greater than now", a.ExpireAt)
+		return nil, fmt.Errorf("token expire time:%d must be greater than now", ca.ExpireAt)
 	}
 	cad.Spec.ExipreAt = ca.ExpireAt
 	now := time.Now().Unix()
