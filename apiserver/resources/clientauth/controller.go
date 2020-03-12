@@ -281,7 +281,7 @@ func (c *controller) ListTopicByauthUser(caName string, cas []*service.Clientaut
 func (c *controller) ListTopicBytokenExp(tokenExp int64, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
 	for _, ca := range cas {
-		if ca.TokenExp < tokenExp {
+		if ca.ExpireAt < tokenExp {
 			casResult = append(casResult, ca)
 		}
 	}
