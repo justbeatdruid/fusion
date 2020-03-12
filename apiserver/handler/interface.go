@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/emicklei/go-restful"
+	"github.com/chinamobile/nlpt/pkg/go-restful"
 )
 
 type installer interface {

@@ -5,8 +5,9 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol"
 	"net/http"
 
-	"github.com/emicklei/go-restful"
+	"github.com/chinamobile/nlpt/pkg/go-restful"
 
+	"github.com/chinamobile/nlpt/apiserver/handler/callback"
 	"github.com/chinamobile/nlpt/apiserver/handler/filter"
 	"github.com/chinamobile/nlpt/apiserver/resources/api"
 	"github.com/chinamobile/nlpt/apiserver/resources/application"
@@ -43,6 +44,8 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 	for _, f := range filters {
 		wsContainer.Filter(f)
 	}
+
+	wsContainer.Callback(callback.NewAuditCaller(wsContainer, h.config.Auditor))
 
 	healthz.InstallHandler(wsContainer, checks...)
 

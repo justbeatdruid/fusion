@@ -23,6 +23,8 @@ var once sync.Once
 
 var cache *btree.BTree
 
+var a int
+
 func SetConnectionInfo(host string, port int) {
 	once.Do(func() {
 		casHost = host
@@ -35,7 +37,10 @@ func SetConnectionInfo(host string, port int) {
 			if err != nil {
 				klog.Errorf("sync user error: %+v", err)
 			} else {
-				klog.V(5).Infof("successfully sync %d users", count)
+				if a%180 == 0 {
+					klog.V(5).Infof("successfully sync %d users", count)
+					a++
+				}
 			}
 		}, time.Second*10, wait.NeverStop)
 	})

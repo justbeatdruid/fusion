@@ -3,7 +3,7 @@ package filter
 import (
 	//"strings"
 
-	"github.com/emicklei/go-restful"
+	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"log"
 )
 

@@ -14,6 +14,7 @@ import (
 	"k8s.io/klog"
 
 	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/audit"
 	"github.com/chinamobile/nlpt/pkg/auth/cas"
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 )
@@ -31,9 +32,9 @@ type ServerRunOptions struct {
 
 	Datasource  *DatasourceOptions
 	Dataservice *DataserviceOptions
-
-	Topic *TopicOptions
-	Cas   *CasOptions
+	Topic       *TopicOptions
+	Cas         *CasOptions
+	Audit       *AuditOptions
 }
 
 func NewServerRunOptions() *ServerRunOptions {
@@ -45,6 +46,7 @@ func NewServerRunOptions() *ServerRunOptions {
 		Dataservice: DefaultDataserviceOptions(),
 		Topic:       DefaultTopicOptions(),
 		Cas:         DefaultCasOptions(),
+		Audit:       DefaultAuditOptions(),
 	}
 	if len(s.CrdNamespace) == 0 {
 		klog.Infof("cannot find environmnent MY_POD_NAMESPACE, use default")
@@ -59,6 +61,7 @@ func (s *ServerRunOptions) Flags() cliflag.NamedFlagSets {
 	s.Dataservice.AddFlags(fss.FlagSet("data service"))
 	s.Topic.AddFlags(fss.FlagSet("topic"))
 	s.Cas.AddFlags(fss.FlagSet("cas"))
+	s.Audit.AddFlags(fss.FlagSet("audit"))
 	kfset := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(kfset)
 	fss.FlagSet("klog").AddGoFlagSet(kfset)
@@ -116,6 +119,7 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		DataserviceConnector: dw.NewConnector(s.Dataservice.MetadataHost, s.Dataservice.MetadataPort, s.Dataservice.DataHost, s.Dataservice.DataPort),
 
 		TopicConfig: appconfig.NewTopicConfig(s.Topic.Host, s.Topic.Port),
+		Auditor:     audit.NewAuditor(s.Audit.Host, s.Audit.Port),
 	}
 	cas.SetConnectionInfo(s.Cas.Host, s.Cas.Port)
 	return c, nil

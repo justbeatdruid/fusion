@@ -63,6 +63,9 @@ func (s *Service) GetApplication(id string) (*Application, error) {
 
 func (s *Service) DeleteApplication(id string) (*Application, error) {
 	app, err := s.Delete(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot delete object: %+v", err)
+	}
 	return ToModel(app), err
 }
 
