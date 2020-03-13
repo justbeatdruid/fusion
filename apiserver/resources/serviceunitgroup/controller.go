@@ -108,12 +108,14 @@ func (c *controller) ListServiceunitGroup(req *restful.Request) (int, *ListRespo
 			Message: fmt.Errorf("list serviceunitgroup error: %+v", err).Error(),
 		}
 	}
-	if len(page) == 0 && len(size) == 0 {
-		return http.StatusOK, &ListResponse{
-			Code: 0,
-			Data: db,
+	/*
+		if len(page) == 0 && len(size) == 0 {
+			return http.StatusOK, &ListResponse{
+				Code: 0,
+				Data: db,
+			}
 		}
-	}
+	*/
 	var sus ServiceunitList = db
 	data, err := util.PageWrap(sus, page, size)
 	if err != nil {
