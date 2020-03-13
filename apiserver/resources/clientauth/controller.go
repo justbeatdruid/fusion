@@ -228,7 +228,7 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 			}
 		}
 		ca = c.ListTopicByauthUser(authUser, ca)
-		ca = c.ListTopicBytokenExp(eas,eae,ca)
+		ca = c.ListTopicBytokenExp(eas, eae, ca)
 	} else if len(expireAtSta) > 0 && len(authUser) == 0 && len(createTimeSta) > 0 { //接收参数有expireAtSta和时间
 		eas, err := strconv.ParseInt(expireAtSta, 10, 64)
 		if err != nil {
@@ -258,8 +258,8 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
 			}
 		}
-		ca = c.ListTopicBytokenExp(eas, eae,ca)
-		ca = c.ListTopicBycreateTime(cts,cte,ca)
+		ca = c.ListTopicBytokenExp(eas, eae, ca)
+		ca = c.ListTopicBycreateTime(cts, cte, ca)
 	} else if len(expireAtSta) == 0 && len(authUser) > 0 && len(createTimeSta) > 0 { //接收参数有authUser和时间
 		cts, err := strconv.ParseInt(createTimeSta, 10, 64)
 		if err != nil {
@@ -276,7 +276,7 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 			}
 		}
 		ca = c.ListTopicByauthUser(authUser, ca)
-		ca = c.ListTopicBycreateTime(cts,cte,ca)
+		ca = c.ListTopicBycreateTime(cts, cte, ca)
 	} else if len(authUser) > 0 && len(expireAtSta) > 0 && len(createTimeSta) > 0 { //接收参数有authUser、expireAtSta、时间
 		eas, err := strconv.ParseInt(expireAtSta, 10, 64)
 		if err != nil {
@@ -307,14 +307,14 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 			}
 		}
 		ca = c.ListTopicByauthUser(authUser, ca)
-		ca = c.ListTopicBytokenExp(eas, eae,ca)
-		ca = c.ListTopicBycreateTime(cts,cte,ca)
+		ca = c.ListTopicBytokenExp(eas, eae, ca)
+		ca = c.ListTopicBycreateTime(cts, cte, ca)
 	}
 	//判断token是否有效
 	for _, cla := range ca {
-		if cla.ExpireAt > util.Now().Unix(){
+		if cla.ExpireAt > util.Now().Unix() {
 			cla.Effective = true
-		}else {
+		} else {
 			cla.Effective = false
 		}
 	}
@@ -356,7 +356,7 @@ func (c *controller) ListTopicBytokenExp(expireAtSta int64, expireAtEnd int64, c
 }
 
 //根据createTime匹配
-func (c *controller) ListTopicBycreateTime(createTimeSta int64,createTimeEnd int64, cas []*service.Clientauth) []*service.Clientauth {
+func (c *controller) ListTopicBycreateTime(createTimeSta int64, createTimeEnd int64, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
 	for _, ca := range cas {
 		if ca.CreatedAt < createTimeEnd && ca.CreatedAt > createTimeSta {

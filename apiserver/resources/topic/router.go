@@ -85,6 +85,7 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.deleteTopics).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
 }
 
 func (r *router) createTopic(request *restful.Request, response *restful.Response) {
@@ -130,3 +131,5 @@ func (r *router) importTopics(request *restful.Request, response *restful.Respon
 	code, result := r.controller.ImportTopics(request, response)
 	response.WriteHeaderAndEntity(code, result)
 }
+
+

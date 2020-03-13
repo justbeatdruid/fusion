@@ -32,7 +32,7 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 
 	crd.Spec = v1.ClientauthSpec{
 		Name:     app.Name,
-		Token: app.Token,
+		Token:    app.Token,
 		ExipreAt: app.ExpireAt,
 		IssuedAt: app.IssuedAt,
 	}
