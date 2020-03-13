@@ -141,7 +141,7 @@ func (a *Topicgroup) Validate() error {
 		}
 
 	}
-	
+
 	a.ID = names.NewID()
 	return nil
 }
