@@ -225,6 +225,18 @@ func (s *Service) updateApi(apiid string, restriction *v1.Restriction) (*apiv1.A
 	}
 	return api, nil
 }
+
+func (s *Service) BindOrUnbindApis(operation, id string, apis []v1.Api) (*Restriction, error) {
+	if operation == "unbind" {
+		return s.UnBindApi(id, apis)
+	} else if operation == "bind" {
+		return s.BindApi(id, apis)
+	} else {
+		return nil, fmt.Errorf("error operation type")
+	}
+
+}
+
 func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
 	restriction, err := s.Get(id)
 	if err != nil {

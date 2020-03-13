@@ -3,7 +3,7 @@ package auth
 import (
 	"fmt"
 
-	"github.com/emicklei/go-restful"
+	"github.com/chinamobile/nlpt/pkg/go-restful"
 )
 
 type AuthUser struct {

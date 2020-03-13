@@ -8,7 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/util"
 
-	"github.com/emicklei/go-restful"
+	"github.com/chinamobile/nlpt/pkg/go-restful"
 )
 
 type controller struct {

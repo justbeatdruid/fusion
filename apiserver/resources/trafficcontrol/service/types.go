@@ -3,12 +3,13 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
+
+	v1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
-	"k8s.io/klog"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 )
 
 type Trafficcontrol struct {
@@ -213,6 +214,7 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 			}
 		}
 	}
+
 	if _, ok = data["user"]; ok {
 		target.Spec.User = source.User
 	}

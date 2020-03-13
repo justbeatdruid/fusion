@@ -102,6 +102,9 @@ func (r *RestrictionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 				restriction.Status.Message = err.Error()
 			}
 		}
+		restriction.Status.Status = nlptv1.Updated
+		r.Update(ctx, restriction)
+
 	}
 	return ctrl.Result{}, nil
 }

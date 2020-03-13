@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/api/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
@@ -10,7 +11,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
 
-	"github.com/emicklei/go-restful"
+	"github.com/chinamobile/nlpt/pkg/go-restful"
 )
 
 type controller struct {
@@ -253,18 +254,21 @@ func (c *controller) BindApi(req *restful.Request) (int, interface{}) {
 }
 
 func (c *controller) Query(req *restful.Request) (int, interface{}) {
+	now := time.Now()
 	apiid := req.PathParameter(apiidPath)
 	req.Request.ParseForm()
 	// pass an array to query parameter example:
 	// http://localhost:8080?links[]=http://www.baidu.com&links[]=http://www.google.cn
 	if data, err := c.service.Query(apiid, req.Request.Form, req); err == nil {
 		return http.StatusOK, struct {
-			Code    int          `json:"code"`
-			Message string       `json:"message"`
-			Data    service.Data `json:"data"`
+			Code     int          `json:"code"`
+			Message  string       `json:"message"`
+			Data     service.Data `json:"data"`
+			TimeUsed int          `json:"timeUserInMilliSeconds"`
 		}{
-			Code: 0,
-			Data: data,
+			Code:     0,
+			Data:     data,
+			TimeUsed: int(time.Since(now) / time.Millisecond),
 		}
 	} else {
 		return http.StatusInternalServerError, struct {

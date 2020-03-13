@@ -2,12 +2,12 @@ package topic
 
 import (
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
-	"github.com/emicklei/go-restful"
+	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"net/http"
 )
 
 type router struct {
-	controller *controller "github.com/emicklei/go-restful"
+	controller *controller "github.com/chinamobile/nlpt/pkg/go-restful"
 }
 
 func NewRouter(cfg *config.Config) *router {
