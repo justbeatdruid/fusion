@@ -36,14 +36,19 @@ type Tables struct {
 	DataWarehouseTables []dw.Table  `json:"tables,omitempry"`
 }
 
+type Table struct {
+	RDBTable           *rdb.Table    `json:"rdbTable,omitempty"`
+	DataWarehouseTable *dw.TableInfo `json:"table,omitempry"`
+}
+
 type Fields struct {
 	RDBFields           []rdb.Field   `json:"rdbFields,omitempty"`
 	DataWarehouseFields []dw.Property `json:"properties,omitempty"`
 }
 
 type Field struct {
-	RDBField           *rdb.Field   `json:"rdbField,omitempty"`
 	DataWarehouseField *dw.Property `json:"property,omitempty"`
+	RDBField           *rdb.Field   `json:"rdbField,omitempty"`
 }
 
 /**
