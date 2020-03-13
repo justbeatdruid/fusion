@@ -307,6 +307,35 @@ rt:
 	return result, nil
 }
 
+func (s *Service) GetField(id, table, field string) (*Field, error) {
+	ds, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot datasource: %+v", err)
+	}
+	switch ds.Spec.Type {
+	case v1.RDBType:
+		return nil, fmt.Errorf("rdb not supported")
+	case v1.DataWarehouseType:
+		if ds.Spec.DataWarehouse == nil {
+			return nil, fmt.Errorf("datasource %s in type datawarehouse has no datawarehouse instance", ds.ObjectMeta.Name)
+		}
+		for _, apiTable := range ds.Spec.DataWarehouse.Tables {
+			if apiTable.Info.ID == table {
+				for _, p := range apiTable.Properties {
+					if p.ID == field {
+						dwp := dw.FromApiProperty(p)
+						return &Field{DataWarehouseField: &dwp}, nil
+					}
+				}
+				return nil, fmt.Errorf("cannot find field %s in datasource %s and table %s", field, ds.ObjectMeta.Name, apiTable.Info.Name)
+			}
+		}
+		return nil, fmt.Errorf("cannot find table %s in datasource %s", table, ds.ObjectMeta.Name)
+	default:
+		return nil, fmt.Errorf("wrong datasource type: %s", ds.Spec.Type)
+	}
+}
+
 func (s *Service) GetDataSourceByApiId(apiId string, parames string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
 	/*

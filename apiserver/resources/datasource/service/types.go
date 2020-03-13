@@ -41,6 +41,11 @@ type Fields struct {
 	DataWarehouseFields []dw.Property `json:"properties,omitempty"`
 }
 
+type Field struct {
+	RDBField           *rdb.Field   `json:"rdbField,omitempty"`
+	DataWarehouseField *dw.Property `json:"property,omitempty"`
+}
+
 /**
 mysql 连接
 */
