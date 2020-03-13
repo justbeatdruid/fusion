@@ -108,12 +108,14 @@ func (c *controller) ListApplicationGroup(req *restful.Request) (int, *ListRespo
 			Message: fmt.Errorf("list applicationgroup error: %+v", err).Error(),
 		}
 	}
-	if len(page) == 0 && len(size) == 0 {
-		return http.StatusOK, &ListResponse{
-			Code: 0,
-			Data: db,
+	/*
+		if len(page) == 0 && len(size) == 0 {
+			return http.StatusOK, &ListResponse{
+				Code: 0,
+				Data: db,
+			}
 		}
-	}
+	*/
 	var apps ApplicationList = db
 	data, err := util.PageWrap(apps, page, size)
 	if err != nil {
