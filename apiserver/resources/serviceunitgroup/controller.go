@@ -6,6 +6,7 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunitgroup/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/chinamobile/nlpt/pkg/go-restful"
 )
@@ -34,9 +35,9 @@ type DeleteResponse struct {
 }
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int                         `json:"code"`
-	Message string                      `json:"message"`
-	Data    []*service.ServiceunitGroup `json:"data"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
 
@@ -98,17 +99,46 @@ func (c *controller) DeleteServiceunitGroup(req *restful.Request) (int, *DeleteR
 }
 
 func (c *controller) ListServiceunitGroup(req *restful.Request) (int, *ListResponse) {
-	if db, err := c.service.ListServiceunitGroup(); err != nil {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	db, err := c.service.ListServiceunitGroup()
+	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list serviceunitgroup error: %+v", err).Error(),
 		}
-	} else {
+	}
+	if len(page) == 0 && len(size) == 0 {
 		return http.StatusOK, &ListResponse{
 			Code: 0,
 			Data: db,
 		}
 	}
+	var sus ServiceunitList = db
+	data, err := util.PageWrap(sus, page, size)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: fmt.Errorf("page error error: %+v", err).Error(),
+		}
+	}
+	return http.StatusOK, &ListResponse{
+		Code: 0,
+		Data: data,
+	}
+}
+
+type ServiceunitList []*service.ServiceunitGroup
+
+func (sus ServiceunitList) Len() int {
+	return len(sus)
+}
+
+func (sus ServiceunitList) GetItem(i int) (interface{}, error) {
+	if i >= len(sus) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return sus[i], nil
 }
 
 func (c *controller) UpdateServiceunitGroup(req *restful.Request) (int, *CreateResponse) {

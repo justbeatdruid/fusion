@@ -6,14 +6,14 @@ curl localhost:8001/api/v1/applies -H 'content-type:application/json' -v \
     "target": 
     {
       "type": "api",
-      "id": "65a391d7cbedd6bf"
+      "id": "0679e262eee94fc7"
     },
     "source":
     {
       "type": "application",
-      "id": "97e467eb2b734142"
+      "id": "f021282e899e1d8a"
     },
     "action": "bind",
-    "expireAt": "2020-11-10T15:04:05+08:00"
+    "expireAt": "2020-11-10 15:04:05"
   }
 }'
