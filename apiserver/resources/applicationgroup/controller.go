@@ -6,6 +6,7 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/applicationgroup/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/chinamobile/nlpt/pkg/go-restful"
 )
@@ -34,9 +35,9 @@ type DeleteResponse struct {
 }
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int                         `json:"code"`
-	Message string                      `json:"message"`
-	Data    []*service.ApplicationGroup `json:"data"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
 
@@ -98,17 +99,46 @@ func (c *controller) DeleteApplicationGroup(req *restful.Request) (int, *DeleteR
 }
 
 func (c *controller) ListApplicationGroup(req *restful.Request) (int, *ListResponse) {
-	if db, err := c.service.ListApplicationGroup(); err != nil {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	db, err := c.service.ListApplicationGroup()
+	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list applicationgroup error: %+v", err).Error(),
 		}
-	} else {
+	}
+	if len(page) == 0 && len(size) == 0 {
 		return http.StatusOK, &ListResponse{
 			Code: 0,
 			Data: db,
 		}
 	}
+	var apps ApplicationList = db
+	data, err := util.PageWrap(apps, page, size)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: fmt.Errorf("page error error: %+v", err).Error(),
+		}
+	}
+	return http.StatusOK, &ListResponse{
+		Code: 0,
+		Data: data,
+	}
+}
+
+type ApplicationList []*service.ApplicationGroup
+
+func (apps ApplicationList) Len() int {
+	return len(apps)
+}
+
+func (apps ApplicationList) GetItem(i int) (interface{}, error) {
+	if i >= len(apps) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return apps[i], nil
 }
 
 func (c *controller) UpdateApplicationGroup(req *restful.Request) (int, *CreateResponse) {
