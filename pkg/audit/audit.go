@@ -31,7 +31,7 @@ func (a *Auditor) NewEvent(tenantID, userID, eventName, eventResult, resourceTyp
 	tenantName := tenantID
 	userName, err := cas.GetUserNameByID(userID)
 	if err != nil {
-		userName = ""
+		userName = userID
 		klog.Errorf("cannot get username with id %s: %+v", userID, err)
 	}
 	e := event{
