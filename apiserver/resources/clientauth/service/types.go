@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+const (
+	DefaultNamespace = "default"
+)
+
 type Clientauth struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"`
@@ -32,9 +36,12 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 
 	crd.Spec = v1.ClientauthSpec{
 		Name:     app.Name,
-		Token: app.Token,
+		Token:    app.Token,
 		ExipreAt: app.ExpireAt,
 		IssuedAt: app.IssuedAt,
+	}
+	if len(crd.Spec.Namespace) == 0 {
+		crd.Spec.Namespace = DefaultNamespace
 	}
 	status := app.Status
 	if len(status) == 0 {
