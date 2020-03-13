@@ -55,7 +55,12 @@ func (c *httpConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
 		klog.V(5).Infof("create operation failed: %d %s", response.StatusCode, string(body))
 		return nil, fmt.Errorf("request for getting metadata error: receive wrong status code: %s", string(body))
 	}
-
+	if responseBody == nil {
+		return nil, fmt.Errorf("get null response")
+	}
+	if len(responseBody.Databases) == 0 {
+		return nil, fmt.Errorf("cannot get one database from response")
+	}
 	return responseBody, nil
 }
 
@@ -106,74 +111,6 @@ func NewConnector(metadatahost string, metadataport int, datahost string, datapo
 	}
 }
 
-var example = `
-{
-	"data": [{
-		"databaseName": "traffic",
-		"table_property": [{
-			"tableName": "logical",
-			"tableType": "事实逻辑表",
-			"tags": ["交通", "事故"],
-			"desc": "交通事故逻辑表信息",
-			"property": [{
-					"tableId": "2",
-					"id": 1,
-					"name": "TRAFFIC_ID",
-					"displayName": "事故ID",
-					"unique": "是",
-					"dataType": "整型",
-					"length": 15,
-					"desc": "",
-					"encryption": "不加密",
-					"encrypAlgorithm": "",
-					"primaryKey": "是"
-				},
-				{
-					"id": 5,
-					"name": "TRAFFIC_LOCATION",
-					"displayName": "发生地点",
-					"unique": "否",
-					"dataType": "通用字符串",
-					"length": 64,
-					"desc": "事故发生地点信息",
-					"encryption": "不加密",
-					"encrypAlgorithm": ""
-				}
-			]
-		}, {
-			"tableName": "dimension",
-			"tableType": "维度表",
-			"tags": ["维度"],
-			"desc": "维度信息表",
-			"property": [{
-					"tableId": "1",
-					"id": 3,
-					"name": "AA",
-					"displayName": "字段A",
-					"unique": "是",
-					"dataType": "整型",
-					"length": 15,
-					"desc": "",
-					"encryption": "不加密",
-					"encrypAlgorithm": "",
-					"primaryKey": "是"
-				},
-				{
-					"id": 5,
-					"name": "BB",
-					"displayName": "字段B",
-					"unique": "否",
-					"dataType": "通用字符串",
-					"length": 64,
-					"desc": "字段B描述",
-					"encryption": "不加密",
-					"encrypAlgorithm": ""
-				}
-			]
-		}]
-	}]
-}`
-
 type fakeConnector struct{}
 
 func (fakeConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
@@ -184,6 +121,11 @@ func (fakeConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
 	}
 	return result, nil
 }
+
 func (fakeConnector) QueryData(v1.Query) (v1.Result, error) {
 	return v1.Result{}, nil
+}
+
+func FakeConnector() Connector {
+	return fakeConnector{}
 }

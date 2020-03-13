@@ -1,0 +1,5 @@
+package datawarehouse
+
+var example = `
+
+`
