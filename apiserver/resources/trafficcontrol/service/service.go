@@ -73,6 +73,9 @@ func (s *Service) UpdateTrafficcontrol(id string, reqData interface{}) (*Traffic
 	}
 	//更新crd的状态为开始更新
 	crd.Status.Status = v1.Update
+	for index := range crd.Spec.Apis {
+		crd.Spec.Apis[index].Result = v1.INIT
+	}
 	su, err := s.Update(crd)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to update: %+v", err)
@@ -279,6 +282,9 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 		})
 		//update status bind
 		traffic.Status.Status = v1.Bind
+		for index := range traffic.Spec.Apis {
+			traffic.Spec.Apis[index].Result = v1.INIT
+		}
 		if _, err = s.updateApi(api.ID, traffic); err != nil {
 			return nil, fmt.Errorf("cannot update api traffic")
 		}
@@ -310,6 +316,9 @@ func (s *Service) UnBindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 		//解除绑定
 		//update status unbind
 		traffic.Status.Status = v1.UnBind
+		for index := range traffic.Spec.Apis {
+			traffic.Spec.Apis[index].Result = v1.INIT
+		}
 		traffic.ObjectMeta.Labels[api.ID] = "false"
 		if _, err = s.updateApi(api.ID, traffic); err != nil {
 			return nil, fmt.Errorf("cannot update api traffic")
