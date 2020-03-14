@@ -222,7 +222,7 @@ func (r *Operator) AddSpecialAppRateLimit(db *nlptv1.Trafficcontrol, consumer []
 		api := db.Spec.Apis[index]
 		if db.ObjectMeta.Labels[api.ID] == "true" && len(api.SpecialID) == 0 {
 			id := api.KongID
-			(*db).Spec.Apis[index].Result = nlptv1.SUCCESS
+			//(*db).Spec.Apis[index].Result = nlptv1.SUCCESS
 			klog.Infof("begin create rate-limiting by conusmer %s %s", id, consumer)
 			for i := 0; i < len(consumer); i++ {
 				var rateId string
@@ -257,7 +257,8 @@ func (r *Operator) DeleteSpecialAppRateLimit(db *nlptv1.Trafficcontrol) (err err
 				api.SpecialID = append(api.SpecialID[:i], api.SpecialID[i+1:]...)
 			}
 			klog.Infof("delete rate-limiting result is ok")
-			db.Spec.Apis = append(db.Spec.Apis[:index], db.Spec.Apis[index+1:]...)
+			(*db).Spec.Apis = append((*db).Spec.Apis[:index], (*db).Spec.Apis[index+1:]...)
+			klog.Infof("delete rate-limiting result is ok %v", (*db).Spec.Apis)
 		} else {
 			index = index + 1
 		}
@@ -371,9 +372,65 @@ func (r *Operator) UpdateRouteLimitByKong(db *nlptv1.Trafficcontrol) (err error)
 }
 
 //UpdateSpecialAppRateLimitByKong...
+func (r *Operator) UpdateSpecialAppRateLimitConfig(db *nlptv1.Trafficcontrol, consumer []string) (err error) {
+	for index, value := range db.Spec.Apis {
+		for j := range consumer {
+			if j < len(value.SpecialID) {
+				//patch
+				klog.Infof("begin update rate-limiting by consumer %s %s", value.KongID, consumer)
+				request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+				request = request.Patch(fmt.Sprintf("http://%s:%d/routes/%s/plugins/%s", r.Host, r.Port, value.KongID, value.SpecialID[j]))
+				for k, v := range headers {
+					request = request.Set(k, v)
+				}
+				request = request.Retry(3, 5*time.Second, retryStatus...)
+				requestBody := &RateRequestBody{}
+				requestBody.Name = "rate-limiting"
+				requestBody.Config.Minute = db.Spec.Config.Special[j].Minute
+				requestBody.Consumer.ID = consumer[j]
+				response, body, errs := request.Send(requestBody).EndStruct(&RateResponseBody{})
+				if len(errs) > 0 || response.StatusCode != 200 {
+					klog.Infof("update rate by consumer error: %+v", errs)
+					db.Spec.Apis[index].Result = nlptv1.FAILED
+					return fmt.Errorf("request for update rate by conusmer error: %+v, code:%v, body:%v", errs, response.StatusCode, string(body))
+				}
+			}
+			if j >= len(db.Spec.Apis[index].SpecialID) {
+				//添加多余的app
+				klog.Infof("update need create rate-limiting %s", consumer[j])
+				var rateId string
+				rateId, err := r.AddSpecialAppRateLimitByKong(db, value.KongID, consumer[j], j)
+				if err != nil {
+					(*db).Spec.Apis[index].Result = nlptv1.FAILED
+					klog.Infof("create by update app %s rate-limiting failed", db.Spec.Config.Special[j].ID)
+					return fmt.Errorf("create by update rate-limiting error %+v", err)
+				}
+				db.Spec.Apis[index].SpecialID = append(db.Spec.Apis[index].SpecialID, rateId)
+			}
+		}
+		if len(consumer) < len(db.Spec.Apis[index].SpecialID) {
+			//delete 删除多余的app
+			klog.Infof("update need delete rate-limiting %d and %d", len(consumer), len(value.SpecialID))
+			for i := len(consumer); i < len(db.Spec.Apis[index].SpecialID); {
+				err := r.DeleteRateLimitByKong(db.Spec.Apis[index].SpecialID[i])
+				if err != nil {
+					(*db).Spec.Apis[index].Result = nlptv1.FAILED
+					klog.Infof("delete by update %s rate-limiting failed", db.Spec.Config.Special[i].ID)
+					return fmt.Errorf("delete by update rate-limiting error %+v", err)
+				}
+				db.Spec.Apis[index].SpecialID = append(db.Spec.Apis[index].SpecialID[:i], db.Spec.Apis[index].SpecialID[i+1:]...)
+			}
+			klog.Infof("delete by update rate-limiting result is ok")
+		}
+		db.Spec.Apis[index].Result = nlptv1.SUCCESS
+	}
+	return nil
+}
+
+//UpdateSpecialAppRateLimitByKong...
 func (r *Operator) UpdateSpecialAppRateLimit(db *nlptv1.Trafficcontrol, consumer []string) (err error) {
 	for index, value := range db.Spec.Apis {
-		for _, v := range value.SpecialID {
+		for index, v := range value.SpecialID {
 			for j := range consumer {
 				klog.Infof("begin update rate-limiting by conusmer %s %s", value.KongID, consumer)
 				request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
@@ -388,9 +445,9 @@ func (r *Operator) UpdateSpecialAppRateLimit(db *nlptv1.Trafficcontrol, consumer
 				requestBody.Consumer.ID = consumer[j]
 				response, body, errs := request.Send(requestBody).EndStruct(&RateResponseBody{})
 				if len(errs) > 0 || response.StatusCode != 200 {
-					klog.Infof("create rate by consumer error: %+v", errs)
+					klog.Infof("update rate by consumer error: %+v", errs)
 					db.Spec.Apis[index].Result = nlptv1.FAILED
-					return fmt.Errorf("request for create rate by conusmer error: %+v, code:%v, body:%v", errs, response.StatusCode, string(body))
+					return fmt.Errorf("request for update rate by conusmer error: %+v, code:%v, body:%v", errs, response.StatusCode, string(body))
 				}
 			}
 		}

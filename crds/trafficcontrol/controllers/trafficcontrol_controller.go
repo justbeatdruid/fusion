@@ -117,15 +117,15 @@ func (r *TrafficcontrolReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 	if trafficcontrol.Status.Status == nlptv1.Update {
 		trafficcontrol.Status.Status = nlptv1.Updating
 		r.Update(ctx, trafficcontrol)
-		klog.Infof("trafficcontrol is updating")
+		klog.Infof("traffic control is updating")
 		if trafficcontrol.Spec.Type != nlptv1.SPECAPPC {
 			if err := r.Operator.UpdateRouteLimitByKong(trafficcontrol); err != nil {
 				//TODO abnormal
-				klog.Infof("special app trafficcontrol unbind err")
+				klog.Infof("special app traffic control update err")
 				trafficcontrol.Status.Status = nlptv1.Error
 				trafficcontrol.Status.Message = err.Error()
 			} else {
-				trafficcontrol.Status.Status = nlptv1.Update
+				trafficcontrol.Status.Status = nlptv1.Updated
 				trafficcontrol.Status.Message = "success"
 			}
 		} else {
@@ -134,13 +134,13 @@ func (r *TrafficcontrolReconciler) Reconcile(req ctrl.Request) (ctrl.Result, err
 			if err != nil {
 				return ctrl.Result{}, nil
 			}
-			if err = r.Operator.UpdateSpecialAppRateLimit(trafficcontrol, consumerList); err != nil {
-				klog.Infof("special app trafficcontrol bind err")
+			if err = r.Operator.UpdateSpecialAppRateLimitConfig(trafficcontrol, consumerList); err != nil {
+				klog.Infof("special app traffic control update err")
 				trafficcontrol.Status.Status = nlptv1.Error
 				trafficcontrol.Status.Message = err.Error()
 			} else {
-				klog.Infof("special app trafficcontrol bind sunccess")
-				trafficcontrol.Status.Status = nlptv1.Update
+				klog.Infof("special app traffic control update success")
+				trafficcontrol.Status.Status = nlptv1.Updated
 				trafficcontrol.Status.Message = "success"
 			}
 		}
