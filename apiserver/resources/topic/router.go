@@ -78,10 +78,18 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.importTopics).
 		Do(returns200, returns500))
 
-	ws.Route(ws.POST("/topics/{topic-id}/permissions/{client-auth}").
+	ws.Route(ws.POST("/topics/{id}/permissions/{auth-user}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("grant permissions ").
+		To(r.deleteTopics).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	ws.Route(ws.PUT("/topics/{id}/permissions/{auth-user}").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("modify permissions ").
 		To(r.deleteTopics).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
@@ -132,4 +140,6 @@ func (r *router) importTopics(request *restful.Request, response *restful.Respon
 	response.WriteHeaderAndEntity(code, result)
 }
 
+func (r *router) grantPermissions(request *restful.Request, response *restful.Response) {
 
+}

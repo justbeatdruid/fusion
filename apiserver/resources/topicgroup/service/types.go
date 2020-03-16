@@ -7,18 +7,19 @@ import (
 )
 
 const (
-	MIN_MESSAGE_TTL = -1
-	producer_request_hold = "producer_request_hold"
-	producer_exception = "producer_exception"
+	MIN_MESSAGE_TTL           = -1
+	producer_request_hold     = "producer_request_hold"
+	producer_exception        = "producer_exception"
 	consumer_backlog_eviction = "consumer_backlog_eviction"
 )
+
 type Topicgroup struct {
 	ID        string    `json:"id"`
 	Name      string    `json:"name"` //namespace名称
 	Namespace string    `json:"namespace"`
 	Tenant    string    `json:"tenant"`             //namespace的所属租户名称
 	Policies  Policies  `json:"policies,omitempty"` //namespace的策略
-	CreatedAt  int64     `json:createdAt`  //创建时间
+	CreatedAt int64     `json:createdAt`            //创建时间
 	Status    v1.Status `json:"status"`
 	Message   string    `json:"message"`
 }
@@ -96,7 +97,7 @@ func (a *Topicgroup) Validate() error {
 	}
 
 	p := a.Policies
-  	//TODO 参数校验待验证
+	//TODO 参数校验待验证
 	if p != (Policies{}) {
 		if p.MessageTtlInSeconds < MIN_MESSAGE_TTL {
 			return fmt.Errorf("messageTtlInSeconds is invalid: %d", p.MessageTtlInSeconds)
@@ -110,7 +111,6 @@ func (a *Topicgroup) Validate() error {
 			return fmt.Errorf("retentionTimeInMinutes is invalid: %d", p.RetentionPolicies.RetentionSizeInMB)
 		}
 
-
 		if p.NumBundles <= 0 {
 			return fmt.Errorf("numBundles is invalid: %d", p.NumBundles)
 		}
@@ -120,7 +120,7 @@ func (a *Topicgroup) Validate() error {
 			case producer_request_hold:
 			case consumer_backlog_eviction:
 			case producer_exception:
-				break;
+				break
 			default:
 				return fmt.Errorf("backlogQuota policy is invalid: %s", p.BacklogQuota.Policy)
 			}
@@ -128,16 +128,16 @@ func (a *Topicgroup) Validate() error {
 	} else {
 		//如果此参数未填，则返回默认值
 		a.Policies = Policies{
-			RetentionPolicies:   RetentionPolicies{
-				RetentionTimeInMinutes:0,
-				RetentionSizeInMB:0,
+			RetentionPolicies: RetentionPolicies{
+				RetentionTimeInMinutes: 0,
+				RetentionSizeInMB:      0,
 			},
 			MessageTtlInSeconds: -1,
-			BacklogQuota:        BacklogQuota{
-				Limit:-1,
-				Policy:producer_request_hold,
+			BacklogQuota: BacklogQuota{
+				Limit:  -1,
+				Policy: producer_request_hold,
 			},
-			NumBundles:          4,
+			NumBundles: 4,
 		}
 
 	}
