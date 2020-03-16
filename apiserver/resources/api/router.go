@@ -17,7 +17,8 @@ func NewRouter(cfg *config.Config) *router {
 }
 
 const (
-	apiidPath = "apiid"
+	apiidPath    = "apiid"
+	tenantidPath = "tenantid"
 )
 
 func (r *router) Install(ws *restful.WebService) {
@@ -92,6 +93,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.GET(fmt.Sprintf("/apis/{%s}/{%s}/data", tenantidPath, apiidPath)).
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("query api data").
+		To(r.kongQuery).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.POST("/api/test").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -140,6 +149,10 @@ func (r *router) bindApi(request *restful.Request, response *restful.Response) {
 
 func (r *router) query(request *restful.Request, response *restful.Response) {
 	process(r.controller.Query, request, response)
+}
+
+func (r *router) kongQuery(request *restful.Request, response *restful.Response) {
+	process(r.controller.KongQuery, request, response)
 }
 
 func (r *router) testApi(request *restful.Request, response *restful.Response) {
