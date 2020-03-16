@@ -4,6 +4,7 @@ import (
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"net/http"
+	"os"
 )
 
 type router struct {
@@ -124,6 +125,8 @@ func (r *router) exportTopics(request *restful.Request, response *restful.Respon
 	response.Header().Add("Content-Disposition", "attachment;filename=topics.xlsx")
 	response.Header().Add("Content-Type", "application/vnd.ms-excel")
 	http.ServeFile(response.ResponseWriter, request.Request, "/tmp/topics.xlsx")
+	os.Remove("/tmp/topics.xlsx")
+
 }
 
 func (r *router) importTopics(request *restful.Request, response *restful.Response) {
