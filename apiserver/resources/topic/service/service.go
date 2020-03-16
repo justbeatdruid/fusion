@@ -279,3 +279,30 @@ func (s *Service) IsTopicExist(url string) bool {
 	}
 
 }
+
+func (s *Service) GrantPermissions(topicId string, authUserId string, actions Actions) (*Topic, error) {
+	tp, err := s.GetTopic(topicId)
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+
+	perm := Permission{
+		AuthUserID:   authUserId,
+		AuthUserName: "",
+		Actions:      actions,
+	}
+
+	tp.Permissions = append(tp.Permissions, perm)
+	if err := perm.Validate(); err != nil {
+		return nil, fmt.Errorf("bad request: %+v", err)
+	}
+
+	tp.Status = v1.Update
+	v1Tp, err := s.UpdateStatus(ToAPI(tp))
+	if err != nil {
+		return nil, fmt.Errorf("cannot update object: %+v", err)
+	}
+
+	return ToModel(v1Tp), nil
+
+}

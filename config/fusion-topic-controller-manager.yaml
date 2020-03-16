@@ -60,6 +60,7 @@ spec:
         - -enable-leader-election
         - --pulsar-host=10.160.32.24
         - --pulsar-port=30002
+        - --pulsar-auth-enable=false
         - --v=5
         env:
         - name: MY_POD_NAMESPACE

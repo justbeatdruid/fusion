@@ -28,6 +28,7 @@ type BacklogQuota struct {
 type Operator struct {
 	Host string
 	Port int
+	AuthEnable bool
 }
 
 const namespaceUrl, protocol, success204 = "/admin/v2/namespaces/%s/%s", "http", 204

@@ -33,6 +33,7 @@ type Wrapped struct {
 type CreateResponse = Wrapped
 type CreateRequest = Wrapped
 type DeleteResponse = Wrapped
+type GrantResponse = Wrapped
 
 /*type DeleteResponse struct {
 	Code    int    `json:"code"`
@@ -61,6 +62,10 @@ type ImportData struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Url     string `json:"url"`
+}
+
+type GrantPermissionRequest struct {
+	Actions service.Actions `json:"actions"`
 }
 
 func (c *controller) CreateTopic(req *restful.Request) (int, *CreateResponse) {
@@ -465,6 +470,31 @@ func (c *controller) ExportTopics(req *restful.Request) {
 	}
 }
 
+func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse) {
+	id := req.PathParameter("id")
+	authUserId := req.PathParameter("auth-user-id")
+
+	actions := service.Actions{}
+	if err := req.ReadEntity(actions); err != nil {
+		return http.StatusInternalServerError, &GrantResponse{
+			Code:    1,
+			Message: fmt.Errorf("grant permissions error: %+v", err).Error(),
+		}
+	}
+
+	if tp, err := c.service.GrantPermissions(id, authUserId, actions); err != nil {
+		return http.StatusInternalServerError, &GrantResponse{
+			Code:    2,
+			Message: fmt.Errorf("create database error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &GrantResponse{
+			Code: 0,
+			Data: tp,
+		}
+	}
+
+}
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
 }

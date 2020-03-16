@@ -79,7 +79,7 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.importTopics).
 		Do(returns200, returns500))
 
-	ws.Route(ws.POST("/topics/{id}/permissions/{auth-user}").
+	ws.Route(ws.POST("/topics/{id}/permissions/{auth-user-id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("grant permissions ").
@@ -87,7 +87,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.PUT("/topics/{id}/permissions/{auth-user}").
+	ws.Route(ws.PUT("/topics/{id}/permissions/{auth-user-id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("modify permissions ").
