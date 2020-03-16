@@ -42,8 +42,8 @@ type Message struct {
 }
 
 const (
-	CONSUME = "consume"
-	PRODUCE = "produce"
+	Consume = "consume"
+	Produce = "produce"
 )
 
 // only used in creation options
@@ -135,4 +135,22 @@ func (a *Topic) GetUrl() (url string) {
 	build.WriteString(a.Name)
 
 	return build.String()
+}
+
+func (p *Permission) Validate() error {
+	for k, v := range map[string]string{
+		"authUserId": p.AuthUserID,
+	} {
+		if len(v) == 0 {
+			return fmt.Errorf("%s is null", k)
+		}
+	}
+
+	for _, a := range p.Actions {
+		if a != Consume && a != Produce {
+			return fmt.Errorf("action:%s is invalid", a)
+		}
+	}
+
+	return nil
 }
