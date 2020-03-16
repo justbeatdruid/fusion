@@ -68,7 +68,7 @@ func ToAPI(api *Api) *v1.Api {
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
 
 	crd.ObjectMeta.Name = api.ID
-	crd.ObjectMeta.Namespace = crdNamespace
+	crd.ObjectMeta.Namespace = api.Namespace
 	crd.ObjectMeta.Labels = make(map[string]string)
 	crd.ObjectMeta.Labels[v1.ServiceunitLabel] = api.Serviceunit.ID
 	crd.Spec = v1.ApiSpec{
@@ -227,7 +227,7 @@ func (s *Service) Validate(a *Api) error {
 		return fmt.Errorf("name is null")
 	}
 
-	apiList, err := s.ListApis()
+	apiList, err := s.ListApis(a.Namespace)
 	if err != nil {
 		return fmt.Errorf("cannot list api object: %+v", err)
 	}
@@ -257,7 +257,7 @@ func (s *Service) Validate(a *Api) error {
 	}
 	a.ReturnType = v1.Json
 
-	su, err := s.getServiceunit(a.Serviceunit.ID)
+	su, err := s.getServiceunit(a.Serviceunit.ID, a.Namespace)
 	if err != nil {
 		return fmt.Errorf("cannot get serviceunit: %+v", err)
 	}
@@ -347,7 +347,7 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	}
 	if _, ok := data["name"]; ok {
 		if target.Spec.Name != source.Name {
-			apiList, err := s.ListApis()
+			apiList, err := s.ListApis(target.ObjectMeta.Namespace)
 			if err != nil {
 				return fmt.Errorf("cannot list api object: %+v", err)
 			}

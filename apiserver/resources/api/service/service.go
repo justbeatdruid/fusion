@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"github.com/chinamobile/nlpt/pkg/go-restful"
-	"github.com/chinamobile/nlpt/pkg/names"
 	"io/ioutil"
 	"net/http"
 	"strconv"
@@ -18,34 +16,42 @@ import (
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
+	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 )
 
-var crdNamespace = "default"
+var defaultNamespace = "default"
 
 type Service struct {
+	kubeClient        *clientset.Clientset
 	client            dynamic.NamespaceableResourceInterface
 	serviceunitClient dynamic.NamespaceableResourceInterface
 	applicationClient dynamic.NamespaceableResourceInterface
 	datasourceClient  dynamic.NamespaceableResourceInterface
 
+	tenantEnabled bool
+
 	dataService dw.Connector
 }
 
-func NewService(client dynamic.Interface, dsConnector dw.Connector) *Service {
+func NewService(client dynamic.Interface, dsConnector dw.Connector, kubeClient *clientset.Clientset, tenantEnabled bool) *Service {
 	return &Service{
+		kubeClient:        kubeClient,
 		client:            client.Resource(v1.GetOOFSGVR()),
 		serviceunitClient: client.Resource(suv1.GetOOFSGVR()),
 		applicationClient: client.Resource(appv1.GetOOFSGVR()),
 		datasourceClient:  client.Resource(dsv1.GetOOFSGVR()),
 
 		dataService: dsConnector,
+
+		tenantEnabled: tenantEnabled,
 	}
 }
 
@@ -53,15 +59,18 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	if err := s.Validate(model); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
+	var crdNamespace = model.Namespace
 	// check serviceunit
 	//get serviceunit kongID
 	var su *suv1.Serviceunit
-	su, err := s.getServiceunit(model.Serviceunit.ID)
+	su, err := s.getServiceunit(model.Serviceunit.ID, crdNamespace)
 	if err != nil {
 		return nil, fmt.Errorf("get serviceunit error: %+v", err)
 	}
-	if !user.WritePermitted(model.Users.Owner.ID, su.ObjectMeta.Labels) {
-		return nil, fmt.Errorf("user %s has no permission for writting serviceunit %s", model.Users.Owner.ID, su.ObjectMeta.Name)
+	if !s.tenantEnabled {
+		if !user.WritePermitted(model.Users.Owner.ID, su.ObjectMeta.Labels) {
+			return nil, fmt.Errorf("user %s has no permission for writting serviceunit %s", model.Users.Owner.ID, su.ObjectMeta.Name)
+		}
 	}
 
 	// refill datawarehouse query
@@ -132,14 +141,19 @@ func CanExeAction(api *v1.Api, action v1.Action) error {
 	return nil
 }
 
-func (s *Service) PatchApi(id string, data interface{}) (*Api, error) {
-	api, err := s.Get(id)
+func (s *Service) PatchApi(id string, data interface{}, opts ...util.OpOption) (*Api, error) {
+	api, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	err = CanExeAction(api, v1.Update)
 	if err != nil {
 		return nil, fmt.Errorf("cannot exec: %+v", err)
+	}
+	if ok, err := s.writable(api, opts...); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, fmt.Errorf("user has no write permission for serviceunit")
 	}
 	if err = s.assignment(api, data); err != nil {
 		return nil, err
@@ -154,7 +168,7 @@ func (s *Service) PatchApi(id string, data interface{}) (*Api, error) {
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-	crd, err = s.client.Namespace(crdNamespace).Update(crd, metav1.UpdateOptions{})
+	crd, err = s.client.Namespace(api.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error update crd: %+v", err)
 	}
@@ -166,23 +180,27 @@ func (s *Service) ListApi(suid, appid string, opts ...util.OpOption) ([]*Api, er
 		return nil, fmt.Errorf("i am not sure if it is suitable to get api with application id and service unit id, but it make no sense")
 	}
 	// check opts.user is permitted for application and serviceunit
-	userid := util.OpList(opts...).User()
-	if len(appid) > 0 {
-		app, err := s.getApplication(appid)
-		if err != nil {
-			return nil, fmt.Errorf("cannot get application: %+v", err)
+	if !s.tenantEnabled {
+		op := util.OpList(opts...)
+		userid := op.User()
+		ns := defaultNamespace
+		if len(appid) > 0 {
+			app, err := s.getApplication(appid, ns)
+			if err != nil {
+				return nil, fmt.Errorf("cannot get application: %+v", err)
+			}
+			if !user.ReadPermitted(userid, app.ObjectMeta.Labels) {
+				return nil, fmt.Errorf("permitted denied of application %s", appid)
+			}
 		}
-		if !user.ReadPermitted(userid, app.ObjectMeta.Labels) {
-			return nil, fmt.Errorf("permitted denied of application %s", appid)
-		}
-	}
-	if len(suid) > 0 {
-		su, err := s.getServiceunit(suid)
-		if err != nil {
-			return nil, fmt.Errorf("cannot get serviceunit: %+v", err)
-		}
-		if !user.ReadPermitted(userid, su.ObjectMeta.Labels) {
-			return nil, fmt.Errorf("permitted denied of service unit %s", suid)
+		if len(suid) > 0 {
+			su, err := s.getServiceunit(suid, ns)
+			if err != nil {
+				return nil, fmt.Errorf("cannot get serviceunit: %+v", err)
+			}
+			if !user.ReadPermitted(userid, su.ObjectMeta.Labels) {
+				return nil, fmt.Errorf("permitted denied of service unit %s", suid)
+			}
 		}
 	}
 	apis, err := s.List(suid, appid, opts...)
@@ -203,23 +221,36 @@ func (s *Service) ListApi(suid, appid string, opts ...util.OpOption) ([]*Api, er
 	return result, nil
 }
 
-func (s *Service) GetApi(id string) (*Api, error) {
-	api, err := s.Get(id)
+func (s *Service) GetApi(id string, opts ...util.OpOption) (*Api, error) {
+	api, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	return ToModel(api), nil
 }
 
-func (s *Service) DeleteApi(id string) (*Api, error) {
-	api, err := s.Delete(id)
+func (s *Service) DeleteApi(id string, opts ...util.OpOption) (*Api, error) {
+	api, err := s.Get(id, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("get crd by id error: %+v", err)
+	}
+	err = CanExeAction(api, v1.Delete)
+	if err != nil {
+		return nil, fmt.Errorf("cannot exec: %+v", err)
+	}
+	if ok, err := s.writable(api, opts...); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, fmt.Errorf("user has no write permission for serviceunit")
+	}
+	api, err = s.Delete(api)
 	if err != nil {
 		return nil, err
 	}
 	return ToModel(api), nil
 }
 
-func (s *Service) PublishApi(id string) (*Api, error) {
+func (s *Service) PublishApi(id string, opts ...util.OpOption) (*Api, error) {
 	api, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
@@ -227,6 +258,11 @@ func (s *Service) PublishApi(id string) (*Api, error) {
 	err = CanExeAction(api, v1.Publish)
 	if err != nil {
 		return nil, fmt.Errorf("cannot exec: %+v", err)
+	}
+	if ok, err := s.writable(api, opts...); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, fmt.Errorf("user has no write permission for serviceunit")
 	}
 	//TODO version随机生成
 	api.Spec.PublishInfo.Version = names.NewID()
@@ -240,7 +276,7 @@ func (s *Service) PublishApi(id string) (*Api, error) {
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-	crd, err = s.client.Namespace(crdNamespace).Update(crd, metav1.UpdateOptions{})
+	crd, err = s.client.Namespace(api.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error update crd: %+v", err)
 	}
@@ -248,14 +284,19 @@ func (s *Service) PublishApi(id string) (*Api, error) {
 	return ToModel(api), err
 }
 
-func (s *Service) OfflineApi(id string) (*Api, error) {
-	api, err := s.Get(id)
+func (s *Service) OfflineApi(id string, opts ...util.OpOption) (*Api, error) {
+	api, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	err = CanExeAction(api, v1.Offline)
 	if err != nil {
 		return nil, fmt.Errorf("cannot exec: %+v", err)
+	}
+	if ok, err := s.writable(api, opts...); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, fmt.Errorf("user has no write permission for serviceunit")
 	}
 	//下线API
 	api.Status.Status = v1.Init
@@ -266,7 +307,7 @@ func (s *Service) OfflineApi(id string) (*Api, error) {
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-	crd, err = s.client.Namespace(crdNamespace).Update(crd, metav1.UpdateOptions{})
+	crd, err = s.client.Namespace(api.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error offline crd: %+v", err)
 	}
@@ -275,6 +316,17 @@ func (s *Service) OfflineApi(id string) (*Api, error) {
 }
 
 func (s *Service) Create(api *v1.Api) (*v1.Api, error) {
+	var crdNamespace = defaultNamespace
+	if s.tenantEnabled {
+		crdNamespace = api.ObjectMeta.Namespace
+		if len(crdNamespace) == 0 {
+			return nil, fmt.Errorf("namespace not set")
+		}
+	} else {
+		api.ObjectMeta.Namespace = defaultNamespace
+	}
+	// no need to ensure namespace in k8s. for serviceunit already in this namespace
+
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -295,7 +347,17 @@ func (s *Service) Create(api *v1.Api) (*v1.Api, error) {
 }
 
 func (s *Service) List(suid, appid string, opts ...util.OpOption) (*v1.ApiList, error) {
-	group := util.OpList(opts...).Group()
+	op := util.OpList(opts...)
+	group := op.Group()
+	ns := op.Namespace()
+	var crdNamespace = defaultNamespace
+	if s.tenantEnabled {
+		if len(ns) == 0 {
+			return nil, fmt.Errorf("namespace not set")
+		}
+		crdNamespace = ns
+	}
+
 	conditions := []string{}
 	if len(group) > 0 {
 		conditions = append(conditions, fmt.Sprintf("%s=%s", appv1.GroupLabel, group))
@@ -320,7 +382,8 @@ func (s *Service) List(suid, appid string, opts ...util.OpOption) (*v1.ApiList, 
 	return apis, nil
 }
 
-func (s *Service) ListApis() (*v1.ApiList, error) {
+func (s *Service) ListApis(crdNamespace string) (*v1.ApiList, error) {
+
 	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
@@ -333,7 +396,14 @@ func (s *Service) ListApis() (*v1.ApiList, error) {
 	return apis, nil
 }
 
-func (s *Service) Get(id string) (*v1.Api, error) {
+func (s *Service) Get(id string, opts ...util.OpOption) (*v1.Api, error) {
+	var crdNamespace = defaultNamespace
+	if s.tenantEnabled {
+		crdNamespace = util.OpList(opts...).Namespace()
+		if len(crdNamespace) == 0 {
+			return nil, fmt.Errorf("namespace not set")
+		}
+	}
 	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -346,7 +416,7 @@ func (s *Service) Get(id string) (*v1.Api, error) {
 	return api, nil
 }
 
-func (s *Service) ForceDelete(id string) error {
+func (s *Service) ForceDelete(id, crdNamespace string) error {
 	err := s.client.Namespace(crdNamespace).Delete(id, &metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("error delete crd: %+v", err)
@@ -354,15 +424,7 @@ func (s *Service) ForceDelete(id string) error {
 	return nil
 }
 
-func (s *Service) Delete(id string) (*v1.Api, error) {
-	api, err := s.Get(id)
-	if err != nil {
-		return nil, fmt.Errorf("get crd by id error: %+v", err)
-	}
-	err = CanExeAction(api, v1.Delete)
-	if err != nil {
-		return nil, fmt.Errorf("cannot exec: %+v", err)
-	}
+func (s *Service) Delete(api *v1.Api) (*v1.Api, error) {
 	//TODO need check status !!!
 	//删除API
 	api.Status.Status = v1.Init
@@ -397,7 +459,7 @@ func (s *Service) UpdateStatus(api *v1.Api) (*v1.Api, error) {
 	return api, nil
 }
 
-func (s *Service) getServiceunit(id string) (*suv1.Serviceunit, error) {
+func (s *Service) getServiceunit(id, crdNamespace string) (*suv1.Serviceunit, error) {
 	crd, err := s.serviceunitClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -410,7 +472,7 @@ func (s *Service) getServiceunit(id string) (*suv1.Serviceunit, error) {
 	return su, nil
 }
 
-func (s *Service) getApplication(id string) (*appv1.Application, error) {
+func (s *Service) getApplication(id, crdNamespace string) (*appv1.Application, error) {
 	crd, err := s.applicationClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -424,6 +486,7 @@ func (s *Service) getApplication(id string) (*appv1.Application, error) {
 }
 
 func (s *Service) getDatasource(id string) (*dsv1.Datasource, error) {
+	crdNamespace := defaultNamespace
 	crd, err := s.datasourceClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -436,63 +499,7 @@ func (s *Service) getDatasource(id string) (*dsv1.Datasource, error) {
 	return ds, nil
 }
 
-func (s *Service) updateServiceApi(svcid, apiid, apiname string) (*suv1.Serviceunit, error) {
-	su, err := s.getServiceunit(svcid)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get service unit: %+v", err)
-	}
-	su.Spec.APIs = append(su.Spec.APIs, suv1.Api{
-		ID:   apiid,
-		Name: apiname,
-	})
-
-	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(su)
-	if err != nil {
-		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
-	}
-	crd := &unstructured.Unstructured{}
-	crd.SetUnstructuredContent(content)
-	klog.V(5).Infof("try to update status for crd: %+v", crd)
-	crd, err = s.serviceunitClient.Namespace(su.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("error update crd status: %+v", err)
-	}
-	su = &suv1.Serviceunit{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), su); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	return su, nil
-}
-
-func (s *Service) updateApplicationApi(appid, apiid, apiname string) (*appv1.Application, error) {
-	app, err := s.getApplication(appid)
-	if err != nil {
-		return nil, fmt.Errorf("cannot get application: %+v", err)
-	}
-	app.Spec.APIs = append(app.Spec.APIs, appv1.Api{
-		ID:   apiid,
-		Name: apiname,
-	})
-
-	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(app)
-	if err != nil {
-		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
-	}
-	crd := &unstructured.Unstructured{}
-	crd.SetUnstructuredContent(content)
-	klog.V(5).Infof("try to update status for crd: %+v", crd)
-	crd, err = s.applicationClient.Namespace(app.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("error update crd status: %+v", err)
-	}
-	app = &appv1.Application{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), app); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	return app, nil
-}
-
-func (s *Service) BindOrRelease(apiid, appid, operation string) (*Api, error) {
+func (s *Service) BindOrRelease(apiid, appid, operation string, opts ...util.OpOption) (*Api, error) {
 	switch operation {
 	case "bind":
 		return s.BindApi(apiid, appid)
@@ -503,15 +510,20 @@ func (s *Service) BindOrRelease(apiid, appid, operation string) (*Api, error) {
 	}
 }
 
-func (s *Service) BindApi(apiid, appid string) (*Api, error) {
+func (s *Service) BindApi(apiid, appid string, opts ...util.OpOption) (*Api, error) {
 	if true {
 		return nil, fmt.Errorf("do not bind api directly. make an application.")
 	}
-	api, err := s.Get(apiid)
+	api, err := s.Get(apiid, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("get api error: %+v", err)
 	}
-	if _, err = s.getApplication(appid); err != nil {
+	if ok, err := s.writable(api, opts...); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, fmt.Errorf("user has no write permission for serviceunit")
+	}
+	if _, err = s.getApplication(appid, api.ObjectMeta.Namespace); err != nil {
 		return nil, fmt.Errorf("get application error: %+v", err)
 	}
 	for _, existedapp := range api.Spec.Applications {
@@ -532,13 +544,17 @@ func (s *Service) BindApi(apiid, appid string) (*Api, error) {
 	return ToModel(api), err
 }
 
-func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
-	api, err := s.Get(apiid)
+func (s *Service) ReleaseApi(apiid, appid string, opts ...util.OpOption) (*Api, error) {
+	api, err := s.Get(apiid, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("get api error: %+v", err)
 	}
-
-	if _, err = s.getApplication(appid); err != nil {
+	if ok, err := s.writable(api, opts...); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, fmt.Errorf("user has no write permission for serviceunit")
+	}
+	if _, err = s.getApplication(appid, api.ObjectMeta.Namespace); err != nil {
 		return nil, fmt.Errorf("get application error: %+v", err)
 	}
 	exist := false
@@ -569,13 +585,13 @@ func (s *Service) ReleaseApi(apiid, appid string) (*Api, error) {
 	return ToModel(api), err
 }
 
-func (s *Service) Query(apiid string, params map[string][]string, req *restful.Request) (Data, error) {
+func (s *Service) Query(apiid string, params map[string][]string, opts ...util.OpOption) (Data, error) {
 	d := Data{
 		Headers: make([]string, 0),
 		Columns: make(map[string]string, 0),
 		Data:    make([]map[string]string, 0),
 	}
-	api, err := s.Get(apiid)
+	api, err := s.Get(apiid, opts...)
 	if err != nil {
 		return d, fmt.Errorf("get api error: %+v", err)
 	}
@@ -597,7 +613,7 @@ func (s *Service) Query(apiid string, params map[string][]string, req *restful.R
 		d.Data = data.Data
 		return d, nil
 	} else if api.Spec.RDBQuery != nil {
-		su, err := s.getServiceunit(api.Spec.Serviceunit.ID)
+		su, err := s.getServiceunit(api.Spec.Serviceunit.ID, api.ObjectMeta.Namespace)
 		if err != nil {
 			return d, fmt.Errorf("get serviceunit error: %+v", err)
 		}
@@ -709,4 +725,19 @@ func (s *Service) TestApi(model *Api) (interface{}, error) {
 		return nil, fmt.Errorf("Unmarshal failed: %+v", err)
 	}
 	return respReturn, nil
+}
+
+func (s *Service) writable(api *v1.Api, opts ...util.OpOption) (bool, error) {
+	if !s.tenantEnabled {
+		uid := util.OpList(opts...).User()
+		var su *suv1.Serviceunit
+		su, err := s.getServiceunit(api.Spec.Serviceunit.ID, api.ObjectMeta.Namespace)
+		if err != nil {
+			return false, fmt.Errorf("get serviceunit error: %+v", err)
+		}
+		if !user.WritePermitted(uid, su.ObjectMeta.Labels) {
+			return false, nil
+		}
+	}
+	return true, nil
 }
