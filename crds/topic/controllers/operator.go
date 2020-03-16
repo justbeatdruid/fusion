@@ -34,6 +34,7 @@ func (r *requestLogger) Println(v ...interface{}) {
 type Operator struct {
 	Host string
 	Port int
+	AuthEnable bool
 }
 
 //CreateTopic 调用Pulsar的Restful Admin API，创建Topic
