@@ -56,6 +56,9 @@ const (
 	Delete   Status = "delete"
 	Deleting Status = "deleting"
 	Error    Status = "error"
+	Updating Status = "updating"
+	Updated  Status = "updated"
+	Update   Status = "update"
 )
 
 // +kubebuilder:object:root=true
