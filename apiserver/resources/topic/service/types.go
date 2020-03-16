@@ -15,25 +15,36 @@ const (
 )
 
 type Topic struct {
-	ID              string    `json:"id"`
-	Name            string    `json:"name"` //topic名称
-	Namespace       string    `json:"namespace"`
-	Tenant          string    `json:"tenant"` //topic的所属租户名称
-	TopicGroup      string    `json:"topicGroup"`
-	Partition       int       `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
-	IsNonPersistent bool      `json:"isNonPersistent"` //非持久化，默认为false，非必填topic
-	URL             string    `json:"url"`             //URL
-	CreateTime      int64     `json:"createTime""`     //创建Topic的时间戳
-	Status          v1.Status `json:"status"`
-	Message         string    `json:"message"`
+	ID              string       `json:"id"`
+	Name            string       `json:"name"` //topic名称
+	Namespace       string       `json:"namespace"`
+	Tenant          string       `json:"tenant"` //topic的所属租户名称
+	TopicGroup      string       `json:"topicGroup"`
+	Partition       int          `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
+	IsNonPersistent bool         `json:"isNonPersistent"` //非持久化，默认为false，非必填topic
+	URL             string       `json:"url"`             //URL
+	CreatedAt       int64        `json:"createdAt""`      //创建Topic的时间戳
+	Status          v1.Status    `json:"status"`
+	Message         string       `json:"message"`
+	Permissions     []Permission `json:permission`
 }
-
+type Actions []string
+type Permission struct {
+	AuthUserID   string  `json:"authUserId"`   //对应clientauth的ID
+	AuthUserName string  `json:"authUserName"` //对应clientauth的NAME
+	Actions      Actions `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
+}
 type Message struct {
 	TopicName string           `json:"topicName"`
 	ID        pulsar.MessageID `json:"id"`
 	Time      util.Time        `json:"time"`
 	Messages  string           `json:"messages"`
 }
+
+const (
+	CONSUME = "consume"
+	PRODUCE = "produce"
+)
 
 // only used in creation options
 func ToAPI(app *Topic) *v1.Topic {
@@ -51,7 +62,6 @@ func ToAPI(app *Topic) *v1.Topic {
 		TopicGroup:      app.TopicGroup,
 		Partition:       app.Partition,
 		IsNonPersistent: app.IsNonPersistent,
-		CreatTime:       app.CreateTime,
 	}
 
 	if len(crd.Spec.Tenant) == 0 {
@@ -84,6 +94,7 @@ func ToModel(obj *v1.Topic) *Topic {
 		Status:          obj.Status.Status,
 		Message:         obj.Status.Message,
 		URL:             obj.Spec.Url,
+		CreatedAt:       obj.CreationTimestamp.Unix(),
 	}
 }
 
