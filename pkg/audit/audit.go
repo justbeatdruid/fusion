@@ -27,7 +27,7 @@ type event struct {
 
 // NewEvent create a new audit log with tenantID, userID, eventName(delete 4example), eventResult(success 4example)
 // resourceType(application 4example), resourceID, resourceName
-func (a *Auditor) NewEvent(tenantID, userID, eventName, eventResult, resourceType, resourceID, resourceName string) {
+func (a *Auditor) NewEvent(tenantID, userID, eventName, eventResult, resourceType, resourceID, resourceName string, body string) {
 	tenantName := tenantID
 	userName, err := cas.GetUserNameByID(userID)
 	if err != nil {
@@ -46,6 +46,7 @@ func (a *Auditor) NewEvent(tenantID, userID, eventName, eventResult, resourceTyp
 			ResourceType: resourceType,
 			ResourceID:   resourceID,
 			ResourceName: resourceName,
+			RequestBody:  body,
 		},
 		retry: 2,
 	}

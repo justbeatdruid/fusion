@@ -40,13 +40,21 @@ var accepted = []selector{
 }
 
 // return event, resource and if this request should be uploaded as event
-func filter(req *restful.Request) (string, string, bool) {
+func filter(req *restful.Request) (string, string, string, bool) {
 	for _, a := range accepted {
 		if req.Request.Method == a.method && req.SelectedRoutePath() == a.route {
-			return getEventName(a.method), getResourceType(a.route), true
+			entity := req.GetEntity()
+			if entity == nil {
+				return getEventName(a.method), getResourceType(a.route), "", true
+			}
+			body, err := json.Marshal(entity)
+			if err != nil {
+				return getEventName(a.method), getResourceType(a.route), "", true
+			}
+			return getEventName(a.method), getResourceType(a.route), string(body), true
 		}
 	}
-	return "", "", false
+	return "", "", "", false
 }
 
 func getResourceType(path string) string {
@@ -113,7 +121,7 @@ func getResourceFromEntity(entity interface{}) (*Resource, error) {
 
 func NewAuditCaller(c *restful.Container, a *audit.Auditor) func(*restful.Request, *restful.Response, *restful.CallbackChain) {
 	return func(req *restful.Request, resp *restful.Response, chain *restful.CallbackChain) {
-		eventName, resourceType, ok := filter(req)
+		eventName, resourceType, body, ok := filter(req)
 		if !ok {
 			chain.ProcessCallback(req, resp)
 			return
@@ -190,7 +198,7 @@ func NewAuditCaller(c *restful.Container, a *audit.Auditor) func(*restful.Reques
 		}()
 		wg.Wait()
 
-		a.NewEvent(tenantID, userID, eventName, eventResult, resourceType, resourceID, resourceName)
+		a.NewEvent(tenantID, userID, eventName, eventResult, resourceType, resourceID, resourceName, body)
 		chain.ProcessCallback(req, resp)
 	}
 }

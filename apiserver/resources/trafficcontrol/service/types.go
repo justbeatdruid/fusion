@@ -138,10 +138,15 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 			return fmt.Errorf("at least one special config must exist.")
 		}
 		if len(a.Config.Special) > v1.MAXNUM {
-			return fmt.Errorf("special config maxinum limit exceeded.")
+			return fmt.Errorf("special config maxnum limit exceeded.")
+		}
+		for _, value := range a.Config.Special {
+			if _, err := s.getApplication(value.ID); err != nil {
+				return fmt.Errorf("get application for create traffic error: %+v", err)
+			}
 		}
 	default:
-		return fmt.Errorf("wrong type: %s.", a.Type)
+		return fmt.Errorf("wrong type for create traffic: %s.", a.Type)
 	}
 
 	a.ID = names.NewID()
