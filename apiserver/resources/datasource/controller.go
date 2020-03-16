@@ -211,12 +211,47 @@ func (c *controller) GetTables(req *restful.Request) (int, *Unstructured) {
 	}
 }
 
+func (c *controller) GetTable(req *restful.Request) (int, *Unstructured) {
+	id := req.PathParameter("id")
+	table := req.PathParameter("table")
+	result, err := c.service.GetTable(id, table)
+	if err != nil {
+		return http.StatusInternalServerError, &Unstructured{
+			Code:    1,
+			Message: fmt.Errorf("get tables error: %+v", err).Error(),
+		}
+	}
+	return http.StatusOK, &Unstructured{
+		Code: 0,
+		Data: result,
+	}
+}
+
 func (c *controller) GetFields(req *restful.Request) (int, *Unstructured) {
 	id := req.PathParameter("id")
 	// for quering RDB fields, pass table name in query parameter "table"
 	// for quering datawarehouse fields, pass table ID in parameter
 	table := req.PathParameter("table")
 	result, err := c.service.GetFields(id, table)
+	if err != nil {
+		return http.StatusInternalServerError, &Unstructured{
+			Code:    1,
+			Message: fmt.Errorf("get fields: %+v", err).Error(),
+		}
+	}
+	return http.StatusOK, &Unstructured{
+		Code: 0,
+		Data: result,
+	}
+}
+
+func (c *controller) GetField(req *restful.Request) (int, *Unstructured) {
+	id := req.PathParameter("id")
+	// for quering RDB fields, pass table name in query parameter "table"
+	// for quering datawarehouse fields, pass table ID in parameter
+	table := req.PathParameter("table")
+	field := req.PathParameter("field")
+	result, err := c.service.GetField(id, table, field)
 	if err != nil {
 		return http.StatusInternalServerError, &Unstructured{
 			Code:    1,

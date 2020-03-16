@@ -6,6 +6,8 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunitgroup/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/chinamobile/nlpt/pkg/go-restful"
 )
@@ -16,7 +18,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient()),
+		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TenantEnabled),
 	}
 }
 
@@ -34,9 +36,9 @@ type DeleteResponse struct {
 }
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int                         `json:"code"`
-	Message string                      `json:"message"`
-	Data    []*service.ServiceunitGroup `json:"data"`
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
 
@@ -54,6 +56,15 @@ func (c *controller) CreateServiceunitGroup(req *restful.Request) (int, *CreateR
 			Message: "read entity error: data is null",
 		}
 	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	body.Data.Namespace = authuser.Namespace
+
 	if db, err := c.service.CreateServiceunitGroup(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
@@ -69,7 +80,15 @@ func (c *controller) CreateServiceunitGroup(req *restful.Request) (int, *CreateR
 
 func (c *controller) GetServiceunitGroup(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
-	if db, err := c.service.GetServiceunitGroup(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+
+	if db, err := c.service.GetServiceunitGroup(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
 			Message: fmt.Errorf("get serviceunitgroup error: %+v", err).Error(),
@@ -84,7 +103,15 @@ func (c *controller) GetServiceunitGroup(req *restful.Request) (int, *GetRespons
 
 func (c *controller) DeleteServiceunitGroup(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if err := c.service.DeleteServiceunitGroup(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+
+	if err := c.service.DeleteServiceunitGroup(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("delete serviceunitgroup error: %+v", err).Error(),
@@ -98,17 +125,53 @@ func (c *controller) DeleteServiceunitGroup(req *restful.Request) (int, *DeleteR
 }
 
 func (c *controller) ListServiceunitGroup(req *restful.Request) (int, *ListResponse) {
-	if db, err := c.service.ListServiceunitGroup(); err != nil {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	db, err := c.service.ListServiceunitGroup(util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace))
+	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list serviceunitgroup error: %+v", err).Error(),
 		}
-	} else {
+	}
+	if len(page) == 0 && len(size) == 0 {
 		return http.StatusOK, &ListResponse{
 			Code: 0,
 			Data: db,
 		}
 	}
+	var sus ServiceunitList = db
+	data, err := util.PageWrap(sus, page, size)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: fmt.Errorf("page error error: %+v", err).Error(),
+		}
+	}
+	return http.StatusOK, &ListResponse{
+		Code: 0,
+		Data: data,
+	}
+}
+
+type ServiceunitList []*service.ServiceunitGroup
+
+func (sus ServiceunitList) Len() int {
+	return len(sus)
+}
+
+func (sus ServiceunitList) GetItem(i int) (interface{}, error) {
+	if i >= len(sus) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return sus[i], nil
 }
 
 func (c *controller) UpdateServiceunitGroup(req *restful.Request) (int, *CreateResponse) {
@@ -120,7 +183,14 @@ func (c *controller) UpdateServiceunitGroup(req *restful.Request) (int, *CreateR
 		}
 	}
 	id := req.PathParameter("id")
-	if db, err := c.service.UpdateServiceunitGroup(id, body.Data); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if db, err := c.service.UpdateServiceunitGroup(id, body.Data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,
 			Message: fmt.Errorf("update serviceunitgroup error: %+v", err).Error(),

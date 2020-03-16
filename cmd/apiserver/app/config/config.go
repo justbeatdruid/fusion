@@ -28,6 +28,12 @@ type Config struct {
 	TopicConfig *TopicConfig
 
 	Auditor *audit.Auditor
+
+	TenantEnabled bool
+}
+
+func (c *Config) GetKubeClient() *clientset.Clientset {
+	return c.Client
 }
 
 func (c *Config) GetDynamicClient() dynamicclient.Interface {

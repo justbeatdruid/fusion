@@ -71,10 +71,13 @@ func (s *Service) UpdateRestriction(id string, reqData interface{}) (*Restrictio
 	if err = s.assignment(crd, reqData); err != nil {
 		return nil, err
 	}
-	su, err := s.Update(crd) //model是传入的，db是原始的
+	//更新crd的状态为开始更新
+	crd.Status.Status = v1.Update
+	su, err := s.Update(crd)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to update: %+v", err)
 	}
+
 	return ToModel(su), nil
 }
 

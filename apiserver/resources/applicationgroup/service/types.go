@@ -23,7 +23,7 @@ func ToAPI(app *ApplicationGroup) *v1.ApplicationGroup {
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
 
 	crd.ObjectMeta.Name = app.ID
-	crd.ObjectMeta.Namespace = crdNamespace
+	crd.ObjectMeta.Namespace = app.Namespace
 	crd.Spec = v1.ApplicationGroupSpec{
 		Name:        app.Name,
 		Description: app.Description,

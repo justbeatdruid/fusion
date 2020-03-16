@@ -19,7 +19,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient()),
+		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TenantEnabled),
 	}
 }
 
@@ -66,6 +66,7 @@ func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateRespon
 		}
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
+	body.Data.Namespace = authuser.Namespace
 	if su, err := c.service.CreateServiceunit(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
@@ -81,7 +82,14 @@ func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateRespon
 
 func (c *controller) GetServiceunit(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
-	if su, err := c.service.GetServiceunit(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if su, err := c.service.GetServiceunit(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
 			Message: fmt.Errorf("get serviceunit error: %+v", err).Error(),
@@ -112,7 +120,14 @@ func (c *controller) PatchServiceunit(req *restful.Request) (int, *DeleteRespons
 			Message: "read entity error: data is null",
 		}
 	}
-	if su, err := c.service.PatchServiceunit(req.PathParameter("id"), data); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if su, err := c.service.PatchServiceunit(req.PathParameter("id"), data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("patch serviceunit error: %+v", err).Error(),
@@ -127,7 +142,14 @@ func (c *controller) PatchServiceunit(req *restful.Request) (int, *DeleteRespons
 
 func (c *controller) DeleteServiceunit(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if data, err := c.service.DeleteServiceunit(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if data, err := c.service.DeleteServiceunit(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("delete serviceunit error: %+v", err).Error(),
@@ -152,7 +174,7 @@ func (c *controller) ListServiceunit(req *restful.Request) (int, *ListResponse) 
 			Message: "auth model error",
 		}
 	}
-	if su, err := c.service.ListServiceunit(util.WithGroup(group), util.WithNameLike(name), util.WithUser(authuser.Name)); err != nil {
+	if su, err := c.service.ListServiceunit(util.WithGroup(group), util.WithNameLike(name), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list serviceunit error: %+v", err).Error(),
@@ -197,7 +219,14 @@ func (c *controller) PublishServiceunit(req *restful.Request) (int, *CreateRespo
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
-	if su, err := c.service.PublishServiceunit(id, body.Published); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if su, err := c.service.PublishServiceunit(id, body.Published, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
 			Message: fmt.Errorf("create serviceunit error: %+v", err).Error(),

@@ -44,6 +44,8 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 		targetName string
 		sourceName string
 	)
+	var targetApi *apiv1.Api
+	var applicationId string
 	check := func(r *Resource) error {
 		switch r.Type {
 		case v1.Serviceunit:
@@ -63,6 +65,7 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 			r.Owner = user.GetOwner(api.ObjectMeta.Labels)
 			r.Labels = api.ObjectMeta.Labels
 			targetName = api.Spec.Name
+			targetApi = api
 		case v1.Application:
 			app, err := s.getApplication(r.ID)
 			if err != nil {
@@ -72,6 +75,7 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 			r.Owner = user.GetOwner(app.ObjectMeta.Labels)
 			r.Labels = app.ObjectMeta.Labels
 			sourceName = app.Spec.Name
+			applicationId = app.ObjectMeta.Name
 		default:
 			return fmt.Errorf("unknown target type: %s", r.Type)
 		}
@@ -85,7 +89,16 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 			return nil, fmt.Errorf("%s resource error: %+v", n, err)
 		}
 	}
-	//TODO check if target api already bound to source application
+	// check if target api already bound to source application
+	if targetApi == nil {
+		return nil, fmt.Errorf("cannot find api")
+	}
+	if len(applicationId) == 0 {
+		return nil, fmt.Errorf("cannot find application")
+	}
+	if _, ok := targetApi.ObjectMeta.Labels[apiv1.ApplicationLabel(applicationId)]; ok {
+		return nil, fmt.Errorf("api already bound to application")
+	}
 
 	klog.V(5).Infof("applicant: %s", model.Users.AppliedBy.ID)
 	if !user.WritePermitted(model.Users.AppliedBy.ID, model.Source.Labels) {

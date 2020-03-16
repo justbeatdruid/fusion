@@ -41,7 +41,7 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
 
 	crd.ObjectMeta.Name = app.ID
-	crd.ObjectMeta.Namespace = crdNamespace
+	crd.ObjectMeta.Namespace = app.Namespace
 	crd.Spec = v1.ServiceunitSpec{
 		Name:         app.Name,
 		Type:         app.Type,
@@ -180,7 +180,7 @@ func (s *Service) Validate(a *Serviceunit) error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
-	suList, errs := s.List()
+	suList, errs := s.List(util.WithNamespace(a.Namespace))
 	if errs != nil {
 		return fmt.Errorf("cannot list serviceunit object: %+v", errs)
 	}
@@ -271,7 +271,7 @@ func (s *Service) assignment(target *v1.Serviceunit, reqData interface{}) error 
 	}
 	if _, ok := data["name"]; ok {
 		if target.Spec.Name != source.Name {
-			suList, errs := s.List()
+			suList, errs := s.List(util.WithNamespace(target.ObjectMeta.Namespace))
 			if errs != nil {
 				return fmt.Errorf("cannot list servieunit object: %+v", errs)
 			}

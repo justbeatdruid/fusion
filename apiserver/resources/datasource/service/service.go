@@ -233,6 +233,30 @@ func (s *Service) GetTables(id, associationID string) (*Tables, error) {
 	return result, nil
 }
 
+func (s *Service) GetTable(id, table string) (*Table, error) {
+	ds, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot datasource: %+v", err)
+	}
+	switch ds.Spec.Type {
+	case v1.RDBType:
+		return nil, fmt.Errorf("not suppurted for rdb")
+	case v1.DataWarehouseType:
+		if ds.Spec.DataWarehouse == nil {
+			return nil, fmt.Errorf("datasource %s in type datawarehouse has no datawarehouse instance", ds.ObjectMeta.Name)
+		}
+		for _, t := range ds.Spec.DataWarehouse.Tables {
+			if t.Info.ID == table {
+				info := dw.FromApiTable(t).Info
+				return &Table{DataWarehouseTable: &info}, nil
+			}
+		}
+		return nil, fmt.Errorf("table %s not found in database %s", table, ds.Spec.Name)
+	default:
+		return nil, fmt.Errorf("wrong datasource type: %s", ds.Spec.Type)
+	}
+}
+
 func (s *Service) GetFields(id, table string) (*Fields, error) {
 	result := &Fields{}
 	ds, err := s.Get(id)
@@ -305,6 +329,35 @@ func (s *Service) GetFields(id, table string) (*Fields, error) {
 	}
 rt:
 	return result, nil
+}
+
+func (s *Service) GetField(id, table, field string) (*Field, error) {
+	ds, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot datasource: %+v", err)
+	}
+	switch ds.Spec.Type {
+	case v1.RDBType:
+		return nil, fmt.Errorf("rdb not supported")
+	case v1.DataWarehouseType:
+		if ds.Spec.DataWarehouse == nil {
+			return nil, fmt.Errorf("datasource %s in type datawarehouse has no datawarehouse instance", ds.ObjectMeta.Name)
+		}
+		for _, apiTable := range ds.Spec.DataWarehouse.Tables {
+			if apiTable.Info.ID == table {
+				for _, p := range apiTable.Properties {
+					if p.ID == field {
+						dwp := dw.FromApiProperty(p)
+						return &Field{DataWarehouseField: &dwp}, nil
+					}
+				}
+				return nil, fmt.Errorf("cannot find field %s in datasource %s and table %s", field, ds.ObjectMeta.Name, apiTable.Info.Name)
+			}
+		}
+		return nil, fmt.Errorf("cannot find table %s in datasource %s", table, ds.ObjectMeta.Name)
+	default:
+		return nil, fmt.Errorf("wrong datasource type: %s", ds.Spec.Type)
+	}
 }
 
 func (s *Service) GetDataSourceByApiId(apiId string, parames string) (map[string]interface{}, error) {

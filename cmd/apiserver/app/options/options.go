@@ -26,6 +26,7 @@ type ServerRunOptions struct {
 	Master        string
 	Kubeconfig    string
 	CrdNamespace  string
+	TenantEnabled bool
 
 	ConfigPath  string
 	LocalConfig struct{}
@@ -41,6 +42,7 @@ func NewServerRunOptions() *ServerRunOptions {
 	s := &ServerRunOptions{
 		ListenAddress: ":8001",
 		CrdNamespace:  os.Getenv("MY_POD_NAMESPACE"),
+		TenantEnabled: false,
 
 		Datasource:  DefaultDatasourceOptions(),
 		Dataservice: DefaultDataserviceOptions(),
@@ -69,6 +71,7 @@ func (s *ServerRunOptions) Flags() cliflag.NamedFlagSets {
 	fs.StringVar(&s.Master, "master", s.Master, "The address of the Kubernetes API server (overrides any value in kubeconfig).")
 	fs.StringVar(&s.Kubeconfig, "kubeconfig", s.Kubeconfig, "Path to kubeconfig file with authorization and master location information.")
 	fs.StringVar(&s.ListenAddress, "listen", s.ListenAddress, "Address of app manager server listening on")
+	fs.BoolVar(&s.TenantEnabled, "tenant-enabled", s.TenantEnabled, "Enable tenant, that means for on resource, role of user is always same for all items in tenant. If tenant enabled, we do not check anymore for user's writing or reading permission")
 	return fss
 }
 
@@ -118,8 +121,9 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		DatasourceConfig:     appconfig.NewDatasourceConfig(s.Datasource.Supported),
 		DataserviceConnector: dw.NewConnector(s.Dataservice.MetadataHost, s.Dataservice.MetadataPort, s.Dataservice.DataHost, s.Dataservice.DataPort),
 
-		TopicConfig: appconfig.NewTopicConfig(s.Topic.Host, s.Topic.Port),
-		Auditor:     audit.NewAuditor(s.Audit.Host, s.Audit.Port),
+		TopicConfig:   appconfig.NewTopicConfig(s.Topic.Host, s.Topic.Port),
+		Auditor:       audit.NewAuditor(s.Audit.Host, s.Audit.Port),
+		TenantEnabled: s.TenantEnabled,
 	}
 	cas.SetConnectionInfo(s.Cas.Host, s.Cas.Port)
 	return c, nil
