@@ -19,7 +19,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient()),
+		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TenantEnabled),
 	}
 }
 
@@ -62,6 +62,7 @@ func (c *controller) CreateApplication(req *restful.Request) (int, *CreateRespon
 		}
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
+	body.Data.Namespace = authuser.Namespace
 	if app, err := c.service.CreateApplication(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
@@ -77,7 +78,14 @@ func (c *controller) CreateApplication(req *restful.Request) (int, *CreateRespon
 
 func (c *controller) GetApplication(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
-	if app, err := c.service.GetApplication(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if app, err := c.service.GetApplication(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
 			Message: fmt.Errorf("get application error: %+v", err).Error(),
@@ -108,7 +116,14 @@ func (c *controller) PatchApplication(req *restful.Request) (int, *DeleteRespons
 			Message: "read entity error: data is null",
 		}
 	}
-	if app, err := c.service.PatchApplication(req.PathParameter("id"), data); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if app, err := c.service.PatchApplication(req.PathParameter("id"), data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("patch application error: %+v", err).Error(),
@@ -123,7 +138,14 @@ func (c *controller) PatchApplication(req *restful.Request) (int, *DeleteRespons
 
 func (c *controller) DeleteApplication(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if app, err := c.service.DeleteApplication(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if app, err := c.service.DeleteApplication(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("delete application error: %+v", err).Error(),
@@ -148,7 +170,8 @@ func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) 
 			Message: "auth model error",
 		}
 	}
-	if app, err := c.service.ListApplication(util.WithGroup(group), util.WithNameLike(name), util.WithUser(authuser.Name)); err != nil {
+	if app, err := c.service.ListApplication(util.WithGroup(group), util.WithNameLike(name),
+		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list application error: %+v", err).Error(),

@@ -6,6 +6,7 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/applicationgroup/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/chinamobile/nlpt/pkg/go-restful"
@@ -17,7 +18,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient()),
+		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TenantEnabled),
 	}
 }
 
@@ -55,6 +56,14 @@ func (c *controller) CreateApplicationGroup(req *restful.Request) (int, *CreateR
 			Message: "read entity error: data is null",
 		}
 	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	body.Data.Namespace = authuser.Namespace
 	if db, err := c.service.CreateApplicationGroup(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
@@ -70,7 +79,14 @@ func (c *controller) CreateApplicationGroup(req *restful.Request) (int, *CreateR
 
 func (c *controller) GetApplicationGroup(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
-	if db, err := c.service.GetApplicationGroup(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if db, err := c.service.GetApplicationGroup(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
 			Message: fmt.Errorf("get applicationgroup error: %+v", err).Error(),
@@ -85,7 +101,14 @@ func (c *controller) GetApplicationGroup(req *restful.Request) (int, *GetRespons
 
 func (c *controller) DeleteApplicationGroup(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if err := c.service.DeleteApplicationGroup(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if err := c.service.DeleteApplicationGroup(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("delete applicationgroup error: %+v", err).Error(),
@@ -101,7 +124,14 @@ func (c *controller) DeleteApplicationGroup(req *restful.Request) (int, *DeleteR
 func (c *controller) ListApplicationGroup(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-	db, err := c.service.ListApplicationGroup()
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	db, err := c.service.ListApplicationGroup(util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
@@ -150,7 +180,14 @@ func (c *controller) UpdateApplicationGroup(req *restful.Request) (int, *CreateR
 		}
 	}
 	id := req.PathParameter("id")
-	if db, err := c.service.UpdateApplicationGroup(id, body.Data); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if db, err := c.service.UpdateApplicationGroup(id, body.Data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,
 			Message: fmt.Errorf("update applicationgroup error: %+v", err).Error(),

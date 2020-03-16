@@ -40,7 +40,7 @@ func ToAPI(app *Application) *v1.Application {
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
 
 	crd.ObjectMeta.Name = app.ID
-	crd.ObjectMeta.Namespace = crdNamespace
+	crd.ObjectMeta.Namespace = app.Namespace
 	crd.Spec = v1.ApplicationSpec{
 		Name:            app.Name,
 		Description:     app.Description,
@@ -131,7 +131,7 @@ func (s *Service) Validate(a *Application) error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
-	appList, errs := s.List()
+	appList, errs := s.List(util.WithNamespace(a.Namespace))
 	if errs != nil {
 		return fmt.Errorf("cannot list app object: %+v", errs)
 	}
@@ -172,7 +172,7 @@ func (s *Service) assignment(target *v1.Application, reqData interface{}) error 
 	}
 	if _, ok := data["name"]; ok {
 		if target.Spec.Name != source.Name {
-			appList, errs := s.List()
+			appList, errs := s.List(util.WithNamespace(target.ObjectMeta.Namespace))
 			if errs != nil {
 				return fmt.Errorf("cannot list app object: %+v", errs)
 			}
