@@ -585,7 +585,7 @@ func (s *Service) ReleaseApi(apiid, appid string, opts ...util.OpOption) (*Api, 
 	return ToModel(api), err
 }
 
-func (s *Service) Query(apiid string, params map[string][]string, opts ...util.OpOption) (Data, error) {
+func (s *Service) Query(apiid string, params map[string][]string, limitstr string, opts ...util.OpOption) (Data, error) {
 	d := Data{
 		Headers: make([]string, 0),
 		Columns: make(map[string]string, 0),
@@ -603,6 +603,13 @@ func (s *Service) Query(apiid string, params map[string][]string, opts ...util.O
 		}
 		api.Spec.DataWarehouseQuery.RefillWhereFields(typesMap, params)
 		q := api.Spec.DataWarehouseQuery.Query
+		if len(limitstr) > 0 {
+			limit, err := strconv.Atoi(limitstr)
+			if err != nil {
+				return d, fmt.Errorf("cannot parse limit parameter %s to int: %+v", limitstr, err)
+			}
+			q.Limit = limit
+		}
 
 		data, err := s.dataService.QueryData(*q)
 		if err != nil {
