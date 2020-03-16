@@ -56,7 +56,7 @@ func main() {
 
 	flag.StringVar(&pulsarHost, "pulsar-host", "127.0.0.1", "Host of pulsar web service.")
 	flag.IntVar(&pulsarPort, "pulsar-port", 30002, "Port of pulsar web service.")
-	flag.BoolVar(&authEnable, "auth-enable", false, "Enable pulsar authentication")
+	flag.BoolVar(&authEnable, "pulsar-auth-enable", false, "Enable pulsar authentication")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(func(o *zap.Options) {
