@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
+	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -16,15 +17,30 @@ import (
 var crdNamespace = "default"
 
 type Service struct {
-	client    dynamic.NamespaceableResourceInterface
-	apiClient dynamic.NamespaceableResourceInterface
+	client            dynamic.NamespaceableResourceInterface
+	apiClient         dynamic.NamespaceableResourceInterface
+	applicationClient dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface) *Service {
 	return &Service{
-		client:    client.Resource(v1.GetOOFSGVR()),
-		apiClient: client.Resource(apiv1.GetOOFSGVR()),
+		client:            client.Resource(v1.GetOOFSGVR()),
+		apiClient:         client.Resource(apiv1.GetOOFSGVR()),
+		applicationClient: client.Resource(appv1.GetOOFSGVR()),
 	}
+}
+
+func (s *Service) getApplication(id string) (*appv1.Application, error) {
+	crd, err := s.applicationClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	app := &appv1.Application{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), app); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.application: %+v", app)
+	return app, nil
 }
 
 func (s *Service) CreateTrafficcontrol(model *Trafficcontrol) (*Trafficcontrol, error) {
