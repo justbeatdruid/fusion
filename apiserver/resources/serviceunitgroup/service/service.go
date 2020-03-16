@@ -3,18 +3,21 @@ package service
 import (
 	"fmt"
 
+	k8s "github.com/chinamobile/nlpt/apiserver/kubernetes"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunitgroup/api/v1"
+	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 )
 
-var crdNamespace = "default"
+var defaultNamespace = "default"
 
 var oofsGVR = schema.GroupVersionResource{
 	Group:    v1.GroupVersion.Group,
@@ -23,14 +26,20 @@ var oofsGVR = schema.GroupVersionResource{
 }
 
 type Service struct {
-	client   dynamic.NamespaceableResourceInterface
-	suClient dynamic.NamespaceableResourceInterface
+	kubeClient *clientset.Clientset
+	client     dynamic.NamespaceableResourceInterface
+	suClient   dynamic.NamespaceableResourceInterface
+
+	tenantEnabled bool
 }
 
-func NewService(client dynamic.Interface) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool) *Service {
 	return &Service{
-		client:   client.Resource(oofsGVR),
-		suClient: client.Resource(suv1.GetOOFSGVR()),
+		kubeClient: kubeClient,
+		client:     client.Resource(v1.GetOOFSGVR()),
+		suClient:   client.Resource(suv1.GetOOFSGVR()),
+
+		tenantEnabled: tenantEnabled,
 	}
 }
 
@@ -39,7 +48,7 @@ func (s *Service) CreateServiceunitGroup(model *ServiceunitGroup) (*ServiceunitG
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
 	// check if unique
-	list, err := s.List()
+	list, err := s.List(util.WithNamespace(model.Namespace))
 	if err != nil {
 		return nil, fmt.Errorf("cannot get application group list: %+v", err)
 	}
@@ -55,24 +64,24 @@ func (s *Service) CreateServiceunitGroup(model *ServiceunitGroup) (*ServiceunitG
 	return ToModel(sug), nil
 }
 
-func (s *Service) ListServiceunitGroup() ([]*ServiceunitGroup, error) {
-	sugs, err := s.List()
+func (s *Service) ListServiceunitGroup(opts ...util.OpOption) ([]*ServiceunitGroup, error) {
+	sugs, err := s.List(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
 	return ToListModel(sugs), nil
 }
 
-func (s *Service) GetServiceunitGroup(id string) (*ServiceunitGroup, error) {
-	sug, err := s.Get(id)
+func (s *Service) GetServiceunitGroup(id string, opts ...util.OpOption) (*ServiceunitGroup, error) {
+	sug, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	return ToModel(sug), nil
 }
 
-func (s *Service) DeleteServiceunitGroup(id string) error {
-	sus, err := s.getServiceunitList(id)
+func (s *Service) DeleteServiceunitGroup(id string, opts ...util.OpOption) error {
+	sus, err := s.getServiceunitList(id, opts...)
 	klog.V(5).Infof("get %d serviceunits in group", len(sus.Items))
 	if err != nil {
 		return fmt.Errorf("cannot get serviceunit list: %+v", err)
@@ -80,17 +89,17 @@ func (s *Service) DeleteServiceunitGroup(id string) error {
 	if len(sus.Items) > 0 {
 		return fmt.Errorf("%d serviceunit(s) still in group %s", len(sus.Items), id)
 	}
-	return s.Delete(id)
+	return s.Delete(id, opts...)
 }
 
-func (s *Service) UpdateServiceunitGroup(id string, model *ServiceunitGroup) (*ServiceunitGroup, error) {
-	sug, err := s.Get(id)
+func (s *Service) UpdateServiceunitGroup(id string, model *ServiceunitGroup, opts ...util.OpOption) (*ServiceunitGroup, error) {
+	sug, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("get serviceunitgroup error: %+v", err)
 	}
 	if len(model.Name) > 0 {
 		// check if unique
-		list, err := s.List()
+		list, err := s.List(opts...)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get application group list: %+v", err)
 		}
@@ -112,6 +121,19 @@ func (s *Service) UpdateServiceunitGroup(id string, model *ServiceunitGroup) (*S
 }
 
 func (s *Service) Create(sug *v1.ServiceunitGroup) (*v1.ServiceunitGroup, error) {
+	var crdNamespace = defaultNamespace
+	if s.tenantEnabled {
+		crdNamespace = sug.ObjectMeta.Namespace
+		if len(crdNamespace) == 0 {
+			return nil, fmt.Errorf("namespace not set")
+		}
+	} else {
+		sug.ObjectMeta.Namespace = defaultNamespace
+	}
+	if err := k8s.EnsureNamespace(s.kubeClient, crdNamespace); err != nil {
+		return nil, fmt.Errorf("cannot ensure k8s namespace: %+v", err)
+	}
+
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(sug)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -131,7 +153,17 @@ func (s *Service) Create(sug *v1.ServiceunitGroup) (*v1.ServiceunitGroup, error)
 	return sug, nil
 }
 
-func (s *Service) List() (*v1.ServiceunitGroupList, error) {
+func (s *Service) List(opts ...util.OpOption) (*v1.ServiceunitGroupList, error) {
+	op := util.OpList(opts...)
+	ns := op.Namespace()
+	var crdNamespace = defaultNamespace
+	if s.tenantEnabled {
+		if len(ns) == 0 {
+			return nil, fmt.Errorf("namespace not set")
+		}
+		crdNamespace = ns
+	}
+
 	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
@@ -144,7 +176,14 @@ func (s *Service) List() (*v1.ServiceunitGroupList, error) {
 	return sugs, nil
 }
 
-func (s *Service) Get(id string) (*v1.ServiceunitGroup, error) {
+func (s *Service) Get(id string, opts ...util.OpOption) (*v1.ServiceunitGroup, error) {
+	crdNamespace := defaultNamespace
+	if s.tenantEnabled {
+		crdNamespace = util.OpList(opts...).Namespace()
+		if len(crdNamespace) == 0 {
+			return nil, fmt.Errorf("namespace not set")
+		}
+	}
 	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -157,7 +196,15 @@ func (s *Service) Get(id string) (*v1.ServiceunitGroup, error) {
 	return sug, nil
 }
 
-func (s *Service) Delete(id string) error {
+func (s *Service) Delete(id string, opts ...util.OpOption) error {
+	crdNamespace := defaultNamespace
+	if s.tenantEnabled {
+		crdNamespace = util.OpList(opts...).Namespace()
+		if len(crdNamespace) == 0 {
+			return fmt.Errorf("namespace not set")
+		}
+	}
+
 	err := s.client.Namespace(crdNamespace).Delete(id, &metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("error delete crd: %+v", err)
@@ -186,7 +233,15 @@ func (s *Service) UpdateSpec(sug *v1.ServiceunitGroup) (*v1.ServiceunitGroup, er
 	return sug, nil
 }
 
-func (s *Service) getServiceunitList(groupid string) (*suv1.ServiceunitList, error) {
+func (s *Service) getServiceunitList(groupid string, opts ...util.OpOption) (*suv1.ServiceunitList, error) {
+	crdNamespace := defaultNamespace
+	if s.tenantEnabled {
+		crdNamespace = util.OpList(opts...).Namespace()
+		if len(crdNamespace) == 0 {
+			return nil, fmt.Errorf("namespace not set")
+		}
+	}
+
 	labelSelector := fmt.Sprintf("%s=%s", suv1.GroupLabel, groupid)
 	klog.V(5).Infof("list with label selector: %s", labelSelector)
 	crd, err := s.suClient.Namespace(crdNamespace).List(metav1.ListOptions{
