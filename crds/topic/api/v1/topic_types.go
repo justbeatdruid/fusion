@@ -37,8 +37,25 @@ type TopicSpec struct {
 	Partition       int    `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
 	IsNonPersistent bool   `json:"isNonPersistent"` //topic是否不持久化
 	Url             string `json:"url"`             //topic url
+	Permissions     []Permission `json:"permissions"`
 }
 
+type Actions []string
+const (
+	Consume = "consume"
+	Produce = "produce"
+)
+type Permission struct {
+	AuthUserID   string  `json:"authUserId"`   //对应clientauth的ID
+	AuthUserName string  `json:"authUserName"` //对应clientauth的NAME
+	Actions      Actions `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
+	Status       string  `json:"status"`       //用户的授权状态，已授权、待删除、待授权
+}
+const (
+	Granted = "granted" //已授权
+	Grant = "grant"
+
+)
 // TopicStatus defines the observed state of Topic
 type TopicStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -60,6 +77,8 @@ const (
 	Updated  Status = "updated"
 	Update   Status = "update"
 )
+
+
 
 // +kubebuilder:object:root=true
 
