@@ -49,7 +49,7 @@ type Permission struct {
 	AuthUserID   string  `json:"authUserId"`   //对应clientauth的ID
 	AuthUserName string  `json:"authUserName"` //对应clientauth的NAME
 	Actions      Actions `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
-	Status       string  `json:"status"`       //用户的授权状态，已授权、待删除、待授权
+	Status       PermissionStatus  `json:"status"`       //用户的授权状态，已授权、待删除、待授权
 }
 const (
 	Granted = "granted" //已授权
@@ -61,6 +61,13 @@ type TopicStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	Status  Status `json:"status"`
+	Message string `json:"message"`
+}
+
+type PermissionStatus struct {
+	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+	Status  string `json:"status"`
 	Message string `json:"message"`
 }
 
