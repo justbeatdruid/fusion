@@ -495,6 +495,24 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 	}
 
 }
+func (c *controller) DeletePermissions(req *restful.Request) (int, *DeleteResponse) {
+	id := req.PathParameter("id")
+	authUserId := req.PathParameter("auth-user-id")
+	if topic, err := c.service.DeletePermissions(id,authUserId); err != nil {
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:    1,
+			Message: fmt.Errorf("delete permissions error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &DeleteResponse{
+			Code:    0,
+			Data:    topic,
+			Message: "deleting",
+		}
+	}
+}
+
+
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
 }

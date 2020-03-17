@@ -94,7 +94,14 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.deleteTopics).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
-
+	//删除用户授权
+	ws.Route(ws.DELETE("/topics/{id}/permissions/{auth-user-id}").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("delete permissions ").
+		To(r.deletePermissions).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func (r *router) createTopic(request *restful.Request, response *restful.Response) {
@@ -145,4 +152,8 @@ func (r *router) importTopics(request *restful.Request, response *restful.Respon
 
 func (r *router) grantPermissions(request *restful.Request, response *restful.Response) {
 
+}
+func (r *router) deletePermissions(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.DeletePermissions(request)
+	response.WriteHeaderAndEntity(code, result)
 }
