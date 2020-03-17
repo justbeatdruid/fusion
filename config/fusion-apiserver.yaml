@@ -63,6 +63,8 @@ spec:
         - --cas-port=8000
         - --audit-host=fusion-auditlog
         - --audit-port=6868
+        - --pulsar-host=10.160.32.24
+        - --pulsar-port=30003
         env:
         - name: MY_POD_NAMESPACE
           valueFrom:
