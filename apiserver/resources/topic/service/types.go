@@ -12,6 +12,7 @@ import (
 const (
 	DefaultTenant    = "public"
 	DefaultNamespace = "default"
+	Separator        = "/"
 )
 
 type Topic struct {
@@ -26,13 +27,14 @@ type Topic struct {
 	CreatedAt       int64        `json:"createdAt""`      //创建Topic的时间戳
 	Status          v1.Status    `json:"status"`
 	Message         string       `json:"message"`
-	Permissions     []Permission `json:permission`
+	Permissions     []Permission `json:"permissions"`
 }
 type Actions []string
 type Permission struct {
 	AuthUserID   string  `json:"authUserId"`   //对应clientauth的ID
 	AuthUserName string  `json:"authUserName"` //对应clientauth的NAME
 	Actions      Actions `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
+	Status       string  `json:"status"`       //用户的授权状态，已授权、待删除、待授权
 }
 type Message struct {
 	TopicName string           `json:"topicName"`
@@ -64,11 +66,18 @@ func ToAPI(app *Topic) *v1.Topic {
 		IsNonPersistent: app.IsNonPersistent,
 	}
 
+	if crd.Spec.Partition <= 0 {
+		crd.Spec.Partition = 1
+	}
 	if len(crd.Spec.Tenant) == 0 {
 		crd.Spec.Tenant = DefaultTenant
 	}
 	if len(crd.Spec.TopicGroup) == 0 {
 		crd.Spec.TopicGroup = DefaultNamespace
+	}
+
+	if len(crd.Spec.Tenant) == 0 {
+		crd.Spec.Tenant = "public"
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -114,7 +123,6 @@ func (a *Topic) Validate() error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
-
 	a.ID = names.NewID()
 	return nil
 }
@@ -129,9 +137,9 @@ func (a *Topic) GetUrl() (url string) {
 	}
 
 	build.WriteString(a.Tenant)
-	build.WriteString("/")
+	build.WriteString(Separator)
 	build.WriteString(a.TopicGroup)
-	build.WriteString("/")
+	build.WriteString(Separator)
 	build.WriteString(a.Name)
 
 	return build.String()
