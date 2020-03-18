@@ -72,8 +72,8 @@ func (s *Service) DeleteTopic(id string) (*Topic, error) {
 	return ToModel(tp), nil
 }
 
-func (s *Service) DeletePermissions(id string,authUserId string) (*Topic, error) {
-	tp, err := s.DeletePer(id,authUserId)
+func (s *Service) DeletePermissions(id string, authUserId string) (*Topic, error) {
+	tp, err := s.DeletePer(id, authUserId)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to delete permission: %+v", err)
 	}
@@ -153,19 +153,20 @@ func (s *Service) Delete(id string) (*v1.Topic, error) {
 	return s.UpdateStatus(tp)
 }
 
-func (s *Service) DeletePer(id string,authUserId string) (*v1.Topic, error) {
+func (s *Service) DeletePer(id string, authUserId string) (*v1.Topic, error) {
 	tp, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
 	for _, P := range tp.Spec.Permissions {
-			if P.AuthUserID == authUserId {
-				P.Status.Status = "delete"
-				break
-			}
+		if P.AuthUserID == authUserId {
+			P.Status.Status = "delete"
+			break
 		}
+	}
 	return s.UpdateStatus(tp)
 }
+
 //更新状态
 func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)

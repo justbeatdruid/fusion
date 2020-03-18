@@ -198,3 +198,43 @@ func (s *Service) RegenerateToken(ca *Clientauth) (*Clientauth, error) {
 	return ToModel(cad), nil
 
 }
+
+func (s *Service) AddAuthorizedTopic(id string, topicId string) error{
+	ca, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("clientauth id is not exist, id : %+v, error : %+v", id, err)
+	}
+	if ca.Spec.AuthorizedMap == nil {
+		ca.Spec.AuthorizedMap = make(map[string]int)
+	}
+	_, isExist := ca.Spec.AuthorizedMap[topicId]
+	if !isExist {
+		ca.Spec.AuthorizedMap[topicId] = 1
+		_, err = s.UpdateStatus(ca)
+		if err != nil {
+			return fmt.Errorf("add authorized topic error, %+v", err)
+		}
+	}
+	return nil
+}
+
+func (s *Service) RemoveAuthorizedTopic(id string, topicId string) error{
+	ca, err := s.Get(id)
+	if err != nil {
+		return fmt.Errorf("clientauth id is not exist, id : %+v, error : %+v", id, err)
+	}
+
+	if ca.Spec.AuthorizedMap == nil {
+		return nil
+	}
+	_, isExist := ca.Spec.AuthorizedMap[topicId]
+	if isExist {
+		delete(ca.Spec.AuthorizedMap, topicId)
+		_, err = s.UpdateStatus(ca)
+		if err != nil {
+			return fmt.Errorf("add authorized topic error, %+v", err)
+		}
+	}
+
+	return nil
+}

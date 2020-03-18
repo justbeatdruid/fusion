@@ -6,12 +6,17 @@ import (
 	nlptv1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/parnurzeal/gorequest"
 	"k8s.io/klog"
+	"net/http"
 	"time"
 )
 
-const persistentTopicUrl = "/admin/v2/persistent/%s/%s/%s"
-const nonPersistentTopicUrl = "/admin/v2/non-persistent/%s/%s/%s"
-const protocol = "http"
+const (
+	persistentTopicUrl         = "/admin/v2/persistent/%s/%s/%s"
+	nonPersistentTopicUrl      = "/admin/v2/non-persistent/%s/%s/%s"
+	protocol                   = "http"
+	persistentPermissionUrl    = "/admin/v2/persistent/%s/%s/%s/permissions/%s"
+	nonPersistentPermissionUrl = "/admin/v2/persistent/%s/%s/%s/permissions/%s"
+)
 
 type requestLogger struct {
 	prefix string
@@ -33,8 +38,8 @@ func (r *requestLogger) Println(v ...interface{}) {
 
 //Operator 定义连接Pulsar所需要的参数
 type Operator struct {
-	Host string
-	Port int
+	Host       string
+	Port       int
 	AuthEnable bool
 }
 
@@ -44,20 +49,9 @@ func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
 
 	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
 
-	url := persistentTopicUrl
-	if topic.Spec.IsNonPersistent {
-		url = nonPersistentTopicUrl
-	}
-
-	if topic.Spec.Partition > 1 {
-		url += "/partitions"
-	}
-	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
-
-	topicUrl = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl)
+	topicUrl := r.getUrl(topic)
 	request = request.Put(topicUrl)
 	response, body, errs := request.Send("").EndStruct("")
-
 	fmt.Println("URL:", topicUrl)
 	fmt.Println(" Response: ", body, response, errs)
 
@@ -73,19 +67,8 @@ func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
 //DeleteTopic 调用Pulsar的Restful Admin API，删除Topic
 func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-	url := persistentTopicUrl
-	if topic.Spec.IsNonPersistent {
-		url = nonPersistentTopicUrl
-	}
-
-	if topic.Spec.Partition > 1 {
-		url += "/partitions"
-	}
-	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
-
-	topicUrl = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl)
-	request = request.Delete(topicUrl)
-	response, body, errs := request.Send("").EndStruct("")
+	topicUrl := r.getUrl(topic)
+	response, body, errs := request.Delete(topicUrl).Retry(3, 5*time.Second, http.StatusBadRequest, http.StatusInternalServerError).End()
 	fmt.Println("URL:", topicUrl)
 	fmt.Print(" Response: ", body, response, errs)
 	if response.StatusCode == 204 {
@@ -97,8 +80,45 @@ func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	}
 }
 
+func (r *Operator) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Permission) (err error) {
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+
+	var url string
+	if topic.Spec.IsNonPersistent {
+		url = nonPersistentPermissionUrl
+	} else {
+		url = persistentPermissionUrl
+	}
+
+	url = fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name, permission.AuthUserName)
+	url = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
+	response, body, errs := request.Post(url).Send(permission.Actions).End()
+
+	klog.Infof("grant permission result, url: %+v, response: %+v, body: %+v, err:%+v", url, response, body, errs)
+	if response.StatusCode == 204 {
+		return nil
+	}
+
+	return fmt.Errorf("grant permission error: %+v", errs)
+
+}
+
+func (r *Operator) getUrl(topic *nlptv1.Topic) string {
+	url := persistentTopicUrl
+	if topic.Spec.IsNonPersistent {
+		url = nonPersistentTopicUrl
+	}
+
+	if topic.Spec.Partition > 1 {
+		url += "/partitions"
+	}
+	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
+
+	return fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl)
+}
+
 //删除授权
-func (r *Operator) DeletePer(topic *nlptv1.Topic,P *nlptv1.Permission) (err error) {
+func (r *Operator) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	url := persistentTopicUrl
 	if topic.Spec.IsNonPersistent {
@@ -109,7 +129,7 @@ func (r *Operator) DeletePer(topic *nlptv1.Topic,P *nlptv1.Permission) (err erro
 		url += "/partitions"
 	}
 	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
-	topicUrl = fmt.Sprintf("%s://%s:%d%s%s%s", protocol, r.Host, r.Port, topicUrl,"permissions",P.AuthUserName)
+	topicUrl = fmt.Sprintf("%s://%s:%d%s%s%s", protocol, r.Host, r.Port, topicUrl, "permissions", P.AuthUserName)
 	request = request.Delete(topicUrl).Retry(3, 5*time.Second)
 	response, body, errs := request.Send("").EndStruct("")
 	fmt.Println("URL:", topicUrl)

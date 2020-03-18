@@ -82,36 +82,34 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	}
 
-	//删除授权
-	for index, P := range topic.Spec.Permissions {
-		if P.Status.Status == "delete"{
-			P.Status.Status = "deleting"
-			if err := r.Operator.DeletePer(topic, &P); err != nil {
-				P.Status.Status = "error"
-                P.Status.Message = err.Error()
-                r.Update(ctx, topic)
-			} else{
-				pers := topic.Spec.Permissions
-				topic.Spec.Permissions=append(pers[:index],pers[index+1:]...)
-				r.Delete(ctx, topic)
+	if topic.Status.Status == nlptv1.Update {
+		topic.Status.Status = nlptv1.Updating
+		for _, p := range topic.Spec.Permissions {
+			if p.Status.Status == nlptv1.Grant {
+				if err := r.Operator.GrantPermission(topic, &p); err != nil {
+					p.Status.Status = "error"
+				} else {
+					p.Status.Status = nlptv1.Granted
+				}
+
+			}
+		}
+		//删除授权
+		for index, P := range topic.Spec.Permissions {
+			if P.Status.Status == "delete" {
+				P.Status.Status = "deleting"
+				if err := r.Operator.DeletePer(topic, &P); err != nil {
+					P.Status.Status = "error"
+					P.Status.Message = err.Error()
+					r.Update(ctx, topic)
+				} else {
+					pers := topic.Spec.Permissions
+					topic.Spec.Permissions = append(pers[:index], pers[index+1:]...)
+					r.Delete(ctx, topic)
+				}
 			}
 		}
 	}
-	/* for example
-	topic = r.Get()
-	if topic.Status == "init" {
-		topicID, err := kafka.Create(topic)
-		if err != nil {
-			topic.Status = "error"
-		} else {
-			topic.TopicID = topicID
-			topic.Status = "success"
-		}
-		r.Update(topic)
-	}
-	*/
-	// your logic here
-
 	return ctrl.Result{}, nil
 }
 

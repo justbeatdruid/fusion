@@ -59,9 +59,9 @@ type ImportResponse struct {
 }
 
 type ImportData struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Url     string `json:"url"`
+	Code    int            `json:"code"`
+	Message string         `json:"message"`
+	Data    *service.Topic `json:"data"`
 }
 
 type GrantPermissionRequest struct {
@@ -233,11 +233,11 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 		topic.URL = topic.GetUrl()
 		if t, err := c.service.CreateTopic(topic); err != nil {
 			id.Code = 1
-			id.Message = "create database error"
+			id.Message = fmt.Sprintf("failed to import topics:%+v", err)
 		} else {
 			id.Code = 0
 			id.Message = "success"
-			id.Url = t.URL
+			id.Data = t
 		}
 		ids = append(ids, id)
 	}
@@ -498,7 +498,7 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 func (c *controller) DeletePermissions(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	authUserId := req.PathParameter("auth-user-id")
-	if topic, err := c.service.DeletePermissions(id,authUserId); err != nil {
+	if topic, err := c.service.DeletePermissions(id, authUserId); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("delete permissions error: %+v", err).Error(),
@@ -511,7 +511,6 @@ func (c *controller) DeletePermissions(req *restful.Request) (int, *DeleteRespon
 		}
 	}
 }
-
 
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
