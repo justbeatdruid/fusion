@@ -84,8 +84,9 @@ spec:
         volumeMounts:
         - mountPath: /etc/localtime
           name: host-time
-        - mountPath: /data
-          name: data
+        - mountPath: /data/err.json
+          subPath: err.json
+          name: config-volume
       restartPolicy: Always
       securityContext:
         fsGroup: 0
@@ -96,6 +97,10 @@ spec:
       - hostPath:
           path: /etc/localtime
         name: host-time
+      - name: config-volume
+        configMap:
+             name: err-config
+
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding

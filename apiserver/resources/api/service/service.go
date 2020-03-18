@@ -4,12 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"strconv"
-	"strings"
-
 	datasource "github.com/chinamobile/nlpt/apiserver/resources/datasource/service"
+	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	dsv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
@@ -18,6 +14,10 @@ import (
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -39,9 +39,10 @@ type Service struct {
 	tenantEnabled bool
 
 	dataService dw.Connector
+	localConfig appconfig.ErrorConfig
 }
 
-func NewService(client dynamic.Interface, dsConnector dw.Connector, kubeClient *clientset.Clientset, tenantEnabled bool) *Service {
+func NewService(client dynamic.Interface, dsConnector dw.Connector, kubeClient *clientset.Clientset, tenantEnabled bool, localConfig appconfig.ErrorConfig) *Service {
 	return &Service{
 		kubeClient:        kubeClient,
 		client:            client.Resource(v1.GetOOFSGVR()),
@@ -52,12 +53,13 @@ func NewService(client dynamic.Interface, dsConnector dw.Connector, kubeClient *
 		dataService: dsConnector,
 
 		tenantEnabled: tenantEnabled,
+		localConfig:   localConfig,
 	}
 }
 
-func (s *Service) CreateApi(model *Api) (*Api, error) {
+func (s *Service) CreateApi(model *Api) (*Api, error, string) {
 	if err := s.Validate(model); err != nil {
-		return nil, fmt.Errorf("bad request: %+v", err)
+		return nil, fmt.Errorf("bad request: %+v", err), "001000016"
 	}
 	var crdNamespace = model.Namespace
 	// check serviceunit
@@ -65,11 +67,12 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	var su *suv1.Serviceunit
 	su, err := s.getServiceunit(model.Serviceunit.ID, crdNamespace)
 	if err != nil {
-		return nil, fmt.Errorf("get serviceunit error: %+v", err)
+		return nil, fmt.Errorf("get serviceunit error: %+v", err), "001000017"
 	}
 	if !s.tenantEnabled {
 		if !user.WritePermitted(model.Users.Owner.ID, su.ObjectMeta.Labels) {
-			return nil, fmt.Errorf("user %s has no permission for writting serviceunit %s", model.Users.Owner.ID, su.ObjectMeta.Name)
+			return nil, fmt.Errorf("user %s has no permission for writting serviceunit %s",
+				model.Users.Owner.ID, su.ObjectMeta.Name), "001000018"
 		}
 	}
 
@@ -77,11 +80,11 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	if su.Spec.DatasourceID != nil {
 		ds, err := s.getDatasource(su.Spec.DatasourceID.ID)
 		if err != nil {
-			return nil, fmt.Errorf("get datasource error: %+v", err)
+			return nil, fmt.Errorf("get datasource error: %+v", err), "001000019"
 		}
 		if model.DataWarehouseQuery != nil && ds.Spec.Type == dsv1.DataWarehouseType {
 			if err := model.DataWarehouseQuery.RefillQuery(ds.Spec.DataWarehouse); err != nil {
-				return nil, fmt.Errorf("cannot refill datawarehouse query: %+v", err)
+				return nil, fmt.Errorf("cannot refill datawarehouse query: %+v", err), "001000020"
 			}
 		}
 	}
@@ -105,7 +108,7 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	// create api
 	api, err := s.Create(ToAPI(model))
 	if err != nil {
-		return nil, fmt.Errorf("cannot create object: %+v", err)
+		return nil, fmt.Errorf("cannot create object: %+v", err), "001000021"
 	}
 	//update service unit
 	//if _, err = s.updateServiceApi(api.Spec.Serviceunit.ID, api.ObjectMeta.Name, api.Spec.Name); err != nil {
@@ -114,7 +117,7 @@ func (s *Service) CreateApi(model *Api) (*Api, error) {
 	//	}
 	//	return nil, fmt.Errorf("cannot update related service unit: %+v", err)
 	//}
-	return ToModel(api), nil
+	return ToModel(api), nil, "0"
 }
 func CanExeAction(api *v1.Api, action v1.Action) error {
 	if api.Status.Status == v1.Running {
