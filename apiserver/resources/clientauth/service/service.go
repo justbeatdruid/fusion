@@ -199,7 +199,7 @@ func (s *Service) RegenerateToken(ca *Clientauth) (*Clientauth, error) {
 
 }
 
-func (s *Service) AddAuthorizedTopic(id string, topicId string) error{
+func (s *Service) AddAuthorizedTopic(id string, topicId string) error {
 	ca, err := s.Get(id)
 	if err != nil {
 		return fmt.Errorf("clientauth id is not exist, id : %+v, error : %+v", id, err)
@@ -218,7 +218,7 @@ func (s *Service) AddAuthorizedTopic(id string, topicId string) error{
 	return nil
 }
 
-func (s *Service) RemoveAuthorizedTopic(id string, topicId string) error{
+func (s *Service) RemoveAuthorizedTopic(id string, topicId string) error {
 	ca, err := s.Get(id)
 	if err != nil {
 		return fmt.Errorf("clientauth id is not exist, id : %+v, error : %+v", id, err)
