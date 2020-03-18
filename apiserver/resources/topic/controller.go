@@ -512,6 +512,59 @@ func (c *controller) DeletePermissions(req *restful.Request) (int, *DeleteRespon
 	}
 }
 
+type PermissionList []service.Permission
+
+func (pers PermissionList) Len() int {
+	return len(pers)
+}
+
+func (pers PermissionList) GetItem(i int) (interface{}, error) {
+	if i >= len(pers) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return pers[i], nil
+}
+func (c *controller) ListUsers(req *restful.Request) (int, *ListResponse) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	topicId := req.QueryParameter("id")
+	AuthUserName := req.QueryParameter("name")
+	tp, err := c.service.GetTopic(topicId)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: fmt.Errorf("list database error: %+v", err).Error(),
+		}
+	}
+	var permissionList PermissionList = tp.Permissions
+	if len(AuthUserName) > 0 {
+		permissionList = c.ListUsersByName(AuthUserName, permissionList)
+	}
+	data, err := util.PageWrap(permissionList, page, size)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: fmt.Sprintf("page parameter error: %+v", err),
+		}
+	} else {
+		return http.StatusOK, &ListResponse{
+			Code: 0,
+			Data: data,
+		}
+	}
+}
+
+//根据用户名查询topic授权用户，模糊查询
+func (c *controller) ListUsersByName(name string, per []service.Permission) []service.Permission {
+	var permissionsResult []service.Permission
+	name = strings.ToLower(name)
+	for _, p := range per {
+		if strings.Contains(strings.ToLower(p.AuthUserName), name) {
+			permissionsResult = append(permissionsResult, p)
+		}
+	}
+	return permissionsResult
+}
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
 }
