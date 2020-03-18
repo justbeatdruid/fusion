@@ -425,7 +425,6 @@ func (c *controller) RemoveAuthorizedTopic(req *restful.Request) (int, *CreateRe
 	}
 }
 
-
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
 }

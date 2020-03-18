@@ -13,17 +13,17 @@ const (
 )
 
 type Clientauth struct {
-	ID             string    `json:"id"`
-	Name           string    `json:"name"`
-	Namespace      string    `json:"namespace"`
-	CreatedAt      int64     `json:"createdAt"`
-	IssuedAt       int64     `json:"issuedAt"`
-	ExpireAt       int64     `json:"expireAt"`
-	Token          string    `json:"token"`
-	Effective      bool      `json:"effective"`
-	AuthorizedMap map[string]int  `json:"authorizedMap"` //已授权信息，key：topic id，value：1
-	Status         v1.Status `json:"status"`
-	Message        string    `json:"message"`
+	ID            string         `json:"id"`
+	Name          string         `json:"name"`
+	Namespace     string         `json:"namespace"`
+	CreatedAt     int64          `json:"createdAt"`
+	IssuedAt      int64          `json:"issuedAt"`
+	ExpireAt      int64          `json:"expireAt"`
+	Token         string         `json:"token"`
+	Effective     bool           `json:"effective"`
+	AuthorizedMap map[string]int `json:"authorizedMap"` //已授权信息，key：topic id，value：1
+	Status        v1.Status      `json:"status"`
+	Message       string         `json:"message"`
 }
 
 // only used in creation options
@@ -57,16 +57,16 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 
 func ToModel(obj *v1.Clientauth) *Clientauth {
 	return &Clientauth{
-		ID:        obj.ObjectMeta.Name,
-		Name:      obj.Spec.Name,
-		Namespace: obj.Spec.Namespace,
-		CreatedAt: util.NewTime(obj.ObjectMeta.CreationTimestamp.Time).Unix(),
-		IssuedAt:  obj.Spec.IssuedAt,
-		ExpireAt:  obj.Spec.ExipreAt,
-		Token:     obj.Spec.Token,
-		Status:    obj.Status.Status,
-		Message:   obj.Status.Message,
-		AuthorizedMap:obj.Spec.AuthorizedMap,
+		ID:            obj.ObjectMeta.Name,
+		Name:          obj.Spec.Name,
+		Namespace:     obj.Spec.Namespace,
+		CreatedAt:     util.NewTime(obj.ObjectMeta.CreationTimestamp.Time).Unix(),
+		IssuedAt:      obj.Spec.IssuedAt,
+		ExpireAt:      obj.Spec.ExipreAt,
+		Token:         obj.Spec.Token,
+		Status:        obj.Status.Status,
+		Message:       obj.Status.Message,
+		AuthorizedMap: obj.Spec.AuthorizedMap,
 	}
 }
 
