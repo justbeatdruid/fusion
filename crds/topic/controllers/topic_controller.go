@@ -17,6 +17,7 @@ package controllers
 
 import (
 	"context"
+	"fmt"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/klog"
@@ -29,9 +30,10 @@ import (
 // TopicReconciler reconciles a Topic object
 type TopicReconciler struct {
 	client.Client
-	Log      logr.Logger
-	Scheme   *runtime.Scheme
-	Operator *Operator
+	Log                logr.Logger
+	Scheme             *runtime.Scheme
+	Operator           *Operator
+	ClientAuthOperator *ClientAuthOperator
 }
 
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=topics,verbs=get;list;watch;create;update;patch;delete
@@ -88,9 +90,17 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			if p.Status.Status == nlptv1.Grant {
 				if err := r.Operator.GrantPermission(topic, &p); err != nil {
 					p.Status.Status = "error"
+					p.Status.Message = fmt.Sprintf("failed to grant permission, %+v", err)
 				} else {
 					p.Status.Status = nlptv1.Granted
+					p.Status.Message = "success"
+					if err := r.ClientAuthOperator.AddAuthorizedTopic(p.AuthUserID, topic.Name); err != nil {
+						//TODO 需要回滚？
+						klog.Errorf("add authorized topic failed, %+v", err)
+					}
 				}
+
+				r.Update(ctx, topic)
 
 			}
 		}

@@ -53,15 +53,9 @@ type MessageResponse = struct {
 type PingResponse = DeleteResponse
 
 type ImportResponse struct {
-	Code    int          `json:"code"`
-	Message string       `json:"message"`
-	Data    []ImportData `json:"data"`
-}
-
-type ImportData struct {
-	Code    int            `json:"code"`
-	Message string         `json:"message"`
-	Data    *service.Topic `json:"data"`
+	Code    int             `json:"code"`
+	Message string          `json:"message"`
+	Data    []service.Topic `json:"data"`
 }
 
 type GrantPermissionRequest struct {
@@ -210,7 +204,7 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 		}
 	}
 
-	ids := []ImportData{}
+	var data []service.Topic
 	for _, tp := range tps.ParseData {
 
 		partition, _ := strconv.Atoi(tp[3])
@@ -223,29 +217,34 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 			IsNonPersistent: isNonPersisten,
 		}
 
-		id := ImportData{}
-
 		//数据重复判断
 		if c.service.IsTopicExist(topic.GetUrl()) {
 			continue
 		}
 
-		topic.URL = topic.GetUrl()
-		if t, err := c.service.CreateTopic(topic); err != nil {
-			id.Code = 1
-			id.Message = fmt.Sprintf("failed to import topics:%+v", err)
-		} else {
-			id.Code = 0
-			id.Message = "success"
-			id.Data = t
+		if err := topic.Validate(); err != nil {
+			return http.StatusInternalServerError, &ImportResponse{
+				Code:    1,
+				Message: fmt.Errorf("import topics error: %+v", err).Error(),
+			}
 		}
-		ids = append(ids, id)
+		topic.URL = topic.GetUrl()
+		t, err := c.service.CreateTopic(topic)
+		if err != nil {
+			return http.StatusInternalServerError, &ImportResponse{
+				Code:    1,
+				Message: fmt.Errorf("import topics error: %+v", err).Error(),
+			}
+		} else {
+			data = append(data, *t)
+		}
+
 	}
 
 	return http.StatusOK, &ImportResponse{
 		Code:    0,
 		Message: "success",
-		Data:    ids,
+		Data:    data,
 	}
 
 }
