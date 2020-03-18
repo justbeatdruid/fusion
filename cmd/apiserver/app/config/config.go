@@ -10,6 +10,22 @@ import (
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 )
 
+type ErrorConfig struct {
+	Common           map[string]string `json:"common"`
+	Api              map[string]string `json:"api"`
+	App              map[string]string `json:"app"`
+	AppGroup         map[string]string `json:"appGroup"`
+	Apply            map[string]string `json:"apply"`
+	DataService      map[string]string `json:"dataService"`
+	DataSource       map[string]string `json:"dataSource"`
+	Restriction      map[string]string `json:"restriction"`
+	Serviceunit      map[string]string `json:"serviceunit"`
+	ServiceunitGroup map[string]string `json:"serviceunitGroup"`
+	Topic            map[string]string `json:"topic"`
+	TopicGroup       map[string]string `json:"topicGroup"`
+	Trafficcontrol   map[string]string `json:"trafficcontrol"`
+	ClientAuth       map[string]string `json:"clientAuth"`
+}
 type Config struct {
 	SecureServing   *apiserver.SecureServingInfo
 	InsecureServing *apiserver.DeprecatedInsecureServingInfo
@@ -30,6 +46,8 @@ type Config struct {
 	Auditor *audit.Auditor
 
 	TenantEnabled bool
+
+	LocalConfig ErrorConfig
 }
 
 func (c *Config) GetKubeClient() *clientset.Clientset {

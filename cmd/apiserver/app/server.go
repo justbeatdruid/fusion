@@ -17,6 +17,7 @@ import (
 
 func NewServerCommand() *cobra.Command {
 	serverRunOptions := options.NewServerRunOptions()
+	klog.Infof(" serverRunOptions LocalConfig %+v", serverRunOptions.LocalConfig)
 	command := &cobra.Command{
 		Use: "database",
 		Long: `The database middleware receives requests from console,
@@ -28,19 +29,21 @@ then creates services to backend`,
 					klog.V(1).Infof("FLAG: --%s=%q", flag.Name, flag.Value)
 				})
 			}(cmd.Flags())
-
+			klog.V(5).Infof("before run LocalConfig %+v", serverRunOptions.LocalConfig)
 			if err := Run(serverRunOptions); err != nil {
 				klog.Errorf("error run server: %+v", err)
 			}
 			return nil
 		},
 	}
+	klog.V(5).Infof("after run LocalConfig %+v", serverRunOptions.LocalConfig)
 	fs := command.Flags()
 	namedFlagSets := serverRunOptions.Flags()
 	version.AddFlags(namedFlagSets.FlagSet("global"))
 	for _, f := range namedFlagSets.FlagSets {
 		fs.AddFlagSet(f)
 	}
+
 	usageFmt := "Usage:\n  %s\n"
 	cols, _, _ := term.TerminalSize(command.OutOrStdout())
 	command.SetUsageFunc(func(cmd *cobra.Command) error {
