@@ -72,6 +72,14 @@ func (s *Service) DeleteTopic(id string) (*Topic, error) {
 	return ToModel(tp), nil
 }
 
+func (s *Service) DeletePermissions(id string, authUserId string) (*Topic, error) {
+	tp, err := s.DeletePer(id, authUserId)
+	if err != nil {
+		return nil, fmt.Errorf("cannot update status to delete permission: %+v", err)
+	}
+	return ToModel(tp), nil
+}
+
 //带时间查询
 func (s *Service) ListMessagesTime(topicUrls []string, start int64, end int64) ([]Message, error) {
 	messages, err := s.ListTopicMessagesTime(topicUrls, start, end)
@@ -142,6 +150,20 @@ func (s *Service) Delete(id string) (*v1.Topic, error) {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
 	tp.Status.Status = v1.Delete
+	return s.UpdateStatus(tp)
+}
+
+func (s *Service) DeletePer(id string, authUserId string) (*v1.Topic, error) {
+	tp, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("error delete crd: %+v", err)
+	}
+	for _, P := range tp.Spec.Permissions {
+		if P.AuthUserID == authUserId {
+			P.Status.Status = "delete"
+			break
+		}
+	}
 	return s.UpdateStatus(tp)
 }
 

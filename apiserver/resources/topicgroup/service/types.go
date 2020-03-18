@@ -19,7 +19,7 @@ type Topicgroup struct {
 	Namespace string    `json:"namespace"`
 	Tenant    string    `json:"tenant"`             //namespace的所属租户名称
 	Policies  Policies  `json:"policies,omitempty"` //namespace的策略
-	CreatedAt int64     `json:createdAt`            //创建时间
+	CreatedAt int64     `json:"createdAt"`            //创建时间
 	Status    v1.Status `json:"status"`
 	Message   string    `json:"message"`
 }

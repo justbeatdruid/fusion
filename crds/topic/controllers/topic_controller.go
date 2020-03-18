@@ -85,18 +85,31 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if topic.Status.Status == nlptv1.Update {
 		topic.Status.Status = nlptv1.Updating
 		for _, p := range topic.Spec.Permissions {
-			if p.Status == nlptv1.Grant {
+			if p.Status.Status == nlptv1.Grant {
 				if err := r.Operator.GrantPermission(topic, &p); err != nil {
-					p.Status = "error"
+					p.Status.Status = "error"
 				} else {
-					p.Status = nlptv1.Granted
+					p.Status.Status = nlptv1.Granted
 				}
 
 			}
 		}
-
+		//删除授权
+		for index, P := range topic.Spec.Permissions {
+			if P.Status.Status == "delete" {
+				P.Status.Status = "deleting"
+				if err := r.Operator.DeletePer(topic, &P); err != nil {
+					P.Status.Status = "error"
+					P.Status.Message = err.Error()
+					r.Update(ctx, topic)
+				} else {
+					pers := topic.Spec.Permissions
+					topic.Spec.Permissions = append(pers[:index], pers[index+1:]...)
+					r.Delete(ctx, topic)
+				}
+			}
+		}
 	}
-
 	return ctrl.Result{}, nil
 }
 

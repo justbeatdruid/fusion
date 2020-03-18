@@ -13,16 +13,17 @@ const (
 )
 
 type Clientauth struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"`
-	Namespace string    `json:"namespace"`
-	CreatedAt int64     `json:"createdAt"`
-	IssuedAt  int64     `json:"issuedAt"`
-	ExpireAt  int64     `json:"expireAt"`
-	Token     string    `json:"token"`
-	Effective bool      `json:"effective"`
-	Status    v1.Status `json:"status"`
-	Message   string    `json:"message"`
+	ID             string    `json:"id"`
+	Name           string    `json:"name"`
+	Namespace      string    `json:"namespace"`
+	CreatedAt      int64     `json:"createdAt"`
+	IssuedAt       int64     `json:"issuedAt"`
+	ExpireAt       int64     `json:"expireAt"`
+	Token          string    `json:"token"`
+	Effective      bool      `json:"effective"`
+	AuthorizedMap map[string]int  `json:"authorizedMap"` //已授权信息，key：topic id，value：1
+	Status         v1.Status `json:"status"`
+	Message        string    `json:"message"`
 }
 
 // only used in creation options
@@ -65,6 +66,7 @@ func ToModel(obj *v1.Clientauth) *Clientauth {
 		Token:     obj.Spec.Token,
 		Status:    obj.Status.Status,
 		Message:   obj.Status.Message,
+		AuthorizedMap:obj.Spec.AuthorizedMap,
 	}
 }
 
