@@ -77,8 +77,8 @@ func main() {
 	})
 
 	operator := &controllers.Operator{
-		Host: pulsarHost,
-		Port: pulsarPort,
+		Host:       pulsarHost,
+		Port:       pulsarPort,
 		AuthEnable: authEnable,
 	}
 

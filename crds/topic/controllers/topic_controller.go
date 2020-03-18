@@ -81,20 +81,21 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 
 	}
-	/* for example
-	topic = r.Get()
-	if topic.Status == "init" {
-		topicID, err := kafka.Create(topic)
-		if err != nil {
-			topic.Status = "error"
-		} else {
-			topic.TopicID = topicID
-			topic.Status = "success"
+
+	if topic.Status.Status == nlptv1.Update {
+		topic.Status.Status = nlptv1.Updating
+		for _, p := range topic.Spec.Permissions {
+			if p.Status == nlptv1.Grant {
+				if err := r.Operator.GrantPermission(topic, &p); err != nil {
+					p.Status = "error"
+				} else {
+					p.Status = nlptv1.Granted
+				}
+
+			}
 		}
-		r.Update(topic)
+
 	}
-	*/
-	// your logic here
 
 	return ctrl.Result{}, nil
 }

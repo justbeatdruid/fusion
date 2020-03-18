@@ -1,7 +1,7 @@
 package parser
 
 import (
-	"errors"
+	"fmt"
 	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"github.com/tealeg/xlsx"
 	"io"
@@ -15,13 +15,15 @@ type ParseResponse struct {
 }
 
 func ParseTopicsFromExcel(req *restful.Request, response *restful.Response, spec *TopicExcelSpec) (ParseResponse, error) {
-	req.Request.ParseMultipartForm(32 << 20)
+	if err := req.Request.ParseMultipartForm(32 << 20); err != nil {
+		return ParseResponse{}, fmt.Errorf("failed to import topics:%+v", err)
+	}
 	file, handler, err := req.Request.FormFile(spec.MultiPartFileKey)
 
 	klog.Infof("File name: %+v", handler.Filename)
 	if err != nil {
 		klog.Error("File error.")
-		return ParseResponse{}, errors.New("File error.")
+		return ParseResponse{}, fmt.Errorf("invalid file format:%+v", err)
 	}
 
 	defer file.Close()
@@ -34,13 +36,16 @@ func ParseTopicsFromExcel(req *restful.Request, response *restful.Response, spec
 
 	//获取已拷贝文件的绝对路径
 	fp, err := filepath.Abs(filepath.Dir(f.Name()))
+	if err != nil {
+		return ParseResponse{}, fmt.Errorf("failed to import topics:%+v", err)
+	}
 	fp = fp + "/" + handler.Filename
 
 	defer os.Remove(fp)
 
 	excelf, err := xlsx.OpenFile(fp)
 	if err != nil {
-		return ParseResponse{}, errors.New("import failed, not excel file")
+		return ParseResponse{}, fmt.Errorf("import failed:%+v", err)
 	}
 
 	var tps [][]string
@@ -48,15 +53,15 @@ func ParseTopicsFromExcel(req *restful.Request, response *restful.Response, spec
 		if sheet.Name == spec.SheetName {
 			for index, field := range spec.TitleRowSpecList {
 				cell := sheet.Cell(0, index)
-				klog.Info(cell.Value)
+
 				if len(cell.Value) == 0 {
 					klog.Error("invalid file format.")
-					return ParseResponse{}, errors.New("invalid file format.")
+					return ParseResponse{}, fmt.Errorf("invalid file format")
 				}
 
 				if cell.Value != field {
 					klog.Error("invalid file format.")
-					return ParseResponse{}, errors.New("invalid file format.")
+					return ParseResponse{}, fmt.Errorf("invalid file format")
 				}
 			}
 			for i := 1; i < len(sheet.Rows); i++ {

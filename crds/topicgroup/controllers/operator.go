@@ -26,9 +26,10 @@ type BacklogQuota struct {
 	Policy string `json:"policy"` //producer_request_hold, producer_exception,consumer_backlog_eviction
 }
 type Operator struct {
-	Host string
-	Port int
-	AuthEnable bool
+	Host           string
+	Port           int
+	AuthEnable     bool
+	SuperUserToken string
 }
 
 const namespaceUrl, protocol, success204 = "/admin/v2/namespaces/%s/%s", "http", 204
@@ -53,6 +54,7 @@ func (r *requestLogger) Println(v ...interface{}) {
 
 func (r *Operator) CreateNamespace(namespace *v1.Topicgroup) error {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	request = r.AddTokenToHeader(request)
 	url := r.getUrl(namespace)
 
 	ps := namespace.Spec.Policies
@@ -74,6 +76,7 @@ func (r *Operator) CreateNamespace(namespace *v1.Topicgroup) error {
 		},
 		BacklogQuotaMap: bmap,
 	}
+
 	response, _, err := request.Put(url).Send(createRequest).EndStruct("")
 	if response.StatusCode == success204 {
 		return nil
@@ -85,6 +88,7 @@ func (r *Operator) CreateNamespace(namespace *v1.Topicgroup) error {
 
 func (r *Operator) DeleteNamespace(namespace *v1.Topicgroup) error {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	request = r.AddTokenToHeader(request)
 	url := r.getUrl(namespace)
 	response, _, err := request.Delete(url).Send("").EndStruct("")
 	if response.StatusCode == success204 {
@@ -99,4 +103,11 @@ func (r *Operator) DeleteNamespace(namespace *v1.Topicgroup) error {
 func (r *Operator) getUrl(namespace *v1.Topicgroup) string {
 	url := fmt.Sprintf(namespaceUrl, namespace.Spec.Tenant, namespace.Spec.Name)
 	return fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
+}
+
+func (r *Operator) AddTokenToHeader(request *gorequest.SuperAgent) *gorequest.SuperAgent {
+	if r.AuthEnable {
+		request.Header.Set("Authorization", "Bearer "+r.SuperUserToken)
+	}
+	return request
 }
