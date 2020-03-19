@@ -3,6 +3,8 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"strings"
 
 	v1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 	"github.com/chinamobile/nlpt/pkg/names"
@@ -20,7 +22,7 @@ type Trafficcontrol struct {
 	Config      v1.ConfigInfo `json:"config"`
 	Apis        []v1.Api      `json:"apis"`
 	Description string        `json:"description"`
-	User        string        `json:"user"`
+	Users       user.Users    `json:"users"`
 	CreatedAt   util.Time     `json:"createdAt"`
 
 	Status    v1.Status `json:"status"`
@@ -43,7 +45,6 @@ func ToAPI(app *Trafficcontrol) *v1.Trafficcontrol {
 		Type:        app.Type,
 		Config:      app.Config,
 		Apis:        app.Apis,
-		User:        app.User,
 		Description: app.Description,
 	}
 	status := app.Status
@@ -56,6 +57,8 @@ func ToAPI(app *Trafficcontrol) *v1.Trafficcontrol {
 		APICount:  0,
 		Published: false,
 	}
+	// add user labels
+	crd.ObjectMeta.Labels = user.AddUsersLabels(app.Users, crd.ObjectMeta.Labels)
 	return crd
 }
 
@@ -81,14 +84,13 @@ func ToAPIUpdate(app *Trafficcontrol, crd *v1.Trafficcontrol) *v1.Trafficcontrol
 }
 
 func ToModel(obj *v1.Trafficcontrol) *Trafficcontrol {
-	return &Trafficcontrol{
+	traffic := &Trafficcontrol{
 		ID:          obj.ObjectMeta.Name,
 		Name:        obj.Spec.Name,
 		Namespace:   obj.ObjectMeta.Namespace,
 		Type:        obj.Spec.Type,
 		Config:      obj.Spec.Config,
 		Apis:        obj.Spec.Apis,
-		User:        obj.Spec.User,
 		CreatedAt:   util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
 		Description: obj.Spec.Description,
 
@@ -97,14 +99,29 @@ func ToModel(obj *v1.Trafficcontrol) *Trafficcontrol {
 		APICount:  obj.Status.APICount,
 		Published: obj.Status.Published,
 	}
+	traffic.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
+	return traffic
 }
-
-func ToListModel(items *v1.TrafficcontrolList) []*Trafficcontrol {
-	var app []*Trafficcontrol = make([]*Trafficcontrol, len(items.Items))
-	for i := range items.Items {
-		app[i] = ToModel(&items.Items[i])
+func ToListModel(items *v1.TrafficcontrolList, opts ...util.OpOption) []*Trafficcontrol {
+	if len(opts) > 0 {
+		var apps []*Trafficcontrol = make([]*Trafficcontrol, 0)
+		nameLike := util.OpList(opts...).NameLike()
+		if len(nameLike) > 0 {
+			for _, item := range items.Items {
+				if !strings.Contains(item.Spec.Name, nameLike) {
+					continue
+				}
+				app := ToModel(&item)
+				apps = append(apps, app)
+			}
+			return apps
+		}
 	}
-	return app
+	var apps []*Trafficcontrol = make([]*Trafficcontrol, len(items.Items))
+	for i := range items.Items {
+		apps[i] = ToModel(&items.Items[i])
+	}
+	return apps
 }
 
 // check create parameters
@@ -120,6 +137,10 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 
 	if len(a.Type) == 0 {
 		return fmt.Errorf("type is null")
+	}
+
+	if len(a.Users.Owner.ID) == 0 {
+		return fmt.Errorf("owner not set")
 	}
 
 	switch a.Type {
@@ -220,9 +241,6 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 		}
 	}
 
-	if _, ok = data["user"]; ok {
-		target.Spec.User = source.User
-	}
 	if _, ok = data["apiCount"]; ok {
 		target.Status.APICount = source.APICount
 	}

@@ -3,6 +3,8 @@ package trafficcontrol
 import (
 	"fmt"
 	v1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"net/http"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol/service"
@@ -67,6 +69,14 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 			Message: "read entity error: data is null",
 		}
 	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	body.Data.Users = user.InitWithOwner(authuser.Name)
 	if db, err := c.service.CreateTrafficcontrol(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
@@ -112,7 +122,15 @@ func (c *controller) DeleteTrafficcontrol(req *restful.Request) (int, *DeleteRes
 func (c *controller) ListTrafficcontrol(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-	if tc, err := c.service.ListTrafficcontrol(); err != nil {
+	name := req.QueryParameter("name")
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: "auth model error",
+		}
+	}
+	if tc, err := c.service.ListTrafficcontrol(util.WithNameLike(name), util.WithUser(authuser.Name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
