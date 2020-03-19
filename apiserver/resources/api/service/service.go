@@ -254,7 +254,7 @@ func (s *Service) DeleteApi(id string, opts ...util.OpOption) (*Api, error) {
 }
 
 func (s *Service) PublishApi(id string, opts ...util.OpOption) (*Api, error) {
-	api, err := s.Get(id)
+	api, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
