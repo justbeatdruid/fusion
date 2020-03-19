@@ -210,7 +210,11 @@ func (s *Service) ListApi(suid, appid string, opts ...util.OpOption) ([]*Api, er
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	result := ToListModel(apis, opts...)
+	publishedOnly := false
+	if len(suid) == 0 && len(appid) == 0 {
+		publishedOnly = true
+	}
+	result := ToListModel(apis, publishedOnly, opts...)
 	if len(appid) > 0 {
 		for i := range result {
 			if apis.Items[i].Status.Applications != nil {
