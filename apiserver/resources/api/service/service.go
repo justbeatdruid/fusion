@@ -618,7 +618,7 @@ func (s *Service) Query(apiid string, params map[string][]string, limitstr strin
 			q.Limit = limit
 		}
 
-		data, err := s.dataService.QueryData(*q)
+		data, err := s.dataService.QueryData(*q, api.Spec.Name)
 		if err != nil {
 			return d, fmt.Errorf("query data error: %+v", err)
 		}

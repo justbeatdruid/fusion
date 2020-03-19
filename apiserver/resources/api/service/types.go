@@ -194,9 +194,16 @@ func publicParameters() []v1.ApiParameter {
 		{
 			Name:        "Authorization",
 			Type:        "string",
-			Example:     "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX",
-			Description: "请求token，位于headers",
+			Example:     "Bearer {application-jwt-token}",
+			Description: "请求Token，位于Headers",
 			Required:    true,
+		},
+		{
+			Name:        "limit",
+			Type:        "int",
+			Example:     "5",
+			Description: "返回条目个数限制。请求参数，位于URL Query。",
+			Required:    false,
 		},
 	}
 }
