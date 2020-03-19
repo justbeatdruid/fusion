@@ -92,13 +92,21 @@ func (r *DatasourceReconciler) SyncDatasources() error {
 	for _, d := range datawarehouse.Databases {
 		db := dwv1.FromApiDatabase(d)
 		if apiDs, ok := existedDatawarehouses[GetDataWarehouseKey(&db)]; ok {
-			result, err := nlptv1.DeepCompareDataWarehouse(apiDs.Spec.DataWarehouse, &db)
+			same, err := dwv1.DeepCompareDataWarehouse(apiDs.Spec.DataWarehouse, &db)
 			if err != nil {
 				klog.Errorf("compare datasource %s err: %+v", db.Name, err)
-			} else if !result {
+			} else if !same {
 				klog.V(4).Infof("need to update datawarehouse %s", db.Name)
 				apiDs.Spec.DataWarehouse = &db
 				apiDs.Status.UpdatedAt = metav1.Now()
+				if apiDs.Spec.DataWarehouse.Tables == nil {
+					apiDs.Spec.DataWarehouse.Tables = make([]dwv1.Table, 0)
+				}
+				for i := range apiDs.Spec.DataWarehouse.Tables {
+					if apiDs.Spec.DataWarehouse.Tables[i].Properties == nil {
+						apiDs.Spec.DataWarehouse.Tables[i].Properties = make([]dwv1.Property, 0)
+					}
+				}
 				if err = r.Update(ctx, &apiDs); err != nil {
 					klog.Errorf("cannot update datasource: %+v", err)
 				}

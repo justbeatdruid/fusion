@@ -34,6 +34,7 @@ type TableInfo struct {
 	DisplayName string `json:"displayName"`
 	Type        string `json:"tableType"`
 	EnglishName string `json:"englishName"`
+	Schema      string `json:"schama"`
 }
 
 type Property struct {
