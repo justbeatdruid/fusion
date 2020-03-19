@@ -15,6 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
+
+	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 )
 
 var crdNamespace = "default"
@@ -25,7 +27,7 @@ type Service struct {
 	applicationClient dynamic.NamespaceableResourceInterface
 }
 
-func NewService(client dynamic.Interface) *Service {
+func NewService(client dynamic.Interface, localConfig appconfig.ErrorConfig) *Service {
 	return &Service{
 		client:            client.Resource(v1.GetOOFSGVR()),
 		apiClient:         client.Resource(apiv1.GetOOFSGVR()),
