@@ -201,19 +201,25 @@ func publicParameters() []v1.ApiParameter {
 	}
 }
 
-func ToListModel(items *v1.ApiList, opts ...util.OpOption) []*Api {
-	if len(opts) > 0 {
+func ToListModel(items *v1.ApiList, publishedOnly bool, opts ...util.OpOption) []*Api {
+	if len(opts) > 0 || publishedOnly {
 		nameLike := util.OpList(opts...).NameLike()
-		if len(nameLike) > 0 {
-			var apis []*Api = make([]*Api, 0)
-			for i := range items.Items {
-				api := ToModel(&items.Items[i])
-				if strings.Contains(api.Name, nameLike) {
-					apis = append(apis, api)
+		var apis []*Api = make([]*Api, 0)
+		for i, a := range items.Items {
+			if len(nameLike) > 0 {
+				if !strings.Contains(a.Spec.Name, nameLike) {
+					continue
 				}
 			}
-			return apis
+			if publishedOnly {
+				if a.Status.PublishStatus != v1.Released {
+					continue
+				}
+			}
+			api := ToModel(&items.Items[i])
+			apis = append(apis, api)
 		}
+		return apis
 	}
 	var apis []*Api = make([]*Api, len(items.Items))
 	for i := range items.Items {
