@@ -18,10 +18,12 @@ all: build uninstall install
 build: clean apiserver-image datasource-image application-image trafficcontrol-image restriction-image topic-image api-image serviceunit-image apply-image
 
 install:
-	kubectl create -f config
+	kubectl create configmap err-config --from-file=config/err.json
+	kubectl create -f yaml
 
 uninstall:
-	kubectl delete -f config
+	kubectl delete -f yaml
+	kubectl delete configmaps err-config
 
 crd:
 	bash -c 'for i in crds/*;do echo $$i;kubectl apply -f $$i/config/crd/bases;done'

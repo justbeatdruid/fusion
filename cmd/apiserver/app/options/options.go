@@ -29,7 +29,7 @@ type ServerRunOptions struct {
 	TenantEnabled bool
 
 	ConfigPath  string
-	LocalConfig struct{}
+	LocalConfig appconfig.ErrorConfig
 
 	Datasource  *DatasourceOptions
 	Dataservice *DataserviceOptions
@@ -43,17 +43,22 @@ func NewServerRunOptions() *ServerRunOptions {
 		ListenAddress: ":8001",
 		CrdNamespace:  os.Getenv("MY_POD_NAMESPACE"),
 		TenantEnabled: false,
-
-		Datasource:  DefaultDatasourceOptions(),
-		Dataservice: DefaultDataserviceOptions(),
-		Topic:       DefaultTopicOptions(),
-		Cas:         DefaultCasOptions(),
-		Audit:       DefaultAuditOptions(),
+		ConfigPath:    "/data/err.json",
+		Datasource:    DefaultDatasourceOptions(),
+		Dataservice:   DefaultDataserviceOptions(),
+		Topic:         DefaultTopicOptions(),
+		Cas:           DefaultCasOptions(),
+		Audit:         DefaultAuditOptions(),
 	}
+
 	if len(s.CrdNamespace) == 0 {
 		klog.Infof("cannot find environmnent MY_POD_NAMESPACE, use default")
 		s.CrdNamespace = "default"
 	}
+
+	s.ParseOptions()
+	klog.V(5).Infof("after parse options ConfigPath %s", s.ConfigPath)
+	klog.V(5).Infof("after parse options LocalConfig %s", s.LocalConfig)
 	return s
 }
 
@@ -90,6 +95,7 @@ func (s *ServerRunOptions) ParseOptions() error {
 	if err = decoder.Decode(&s.LocalConfig); err != nil {
 		return fmt.Errorf("error parsing config file: %+v", err)
 	}
+	klog.Infof("parse options s.LocalConfig %+v", s.LocalConfig)
 	return nil
 }
 
@@ -124,6 +130,7 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		TopicConfig:   appconfig.NewTopicConfig(s.Topic.Host, s.Topic.Port),
 		Auditor:       audit.NewAuditor(s.Audit.Host, s.Audit.Port),
 		TenantEnabled: s.TenantEnabled,
+		LocalConfig:   s.LocalConfig,
 	}
 	cas.SetConnectionInfo(s.Cas.Host, s.Cas.Port)
 	return c, nil
