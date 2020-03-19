@@ -137,26 +137,3 @@ type DatasourceList struct {
 func init() {
 	SchemeBuilder.Register(&Datasource{}, &DatasourceList{})
 }
-
-func DeepCompareDataWarehouse(d1, d2 *dwv1.Database) (bool, error) { //d1 local  d2 orgen
-	for _, d1v := range d1.Tables {
-		for _, d2v := range d2.Tables {
-			/*
-				d1Time, e1 := time.Parse("2006-01-02 15:04:05", d1v.Info.LastUpdateTime)
-				d2Time, e2 := time.Parse("2006-01-02 15:04:05", d2v.Info.LastUpdateTime)
-				if e1 != nil || e2 != nil {
-					return true, fmt.Errorf("time formt err,need formt '2006-01-02 15:04:05'")
-				}
-			*/
-			if d1v.Info.ID == d2v.Info.ID {
-				if d1v.Info.LastUpdateTime != d2v.Info.LastUpdateTime {
-					return false, nil
-				}
-				break
-			}
-
-		}
-
-	}
-	return true, nil
-}

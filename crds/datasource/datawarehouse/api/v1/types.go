@@ -3,6 +3,7 @@ package v1
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/chinamobile/nlpt/pkg/datawarehouse/api/v1"
 )
@@ -30,6 +31,7 @@ type TableInfo struct {
 	EnglishName    string `json:"englishName"`
 	CreateTime     string `json:"createTime"`
 	LastUpdateTime string `json:"lastUpdateTime"`
+	Schema         string `json:"schama"`
 }
 
 type Property struct {
@@ -121,4 +123,51 @@ func fromApi(api, model interface{}) error {
 func OnlyTable(t Table) Table {
 	t.Properties = nil
 	return t
+}
+
+type TableList []Table
+
+func (tl TableList) Len() int {
+	return len(tl)
+}
+
+func (tl TableList) Less(i, j int) bool {
+	return tl[i].Info.ID < tl[j].Info.ID
+}
+
+func (tl TableList) Swap(i, j int) {
+	tl[i], tl[j] = tl[j], tl[i]
+}
+
+func DeepCompareDataWarehouse(d1, d2 *Database) (bool, error) { //d1 local  d2 orgen
+	if d1.Tables == nil {
+		d1.Tables = make([]Table, 0)
+	}
+	if d2.Tables == nil {
+		d2.Tables = make([]Table, 0)
+	}
+	var ts1 TableList = d1.Tables
+	var ts2 TableList = d2.Tables
+	if ts1.Len() != ts2.Len() {
+		return false, nil
+	}
+	if len(d1.Tables) == 0 {
+		return true, nil
+	}
+
+	sort.Sort(ts1)
+	sort.Sort(ts2)
+
+	l := ts1.Len()
+
+	for i := 0; i < l; i++ {
+		if ts1[i].Info.ID != ts2[i].Info.ID {
+			return false, nil
+		}
+		if ts1[i].Info.LastUpdateTime != ts2[i].Info.LastUpdateTime {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }

@@ -29,6 +29,7 @@ type TableInfo struct {
 	EnglishName    string `json:"englishName"`
 	CreateTime     string `json:"createTime"`
 	LastUpdateTime string `json:"lastUpdateTime"`
+	Schema         string `json:"schama"`
 }
 
 //{"id":"2928","name":"doctor_pk","displayName":"医生pk","englishName":null,"tableType":null,"tableId":null,"physicalType":"varchar","logicalType":"通用字符串","idx":0,"fieldLength":"0","fieldPersion":null,"isUnique":"否","des":null,"isPrimarykey":"否","isForeignkey":"是","referenceTableId":"2b7efd2a859f47da98ef5be248097a3a","referenceTableDisplayName":"医生信息维度表","referencePropertyId":"2698","referencePropertyName":"doctor_pk","isEncryption":"\u0000","entryptionType":null,"version":0,"standard":null,"isPartionfield":null,"sourceSql":null,"sourceTableId":null,"sourcePropertyId":null,"encrypt":"不加密"}
