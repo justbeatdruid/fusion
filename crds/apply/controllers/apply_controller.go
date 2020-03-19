@@ -109,7 +109,9 @@ func (r *ApplyReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			if err := r.UpdateApi(ctx, api, appID, true, ""); err != nil {
 				goto failed
 			}
-
+			if err := r.UpdateApp(ctx, app, api); err != nil {
+				goto failed
+			}
 		succeeded:
 			apply.Status.OperationDone = true
 		failed:
@@ -137,6 +139,15 @@ func (r *ApplyReconciler) UpdateApi(ctx context.Context, api *apiv1.Api, appid s
 		klog.Errorf("update api error: %+v", err)
 		return err
 	}
+	return nil
+}
+func (r *ApplyReconciler) UpdateApp(ctx context.Context, app *appv1.Application, api *apiv1.Api) error {
+	app.Spec.APIs = append(app.Spec.APIs, appv1.Api{api.ObjectMeta.Name, api.Name})
+	if err := r.Update(ctx, app); err != nil {
+		klog.Errorf("update app error: %+v", err)
+		return err
+	}
+	klog.Infof("update app apis: %+v", *app)
 	return nil
 }
 
