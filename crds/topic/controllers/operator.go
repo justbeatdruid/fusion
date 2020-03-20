@@ -38,15 +38,16 @@ func (r *requestLogger) Println(v ...interface{}) {
 
 //Operator 定义连接Pulsar所需要的参数
 type Operator struct {
-	Host       string
-	Port       int
-	AuthEnable bool
+	Host           string
+	Port           int
+	AuthEnable     bool
+	SuperUserToken string
 }
 
 //CreateTopic 调用Pulsar的Restful Admin API，创建Topic
 func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-
+	request = r.AddTokenToHeader(request)
 	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
 
 	topicUrl := r.getUrl(topic)
@@ -67,6 +68,7 @@ func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
 //DeleteTopic 调用Pulsar的Restful Admin API，删除Topic
 func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	request = r.AddTokenToHeader(request)
 	topicUrl := r.getUrl(topic)
 	response, body, errs := request.Delete(topicUrl).Retry(3, 5*time.Second, http.StatusBadRequest, http.StatusInternalServerError).End()
 	fmt.Println("URL:", topicUrl)
@@ -82,7 +84,7 @@ func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
 
 func (r *Operator) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Permission) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-
+	request = r.AddTokenToHeader(request)
 	var url string
 	if topic.Spec.IsNonPersistent {
 		url = nonPersistentPermissionUrl
@@ -120,6 +122,7 @@ func (r *Operator) getUrl(topic *nlptv1.Topic) string {
 //删除授权
 func (r *Operator) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	request = r.AddTokenToHeader(request)
 	url := persistentTopicUrl
 	if topic.Spec.IsNonPersistent {
 		url = nonPersistentTopicUrl
@@ -141,4 +144,11 @@ func (r *Operator) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err err
 		klog.Error(errMsg)
 		return errors.New(errMsg)
 	}
+}
+
+func (r *Operator) AddTokenToHeader(request *gorequest.SuperAgent) *gorequest.SuperAgent {
+	if r.AuthEnable {
+		request.Header.Set("Authorization", "Bearer "+r.SuperUserToken)
+	}
+	return request
 }
