@@ -30,10 +30,9 @@ import (
 // TopicReconciler reconciles a Topic object
 type TopicReconciler struct {
 	client.Client
-	Log                logr.Logger
-	Scheme             *runtime.Scheme
-	Operator           *Operator
-	ClientAuthOperator *ClientAuthOperator
+	Log      logr.Logger
+	Scheme   *runtime.Scheme
+	Operator *Operator
 }
 
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=topics,verbs=get;list;watch;create;update;patch;delete
@@ -86,6 +85,9 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	if topic.Status.Status == nlptv1.Update {
 		topic.Status.Status = nlptv1.Updating
+		//更新数据库的状态
+		klog.Infof("Start Grant Topic: %+v", *topic)
+		//授权操作
 		for _, p := range topic.Spec.Permissions {
 			if p.Status.Status == nlptv1.Grant {
 				if err := r.Operator.GrantPermission(topic, &p); err != nil {
@@ -94,12 +96,10 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				} else {
 					p.Status.Status = nlptv1.Granted
 					p.Status.Message = "success"
-					if err := r.ClientAuthOperator.AddAuthorizedTopic(p.AuthUserID, topic.Name); err != nil {
-						//TODO 需要回滚？
-						klog.Errorf("add authorized topic failed, %+v", err)
-					}
 				}
 
+				//更新数据库的状态
+				klog.Infof("Final Topic: %+v", *topic)
 				r.Update(ctx, topic)
 
 			}

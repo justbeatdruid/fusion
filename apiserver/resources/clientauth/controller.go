@@ -391,40 +391,6 @@ func (c *controller) RegenerateToken(req *restful.Request) (int, *CreateResponse
 
 }
 
-func (c *controller) AddAuthorizedTopic(req *restful.Request) (int, *CreateResponse) {
-	id := req.PathParameter("id")
-	topicId := req.PathParameter("topic-id")
-
-	if err := c.service.AddAuthorizedTopic(id, topicId); err != nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    fail,
-			Message: fmt.Sprintf("add authorized topic error: %+v", err),
-		}
-	}
-
-	return http.StatusOK, &CreateResponse{
-		Code:    success,
-		Message: "success",
-	}
-}
-
-func (c *controller) RemoveAuthorizedTopic(req *restful.Request) (int, *CreateResponse) {
-	id := req.PathParameter("id")
-	topicId := req.PathParameter("topic-id")
-
-	if err := c.service.RemoveAuthorizedTopic(id, topicId); err != nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    fail,
-			Message: fmt.Sprintf("remove authorized topic error: %+v", err),
-		}
-	}
-
-	return http.StatusOK, &CreateResponse{
-		Code:    success,
-		Message: "success",
-	}
-}
-
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
 }

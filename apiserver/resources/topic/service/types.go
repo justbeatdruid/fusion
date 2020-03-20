@@ -29,18 +29,21 @@ type Topic struct {
 	Message         string       `json:"message"`
 	Permissions     []Permission `json:"permissions"`
 }
-type Actions []string
-type Permission struct {
-	AuthUserID   string  `json:"authUserId"`   //对应clientauth的ID
-	AuthUserName string  `json:"authUserName"` //对应clientauth的NAME
-	Actions      Actions `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
-	Status       string  `json:"status"`       //用户的授权状态，已授权、待删除、待授权
-}
+
 type Message struct {
 	TopicName string           `json:"topicName"`
 	ID        pulsar.MessageID `json:"id"`
 	Time      util.Time        `json:"time"`
 	Messages  string           `json:"messages"`
+}
+
+type Actions []string
+
+type Permission struct {
+	AuthUserID   string  `json:"authUserId"`   //对应clientauth的ID
+	AuthUserName string  `json:"authUserName"` //对应clientauth的NAME
+	Actions      Actions `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
+	Status       string  `json:"status"`       //用户的授权状态，已授权、待删除、待授权
 }
 
 const (
@@ -92,6 +95,20 @@ func ToAPI(app *Topic) *v1.Topic {
 }
 
 func ToModel(obj *v1.Topic) *Topic {
+	var ps []Permission
+	for _, psm := range obj.Spec.Permissions {
+		var acs []string
+		for _, ac := range psm.Actions {
+			acs = append(acs, ac)
+		}
+		p := Permission{
+			AuthUserID:   psm.AuthUserID,
+			AuthUserName: psm.AuthUserName,
+			Actions:      acs,
+			Status:       psm.Status.Status,
+		}
+		ps = append(ps, p)
+	}
 	return &Topic{
 		ID:              obj.ObjectMeta.Name,
 		Name:            obj.Spec.Name,
@@ -104,6 +121,7 @@ func ToModel(obj *v1.Topic) *Topic {
 		Message:         obj.Status.Message,
 		URL:             obj.Spec.Url,
 		CreatedAt:       obj.CreationTimestamp.Unix(),
+		Permissions:     ps,
 	}
 }
 
