@@ -7,6 +7,7 @@ import (
 
 	v1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 )
@@ -137,7 +138,7 @@ func (s *Service) Validate(a *Application) error {
 	}
 	for _, p := range appList.Items {
 		if p.Spec.Name == a.Name {
-			return fmt.Errorf("app name cannot be repeated: %s", p.Spec.Name)
+			return errors.NameDuplicatedError("app name duplicated: %+v", errs)
 		}
 	}
 
@@ -178,7 +179,7 @@ func (s *Service) assignment(target *v1.Application, reqData interface{}) error 
 			}
 			for _, p := range appList.Items {
 				if p.Spec.Name == source.Name {
-					return fmt.Errorf("app name cannot be repeated: %s", p.Spec.Name)
+					return errors.NameDuplicatedError("app name duplicated: %+v", errs)
 				}
 			}
 		}

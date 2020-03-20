@@ -13,8 +13,8 @@ import (
 type ErrorConfig struct {
 	Common           map[string]string `json:"common"`
 	Api              map[string]string `json:"api"`
-	App              map[string]string `json:"app"`
-	AppGroup         map[string]string `json:"appGroup"`
+	Application      map[string]string `json:"app"`
+	ApplicationGroup map[string]string `json:"appGroup"`
 	Apply            map[string]string `json:"apply"`
 	DataService      map[string]string `json:"dataService"`
 	DataSource       map[string]string `json:"dataSource"`

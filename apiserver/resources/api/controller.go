@@ -9,6 +9,7 @@ import (
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/chinamobile/nlpt/pkg/go-restful"
@@ -98,6 +99,9 @@ func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 	body.Data.Users = user.InitWithOwner(authuser.Name)
 	body.Data.Namespace = authuser.Namespace
 	if api, err, code := c.service.CreateApi(body.Data); err != nil {
+		if errors.IsNameDuplicated(err) {
+			code = "001000022"
+		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
 			ErrorCode: code,
@@ -145,10 +149,14 @@ func (c *controller) PatchApi(req *restful.Request) (int, interface{}) {
 		}
 	}
 	if api, err := c.service.PatchApi(req.PathParameter("id"), data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		code := "001000005"
+		if errors.IsNameDuplicated(err) {
+			code = "001000022"
+		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
-			ErrorCode: "001000005",
-			Message:   c.errMsg.Api["001000005"],
+			ErrorCode: code,
+			Message:   c.errMsg.Api[code],
 			Detail:    fmt.Errorf("patch api error: %+v", err).Error(),
 		}
 	} else {

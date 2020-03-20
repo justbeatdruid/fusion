@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/chinamobile/nlpt/pkg/go-restful"
@@ -80,10 +81,13 @@ func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateRespon
 	body.Data.Users = user.InitWithOwner(authuser.Name)
 	body.Data.Namespace = authuser.Namespace
 	if su, err, code := c.service.CreateServiceunit(body.Data); err != nil {
+		if errors.IsNameDuplicated(err) {
+			code = "008000021"
+		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
 			ErrorCode: code,
-			Message:   c.errMsg.Serviceunit["code"],
+			Message:   c.errMsg.Serviceunit[code],
 			Detail:    fmt.Errorf("create serviceunit error: %+v", err).Error(),
 		}
 	} else {
@@ -154,10 +158,14 @@ func (c *controller) PatchServiceunit(req *restful.Request) (int, *DeleteRespons
 		}
 	}
 	if su, err := c.service.PatchServiceunit(req.PathParameter("id"), data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		code := "008000007"
+		if errors.IsNameDuplicated(err) {
+			code = "008000021"
+		}
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      2,
-			ErrorCode: "008000007",
-			Message:   c.errMsg.Serviceunit["008000007"],
+			ErrorCode: code,
+			Message:   c.errMsg.Serviceunit[code],
 			Detail:    fmt.Errorf("patch serviceunit error: %+v", err).Error(),
 		}
 	} else {
