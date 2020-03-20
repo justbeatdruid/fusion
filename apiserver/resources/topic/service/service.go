@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	clientauthv1 "github.com/chinamobile/nlpt/crds/clientauth/api/v1"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/chinamobile/nlpt/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -14,6 +15,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 	"strconv"
+	"strings"
 )
 
 var crdNamespace = "default"
@@ -25,15 +27,17 @@ var oofsGVR = schema.GroupVersionResource{
 }
 
 type Service struct {
-	client dynamic.NamespaceableResourceInterface
-	ip     string
-	host   int
+	client           dynamic.NamespaceableResourceInterface
+	clientAuthClient dynamic.NamespaceableResourceInterface
+	ip               string
+	host             int
 }
 
 func NewService(client dynamic.Interface, topConfig *config.TopicConfig) *Service {
 	return &Service{client: client.Resource(oofsGVR),
-		ip:   topConfig.Host,
-		host: topConfig.Port,
+		clientAuthClient: client.Resource(clientauthv1.GetOOFSGVR()),
+		ip:               topConfig.Host,
+		host:             topConfig.Port,
 	}
 }
 func (s *Service) CreateTopic(model *Topic) (*Topic, error) {
@@ -155,6 +159,8 @@ func (s *Service) Delete(id string) (*v1.Topic, error) {
 
 func (s *Service) DeletePer(id string, authUserId string) (*v1.Topic, error) {
 	tp, err := s.Get(id)
+	//删除授权用户id的标签
+	delete(tp.ObjectMeta.Labels, authUserId)
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
@@ -303,28 +309,56 @@ func (s *Service) IsTopicExist(url string) bool {
 }
 
 func (s *Service) GrantPermissions(topicId string, authUserId string, actions Actions) (*Topic, error) {
-	tp, err := s.GetTopic(topicId)
+	tp, err := s.Get(topicId)
 	if err != nil {
+		klog.Errorf("error get crd: %+v", err)
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
 
-	perm := Permission{
+	if err != nil {
+		klog.Errorf("error get crd: %+v", err)
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+
+	as := v1.Actions{}
+	for _, ac := range actions {
+		as = append(as, ac)
+
+	}
+
+	labelValue := strings.Join(actions, "-")
+
+	tp.ObjectMeta.Labels[authUserId] = labelValue
+	perm := v1.Permission{
 		AuthUserID:   authUserId,
 		AuthUserName: "",
-		Actions:      actions,
+		Actions:      as,
+		Status: v1.PermissionStatus{
+			Status:  v1.Grant,
+			Message: "",
+		},
 	}
-
-	tp.Permissions = append(tp.Permissions, perm)
-	if err := perm.Validate(); err != nil {
-		return nil, fmt.Errorf("bad request: %+v", err)
-	}
-
-	tp.Status = v1.Update
-	v1Tp, err := s.UpdateStatus(ToAPI(tp))
+	tp.Spec.Permissions = append(tp.Spec.Permissions, perm)
+	tp.Status.Status = v1.Update
+	v1Tp, err := s.UpdateStatus(tp)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update object: %+v", err)
 	}
 
 	return ToModel(v1Tp), nil
+}
+
+func (s *Service) QueryAuthUserNameById(id string) (string, error) {
+	crd, err := s.clientAuthClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return "", fmt.Errorf("error get crd: %+v", err)
+	}
+	ca := clientauthv1.Clientauth{}
+
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), ca); err != nil {
+		return "", fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get auth user name: %+v", ca)
+	return ca.Spec.Name, nil
 
 }

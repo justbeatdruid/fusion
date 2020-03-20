@@ -70,22 +70,6 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.PUT("/clientauths/{id}/topics/{topic-id}").
-		Consumes(restful.MIME_JSON).
-		Produces(restful.MIME_JSON).
-		Doc("update authorized topic list").
-		To(r.addAuthorizedTopic).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
-		Do(returns200, returns500))
-
-	ws.Route(ws.DELETE("/clientauths/{id}/topics/{topic-id}").
-		Consumes(restful.MIME_JSON).
-		Produces(restful.MIME_JSON).
-		Doc("delete authorized topic list").
-		To(r.removeAuthorizedTopic).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
-		Do(returns200, returns500))
-
 }
 
 func (r *router) createClientauth(request *restful.Request, response *restful.Response) {
@@ -120,15 +104,5 @@ func (r *router) deleteClientauths(request *restful.Request, response *restful.R
 //重新生成token
 func (r *router) regenerateToken(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.RegenerateToken(request)
-	response.WriteHeaderAndEntity(code, result)
-}
-
-func (r *router) addAuthorizedTopic(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.AddAuthorizedTopic(request)
-	response.WriteHeaderAndEntity(code, result)
-}
-
-func (r *router) removeAuthorizedTopic(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.RemoveAuthorizedTopic(request)
 	response.WriteHeaderAndEntity(code, result)
 }

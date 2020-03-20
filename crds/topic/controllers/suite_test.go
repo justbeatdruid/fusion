@@ -39,7 +39,6 @@ var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
 var op *Operator
-var cop *ClientAuthOperator
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -59,22 +58,6 @@ func TestOperator_CreateTopic(t *testing.T) {
 	topic.Spec.Tenant = "public"
 
 	op.CreateTopic(topic)
-}
-
-func TestClientAuthOperator_AddAuthorizedTopic(t *testing.T) {
-
-
-	cop = new(ClientAuthOperator)
-	cop.Host = "localhost"
-	cop.Port = 8001
-	cop.Protocol="http"
-
-
-	err := cop.AddAuthorizedTopic("3542f6fea15c3323", "190e801ddc0907bb")
-	if err != nil {
-		t.Error(`err != nil`)
-	}
-
 }
 
 var _ = BeforeSuite(func(done Done) {

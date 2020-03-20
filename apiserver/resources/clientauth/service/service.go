@@ -7,6 +7,8 @@ import (
 
 	"github.com/chinamobile/nlpt/crds/clientauth/api/v1"
 
+	topicv1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -24,11 +26,15 @@ var oofsGVR = schema.GroupVersionResource{
 }
 
 type Service struct {
-	client dynamic.NamespaceableResourceInterface
+	client      dynamic.NamespaceableResourceInterface
+	topicClient dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface) *Service {
-	return &Service{client: client.Resource(oofsGVR)}
+	return &Service{
+		client:      client.Resource(oofsGVR),
+		topicClient: client.Resource(topicv1.GetOOFSGVR()),
+	}
 }
 
 func (s *Service) CreateClientauth(model *Clientauth) (*Clientauth, error) {
@@ -82,6 +88,15 @@ func (s *Service) GetClientauth(id string) (*Clientauth, error) {
 }
 
 func (s *Service) DeleteClientauth(id string) (*Clientauth, error) {
+
+	tps, err := s.ListTopicsWithAuthId(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
+	}
+
+	if len(tps.Items) > 0 {
+		return nil, fmt.Errorf("cannot delete authorized client auth user")
+	}
 	ca, err := s.Delete(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
@@ -122,6 +137,24 @@ func (s *Service) List() (*v1.ClientauthList, error) {
 	return cas, nil
 }
 
+func (s *Service) ListTopicsWithAuthId(id string) (*topicv1.TopicList, error) {
+
+	var opts metav1.ListOptions
+	opts.LabelSelector = id
+	crd, err := s.topicClient.Namespace(crdNamespace).List(opts)
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+
+	tps := &topicv1.TopicList{}
+
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.topicList: %+v", tps)
+	return tps, nil
+
+}
 func (s *Service) Get(id string) (*v1.Clientauth, error) {
 	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
@@ -146,6 +179,7 @@ func (s *Service) Delete(id string) (*v1.Clientauth, error) {
 
 //更新状态
 func (s *Service) UpdateStatus(ca *v1.Clientauth) (*v1.Clientauth, error) {
+
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ca)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -197,44 +231,4 @@ func (s *Service) RegenerateToken(ca *Clientauth) (*Clientauth, error) {
 	}
 	return ToModel(cad), nil
 
-}
-
-func (s *Service) AddAuthorizedTopic(id string, topicId string) error {
-	ca, err := s.Get(id)
-	if err != nil {
-		return fmt.Errorf("clientauth id is not exist, id : %+v, error : %+v", id, err)
-	}
-	if ca.Spec.AuthorizedMap == nil {
-		ca.Spec.AuthorizedMap = make(map[string]int)
-	}
-	_, isExist := ca.Spec.AuthorizedMap[topicId]
-	if !isExist {
-		ca.Spec.AuthorizedMap[topicId] = 1
-		_, err = s.UpdateStatus(ca)
-		if err != nil {
-			return fmt.Errorf("add authorized topic error, %+v", err)
-		}
-	}
-	return nil
-}
-
-func (s *Service) RemoveAuthorizedTopic(id string, topicId string) error {
-	ca, err := s.Get(id)
-	if err != nil {
-		return fmt.Errorf("clientauth id is not exist, id : %+v, error : %+v", id, err)
-	}
-
-	if ca.Spec.AuthorizedMap == nil {
-		return nil
-	}
-	_, isExist := ca.Spec.AuthorizedMap[topicId]
-	if isExist {
-		delete(ca.Spec.AuthorizedMap, topicId)
-		_, err = s.UpdateStatus(ca)
-		if err != nil {
-			return fmt.Errorf("add authorized topic error, %+v", err)
-		}
-	}
-
-	return nil
 }

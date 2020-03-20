@@ -473,15 +473,15 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 	id := req.PathParameter("id")
 	authUserId := req.PathParameter("auth-user-id")
 
-	actions := service.Actions{}
+	actions := &GrantPermissionRequest{}
 	if err := req.ReadEntity(actions); err != nil {
 		return http.StatusInternalServerError, &GrantResponse{
 			Code:    1,
-			Message: fmt.Errorf("grant permissions error: %+v", err).Error(),
+			Message: fmt.Sprintf("grant permissions error: %+v", err),
 		}
 	}
 
-	if tp, err := c.service.GrantPermissions(id, authUserId, actions); err != nil {
+	if tp, err := c.service.GrantPermissions(id, authUserId, actions.Actions); err != nil {
 		return http.StatusInternalServerError, &GrantResponse{
 			Code:    2,
 			Message: fmt.Errorf("create database error: %+v", err).Error(),
