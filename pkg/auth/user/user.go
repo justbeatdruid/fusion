@@ -314,10 +314,11 @@ const (
 )
 
 type Wrapped struct {
-	Code    string `json:"code"`
-	Msg     string `json:"msg"`
-	Message string `json:"message"`
-	Data    *Data  `json:"data,omitempty"`
+	Code      int    `json:"code"`
+	ErrorCode string `json:"errorCode"`
+	Msg       string `json:"msg"`
+	Message   string `json:"message"`
+	Data      *Data  `json:"data,omitempty"`
 }
 
 type UserResponse = Wrapped

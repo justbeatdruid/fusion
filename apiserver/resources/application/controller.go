@@ -15,18 +15,21 @@ import (
 
 type controller struct {
 	service *service.Service
+	errMsg  config.ErrorConfig
 }
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TenantEnabled),
+		cfg.LocalConfig,
 	}
 }
 
 type Wrapped struct {
-	Code    int                  `json:"code"`
-	Message string               `json:"message"`
-	Data    *service.Application `json:"data,omitempty"`
+	Code      int                  `json:"code"`
+	ErrorCode string               `json:"errorCode"`
+	Message   string               `json:"message"`
+	Data      *service.Application `json:"data,omitempty"`
 }
 
 type CreateRequest = Wrapped
@@ -34,9 +37,10 @@ type CreateResponse = Wrapped
 type DeleteResponse = Wrapped
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Message   string      `json:"message"`
+	Data      interface{} `json:"data,omitempty"`
 }
 type PingResponse = DeleteResponse
 
@@ -210,43 +214,43 @@ func (c *controller) AddUser(req *restful.Request) (int, *user.UserResponse) {
 	body := &user.UserRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "read entity error: data is null",
 		}
 	}
 	if len(body.Data.ID) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "read entity error: id in data is null",
 		}
 	}
 	if len(body.Data.Role) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "read entity error: role in data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "auth model error",
 		}
 	}
 	if err := c.service.AddUser(id, authuser.Name, body.Data); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: fmt.Errorf("add user error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &user.UserResponse{
-			Code: "0",
+			Code: 0,
 		}
 	}
 }
@@ -256,31 +260,31 @@ func (c *controller) RemoveUser(req *restful.Request) (int, *user.UserResponse) 
 	userid := req.PathParameter("userid")
 	if len(id) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "id in path parameter is null",
 		}
 	}
 	if len(userid) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "user id in path parameter is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "auth model error",
 		}
 	}
 	if err := c.service.RemoveUser(id, authuser.Name, userid); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "2",
+			Code:    2,
 			Message: fmt.Errorf("remove user error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &user.UserResponse{
-			Code: "0",
+			Code: 0,
 		}
 	}
 }
@@ -289,44 +293,44 @@ func (c *controller) ChangeOwner(req *restful.Request) (int, *user.UserResponse)
 	id := req.PathParameter("id")
 	if len(id) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "id in path parameter is null",
 		}
 	}
 	body := &user.UserRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "read entity error: data is null",
 		}
 	}
 	if len(body.Data.ID) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "read entity error: id in data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "auth model error",
 		}
 	}
 	if err := c.service.ChangeOwner(id, authuser.Name, body.Data); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "2",
+			Code:    2,
 			Message: fmt.Errorf("change owner error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &user.UserResponse{
-			Code: "0",
+			Code: 0,
 		}
 	}
 }
@@ -336,32 +340,32 @@ func (c *controller) ChangeUser(req *restful.Request) (int, *user.UserResponse) 
 	userid := req.PathParameter("userid")
 	if len(id) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "id in path parameter is null",
 		}
 	}
 	if len(userid) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "user id in path parameter is null",
 		}
 	}
 	body := &user.UserRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "read entity error: data is null",
 		}
 	}
 	if len(body.Data.Role) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "read entity error: role in data is null",
 		}
 	}
@@ -369,18 +373,18 @@ func (c *controller) ChangeUser(req *restful.Request) (int, *user.UserResponse) 
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "1",
+			Code:    1,
 			Message: "auth model error",
 		}
 	}
 	if err := c.service.ChangeUser(id, authuser.Name, body.Data); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
-			Code:    "2",
+			Code:    2,
 			Message: fmt.Errorf("change user error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &user.UserResponse{
-			Code: "0",
+			Code: 0,
 		}
 	}
 }
