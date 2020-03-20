@@ -279,9 +279,9 @@ func (s *Service) Validate(a *Api) error {
 			return fmt.Errorf("frequency is null")
 		}
 		switch a.Method {
-		case v1.GET, v1.LIST:
+		case v1.GET, v1.POST:
 		default:
-			return fmt.Errorf("wrong method type: %s. only %s and %s are allowed", a.Method, v1.GET, v1.LIST)
+			return fmt.Errorf("wrong method type: %s. only %s and %s are allowed", a.Method, v1.GET, v1.POST)
 		}
 		if a.RDBQuery != nil {
 			for _, p := range a.RDBQuery.QueryFields {
