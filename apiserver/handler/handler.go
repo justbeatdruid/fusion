@@ -46,6 +46,7 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 	}
 
 	wsContainer.Callback(callback.NewAuditCaller(wsContainer, h.config.Auditor))
+	wsContainer.Callback(callback.NewLogger())
 
 	healthz.InstallHandler(wsContainer, checks...)
 

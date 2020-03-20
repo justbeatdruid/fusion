@@ -153,18 +153,16 @@ func getResourceFromEntity(entity interface{}) (*Resource, error) {
 	return r, nil
 }
 
-func NewAuditCaller(c *restful.Container, a *audit.Auditor) func(*restful.Request, *restful.Response, *restful.CallbackChain) {
-	return func(req *restful.Request, resp *restful.Response, chain *restful.CallbackChain) {
+func NewAuditCaller(c *restful.Container, a *audit.Auditor) func(*restful.Request, *restful.Response) {
+	return func(req *restful.Request, resp *restful.Response) {
 		eventName, resourceType, body, ok := filter(req)
 		if !ok {
-			chain.ProcessCallback(req, resp)
 			return
 		}
 
 		user, err := auth.GetAuthUser(req)
 		if err != nil {
 			klog.Errorf(err.Error())
-			chain.ProcessCallback(req, resp)
 			return
 		}
 		tenantID, userID := user.Namespace, user.Name
@@ -233,6 +231,5 @@ func NewAuditCaller(c *restful.Container, a *audit.Auditor) func(*restful.Reques
 		wg.Wait()
 
 		a.NewEvent(tenantID, userID, eventName, eventResult, resourceType, resourceID, resourceName, body)
-		chain.ProcessCallback(req, resp)
 	}
 }
