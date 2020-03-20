@@ -34,7 +34,7 @@ const (
 type Wrapped struct {
 	Code      int          `json:"code"`
 	ErrorCode string       `json:"errorCode"`
-	Msg       string       `json:"msg"`
+	Detail    string       `json:"detail"`
 	Message   string       `json:"message"`
 	Data      *service.Api `json:"data,omitempty"`
 }
@@ -54,7 +54,7 @@ type GetResponse = Wrapped
 type ListResponse = struct {
 	Code      int         `json:"code"`
 	ErrorCode string      `json:"errorCode"`
-	Msg       string      `json:"msg"`
+	Detail    string      `json:"detail"`
 	Message   string      `json:"message"`
 	Data      interface{} `json:"data"`
 }
@@ -63,7 +63,7 @@ type PingResponse = DeleteResponse
 type TestApiResponse = struct {
 	Code       int         `json:"code"`
 	ErrorCode  string      `json:"errorCode"`
-	Msg        string      `json:"msg"`
+	Detail     string      `json:"detail"`
 	Message    string      `json:"message"`
 	TestResult interface{} `json:"data,omitempty"`
 }
@@ -74,16 +74,16 @@ func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "001000001",
-			Msg:       c.errMsg.Api["001000001"],
-			Message:   fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Message:   c.errMsg.Api["001000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "001000002",
-			Msg:       c.errMsg.Api["001000002"],
-			Message:   "read entity error: data is null",
+			Message:   c.errMsg.Api["001000002"],
+			Detail:    "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
@@ -91,8 +91,8 @@ func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "001000003",
-			Msg:       c.errMsg.Api["001000003"],
-			Message:   "auth model error",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
 		}
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
@@ -101,8 +101,8 @@ func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
 			ErrorCode: code,
-			Msg:       c.errMsg.Api[code],
-			Message:   fmt.Errorf("create api error: %+v", err).Error(),
+			Message:   c.errMsg.Api[code],
+			Detail:    fmt.Errorf("create api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -119,8 +119,8 @@ func (c *controller) PatchApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "001000001",
-			Msg:       c.errMsg.Api["001000001"],
-			Message:   fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Message:   c.errMsg.Api["001000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	data, ok := reqBody["data"]
@@ -131,8 +131,8 @@ func (c *controller) PatchApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "001000002",
-			Msg:       c.errMsg.Api["001000002"],
-			Message:   "read entity error: data is null",
+			Message:   c.errMsg.Api["001000002"],
+			Detail:    "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
@@ -140,16 +140,16 @@ func (c *controller) PatchApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "001000003",
-			Msg:       c.errMsg.Api["001000003"],
-			Message:   "auth model error",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
 		}
 	}
 	if api, err := c.service.PatchApi(req.PathParameter("id"), data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
 			ErrorCode: "001000005",
-			Msg:       c.errMsg.Api["001000005"],
-			Message:   fmt.Errorf("patch api error: %+v", err).Error(),
+			Message:   c.errMsg.Api["001000005"],
+			Detail:    fmt.Errorf("patch api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -167,16 +167,16 @@ func (c *controller) GetApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "001000003",
-			Msg:       c.errMsg.Api["001000003"],
-			Message:   "auth model error",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
 		}
 	}
 	if api, err := c.service.GetApi(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      2,
 			ErrorCode: "001000006",
-			Msg:       c.errMsg.Api["001000006"],
-			Message:   fmt.Errorf("get api error: %+v", err).Error(),
+			Message:   c.errMsg.Api["001000006"],
+			Detail:    fmt.Errorf("get api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -194,16 +194,16 @@ func (c *controller) DeleteApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "001000003",
-			Msg:       c.errMsg.Api["001000003"],
-			Message:   "auth model error",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
 		}
 	}
 	if data, err := c.service.DeleteApi(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      2,
 			ErrorCode: "001000007",
-			Msg:       c.errMsg.Api["001000007"],
-			Message:   fmt.Errorf("delete api error: %+v", err).Error(),
+			Message:   c.errMsg.Api["001000007"],
+			Detail:    fmt.Errorf("delete api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
@@ -220,16 +220,16 @@ func (c *controller) PublishApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "001000003",
-			Msg:       c.errMsg.Api["001000003"],
-			Message:   "auth model error",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
 		}
 	}
 	if su, err := c.service.PublishApi(req.PathParameter("id"), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
 			ErrorCode: "001000008",
-			Msg:       c.errMsg.Api["001000008"],
-			Message:   fmt.Errorf("publish api error: %+v", err).Error(),
+			Message:   c.errMsg.Api["001000008"],
+			Detail:    fmt.Errorf("publish api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -246,16 +246,16 @@ func (c *controller) OfflineApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "001000003",
-			Msg:       c.errMsg.Api["001000003"],
-			Message:   "auth model error",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
 		}
 	}
 	if su, err := c.service.OfflineApi(req.PathParameter("id"), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
 			ErrorCode: "001000009",
-			Msg:       c.errMsg.Api["001000009"],
-			Message:   fmt.Errorf("offline api error: %+v", err).Error(),
+			Message:   c.errMsg.Api["001000009"],
+			Detail:    fmt.Errorf("offline api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -275,16 +275,16 @@ func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      1,
 			ErrorCode: "001000003",
-			Msg:       c.errMsg.Api["001000003"],
-			Message:   "auth model error",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
 		}
 	}
 	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application), util.WithNameLike(name), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			ErrorCode: "001000010",
-			Msg:       c.errMsg.Api["001000010"],
-			Message:   fmt.Errorf("list api error: %+v", err).Error(),
+			Message:   c.errMsg.Api["001000010"],
+			Detail:    fmt.Errorf("list api error: %+v", err).Error(),
 		}
 	} else {
 		var apis ApiList = api
@@ -293,8 +293,8 @@ func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:      3,
 				ErrorCode: "001000011",
-				Msg:       c.errMsg.Api["001000011"],
-				Message:   fmt.Sprintf("page parameter error: %+v", err),
+				Message:   c.errMsg.Api["001000011"],
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 			}
 		}
 		return http.StatusOK, &ListResponse{
@@ -324,8 +324,8 @@ func (c *controller) BindApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      1,
 			ErrorCode: "001000001",
-			Msg:       c.errMsg.Api["001000001"],
-			Message:   fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Message:   c.errMsg.Api["001000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
@@ -333,8 +333,8 @@ func (c *controller) BindApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "001000003",
-			Msg:       c.errMsg.Api["001000003"],
-			Message:   "auth model error",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
 		}
 	}
 	apiID := req.PathParameter("id")
@@ -343,8 +343,8 @@ func (c *controller) BindApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      2,
 			ErrorCode: "001000013",
-			Msg:       c.errMsg.Api["001000013"],
-			Message:   fmt.Errorf("bind api error: %+v", err).Error(),
+			Message:   c.errMsg.Api["001000013"],
+			Detail:    fmt.Errorf("bind api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &BindResponse{
@@ -365,8 +365,8 @@ func (c *controller) Query(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &Wrapped{
 			Code:      1,
 			ErrorCode: "001000003",
-			Msg:       c.errMsg.Api["001000003"],
-			Message:   "auth model error",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
 		}
 	}
 	limit := req.QueryParameter("limit")
@@ -374,7 +374,6 @@ func (c *controller) Query(req *restful.Request) (int, interface{}) {
 		return http.StatusOK, struct {
 			Code      int          `json:"code"`
 			ErrorCode string       `json:"errorCode"`
-			Msg       string       `json:"msg"`
 			Message   string       `json:"message"`
 			Data      service.Data `json:"data"`
 		}{
@@ -386,13 +385,13 @@ func (c *controller) Query(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, struct {
 			Code      int    `json:"code"`
 			ErrorCode string `json:"errorCode"`
-			Msg       string `json:"msg"`
 			Message   string `json:"message"`
+			Detail    string `json:"detail"`
 		}{
 			Code:      1,
 			ErrorCode: "001000014",
-			Msg:       c.errMsg.Api["001000014"],
-			Message:   fmt.Sprintf("query data error:%+v", err),
+			Message:   c.errMsg.Api["001000014"],
+			Detail:    fmt.Sprintf("query data error:%+v", err),
 		}
 	}
 }
@@ -422,13 +421,13 @@ func (c *controller) KongQuery(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, struct {
 			Code      int    `json:"code"`
 			ErrorCode string `json:"errorCode"`
-			Msg       string `json:"msg"`
 			Message   string `json:"message"`
+			Detail    string `json:"detail"`
 		}{
 			Code:      1,
 			ErrorCode: "001000014",
-			Msg:       c.errMsg.Api["001000014"],
-			Message:   fmt.Sprintf("query data error:%+v", err),
+			Message:   c.errMsg.Api["001000014"],
+			Detail:    fmt.Sprintf("query data error:%+v", err),
 		}
 	}
 }
@@ -439,24 +438,24 @@ func (c *controller) TestApi(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &TestApiResponse{
 			Code:      1,
 			ErrorCode: "001000001",
-			Msg:       c.errMsg.Api["001000001"],
-			Message:   fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Message:   c.errMsg.Api["001000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &TestApiResponse{
 			Code:      1,
 			ErrorCode: "001000002",
-			Msg:       c.errMsg.Api["001000002"],
-			Message:   "read entity error: data is null",
+			Message:   c.errMsg.Api["001000002"],
+			Detail:    "read entity error: data is null",
 		}
 	}
 	if resp, err := c.service.TestApi(body.Data); err != nil {
 		return http.StatusInternalServerError, &TestApiResponse{
 			Code:      2,
 			ErrorCode: "001000015",
-			Msg:       c.errMsg.Api["001000015"],
-			Message:   fmt.Errorf("Test api error: %+v", err).Error(),
+			Message:   c.errMsg.Api["001000015"],
+			Detail:    fmt.Errorf("Test api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &TestApiResponse{

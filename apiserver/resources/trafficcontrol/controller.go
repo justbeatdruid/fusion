@@ -29,7 +29,7 @@ func newController(cfg *config.Config) *controller {
 type Wrapped struct {
 	Code      int                     `json:"code"`
 	ErrorCode string                  `json:"errorCode"`
-	Msg       string                  `json:"msg"`
+	Detail    string                  `json:"detail"`
 	Message   string                  `json:"message"`
 	Data      *service.Trafficcontrol `json:"data,omitempty"`
 }
@@ -41,7 +41,7 @@ type GetResponse = Wrapped
 type ListResponse = struct {
 	Code      int         `json:"code"`
 	ErrorCode string      `json:"errorCode"`
-	Msg       string      `json:"msg"`
+	Detail    string      `json:"detail"`
 	Message   string      `json:"message"`
 	Data      interface{} `json:"data"`
 }
@@ -67,16 +67,16 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "012000001",
-			Msg:       c.errMsg.Trafficcontrol["012000001"],
-			Message:   fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Message:   c.errMsg.Trafficcontrol["012000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "012000002",
-			Msg:       c.errMsg.Trafficcontrol["012000002"],
-			Message:   "read entity error: data is null",
+			Message:   c.errMsg.Trafficcontrol["012000002"],
+			Detail:    "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
@@ -84,8 +84,8 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "012000003",
-			Msg:       c.errMsg.Trafficcontrol["012000003"],
-			Message:   "auth model error",
+			Message:   c.errMsg.Trafficcontrol["012000003"],
+			Detail:    "auth model error",
 		}
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
@@ -93,8 +93,8 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
 			ErrorCode: "012000004",
-			Msg:       c.errMsg.Trafficcontrol["012000004"],
-			Message:   fmt.Errorf("create trafficcontrol error: %+v", err).Error(),
+			Message:   c.errMsg.Trafficcontrol["012000004"],
+			Detail:    fmt.Errorf("create trafficcontrol error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -111,8 +111,8 @@ func (c *controller) GetTrafficcontrol(req *restful.Request) (int, *GetResponse)
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      2,
 			ErrorCode: "012000005",
-			Msg:       c.errMsg.Trafficcontrol["012000005"],
-			Message:   fmt.Errorf("get trafficcontrol error: %+v", err).Error(),
+			Message:   c.errMsg.Trafficcontrol["012000005"],
+			Detail:    fmt.Errorf("get trafficcontrol error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -129,8 +129,8 @@ func (c *controller) DeleteTrafficcontrol(req *restful.Request) (int, *DeleteRes
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      2,
 			ErrorCode: "012000006",
-			Msg:       c.errMsg.Trafficcontrol["012000006"],
-			Message:   fmt.Errorf("delete trafficcontrol error: %+v", err).Error(),
+			Message:   c.errMsg.Trafficcontrol["012000006"],
+			Detail:    fmt.Errorf("delete trafficcontrol error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
@@ -149,16 +149,16 @@ func (c *controller) ListTrafficcontrol(req *restful.Request) (int, *ListRespons
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      1,
 			ErrorCode: "012000003",
-			Msg:       c.errMsg.Trafficcontrol["012000003"],
-			Message:   "auth model error",
+			Message:   c.errMsg.Trafficcontrol["012000003"],
+			Detail:    "auth model error",
 		}
 	}
 	if tc, err := c.service.ListTrafficcontrol(util.WithNameLike(name), util.WithUser(authuser.Name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			ErrorCode: "012000007",
-			Msg:       c.errMsg.Trafficcontrol["012000007"],
-			Message:   fmt.Errorf("list database error: %+v", err).Error(),
+			Message:   c.errMsg.Trafficcontrol["012000007"],
+			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
 		var tcs TrafficcontrolList = tc
@@ -167,8 +167,8 @@ func (c *controller) ListTrafficcontrol(req *restful.Request) (int, *ListRespons
 			return http.StatusInternalServerError, &ListResponse{
 				Code:      3,
 				ErrorCode: "012000008",
-				Msg:       c.errMsg.Trafficcontrol["012000008"],
-				Message:   fmt.Sprintf("page parameter error: %+v", err),
+				Message:   c.errMsg.Trafficcontrol["012000008"],
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 			}
 		}
 		return http.StatusOK, &ListResponse{
@@ -199,8 +199,8 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "012000001",
-			Msg:       c.errMsg.Trafficcontrol["012000001"],
-			Message:   fmt.Errorf("cannot read entity: %+v, reqbody:%v, req:%v", err, reqBody, req).Error(),
+			Message:   c.errMsg.Trafficcontrol["012000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v, reqbody:%v, req:%v", err, reqBody, req).Error(),
 		}
 	}
 	data, ok := reqBody["data"]
@@ -208,8 +208,8 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "012000002",
-			Msg:       c.errMsg.Trafficcontrol["012000002"],
-			Message:   "read entity error: data is null",
+			Message:   c.errMsg.Trafficcontrol["012000002"],
+			Detail:    "read entity error: data is null",
 		}
 	}
 
@@ -217,8 +217,8 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:      2,
 			ErrorCode: "012000009",
-			Msg:       c.errMsg.Trafficcontrol["012000009"],
-			Message:   fmt.Errorf("update trafficcontrol error: %+v", err).Error(),
+			Message:   c.errMsg.Trafficcontrol["012000009"],
+			Detail:    fmt.Errorf("update trafficcontrol error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &UpdateResponse{
@@ -235,8 +235,8 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      1,
 			ErrorCode: "012000001",
-			Msg:       c.errMsg.Trafficcontrol["012000001"],
-			Message:   fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Message:   c.errMsg.Trafficcontrol["012000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	trafficID := req.PathParameter("id")
@@ -244,8 +244,8 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      2,
 			ErrorCode: "012000010",
-			Msg:       c.errMsg.Trafficcontrol["012000010"],
-			Message:   fmt.Errorf("bind or unbind api error: %+v", err).Error(),
+			Message:   c.errMsg.Trafficcontrol["012000010"],
+			Detail:    fmt.Errorf("bind or unbind api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &BindResponse{

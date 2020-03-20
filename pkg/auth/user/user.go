@@ -316,7 +316,7 @@ const (
 type Wrapped struct {
 	Code      int    `json:"code"`
 	ErrorCode string `json:"errorCode"`
-	Msg       string `json:"msg"`
+	Detail    string `json:"detail"`
 	Message   string `json:"message"`
 	Data      *Data  `json:"data,omitempty"`
 }

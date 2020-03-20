@@ -28,7 +28,7 @@ func newController(cfg *config.Config) *controller {
 type Wrapped struct {
 	Code      int                  `json:"code"`
 	ErrorCode string               `json:"errorCode"`
-	Msg       string               `json:"msg"`
+	Detail    string               `json:"detail"`
 	Message   string               `json:"message"`
 	Data      *service.Restriction `json:"data,omitempty"`
 }
@@ -40,7 +40,7 @@ type GetResponse = Wrapped
 type ListResponse = struct {
 	Code      int         `json:"code"`
 	ErrorCode string      `json:"errorCode"`
-	Msg       string      `json:"msg"`
+	Detail    string      `json:"detail"`
 	Message   string      `json:"message"`
 	Data      interface{} `json:"data"`
 }
@@ -66,24 +66,24 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "007000001",
-			Msg:       c.errMsg.Restriction["007000001"],
-			Message:   fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Message:   c.errMsg.Restriction["007000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "007000002",
-			Msg:       c.errMsg.Restriction["007000002"],
-			Message:   "read entity error: data is null",
+			Message:   c.errMsg.Restriction["007000002"],
+			Detail:    "read entity error: data is null",
 		}
 	}
 	if db, err := c.service.CreateRestriction(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
 			ErrorCode: "007000003",
-			Msg:       c.errMsg.Restriction["007000003"],
-			Message:   fmt.Errorf("create restriction error: %+v", err).Error(),
+			Message:   c.errMsg.Restriction["007000003"],
+			Detail:    fmt.Errorf("create restriction error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -100,8 +100,8 @@ func (c *controller) GetRestriction(req *restful.Request) (int, *GetResponse) {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      2,
 			ErrorCode: "007000004",
-			Msg:       c.errMsg.Restriction["007000004"],
-			Message:   fmt.Errorf("get restriction error: %+v", err).Error(),
+			Message:   c.errMsg.Restriction["007000004"],
+			Detail:    fmt.Errorf("get restriction error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -118,8 +118,8 @@ func (c *controller) DeleteRestriction(req *restful.Request) (int, *DeleteRespon
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      2,
 			ErrorCode: "007000005",
-			Msg:       c.errMsg.Restriction["007000005"],
-			Message:   fmt.Errorf("delete restriction error: %+v", err).Error(),
+			Message:   c.errMsg.Restriction["007000005"],
+			Detail:    fmt.Errorf("delete restriction error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
@@ -136,8 +136,8 @@ func (c *controller) ListRestriction(req *restful.Request) (int, *ListResponse) 
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			ErrorCode: "007000006",
-			Msg:       c.errMsg.Restriction["007000006"],
-			Message:   fmt.Errorf("list database error: %+v", err).Error(),
+			Message:   c.errMsg.Restriction["007000006"],
+			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
 		var tcs RestrictionList = tc
@@ -146,8 +146,8 @@ func (c *controller) ListRestriction(req *restful.Request) (int, *ListResponse) 
 			return http.StatusInternalServerError, &ListResponse{
 				Code:      3,
 				ErrorCode: "007000007",
-				Msg:       c.errMsg.Restriction["007000007"],
-				Message:   fmt.Sprintf("page parameter error: %+v", err),
+				Message:   c.errMsg.Restriction["007000007"],
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 			}
 		}
 		return http.StatusOK, &ListResponse{
@@ -178,8 +178,8 @@ func (c *controller) UpdateRestriction(req *restful.Request) (int, *UpdateRespon
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "007000001",
-			Msg:       c.errMsg.Restriction["007000001"],
-			Message:   fmt.Errorf("cannot read entity: %+v, reqbody:%v, req:%v", err, reqBody, req).Error(),
+			Message:   c.errMsg.Restriction["007000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v, reqbody:%v, req:%v", err, reqBody, req).Error(),
 		}
 	}
 	klog.Infof("get body restriction of updating: %+v", reqBody)
@@ -189,8 +189,8 @@ func (c *controller) UpdateRestriction(req *restful.Request) (int, *UpdateRespon
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "007000002",
-			Msg:       c.errMsg.Restriction["007000002"],
-			Message:   "read entity error: data is null",
+			Message:   c.errMsg.Restriction["007000002"],
+			Detail:    "read entity error: data is null",
 		}
 	}
 
@@ -198,8 +198,8 @@ func (c *controller) UpdateRestriction(req *restful.Request) (int, *UpdateRespon
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:      2,
 			ErrorCode: "007000008",
-			Msg:       c.errMsg.Restriction["007000008"],
-			Message:   fmt.Errorf("update restriction error: %+v", err).Error(),
+			Message:   c.errMsg.Restriction["007000008"],
+			Detail:    fmt.Errorf("update restriction error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &UpdateResponse{
@@ -216,8 +216,8 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      1,
 			ErrorCode: "007000001",
-			Msg:       c.errMsg.Restriction["007000001"],
-			Message:   fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Message:   c.errMsg.Restriction["007000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	id := req.PathParameter("id")
@@ -225,8 +225,8 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      2,
 			ErrorCode: "007000009",
-			Msg:       c.errMsg.Restriction["007000009"],
-			Message:   fmt.Errorf("bind api error: %+v", err).Error(),
+			Message:   c.errMsg.Restriction["007000009"],
+			Detail:    fmt.Errorf("bind api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &BindResponse{
