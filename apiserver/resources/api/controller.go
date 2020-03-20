@@ -372,7 +372,7 @@ func (c *controller) KongQuery(req *restful.Request) (int, interface{}) {
 			Code     string       `json:"code"`
 			Message  string       `json:"message"`
 			Data     service.Data `json:"data"`
-			TimeUsed int          `json:"timeUserInMilliSeconds"`
+			TimeUsed int          `json:"timeUsedInMilliSeconds"`
 		}{
 			Code:     "0",
 			Data:     data,

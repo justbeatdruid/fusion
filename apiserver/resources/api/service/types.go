@@ -194,26 +194,39 @@ func publicParameters() []v1.ApiParameter {
 		{
 			Name:        "Authorization",
 			Type:        "string",
-			Example:     "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpX",
-			Description: "请求token，位于headers",
+			Example:     "Bearer {application-jwt-token}",
+			Description: "请求Token，位于Headers",
 			Required:    true,
+		},
+		{
+			Name:        "limit",
+			Type:        "int",
+			Example:     "5",
+			Description: "返回条目个数限制。请求参数，位于URL Query。",
+			Required:    false,
 		},
 	}
 }
 
-func ToListModel(items *v1.ApiList, opts ...util.OpOption) []*Api {
-	if len(opts) > 0 {
+func ToListModel(items *v1.ApiList, publishedOnly bool, opts ...util.OpOption) []*Api {
+	if len(opts) > 0 || publishedOnly {
 		nameLike := util.OpList(opts...).NameLike()
-		if len(nameLike) > 0 {
-			var apis []*Api = make([]*Api, 0)
-			for i := range items.Items {
-				api := ToModel(&items.Items[i])
-				if strings.Contains(api.Name, nameLike) {
-					apis = append(apis, api)
+		var apis []*Api = make([]*Api, 0)
+		for i, a := range items.Items {
+			if len(nameLike) > 0 {
+				if !strings.Contains(a.Spec.Name, nameLike) {
+					continue
 				}
 			}
-			return apis
+			if publishedOnly {
+				if a.Status.PublishStatus != v1.Released {
+					continue
+				}
+			}
+			api := ToModel(&items.Items[i])
+			apis = append(apis, api)
 		}
+		return apis
 	}
 	var apis []*Api = make([]*Api, len(items.Items))
 	for i := range items.Items {

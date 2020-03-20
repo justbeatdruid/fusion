@@ -92,6 +92,7 @@ func (dq *DataWarehouseQuery) RefillQuery(db *crdv1.Database) error {
 	if len(dq.Query.PrimaryTableName) == 0 {
 		return fmt.Errorf("cannot find table with ID %s in database(ID) %s", dq.PrimaryTableID, db.Id)
 	}
+	dq.Query.DatabaseName = strings.ToLower(primaryTable.Info.Schema)
 
 	// Step 2: build association tables
 	// build a tree firstly

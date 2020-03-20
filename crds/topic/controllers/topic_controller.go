@@ -115,6 +115,9 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				} else {
 					pers := topic.Spec.Permissions
 					topic.Spec.Permissions = append(pers[:index], pers[index+1:]...)
+					topicId := topic.ObjectMeta.Name
+					authId := P.AuthUserID
+					r.ClientAuthOperator.DeleteAuthorizedTopic(authId,topicId)
 					r.Delete(ctx, topic)
 				}
 			}

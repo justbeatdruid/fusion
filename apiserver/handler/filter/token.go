@@ -42,21 +42,48 @@ var tokenList = []string{
 	"33cb06d62d16dee8646daa3fd18ed20f938f1aca4b96e1555907a6aa14550faf",
 }
 
+var permittedRouters = []string{
+	"/api/v1/apis/{tenantid}/{apiid}/data",
+}
+
+func urlPermitted(u string) bool {
+	for _, p := range permittedRouters {
+		if u == p {
+			return true
+		}
+	}
+	return false
+}
+
+func tokenValid(t string) bool {
+	for _, l := range tokenList {
+		if t == l {
+			return true
+		}
+	}
+	return false
+}
+
 // ported from go-restful/options_filter.go
 // add allowed all headers, credentials
 func (o *TokenFilter) Filter(req *restful.Request, resp *restful.Response, chain *restful.FilterChain) {
-	token := req.HeaderParameter("X-auth-Token")
-	for _, t := range tokenList {
-		if t == token {
-			auth.SetAuthUser(req, auth.AuthUser{
-				Name:      o.getUserName(req),
-				Namespace: o.getUserNamespace(req),
-			})
-			chain.ProcessFilter(req, resp)
-			return
-		}
+	if urlPermitted(req.SelectedRoutePath()) {
+		goto allowed
 	}
+	if tokenValid(req.HeaderParameter("X-auth-Token")) {
+		goto allowed
+	}
+	goto denied
+allowed:
+	auth.SetAuthUser(req, auth.AuthUser{
+		Name:      o.getUserName(req),
+		Namespace: o.getUserNamespace(req),
+	})
+	chain.ProcessFilter(req, resp)
+	return
+denied:
 	resp.WriteHeader(http.StatusUnauthorized)
+	return
 }
 
 func (o *TokenFilter) getUserName(req *restful.Request) string {

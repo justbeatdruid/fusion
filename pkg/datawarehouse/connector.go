@@ -14,7 +14,7 @@ import (
 
 type Connector interface {
 	GetExampleDatawarehouse() (*v1.Datawarehouse, error)
-	QueryData(v1.Query) (v1.Result, error)
+	QueryData(v1.Query, ...string) (v1.Result, error)
 }
 
 type httpConnector struct {
@@ -75,7 +75,8 @@ type WappedResult struct {
 	Data    v1.Result `json:"data"`
 }
 
-func (c *httpConnector) QueryData(q v1.Query) (v1.Result, error) {
+func (c *httpConnector) QueryData(q v1.Query, opts ...string) (v1.Result, error) {
+	now := time.Now()
 	q.UserID = "admin"
 	if len(q.DatabaseName) == 0 {
 		return v1.Result{}, fmt.Errorf("database not set")
@@ -98,6 +99,11 @@ func (c *httpConnector) QueryData(q v1.Query) (v1.Result, error) {
 		klog.V(5).Infof("create operation failed: %d %s", response.StatusCode, string(body))
 		return v1.Result{}, fmt.Errorf("request for quering data error: receive wrong status code: %s", string(body))
 	}
+	var name = "unknown"
+	if len(opts) > 0 {
+		name = opts[0]
+	}
+	klog.V(4).Infof("api %s query data cost %d milliseconds", name, int(time.Since(now)/time.Millisecond))
 
 	return responseBody.Data, nil
 }
@@ -122,7 +128,7 @@ func (fakeConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
 	return result, nil
 }
 
-func (fakeConnector) QueryData(v1.Query) (v1.Result, error) {
+func (fakeConnector) QueryData(v1.Query, ...string) (v1.Result, error) {
 	return v1.Result{}, nil
 }
 

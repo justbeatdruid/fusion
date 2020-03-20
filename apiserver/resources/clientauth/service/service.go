@@ -173,6 +173,10 @@ func (s *Service) Delete(id string) (*v1.Clientauth, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
+	//判断是否有授权
+	if len(ca.Spec.AuthorizedMap)>0{
+		return nil, fmt.Errorf("Existence authorization ")
+	}
 	ca.Status.Status = v1.Delete
 	return s.UpdateStatus(ca)
 }

@@ -17,6 +17,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
+
+	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 )
 
 var defaultNamespace = "default"
@@ -30,7 +32,7 @@ type Service struct {
 	tenantEnabled bool
 }
 
-func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool, localConfig appconfig.ErrorConfig) *Service {
 	return &Service{
 		kubeClient:       kubeClient,
 		client:           client.Resource(v1.GetOOFSGVR()),
@@ -41,15 +43,15 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenan
 	}
 }
 
-func (s *Service) CreateServiceunit(model *Serviceunit) (*Serviceunit, error) {
+func (s *Service) CreateServiceunit(model *Serviceunit) (*Serviceunit, error, string) {
 	if err := s.Validate(model); err != nil {
-		return nil, fmt.Errorf("bad request: %+v", err)
+		return nil, fmt.Errorf("bad request: %+v", err), "0080000019"
 	}
 	su, err := s.Create(ToAPI(model))
 	if err != nil {
-		return nil, fmt.Errorf("cannot create object: %+v", err)
+		return nil, fmt.Errorf("cannot create object: %+v", err), "0080000020"
 	}
-	return ToModel(su), nil
+	return ToModel(su), nil, "0"
 }
 
 func (s *Service) ListServiceunit(opts ...util.OpOption) ([]*Serviceunit, error) {

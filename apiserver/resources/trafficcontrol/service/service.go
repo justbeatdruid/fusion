@@ -2,6 +2,9 @@ package service
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/util"
+	"strings"
 
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
@@ -12,6 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
+
+	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 )
 
 var crdNamespace = "default"
@@ -22,7 +27,7 @@ type Service struct {
 	applicationClient dynamic.NamespaceableResourceInterface
 }
 
-func NewService(client dynamic.Interface) *Service {
+func NewService(client dynamic.Interface, localConfig appconfig.ErrorConfig) *Service {
 	return &Service{
 		client:            client.Resource(v1.GetOOFSGVR()),
 		apiClient:         client.Resource(apiv1.GetOOFSGVR()),
@@ -31,6 +36,7 @@ func NewService(client dynamic.Interface) *Service {
 }
 
 func (s *Service) getApplication(id string) (*appv1.Application, error) {
+
 	crd, err := s.applicationClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -54,12 +60,12 @@ func (s *Service) CreateTrafficcontrol(model *Trafficcontrol) (*Trafficcontrol, 
 	return ToModel(su), nil
 }
 
-func (s *Service) ListTrafficcontrol() ([]*Trafficcontrol, error) {
-	sus, err := s.List()
+func (s *Service) ListTrafficcontrol(opts ...util.OpOption) ([]*Trafficcontrol, error) {
+	apps, err := s.List(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	return ToListModel(sus), nil
+	return ToListModel(apps, opts...), nil
 }
 
 func (s *Service) GetTrafficcontrol(id string) (*Trafficcontrol, error) {
@@ -119,18 +125,26 @@ func (s *Service) Create(su *v1.Trafficcontrol) (*v1.Trafficcontrol, error) {
 	return su, nil
 }
 
-func (s *Service) List() (*v1.TrafficcontrolList, error) {
+func (s *Service) List(opts ...util.OpOption) (*v1.TrafficcontrolList, error) {
 	var options metav1.ListOptions
+	op := util.OpList(opts...)
+	u := op.User()
+	var labels []string
+	if len(u) > 0 {
+		labels = append(labels, user.GetLabelSelector(u))
+	}
+	options.LabelSelector = strings.Join(labels, ",")
+	klog.V(5).Infof("list with label selector: %s", options.LabelSelector)
 	crd, err := s.client.Namespace(crdNamespace).List(options)
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
-	sus := &v1.TrafficcontrolList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), sus); err != nil {
+	apps := &v1.TrafficcontrolList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apps); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.serviceunitList: %+v", sus)
-	return sus, nil
+	klog.V(5).Infof("get v1.trafficcontrolList: %+v", apps)
+	return apps, nil
 }
 
 func (s *Service) Get(id string) (*v1.Trafficcontrol, error) {

@@ -252,7 +252,7 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 		protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
 		requestBody.Protocols = protocols
 		requestBody.Methods = methods
-		queryPath := fmt.Sprintf("%s%s%s", "/api/v1/apis/", db.ObjectMeta.Name, "/data")
+		queryPath := fmt.Sprintf("%s%s%s%s%s", "/api/v1/apis/", db.ObjectMeta.Namespace, "/", db.ObjectMeta.Name, "/data")
 		paths = append(paths, queryPath)
 		requestBody.Paths = paths
 	} else {
@@ -503,7 +503,7 @@ func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api, isOffline bool) (err 
 		protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
 		requestBody.Protocols = protocols
 		requestBody.Methods = methods
-		queryPath := fmt.Sprintf("%s%s%s", "/api/v1/apis/", db.ObjectMeta.Name, "/data")
+		queryPath := fmt.Sprintf("%s%s%s%s%s", "/api/v1/apis/", db.ObjectMeta.Namespace, "/", db.ObjectMeta.Name, "/data")
 		paths = append(paths, queryPath)
 		requestBody.Paths = paths
 	} else {

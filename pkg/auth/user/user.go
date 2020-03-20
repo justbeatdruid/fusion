@@ -86,7 +86,7 @@ func idnames(id string) string {
 	if name, err := cas.GetUserNameByID(id); err == nil {
 		return name
 	} else {
-		klog.Errorf("get user name by id error: %+v", err)
+		klog.Errorf("get user name by id error: %+v, use id as name", err)
 	}
 	if name, ok := getIdNamesMap()[id]; ok {
 		return name
@@ -314,7 +314,8 @@ const (
 )
 
 type Wrapped struct {
-	Code    int    `json:"code"`
+	Code    string    `json:"code"`
+	Msg     string       `json:"msg"`
 	Message string `json:"message"`
 	Data    *Data  `json:"data,omitempty"`
 }

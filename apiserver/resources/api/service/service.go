@@ -210,7 +210,11 @@ func (s *Service) ListApi(suid, appid string, opts ...util.OpOption) ([]*Api, er
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	result := ToListModel(apis, opts...)
+	publishedOnly := false
+	if len(suid) == 0 && len(appid) == 0 {
+		publishedOnly = true
+	}
+	result := ToListModel(apis, publishedOnly, opts...)
 	if len(appid) > 0 {
 		for i := range result {
 			if apis.Items[i].Status.Applications != nil {
@@ -254,7 +258,7 @@ func (s *Service) DeleteApi(id string, opts ...util.OpOption) (*Api, error) {
 }
 
 func (s *Service) PublishApi(id string, opts ...util.OpOption) (*Api, error) {
-	api, err := s.Get(id)
+	api, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -614,7 +618,7 @@ func (s *Service) Query(apiid string, params map[string][]string, limitstr strin
 			q.Limit = limit
 		}
 
-		data, err := s.dataService.QueryData(*q)
+		data, err := s.dataService.QueryData(*q, api.Spec.Name)
 		if err != nil {
 			return d, fmt.Errorf("query data error: %+v", err)
 		}
