@@ -49,6 +49,7 @@ func main() {
 	var pulsarHost string
 	var pulsarPort int
 	var authEnable bool
+	var adminToken string
 
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
@@ -57,6 +58,8 @@ func main() {
 	flag.StringVar(&pulsarHost, "pulsar-host", "127.0.0.1", "Host of pulsar web service.")
 	flag.IntVar(&pulsarPort, "pulsar-port", 30002, "Port of pulsar web service.")
 	flag.BoolVar(&authEnable, "pulsar-auth-enable", false, "Enable pulsar authentication")
+	flag.StringVar(&adminToken, "pulsar-admin-token", "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.eNEbqeuUXxM7bsnP8gnxYq7hRkP50Rqc0nsWFRp8z6A", "Admin token of pulsar")
+
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(func(o *zap.Options) {
@@ -75,16 +78,16 @@ func main() {
 		LeaderElectionID:        "fusion-topic-controller-manager",
 		Port:                    9443,
 	})
-
-	operator := &controllers.Operator{
-		Host:       pulsarHost,
-		Port:       pulsarPort,
-		AuthEnable: authEnable,
-	}
-
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
+	}
+
+	operator := &controllers.Operator{
+		Host:           pulsarHost,
+		Port:           pulsarPort,
+		AuthEnable:     authEnable,
+		SuperUserToken: adminToken,
 	}
 
 	if err = (&controllers.TopicReconciler{
