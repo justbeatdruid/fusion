@@ -10,6 +10,6 @@ curl localhost:8001/api/v1/serviceunits -H 'content-type:application/json' \
       {
 	"id": "4f1d1b902c1e663a"
       },
-    "group": "ae89da1879ae1b95"
+    "group": ""
   }
 }'

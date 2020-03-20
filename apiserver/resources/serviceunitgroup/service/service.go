@@ -6,6 +6,7 @@ import (
 	k8s "github.com/chinamobile/nlpt/apiserver/kubernetes"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunitgroup/api/v1"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -54,7 +55,7 @@ func (s *Service) CreateServiceunitGroup(model *ServiceunitGroup) (*ServiceunitG
 	}
 	for _, item := range list.Items {
 		if item.Spec.Name == model.Name {
-			return nil, fmt.Errorf("name %s already exists", model.Name)
+			return nil, errors.NameDuplicatedError("name dumplicated: %s", model.Name)
 		}
 	}
 	sug, err := s.Create(ToAPI(model))
@@ -87,7 +88,7 @@ func (s *Service) DeleteServiceunitGroup(id string, opts ...util.OpOption) error
 		return fmt.Errorf("cannot get serviceunit list: %+v", err)
 	}
 	if len(sus.Items) > 0 {
-		return fmt.Errorf("%d serviceunit(s) still in group %s", len(sus.Items), id)
+		return errors.ContentNotVoidError("content not void: %d serviceunits(s) still in group %s", len(sus.Items), id)
 	}
 	return s.Delete(id, opts...)
 }
@@ -105,7 +106,7 @@ func (s *Service) UpdateServiceunitGroup(id string, model *ServiceunitGroup, opt
 		}
 		for _, item := range list.Items {
 			if item.Spec.Name == model.Name {
-				return nil, fmt.Errorf("name %s already exists", item.Name)
+				return nil, errors.NameDuplicatedError("name dumplicated: %s", model.Name)
 			}
 		}
 		sug.Spec.Name = model.Name

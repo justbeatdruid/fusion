@@ -38,15 +38,15 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenan
 	}
 }
 
-func (s *Service) CreateApplication(model *Application) (*Application, error) {
+func (s *Service) CreateApplication(model *Application) (*Application, error, string) {
 	if err := s.Validate(model); err != nil {
-		return nil, fmt.Errorf("bad request: %+v", err)
+		return nil, err, "002000019"
 	}
 	app, err := s.Create(ToAPI(model))
 	if err != nil {
-		return nil, fmt.Errorf("cannot create object: %+v", err)
+		return nil, fmt.Errorf("cannot create object: %+v", err), "002000020"
 	}
-	return ToModel(app), nil
+	return ToModel(app), nil, "0"
 }
 
 func (s *Service) ListApplication(opts ...util.OpOption) ([]*Application, error) {

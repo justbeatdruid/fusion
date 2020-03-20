@@ -4,6 +4,6 @@ curl localhost:8001/api/v1/applications -H 'content-type:application/json' \
 {
   "data": {
     "name": "testtesttestapp",
-    "group": "9f3acbd59a60c9e7"
+    "group": ""
   }
 }'

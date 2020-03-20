@@ -7,6 +7,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunitgroup/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/chinamobile/nlpt/pkg/go-restful"
@@ -14,31 +15,39 @@ import (
 
 type controller struct {
 	service *service.Service
+	errMsg  config.ErrorConfig
 }
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TenantEnabled),
+		cfg.LocalConfig,
 	}
 }
 
 type Wrapped struct {
-	Code    int                       `json:"code"`
-	Message string                    `json:"message"`
-	Data    *service.ServiceunitGroup `json:"data,omitempty"`
+	Code      int                       `json:"code"`
+	Message   string                    `json:"message"`
+	ErrorCode string                    `json:"errorCode"`
+	Detail    string                    `json:"detail"`
+	Data      *service.ServiceunitGroup `json:"data,omitempty"`
 }
 
 type CreateResponse = Wrapped
 type CreateRequest = Wrapped
 type DeleteResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Code      int    `json:"code"`
+	Message   string `json:"message"`
+	ErrorCode string `json:"errorCode"`
+	Detail    string `json:"detail"`
 }
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Code      int         `json:"code"`
+	Message   string      `json:"message"`
+	ErrorCode string      `json:"errorCode"`
+	Detail    string      `json:"detail"`
+	Data      interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
 
@@ -46,29 +55,34 @@ func (c *controller) CreateServiceunitGroup(req *restful.Request) (int, *CreateR
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: "read entity error: data is null",
+			Code:   1,
+			Detail: "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: "auth model error",
+			Code:   1,
+			Detail: "auth model error",
 		}
 	}
 	body.Data.Namespace = authuser.Namespace
 
 	if db, err := c.service.CreateServiceunitGroup(body.Data); err != nil {
+		message := "创建操作执行错误"
+		if errors.IsNameDuplicated(err) {
+			message = "名字重复"
+		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
-			Message: fmt.Errorf("create serviceunitgroup error: %+v", err).Error(),
+			Message: message,
+			Detail:  fmt.Errorf("create serviceunitgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -83,15 +97,15 @@ func (c *controller) GetServiceunitGroup(req *restful.Request) (int, *GetRespons
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: "auth model error",
+			Code:   1,
+			Detail: "auth model error",
 		}
 	}
 
 	if db, err := c.service.GetServiceunitGroup(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
-			Code:    1,
-			Message: fmt.Errorf("get serviceunitgroup error: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("get serviceunitgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -106,20 +120,25 @@ func (c *controller) DeleteServiceunitGroup(req *restful.Request) (int, *DeleteR
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
-			Code:    1,
-			Message: "auth model error",
+			Code:   1,
+			Detail: "auth model error",
 		}
 	}
 
 	if err := c.service.DeleteServiceunitGroup(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		message := "删除操作执行错误"
+		if errors.IsContentNotVoid(err) {
+			message = "分组下包含正在使用的项目"
+		}
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
-			Message: fmt.Errorf("delete serviceunitgroup error: %+v", err).Error(),
+			Message: message,
+			Detail:  fmt.Errorf("delete serviceunitgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
-			Code:    0,
-			Message: "",
+			Code:   0,
+			Detail: "",
 		}
 	}
 }
@@ -130,15 +149,15 @@ func (c *controller) ListServiceunitGroup(req *restful.Request) (int, *ListRespo
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
-			Code:    1,
-			Message: "auth model error",
+			Code:   1,
+			Detail: "auth model error",
 		}
 	}
 	db, err := c.service.ListServiceunitGroup(util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
-			Code:    1,
-			Message: fmt.Errorf("list serviceunitgroup error: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("list serviceunitgroup error: %+v", err).Error(),
 		}
 	}
 	if len(page) == 0 && len(size) == 0 {
@@ -151,8 +170,8 @@ func (c *controller) ListServiceunitGroup(req *restful.Request) (int, *ListRespo
 	data, err := util.PageWrap(sus, page, size)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
-			Code:    1,
-			Message: fmt.Errorf("page error error: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("page error error: %+v", err).Error(),
 		}
 	}
 	return http.StatusOK, &ListResponse{
@@ -178,22 +197,27 @@ func (c *controller) UpdateServiceunitGroup(req *restful.Request) (int, *CreateR
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	id := req.PathParameter("id")
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: "auth model error",
+			Code:   1,
+			Detail: "auth model error",
 		}
 	}
 	if db, err := c.service.UpdateServiceunitGroup(id, body.Data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		message := "更新操作执行错误"
+		if errors.IsNameDuplicated(err) {
+			message = "名字重复"
+		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,
-			Message: fmt.Errorf("update serviceunitgroup error: %+v", err).Error(),
+			Message: message,
+			Detail:  fmt.Errorf("update serviceunitgroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
