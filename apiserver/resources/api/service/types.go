@@ -291,8 +291,14 @@ func (s *Service) Validate(a *Api) error {
 			}
 		}
 		if a.DataWarehouseQuery != nil {
-			if err = a.DataWarehouseQuery.Validate(); err != nil {
-				return fmt.Errorf("query field validate error: %+v", err)
+			if a.DataWarehouseQuery.Type == "hql" {
+				if len(a.DataWarehouseQuery.HQL) == 0 || len(a.DataWarehouseQuery.Database) == 0 {
+					return fmt.Errorf("hql field error")
+				}
+			} else {
+				if err = a.DataWarehouseQuery.Validate(); err != nil {
+					return fmt.Errorf("query field validate error: %+v", err)
+				}
 			}
 		}
 	}

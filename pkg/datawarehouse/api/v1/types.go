@@ -110,3 +110,9 @@ type Result struct {
 	ColumnDic map[string]string   `json:"columnDic"`
 	Data      []map[string]string `json:"dataValueList"`
 }
+
+type HqlQuery struct {
+	UserID       string `json:"userId"`
+	DatabaseName string `json:"databaseName"`
+	HQL          string `json:"sqlString"`
+}
