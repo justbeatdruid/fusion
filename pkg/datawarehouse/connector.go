@@ -15,6 +15,7 @@ import (
 type Connector interface {
 	GetExampleDatawarehouse() (*v1.Datawarehouse, error)
 	QueryData(v1.Query, ...string) (v1.Result, error)
+	QueryHqlData(string, string, ...string) (v1.Result, error)
 }
 
 type httpConnector struct {
@@ -99,6 +100,51 @@ func (c *httpConnector) QueryData(q v1.Query, opts ...string) (v1.Result, error)
 		klog.V(5).Infof("create operation failed: %d %s", response.StatusCode, string(body))
 		return v1.Result{}, fmt.Errorf("request for quering data error: receive wrong status code: %s", string(body))
 	}
+	if !responseBody.Success {
+		return v1.Result{}, fmt.Errorf("query by data error: %s", responseBody.Message)
+	}
+	var name = "unknown"
+	if len(opts) > 0 {
+		name = opts[0]
+	}
+	klog.V(4).Infof("api %s query data cost %d milliseconds", name, int(time.Since(now)/time.Millisecond))
+
+	return responseBody.Data, nil
+}
+
+const hqlDataRequestPath = "/cmcc/data/service/SqlAssemble/getQueryResultBySql"
+
+func (c *httpConnector) QueryHqlData(hql, databaseName string, opts ...string) (v1.Result, error) {
+	now := time.Now()
+	q := &v1.HqlQuery{
+		UserID:       "admin",
+		HQL:          hql,
+		DatabaseName: databaseName,
+	}
+	if len(q.DatabaseName) == 0 {
+		return v1.Result{}, fmt.Errorf("database not set")
+	}
+	request := gorequest.New().SetLogger(logs.GetGoRequestLogger(6)).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, c.DataHost, c.DataPort, hqlDataRequestPath))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second)
+
+	responseBody := &WappedResult{}
+	response, body, errs := request.Send(&q).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return v1.Result{}, fmt.Errorf("request for quering data error: %+v", errs)
+	}
+	klog.V(6).Infof("creation response body: %s", string(body))
+	if response.StatusCode/100 != 2 {
+		klog.V(5).Infof("create operation failed: %d %s", response.StatusCode, string(body))
+		return v1.Result{}, fmt.Errorf("request for quering data error: receive wrong status code: %s", string(body))
+	}
+	if !responseBody.Success {
+		return v1.Result{}, fmt.Errorf("query by data error: %s", responseBody.Message)
+	}
 	var name = "unknown"
 	if len(opts) > 0 {
 		name = opts[0]
@@ -129,6 +175,10 @@ func (fakeConnector) GetExampleDatawarehouse() (*v1.Datawarehouse, error) {
 }
 
 func (fakeConnector) QueryData(v1.Query, ...string) (v1.Result, error) {
+	return v1.Result{}, nil
+}
+
+func (fakeConnector) QueryHqlData(hql, databaseName string, opts ...string) (v1.Result, error) {
 	return v1.Result{}, nil
 }
 

@@ -604,27 +604,38 @@ func (s *Service) Query(apiid string, params map[string][]string, limitstr strin
 	}
 	// data service API
 	if api.Spec.DataWarehouseQuery != nil {
-		typesMap := make(map[string]string)
-		for _, w := range api.Spec.ApiQueryInfo.WebParams {
-			typesMap[w.Name] = string(w.Type)
-		}
-		api.Spec.DataWarehouseQuery.RefillWhereFields(typesMap, params)
-		q := api.Spec.DataWarehouseQuery.Query
-		if len(limitstr) > 0 {
-			limit, err := strconv.Atoi(limitstr)
+		if api.Spec.DataWarehouseQuery.Type == "hql" {
+			hql, databaseName := api.Spec.DataWarehouseQuery.HQL, api.Spec.DataWarehouseQuery.Database
+			data, err := s.dataService.QueryHqlData(hql, databaseName, api.Spec.Name)
 			if err != nil {
-				return d, fmt.Errorf("cannot parse limit parameter %s to int: %+v", limitstr, err)
+				return d, fmt.Errorf("query data error: %+v", err)
 			}
-			q.Limit = limit
-		}
+			d.Headers = data.Headers
+			d.Columns = data.ColumnDic
+			d.Data = data.Data
+		} else {
+			typesMap := make(map[string]string)
+			for _, w := range api.Spec.ApiQueryInfo.WebParams {
+				typesMap[w.Name] = string(w.Type)
+			}
+			api.Spec.DataWarehouseQuery.RefillWhereFields(typesMap, params)
+			q := api.Spec.DataWarehouseQuery.Query
+			if len(limitstr) > 0 {
+				limit, err := strconv.Atoi(limitstr)
+				if err != nil {
+					return d, fmt.Errorf("cannot parse limit parameter %s to int: %+v", limitstr, err)
+				}
+				q.Limit = limit
+			}
 
-		data, err := s.dataService.QueryData(*q, api.Spec.Name)
-		if err != nil {
-			return d, fmt.Errorf("query data error: %+v", err)
+			data, err := s.dataService.QueryData(*q, api.Spec.Name)
+			if err != nil {
+				return d, fmt.Errorf("query data error: %+v", err)
+			}
+			d.Headers = data.Headers
+			d.Columns = data.ColumnDic
+			d.Data = data.Data
 		}
-		d.Headers = data.Headers
-		d.Columns = data.ColumnDic
-		d.Data = data.Data
 		return d, nil
 	} else if api.Spec.RDBQuery != nil {
 		su, err := s.getServiceunit(api.Spec.Serviceunit.ID, api.ObjectMeta.Namespace)

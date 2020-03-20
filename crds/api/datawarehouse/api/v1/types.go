@@ -11,9 +11,12 @@ import (
 )
 
 type DataWarehouseQuery struct {
+	Type           string          `json:"type"`
 	Properties     []QueryProperty `json:"properties"`
 	PrimaryTableID string          `json:"primaryTableId"`
 	Query          *v1.Query       `json:"query"`
+	HQL            string          `json:"hql"`
+	Database       string          `json:"database"`
 }
 
 type QueryProperty struct {
@@ -74,6 +77,9 @@ type TableNode struct {
 func (dq *DataWarehouseQuery) RefillQuery(db *crdv1.Database) error {
 	if dq == nil {
 		return fmt.Errorf("data warehouse query is null")
+	}
+	if dq.Type == "hql" {
+		return nil
 	}
 	if db == nil {
 		return fmt.Errorf("database is null")
