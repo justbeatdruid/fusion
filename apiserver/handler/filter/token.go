@@ -56,6 +56,10 @@ func urlPermitted(u string) bool {
 }
 
 func tokenValid(t string) bool {
+	// remove token for cas
+	if true {
+		return true
+	}
 	for _, l := range tokenList {
 		if t == l {
 			return true
