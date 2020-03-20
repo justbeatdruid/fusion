@@ -105,17 +105,22 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			}
 		}
 		//删除授权
-		for index, P := range topic.Spec.Permissions {
-			if P.Status.Status == "delete" {
-				P.Status.Status = "deleting"
-				if err := r.Operator.DeletePer(topic, &P); err != nil {
-					P.Status.Status = "error"
-					P.Status.Message = err.Error()
+		for index, p := range topic.Spec.Permissions {
+			if p.Status.Status == "delete" {
+				p.Status.Status = "deleting"
+				if err := r.Operator.DeletePer(topic, &p); err != nil {
+					p.Status.Status = "error"
+					p.Status.Message = err.Error()
+
+					//删除失败，将标签重置为true
+					topic.ObjectMeta.Labels[p.AuthUserID] = "true"
 					r.Update(ctx, topic)
 				} else {
 					pers := topic.Spec.Permissions
 					topic.Spec.Permissions = append(pers[:index], pers[index+1:]...)
-					
+
+					//收回权限成功，删除标签
+					delete(topic.ObjectMeta.Labels, p.AuthUserID)
 					r.Delete(ctx, topic)
 				}
 			}

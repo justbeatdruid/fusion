@@ -15,7 +15,6 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 	"strconv"
-	"strings"
 )
 
 var crdNamespace = "default"
@@ -144,7 +143,7 @@ func (s *Service) Get(id string) (*v1.Topic, error) {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tp); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.topic: %+v", tp)
+	//klog.V(5).Infof("get v1.topic: %+v", tp)
 	return tp, nil
 }
 
@@ -159,11 +158,24 @@ func (s *Service) Delete(id string) (*v1.Topic, error) {
 
 func (s *Service) DeletePer(id string, authUserId string) (*v1.Topic, error) {
 	tp, err := s.Get(id)
-	//删除授权用户id的标签
-	delete(tp.ObjectMeta.Labels, authUserId)
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
+	//查询授权用户id的标签
+	v, ok := tp.ObjectMeta.Labels[authUserId]
+	if !ok {
+		//TODO 认证用户id的标签不存在，是否报错？
+		return nil, fmt.Errorf("auth user is not exist: %+v", err)
+	}
+
+	if v == "true" {
+		tp.ObjectMeta.Labels[authUserId] = "false"
+	} else {
+		//TODO 如果value非true，则认为该权限已经在回收中，禁止重复操作
+		return nil, fmt.Errorf("revoke permission error, permission has already revoking")
+	}
+	delete(tp.ObjectMeta.Labels, authUserId)
+
 	for _, P := range tp.Spec.Permissions {
 		if P.AuthUserID == authUserId {
 			P.Status.Status = "delete"
@@ -309,29 +321,30 @@ func (s *Service) IsTopicExist(url string) bool {
 }
 
 func (s *Service) GrantPermissions(topicId string, authUserId string, actions Actions) (*Topic, error) {
+	//1.根据id查询topic
 	tp, err := s.Get(topicId)
 	if err != nil {
 		klog.Errorf("error get crd: %+v", err)
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
 
-	if err != nil {
-		klog.Errorf("error get crd: %+v", err)
-		return nil, fmt.Errorf("error get crd: %+v", err)
-	}
-
+	//2.处理actions
 	as := v1.Actions{}
 	for _, ac := range actions {
 		as = append(as, ac)
+	}
+	//3.给topic加auth id的标签，key：auth id
+	tp.ObjectMeta.Labels[authUserId] = "true"
 
+	//4.根据auth id查询name
+	authUserName, err := s.QueryAuthUserNameById(authUserId)
+	if err != nil {
+		return nil, fmt.Errorf("grant permission error:%+v", err)
 	}
 
-	labelValue := strings.Join(actions, "-")
-
-	tp.ObjectMeta.Labels[authUserId] = labelValue
 	perm := v1.Permission{
 		AuthUserID:   authUserId,
-		AuthUserName: "",
+		AuthUserName: authUserName,
 		Actions:      as,
 		Status: v1.PermissionStatus{
 			Status:  v1.Grant,
@@ -353,12 +366,13 @@ func (s *Service) QueryAuthUserNameById(id string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("error get crd: %+v", err)
 	}
-	ca := clientauthv1.Clientauth{}
+	ca := &clientauthv1.Clientauth{}
 
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), ca); err != nil {
 		return "", fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get auth user name: %+v", ca)
+
+	//klog.V(5).Infof("get auth user name: %+v", ca)
 	return ca.Spec.Name, nil
 
 }
