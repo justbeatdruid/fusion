@@ -314,8 +314,8 @@ const (
 )
 
 type Wrapped struct {
-	Code    string    `json:"code"`
-	Msg     string       `json:"msg"`
+	Code    string `json:"code"`
+	Msg     string `json:"msg"`
 	Message string `json:"message"`
 	Data    *Data  `json:"data,omitempty"`
 }

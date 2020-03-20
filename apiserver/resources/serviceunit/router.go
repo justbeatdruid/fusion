@@ -61,17 +61,17 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.publishServiceunit).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
-/*
-	// + update_sunyu
-	ws.Route(ws.PUT("/serviceunits/{id}").
-		Consumes(restful.MIME_JSON).
-		Produces(restful.MIME_JSON).
-		Doc("update serviceunit").
-		To(r.updateServiceunit).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
-		Do(returns200, returns500))
+	/*
+		// + update_sunyu
+		ws.Route(ws.PUT("/serviceunits/{id}").
+			Consumes(restful.MIME_JSON).
+			Produces(restful.MIME_JSON).
+			Doc("update serviceunit").
+			To(r.updateServiceunit).
+			Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+			Do(returns200, returns500))
 
- */
+	*/
 
 	ws.Route(ws.POST("/serviceunits/{id}/users").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -139,7 +139,7 @@ func (r *router) updateServiceunit(request *restful.Request, response *restful.R
 	response.WriteHeaderAndEntity(code, result)
 }
 
- */
+*/
 
 func (r *router) addUser(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.AddUser(request)

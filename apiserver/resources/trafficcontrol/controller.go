@@ -103,7 +103,7 @@ func (c *controller) GetTrafficcontrol(req *restful.Request) (int, *GetResponse)
 	if db, err := c.service.GetTrafficcontrol(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    "012000005",
-			Msg: c.errMsg.Trafficcontrol["012000005"],
+			Msg:     c.errMsg.Trafficcontrol["012000005"],
 			Message: fmt.Errorf("get trafficcontrol error: %+v", err).Error(),
 		}
 	} else {
