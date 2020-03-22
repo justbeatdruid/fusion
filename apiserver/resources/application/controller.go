@@ -265,15 +265,16 @@ func (c *controller) AddUser(req *restful.Request) (int, *user.UserResponse) {
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
-	if body.Data == nil {
+	data, err := user.ToData(body.Data)
+	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
 			ErrorCode: "002000002",
 			Message:   c.errMsg.Application["002000002"],
-			Detail:    "read entity error: data is null",
+			Detail:    "read entity error: " + err.Error(),
 		}
 	}
-	if len(body.Data.ID) == 0 {
+	if len(data.ID) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
 			ErrorCode: "002000011",
@@ -281,7 +282,7 @@ func (c *controller) AddUser(req *restful.Request) (int, *user.UserResponse) {
 			Detail:    "read entity error: id in data is null",
 		}
 	}
-	if len(body.Data.Role) == 0 {
+	if len(data.Role) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
 			ErrorCode: "002000012",
@@ -298,7 +299,7 @@ func (c *controller) AddUser(req *restful.Request) (int, *user.UserResponse) {
 			Detail:    "auth model error",
 		}
 	}
-	if err := c.service.AddUser(id, authuser.Name, body.Data); err != nil {
+	if err := c.service.AddUser(id, authuser.Name, data); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      2,
 			ErrorCode: "002000013",
@@ -375,15 +376,16 @@ func (c *controller) ChangeOwner(req *restful.Request) (int, *user.UserResponse)
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
-	if body.Data == nil {
+	data, err := user.ToData(body.Data)
+	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
 			ErrorCode: "002000002",
 			Message:   c.errMsg.Application["002000002"],
-			Detail:    "read entity error: data is null",
+			Detail:    "read entity error: " + err.Error(),
 		}
 	}
-	if len(body.Data.ID) == 0 {
+	if len(data.ID) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
 			ErrorCode: "002000011",
@@ -400,7 +402,7 @@ func (c *controller) ChangeOwner(req *restful.Request) (int, *user.UserResponse)
 			Detail:    "auth model error",
 		}
 	}
-	if err := c.service.ChangeOwner(id, authuser.Name, body.Data); err != nil {
+	if err := c.service.ChangeOwner(id, authuser.Name, data); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      2,
 			ErrorCode: "002000018",
@@ -443,15 +445,16 @@ func (c *controller) ChangeUser(req *restful.Request) (int, *user.UserResponse) 
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
-	if body.Data == nil {
+	data, err := user.ToData(body.Data)
+	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
 			ErrorCode: "002000002",
 			Message:   c.errMsg.Application["002000002"],
-			Detail:    "read entity error: data is null",
+			Detail:    "read entity error: " + err.Error(),
 		}
 	}
-	if len(body.Data.Role) == 0 {
+	if len(data.Role) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
 			ErrorCode: "002000012",
@@ -459,7 +462,7 @@ func (c *controller) ChangeUser(req *restful.Request) (int, *user.UserResponse) 
 			Detail:    "read entity error: role in data is null",
 		}
 	}
-	body.Data.ID = userid
+	data.ID = userid
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
@@ -469,7 +472,7 @@ func (c *controller) ChangeUser(req *restful.Request) (int, *user.UserResponse) 
 			Detail:    "auth model error",
 		}
 	}
-	if err := c.service.ChangeUser(id, authuser.Name, body.Data); err != nil {
+	if err := c.service.ChangeUser(id, authuser.Name, data); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      2,
 			ErrorCode: "002000017",

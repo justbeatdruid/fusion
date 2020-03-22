@@ -2,10 +2,12 @@ package user
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/chinamobile/nlpt/pkg/auth/cas"
 
+	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/klog"
 )
 
@@ -314,12 +316,31 @@ const (
 )
 
 type Wrapped struct {
-	Code      int    `json:"code"`
-	ErrorCode string `json:"errorCode"`
-	Detail    string `json:"detail"`
-	Message   string `json:"message"`
-	Data      *Data  `json:"data,omitempty"`
+	Code      int      `json:"code"`
+	ErrorCode string   `json:"errorCode"`
+	Detail    string   `json:"detail"`
+	Message   string   `json:"message"`
+	Data      *CasData `json:"data,omitempty"`
 }
 
 type UserResponse = Wrapped
 type UserRequest = Wrapped
+
+type CasData struct {
+	ID   intstr.IntOrString `json:"id"`
+	Role Role               `json:"role"`
+}
+
+func ToData(c *CasData) (*Data, error) {
+	if c == nil {
+		return nil, fmt.Errorf("cas data is null")
+	}
+	id := c.ID.StrVal
+	if len(id) == 0 {
+		id = strconv.Itoa(int(c.ID.IntVal))
+	}
+	return &Data{
+		ID:   id,
+		Role: c.Role,
+	}, nil
+}
