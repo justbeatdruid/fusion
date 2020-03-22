@@ -293,6 +293,7 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 		return nil, fmt.Errorf("get traffic error: %+v", err)
 	}
 
+	//先校验是否所有API满足绑定条件，有一个不满足直接返回错误
 	for _, api := range apis {
 		apiSource, err := s.getAPi(api.ID)
 		if err != nil {
@@ -302,6 +303,14 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 		if len(apiSource.Spec.Traffic.ID) > 0 && traffic.Spec.Type != v1.SPECAPPC {
 			return nil, fmt.Errorf("api alrady bound to traffic")
 		}
+	}
+	//update status bind
+	traffic.Status.Status = v1.Bind
+	for _, api := range apis {
+		apiSource, err := s.getAPi(api.ID)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get api: %+v", err)
+		}
 		//绑定api
 		traffic.ObjectMeta.Labels[api.ID] = "true"
 		traffic.Spec.Apis = append(traffic.Spec.Apis, v1.Api{
@@ -310,11 +319,7 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 			KongID: apiSource.Spec.KongApi.KongID,
 			Result: v1.INIT,
 		})
-		//update status bind
-		traffic.Status.Status = v1.Bind
-		for index := range traffic.Spec.Apis {
-			traffic.Spec.Apis[index].Result = v1.INIT
-		}
+		//update api 操作时会判断是绑定还是解绑所以先将状态设置成bind
 		if _, err = s.updateApi(api.ID, traffic); err != nil {
 			return nil, fmt.Errorf("cannot update api traffic")
 		}
@@ -331,24 +336,33 @@ func (s *Service) UnBindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 		return nil, fmt.Errorf("get traffic error: %+v", err)
 	}
 
+	//先校验是否所有API满足绑定条件，有一个不满足直接返回错误
 	for _, api := range apis {
 		apiSource, err := s.getAPi(api.ID)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get api: %+v", err)
 		}
-		//
 		if len(apiSource.Spec.Traffic.ID) == 0 && traffic.Spec.Type != v1.SPECAPPC {
 			return nil, fmt.Errorf("api has no bound to traffic")
 		}
 		if len(apiSource.Spec.Traffic.SpecialID) == 0 && traffic.Spec.Type == v1.SPECAPPC {
 			return nil, fmt.Errorf("api has no bound to special traffic")
 		}
-		//解除绑定
-		//update status unbind
-		traffic.Status.Status = v1.UnBind
-		for index := range traffic.Spec.Apis {
-			traffic.Spec.Apis[index].Result = v1.INIT
+	}
+	//update status unbind
+	traffic.Status.Status = v1.UnBind
+	for _, api := range apis {
+		apiSource, err := s.getAPi(api.ID)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get api: %+v", err)
 		}
+		//解除绑定
+		for index, v := range traffic.Spec.Apis {
+			if v.ID == apiSource.ObjectMeta.Name {
+				traffic.Spec.Apis[index].Result = v1.INIT
+			}
+		}
+		//update api 操作时会判断是绑定还是解绑所以先将状态设置成unbind
 		traffic.ObjectMeta.Labels[api.ID] = "false"
 		if _, err = s.updateApi(api.ID, traffic); err != nil {
 			return nil, fmt.Errorf("cannot update api traffic")
