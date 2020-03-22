@@ -75,6 +75,9 @@ func (s *Service) UpdateRestriction(id string, reqData interface{}) (*Restrictio
 	}
 	//更新crd的状态为开始更新
 	crd.Status.Status = v1.Update
+	for index := range crd.Spec.Apis {
+		crd.Spec.Apis[index].Result = v1.INIT
+	}
 	su, err := s.Update(crd)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to update: %+v", err)
@@ -247,7 +250,7 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get restriction error: %+v", err)
 	}
-
+	//先校验完所有API再执行操作
 	for _, api := range apis {
 		apiSource, err := s.getAPi(api.ID)
 		if err != nil {
@@ -257,6 +260,14 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
 		if len(apiSource.Spec.Restriction.ID) > 0 {
 			return nil, fmt.Errorf("api alrady bound to restriction")
 		}
+	}
+	//update status bind
+	restriction.Status.Status = v1.Bind
+	for _, api := range apis {
+		apiSource, err := s.getAPi(api.ID)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get api: %+v", err)
+		}
 		//绑定api
 		restriction.ObjectMeta.Labels[api.ID] = "true"
 		restriction.Spec.Apis = append(restriction.Spec.Apis, v1.Api{
@@ -265,13 +276,12 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
 			KongID: apiSource.Spec.KongApi.KongID,
 			Result: v1.INIT,
 		})
-		//update status bind
-		restriction.Status.Status = v1.Bind
+		//update api 操作时会判断是绑定还是解绑所以先将状态设置成bind
 		if _, err = s.updateApi(api.ID, restriction); err != nil {
 			return nil, fmt.Errorf("cannot update api restriction")
 		}
-		//update traffic
 	}
+
 	//update traffic 所有api绑定完成后更新数据库的状态
 	restriction, err = s.UpdateSpec(restriction)
 	return ToModel(restriction), err
@@ -282,7 +292,7 @@ func (s *Service) UnBindApi(id string, apis []v1.Api) (*Restriction, error) {
 	if err != nil {
 		return nil, fmt.Errorf("get restriction error: %+v", err)
 	}
-
+	//校验API
 	for _, api := range apis {
 		apiSource, err := s.getAPi(api.ID)
 		if err != nil {
@@ -292,9 +302,22 @@ func (s *Service) UnBindApi(id string, apis []v1.Api) (*Restriction, error) {
 		if len(apiSource.Spec.Restriction.ID) == 0 {
 			return nil, fmt.Errorf("api has no bound to restriction")
 		}
+	}
+	//解除绑定
+	//update status unbind
+	restriction.Status.Status = v1.UnBind
+	for _, api := range apis {
+		apiSource, err := s.getAPi(api.ID)
+		if err != nil {
+			return nil, fmt.Errorf("cannot get api: %+v", err)
+		}
 		//解除绑定
-		//update status unbind
-		restriction.Status.Status = v1.UnBind
+		for index, v := range restriction.Spec.Apis {
+			if v.ID == apiSource.ObjectMeta.Name {
+				restriction.Spec.Apis[index].Result = v1.INIT
+			}
+		}
+		////update api 操作时会判断是绑定还是解绑所以先将状态设置成unbind
 		restriction.ObjectMeta.Labels[api.ID] = "false"
 		if _, err = s.updateApi(api.ID, restriction); err != nil {
 			return nil, fmt.Errorf("cannot update api restriction")
