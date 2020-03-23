@@ -257,6 +257,14 @@ func (sus ServiceunitList) GetItem(i int) (interface{}, error) {
 	return sus[i], nil
 }
 
+func (sus ServiceunitList) Less(i, j int) bool {
+	return sus[i].CreatedAt.Time.After(sus[j].CreatedAt.Time)
+}
+
+func (sus ServiceunitList) Swap(i, j int) {
+	sus[i], sus[j] = sus[j], sus[i]
+}
+
 func (c *controller) PublishServiceunit(req *restful.Request) (int, *CreateResponse) {
 	id := req.PathParameter("id")
 	body := &struct {

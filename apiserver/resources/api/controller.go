@@ -326,6 +326,14 @@ func (apis ApiList) GetItem(i int) (interface{}, error) {
 	return apis[i], nil
 }
 
+func (apis ApiList) Less(i, j int) bool {
+	return apis[i].ReleasedAt.Time.After(apis[j].ReleasedAt.Time)
+}
+
+func (apis ApiList) Swap(i, j int) {
+	apis[i], apis[j] = apis[j], apis[i]
+}
+
 func (c *controller) BindApi(req *restful.Request) (int, interface{}) {
 	body := &BindRequest{}
 	if err := req.ReadEntity(body); err != nil {
