@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/crds/apply/api/v1"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -97,7 +98,7 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 		return nil, fmt.Errorf("cannot find application")
 	}
 	if _, ok := targetApi.ObjectMeta.Labels[apiv1.ApplicationLabel(applicationId)]; ok {
-		return nil, fmt.Errorf("api already bound to application")
+		return nil, errors.AlreadyBoundError("api already bound to application")
 	}
 
 	klog.V(5).Infof("applicant: %s", model.Users.AppliedBy.ID)
