@@ -526,7 +526,7 @@ func (pers PermissionList) GetItem(i int) (interface{}, error) {
 func (c *controller) ListUsers(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-	topicId := req.QueryParameter("id")
+	topicId := req.PathParameter("id")
 	AuthUserName := req.QueryParameter("name")
 	tp, err := c.service.GetTopic(topicId)
 	if err != nil {
