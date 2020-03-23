@@ -46,14 +46,10 @@ type Operator struct {
 
 //CreateTopic 调用Pulsar的Restful Admin API，创建Topic
 func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
-	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-
+	request := r.GetHttpRequest()
 	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
-
 	topicUrl := r.getUrl(topic)
-	request = request.Put(topicUrl)
-	request = r.AddTokenToHeader(request)
-	response, body, errs := request.Send("").EndStruct("")
+	response, body, errs := request.Put(topicUrl).Send("").EndStruct("")
 	fmt.Println("URL:", topicUrl)
 	fmt.Println(" Response: ", body, response, errs)
 
@@ -68,12 +64,9 @@ func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
 
 //DeleteTopic 调用Pulsar的Restful Admin API，删除Topic
 func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
-	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	request := r.GetHttpRequest()
 	topicUrl := r.getUrl(topic)
-
-	request = request.Delete(topicUrl)
-	request = r.AddTokenToHeader(request)
-	response, body, errs := request.Retry(3, 5*time.Second, http.StatusBadRequest, http.StatusInternalServerError).End()
+	response, body, errs := request.Delete(topicUrl).Retry(3, 5*time.Second, http.StatusBadRequest, http.StatusInternalServerError).End()
 	fmt.Println("URL:", topicUrl)
 	fmt.Print(" Response: ", body, response, errs)
 	if response.StatusCode == 204 {
@@ -86,8 +79,7 @@ func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
 }
 
 func (r *Operator) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Permission) (err error) {
-	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-	request = r.AddTokenToHeader(request)
+	request := r.GetHttpRequest()
 	var url string
 	if topic.Spec.IsNonPersistent {
 		url = nonPersistentPermissionUrl
@@ -124,8 +116,7 @@ func (r *Operator) getUrl(topic *nlptv1.Topic) string {
 
 //删除授权
 func (r *Operator) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err error) {
-	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-	request = r.AddTokenToHeader(request)
+	request := r.GetHttpRequest()
 	url := persistentTopicUrl
 	if topic.Spec.IsNonPersistent {
 		url = nonPersistentTopicUrl
@@ -136,8 +127,7 @@ func (r *Operator) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err err
 	}
 	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl = fmt.Sprintf("%s://%s:%d%s%s%s", protocol, r.Host, r.Port, topicUrl, "permissions", P.AuthUserName)
-	request = request.Delete(topicUrl).Retry(3, 5*time.Second)
-	response, body, errs := request.Send("").EndStruct("")
+	response, body, errs := request.Delete(topicUrl).Retry(3, 5*time.Second).Send("").EndStruct("")
 	fmt.Println("URL:", topicUrl)
 	fmt.Print(" Response: ", body, response, errs)
 	if response.StatusCode == 204 {
@@ -154,4 +144,10 @@ func (r *Operator) AddTokenToHeader(request *gorequest.SuperAgent) *gorequest.Su
 		request.Header.Set("Authorization", "Bearer "+r.SuperUserToken)
 	}
 	return request
+}
+
+func (r *Operator) GetHttpRequest() *gorequest.SuperAgent {
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
+	return r.AddTokenToHeader(request)
+
 }

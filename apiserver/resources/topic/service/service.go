@@ -376,6 +376,10 @@ func (s *Service) GrantPermissions(topicId string, authUserId string, actions Ac
 	if tp.ObjectMeta.Labels == nil {
 		tp.ObjectMeta.Labels = make(map[string]string)
 	}
+
+	if _, ok := tp.ObjectMeta.Labels[authUserId]; ok {
+		return nil, fmt.Errorf("already grant this user permissions:%+v", authUserId)
+	}
 	tp.ObjectMeta.Labels[authUserId] = "true"
 
 	//4.根据auth id查询name
