@@ -15,7 +15,7 @@ const (
 	nonPersistentTopicUrl      = "/admin/v2/non-persistent/%s/%s/%s"
 	protocol                   = "http"
 	persistentPermissionUrl    = "/admin/v2/persistent/%s/%s/%s/permissions/%s"
-	nonPersistentPermissionUrl = "/admin/v2/persistent/%s/%s/%s/permissions/%s"
+	nonPersistentPermissionUrl = "/admin/v2/non-persistent/%s/%s/%s/permissions/%s"
 )
 
 type requestLogger struct {

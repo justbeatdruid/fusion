@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
+	topicv1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
 
 	"github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
 
@@ -23,10 +25,12 @@ var oofsGVR = schema.GroupVersionResource{
 
 type Service struct {
 	client dynamic.NamespaceableResourceInterface
+	topicClient dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface) *Service {
-	return &Service{client: client.Resource(oofsGVR)}
+	return &Service{client: client.Resource(oofsGVR),
+		topicClient: client.Resource(topicv1.GetOOFSGVR()),}
 }
 
 func (s *Service) CreateTopicgroup(model *Topicgroup) (*Topicgroup, error) {
@@ -54,6 +58,33 @@ func (s *Service) GetTopicgroup(id string) (*Topicgroup, error) {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	return ToModel(tg), nil
+}
+//查询topicgroup下的所有topic
+func (s *Service) GetTopics(id string) ([]*service.Topic, error) {
+	//查询topicgroup，得到名字
+    tg, err := s.GetTopicgroup(id)
+	if err!=nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	tgName := tg.Name
+
+	//查询所有的topic
+	crd, err := s.topicClient.Namespace(crdNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	topicList := &topicv1.TopicList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), topicList); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	//遍历所有的topic的topicGroup
+	tps := &topicv1.TopicList{}
+	for _, tp := range topicList.Items {
+		if  tp.Spec.TopicGroup == tgName{
+            tps.Items = append(tps.Items,tp)
+		}
+	}
+	return service.ToListModel(tps),nil
 }
 
 func (s *Service) DeleteTopicgroup(id string) (*Topicgroup, error) {
