@@ -254,6 +254,14 @@ func (apps ApplicationList) GetItem(i int) (interface{}, error) {
 	return apps[i], nil
 }
 
+func (apps ApplicationList) Less(i, j int) bool {
+	return apps[i].CreatedAt.Time.After(apps[j].CreatedAt.Time)
+}
+
+func (apps ApplicationList) Swap(i, j int) {
+	apps[i], apps[j] = apps[j], apps[i]
+}
+
 func (c *controller) AddUser(req *restful.Request) (int, *user.UserResponse) {
 	id := req.PathParameter("id")
 	body := &user.UserRequest{}

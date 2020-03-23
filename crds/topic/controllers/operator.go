@@ -47,11 +47,12 @@ type Operator struct {
 //CreateTopic 调用Pulsar的Restful Admin API，创建Topic
 func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-	request = r.AddTokenToHeader(request)
+
 	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
 
 	topicUrl := r.getUrl(topic)
 	request = request.Put(topicUrl)
+	request = r.AddTokenToHeader(request)
 	response, body, errs := request.Send("").EndStruct("")
 	fmt.Println("URL:", topicUrl)
 	fmt.Println(" Response: ", body, response, errs)
@@ -68,9 +69,11 @@ func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
 //DeleteTopic 调用Pulsar的Restful Admin API，删除Topic
 func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-	request = r.AddTokenToHeader(request)
 	topicUrl := r.getUrl(topic)
-	response, body, errs := request.Delete(topicUrl).Retry(3, 5*time.Second, http.StatusBadRequest, http.StatusInternalServerError).End()
+
+	request = request.Delete(topicUrl)
+	request = r.AddTokenToHeader(request)
+	response, body, errs := request.Retry(3, 5*time.Second, http.StatusBadRequest, http.StatusInternalServerError).End()
 	fmt.Println("URL:", topicUrl)
 	fmt.Print(" Response: ", body, response, errs)
 	if response.StatusCode == 204 {
