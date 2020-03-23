@@ -55,11 +55,11 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		//klog.Info("Current status is Init")
 		topic.Status.Status = nlptv1.Creating
 		if error := r.Operator.CreateTopic(topic); error != nil {
-			topic.Spec.Url = topic.GetUrl(topic)
+			topic.Spec.Url = topic.GetUrl()
 			topic.Status.Status = nlptv1.Error
 			topic.Status.Message = error.Error()
 		} else {
-			topic.Spec.Url = topic.GetUrl(topic)
+			topic.Spec.Url = topic.GetUrl()
 			topic.Status.Status = nlptv1.Created
 			topic.Status.Message = "success"
 		}

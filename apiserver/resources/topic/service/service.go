@@ -43,7 +43,6 @@ func (s *Service) CreateTopic(model *Topic) (*Topic, error) {
 	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
-	//根据Topic url在数据库中查找
 	tp, err := s.Create(ToAPI(model))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
@@ -101,7 +100,28 @@ func (s *Service) ListMessages(topicUrls []string) ([]Message, error) {
 	return messages, nil
 }
 
+func (s *Service) IsTopicExist(tp *v1.Topic) bool {
+	tps, err := s.List()
+	if err != nil {
+		return false
+	}
+
+	//判重复
+	if len(tps.Items) > 0 {
+		for _, t := range tps.Items {
+			if t.GetUrl() == tp.GetUrl() {
+				return true
+			}
+		}
+	}
+
+	return false
+}
 func (s *Service) Create(tp *v1.Topic) (*v1.Topic, error) {
+	if s.IsTopicExist(tp) {
+		return nil, fmt.Errorf("topic exists: %+v", tp.GetUrl())
+	}
+
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -130,7 +150,26 @@ func (s *Service) List() (*v1.TopicList, error) {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	//klog.V(5).Infof("get v1.topicList: %+v", tps)
+	klog.V(5).Infof("get v1.topicList: %+v", tps)
+	return tps, nil
+}
+
+func (s *Service) ListByLabel(key string, value string) (*v1.TopicList, error) {
+	var options metav1.ListOptions
+	options.LabelSelector = fmt.Sprintf("%s=%s", key, value)
+	return s.ListByOptions(options)
+}
+
+func (s *Service) ListByOptions(options metav1.ListOptions) (*v1.TopicList, error) {
+	crd, err := s.client.Namespace(crdNamespace).List(options)
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	tps := &v1.TopicList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.topicList: %+v", tps)
 	return tps, nil
 }
 
@@ -300,25 +339,25 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 	return messageStructs, err
 }
 
-func (s *Service) IsTopicExist(url string) bool {
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{
-		FieldSelector: url,
-	})
-	if err != nil {
-		return false
-	}
-	tps := &v1.TopicList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
-		return false
-	}
-
-	if len(tps.Items) == 0 {
-		return false
-	} else {
-		return true
-	}
-
-}
+//func (s *Service) IsTopicExist(url string) bool {
+//	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{
+//		FieldSelector: url,
+//	})
+//	if err != nil {
+//		return false
+//	}
+//	tps := &v1.TopicList{}
+//	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
+//		return false
+//	}
+//
+//	if len(tps.Items) == 0 {
+//		return false
+//	} else {
+//		return true
+//	}
+//
+//}
 
 func (s *Service) GrantPermissions(topicId string, authUserId string, actions Actions) (*Topic, error) {
 	//1.根据id查询topic
@@ -334,6 +373,9 @@ func (s *Service) GrantPermissions(topicId string, authUserId string, actions Ac
 		as = append(as, ac)
 	}
 	//3.给topic加auth id的标签，key：auth id
+	if tp.ObjectMeta.Labels == nil {
+		tp.ObjectMeta.Labels = make(map[string]string)
+	}
 	tp.ObjectMeta.Labels[authUserId] = "true"
 
 	//4.根据auth id查询name

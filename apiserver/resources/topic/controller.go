@@ -63,17 +63,18 @@ type GrantPermissionRequest struct {
 }
 
 func (c *controller) CreateTopic(req *restful.Request) (int, *CreateResponse) {
-	body := &service.Topic{}
-	if err := req.ReadEntity(body); err != nil {
+	tp := &service.Topic{}
+	if err := req.ReadEntity(tp); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Message: fmt.Sprintf("cannot read entity: %+v", err),
 		}
 	}
-	if tp, err := c.service.CreateTopic(body); err != nil {
+
+	if tp, err := c.service.CreateTopic(tp); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
-			Message: fmt.Errorf("create database error: %+v", err).Error(),
+			Message: fmt.Sprintf("create database error: %+v", err),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -217,10 +218,10 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 			IsNonPersistent: isNonPersisten,
 		}
 
-		//数据重复判断
-		if c.service.IsTopicExist(topic.GetUrl()) {
-			continue
-		}
+		//TODO 数据重复判断
+		//if c.service.IsTopicExist(topic) {
+		//	continue
+		//}
 
 		if err := topic.Validate(); err != nil {
 			return http.StatusInternalServerError, &ImportResponse{
