@@ -48,11 +48,11 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		klog.Errorf("cannot get topic of ctrl req: %+v", err)
 		return ctrl.Result{}, nil
 	}
-	klog.Infof("get new topic event: %+v", *topic)
-	klog.Infof("Status:%s", topic.Status.Status)
+	//klog.Infof("get new topic event: %+v", *topic)
+	//klog.Infof("Status:%s", topic.Status.Status)
 
 	if topic.Status.Status == nlptv1.Init {
-		klog.Info("Current status is Init")
+		//klog.Info("Current status is Init")
 		topic.Status.Status = nlptv1.Creating
 		if error := r.Operator.CreateTopic(topic); error != nil {
 			topic.Spec.Url = topic.GetUrl(topic)
@@ -65,8 +65,10 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 
 		//更新数据库的状态
-		klog.Infof("Final Topic: %+v", *topic)
-		r.Update(ctx, topic)
+		//klog.Infof("Final Topic: %+v", *topic)
+		if err := r.Update(ctx, topic); err != nil {
+			klog.Errorf("Update Topic Failed: %+v", *topic)
+		}
 
 	}
 
