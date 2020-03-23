@@ -112,20 +112,20 @@ func init() {
 	SchemeBuilder.Register(&Topic{}, &TopicList{})
 }
 
-func (in *Topic) GetUrl(t *Topic) (url string) {
+func (in *Topic) GetUrl() (url string) {
 
 	var build strings.Builder
-	if t.Spec.IsNonPersistent {
+	if in.Spec.IsNonPersistent {
 		build.WriteString("non-persistent://")
 	} else {
 		build.WriteString("persistent://")
 	}
 
-	build.WriteString(t.Spec.Tenant)
+	build.WriteString(in.Spec.Tenant)
 	build.WriteString("/")
-	build.WriteString(t.Spec.TopicGroup)
+	build.WriteString(in.Spec.TopicGroup)
 	build.WriteString("/")
-	build.WriteString(t.Spec.Name)
+	build.WriteString(in.Spec.Name)
 
 	return build.String()
 }
