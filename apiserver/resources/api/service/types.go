@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	dwv1 "github.com/chinamobile/nlpt/crds/api/datawarehouse/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 
@@ -246,7 +247,7 @@ func (s *Service) Validate(a *Api) error {
 	}
 	for _, p := range apiList.Items {
 		if p.Spec.Name == a.Name {
-			return fmt.Errorf("api name cannot be repeated: %s", p.Spec.Name)
+			return errors.NameDuplicatedError("api name duplicated: %s", p.Spec.Name)
 		}
 
 	}
@@ -279,9 +280,9 @@ func (s *Service) Validate(a *Api) error {
 			return fmt.Errorf("frequency is null")
 		}
 		switch a.Method {
-		case v1.GET, v1.LIST:
+		case v1.GET, v1.POST:
 		default:
-			return fmt.Errorf("wrong method type: %s. only %s and %s are allowed", a.Method, v1.GET, v1.LIST)
+			return fmt.Errorf("wrong method type: %s. only %s and %s are allowed", a.Method, v1.GET, v1.POST)
 		}
 		if a.RDBQuery != nil {
 			for _, p := range a.RDBQuery.QueryFields {
@@ -372,7 +373,7 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 			}
 			for _, p := range apiList.Items {
 				if p.Spec.Name == source.Name {
-					return fmt.Errorf("api name cannot be repeated: %s", p.Spec.Name)
+					return errors.NameDuplicatedError("api name duplicated: %s", p.Spec.Name)
 				}
 			}
 		}

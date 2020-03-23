@@ -5,6 +5,7 @@ import (
 
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"github.com/chinamobile/nlpt/crds/applicationgroup/api/v1"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	k8s "github.com/chinamobile/nlpt/apiserver/kubernetes"
@@ -54,7 +55,7 @@ func (s *Service) CreateApplicationGroup(model *ApplicationGroup) (*ApplicationG
 	}
 	for _, item := range list.Items {
 		if item.Spec.Name == model.Name {
-			return nil, fmt.Errorf("name %s already exists", model.Name)
+			return nil, errors.NameDuplicatedError("name dumplicated: %s", model.Name)
 		}
 	}
 
@@ -88,7 +89,7 @@ func (s *Service) DeleteApplicationGroup(id string, opts ...util.OpOption) error
 		return fmt.Errorf("cannot get application list: %+v", err)
 	}
 	if len(apps.Items) > 0 {
-		return fmt.Errorf("%d application(s) still in group %s", len(apps.Items), id)
+		return errors.ContentNotVoidError("content not void: %d application(s) still in group %s", len(apps.Items), id)
 	}
 	return s.Delete(id, opts...)
 }
@@ -106,7 +107,7 @@ func (s *Service) UpdateApplicationGroup(id string, model *ApplicationGroup, opt
 		}
 		for _, item := range list.Items {
 			if item.Spec.Name == model.Name {
-				return nil, fmt.Errorf("name %s already exists", item.Name)
+				return nil, errors.NameDuplicatedError("name dumplicated: %s", model.Name)
 			}
 		}
 		app.Spec.Name = model.Name

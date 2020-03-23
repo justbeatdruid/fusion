@@ -45,11 +45,11 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenan
 
 func (s *Service) CreateServiceunit(model *Serviceunit) (*Serviceunit, error, string) {
 	if err := s.Validate(model); err != nil {
-		return nil, fmt.Errorf("bad request: %+v", err), "0080000019"
+		return nil, err, "008000019"
 	}
 	su, err := s.Create(ToAPI(model))
 	if err != nil {
-		return nil, fmt.Errorf("cannot create object: %+v", err), "0080000020"
+		return nil, fmt.Errorf("cannot create object: %+v", err), "008000020"
 	}
 	return ToModel(su), nil, "0"
 }

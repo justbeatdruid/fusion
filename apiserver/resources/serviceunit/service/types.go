@@ -8,6 +8,7 @@ import (
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 
@@ -186,7 +187,7 @@ func (s *Service) Validate(a *Serviceunit) error {
 	}
 	for _, p := range suList.Items {
 		if p.Spec.Name == a.Name {
-			return fmt.Errorf("servieunit name cannot be repeated when create: %s", p.Spec.Name)
+			return errors.NameDuplicatedError("serviceunit name duplicated: %+v", errs)
 		}
 	}
 
@@ -277,7 +278,7 @@ func (s *Service) assignment(target *v1.Serviceunit, reqData interface{}) error 
 			}
 			for _, p := range suList.Items {
 				if p.Spec.Name == source.Name {
-					return fmt.Errorf("servieunit name cannot be repeated when update: %s", p.Spec.Name)
+					return errors.NameDuplicatedError("serviceunit name duplicated: %+v", errs)
 				}
 			}
 		}

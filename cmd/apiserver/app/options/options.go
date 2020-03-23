@@ -28,8 +28,7 @@ type ServerRunOptions struct {
 	CrdNamespace  string
 	TenantEnabled bool
 
-	ConfigPath  string
-	LocalConfig appconfig.ErrorConfig
+	ConfigPath string
 
 	Datasource  *DatasourceOptions
 	Dataservice *DataserviceOptions
@@ -56,9 +55,7 @@ func NewServerRunOptions() *ServerRunOptions {
 		s.CrdNamespace = "default"
 	}
 
-	s.ParseOptions()
 	klog.V(5).Infof("after parse options ConfigPath %s", s.ConfigPath)
-	klog.V(5).Infof("after parse options LocalConfig %s", s.LocalConfig)
 	return s
 }
 
@@ -77,30 +74,26 @@ func (s *ServerRunOptions) Flags() cliflag.NamedFlagSets {
 	fs.StringVar(&s.Kubeconfig, "kubeconfig", s.Kubeconfig, "Path to kubeconfig file with authorization and master location information.")
 	fs.StringVar(&s.ListenAddress, "listen", s.ListenAddress, "Address of app manager server listening on")
 	fs.BoolVar(&s.TenantEnabled, "tenant-enabled", s.TenantEnabled, "Enable tenant, that means for on resource, role of user is always same for all items in tenant. If tenant enabled, we do not check anymore for user's writing or reading permission")
+	fs.StringVar(&s.ConfigPath, "local-config", s.ConfigPath, "Location of local config")
 	return fss
 }
 
-func (s *ServerRunOptions) ParseOptions() error {
+func (s *ServerRunOptions) ParseLocalConfig() (*appconfig.ErrorConfig, error) {
+	errConfig := &appconfig.ErrorConfig{}
 	if len(s.ConfigPath) == 0 {
-		klog.Infof("config path not found, use default")
-		s.defaultConfig()
-		return nil
+		return nil, fmt.Errorf("config path not set")
 	}
 	configFile, err := os.Open(s.ConfigPath)
 	if err != nil {
-		return fmt.Errorf("error opening config file: %+v", err)
+		return nil, fmt.Errorf("error opening config file: %+v", err)
 	}
 
 	decoder := json.NewDecoder(configFile)
-	if err = decoder.Decode(&s.LocalConfig); err != nil {
-		return fmt.Errorf("error parsing config file: %+v", err)
+	if err = decoder.Decode(errConfig); err != nil {
+		return nil, fmt.Errorf("error parsing config file: %+v", err)
 	}
-	klog.Infof("parse options s.LocalConfig %+v", s.LocalConfig)
-	return nil
-}
-
-func (s *ServerRunOptions) defaultConfig() error {
-	return nil
+	klog.Infof("parse options s.LocalConfig %+v", errConfig)
+	return errConfig, nil
 }
 
 func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
@@ -119,6 +112,12 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	errConfig, err := s.ParseLocalConfig()
+	if err != nil {
+		return nil, fmt.Errorf("parse error config error: %+v", err)
+	}
+
 	c := &appconfig.Config{
 		Client:     client,
 		Dynamic:    dynClient,
@@ -130,7 +129,7 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		TopicConfig:   appconfig.NewTopicConfig(s.Topic.Host, s.Topic.Port),
 		Auditor:       audit.NewAuditor(s.Audit.Host, s.Audit.Port),
 		TenantEnabled: s.TenantEnabled,
-		LocalConfig:   s.LocalConfig,
+		LocalConfig:   *errConfig,
 	}
 	cas.SetConnectionInfo(s.Cas.Host, s.Cas.Port)
 	return c, nil

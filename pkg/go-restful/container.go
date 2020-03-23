@@ -290,7 +290,7 @@ func (c *Container) dispatch(httpWriter http.ResponseWriter, httpRequest *http.R
 		route.Function(wrappedRequest, wrappedResponse)
 	}
 	if len(c.containerCallbacks) > 0 {
-		chain := CallbackChain{Callbacks: c.containerCallbacks, Index: 0}
+		chain := CallbackChain{Callbacks: c.containerCallbacks}
 		chain.ProcessCallback(wrappedRequest, wrappedResponse)
 	}
 }
