@@ -21,8 +21,6 @@ func newController(cfg *config.Config) *controller {
 
 
 const (
-	persistentTopicUrl         = "http://%s:%d/admin/v2/persistent/%s/%s"
-	nonPersistentTopicUrl      = "http://%s:%d/admin/v2/non-persistent/%s/%s"
 	success = iota
 	fail
 )
