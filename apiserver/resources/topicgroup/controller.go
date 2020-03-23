@@ -2,13 +2,11 @@ package topicgroup
 
 import (
 	"fmt"
-	"github.com/chinamobile/nlpt/pkg/util"
-	"net/http"
-
 	"github.com/chinamobile/nlpt/apiserver/resources/topicgroup/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
-
 	"github.com/chinamobile/nlpt/pkg/go-restful"
+	"github.com/chinamobile/nlpt/pkg/util"
+	"net/http"
 )
 
 type controller struct {
@@ -20,6 +18,7 @@ func newController(cfg *config.Config) *controller {
 		service.NewService(cfg.GetDynamicClient()),
 	}
 }
+
 
 const (
 	success = iota
@@ -97,6 +96,20 @@ func (c *controller) GetTopicgroup(req *restful.Request) (int, *GetResponse) {
 	}
 }
 
+func (c *controller) GetTopics(req *restful.Request) (int, *ListResponse) {
+	id := req.PathParameter("id")
+	if tps, err := c.service.GetTopics(id);err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    fail,
+			Message: fmt.Errorf("get database error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &ListResponse{
+			Code: success,
+			Data: tps,
+		}
+	}
+}
 //批量删除topicgroups
 func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse) {
 	ids := req.QueryParameters("ids")

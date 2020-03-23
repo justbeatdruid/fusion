@@ -15,7 +15,7 @@ const (
 	nonPersistentTopicUrl      = "/admin/v2/non-persistent/%s/%s/%s"
 	protocol                   = "http"
 	persistentPermissionUrl    = "/admin/v2/persistent/%s/%s/%s/permissions/%s"
-	nonPersistentPermissionUrl = "/admin/v2/persistent/%s/%s/%s/permissions/%s"
+	nonPersistentPermissionUrl = "/admin/v2/non-persistent/%s/%s/%s/permissions/%s"
 )
 
 type requestLogger struct {
@@ -71,6 +71,8 @@ func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	fmt.Print(" Response: ", body, response, errs)
 	if response.StatusCode == 204 {
 		return nil
+	}else if body=="Topic not found"||body=="Partitioned topic not found" {
+        return nil
 	} else {
 		errMsg := fmt.Sprintf("delete topic error, url: %s, Error code: %d, Error Message: %s", topicUrl, response.StatusCode, body)
 		klog.Error(errMsg)
@@ -121,10 +123,7 @@ func (r *Operator) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err err
 	if topic.Spec.IsNonPersistent {
 		url = nonPersistentTopicUrl
 	}
-
-	if topic.Spec.Partition > 1 {
-		url += "/partitions"
-	}
+	
 	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl = fmt.Sprintf("%s://%s:%d%s%s%s", protocol, r.Host, r.Port, topicUrl, "permissions", P.AuthUserName)
 	response, body, errs := request.Delete(topicUrl).Retry(3, 5*time.Second).Send("").EndStruct("")
