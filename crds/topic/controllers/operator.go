@@ -78,6 +78,8 @@ func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	fmt.Print(" Response: ", body, response, errs)
 	if response.StatusCode == 204 {
 		return nil
+	}else if body=="Topic not found"||body=="Partitioned topic not found" {
+        return nil
 	} else {
 		errMsg := fmt.Sprintf("delete topic error, url: %s, Error code: %d, Error Message: %s", topicUrl, response.StatusCode, body)
 		klog.Error(errMsg)
