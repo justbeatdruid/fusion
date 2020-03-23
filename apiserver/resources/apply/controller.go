@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/chinamobile/nlpt/pkg/go-restful"
@@ -15,31 +16,39 @@ import (
 
 type controller struct {
 	service *service.Service
+	errCode map[string]string
 }
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient()),
+		cfg.LocalConfig.Apply,
 	}
 }
 
 type Wrapped struct {
-	Code    int            `json:"code"`
-	Message string         `json:"message"`
-	Data    *service.Apply `json:"data,omitempty"`
+	Code      int            `json:"code"`
+	ErrorCode string         `json:"errorCode"`
+	Message   string         `json:"message"`
+	Detail    string         `json:"detail"`
+	Data      *service.Apply `json:"data,omitempty"`
 }
 
 type CreateResponse = Wrapped
 type CreateRequest = Wrapped
 type DeleteResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Code      int    `json:"code"`
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message"`
+	Detail    string `json:"detail"`
 }
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Message   string      `json:"message"`
+	Detail    string      `json:"detail"`
+	Data      interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
 type ApproveRequest struct {
@@ -47,8 +56,10 @@ type ApproveRequest struct {
 		Admitted bool   `json:"admitted"`
 		Reason   string `json:"reason"`
 	} `json:"data"`
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Code      int    `json:"code"`
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message"`
+	Detail    string `json:"detail"`
 }
 type ApproveResponse = ApproveRequest
 
@@ -56,28 +67,34 @@ func (c *controller) CreateApply(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: "read entity error: data is null",
+			Code:   1,
+			Detail: "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: "auth model error",
+			Code:   1,
+			Detail: "auth model error",
 		}
 	}
 	body.Data.Users = user.InitWithApplicant(authuser.Name)
 	if apl, err := c.service.CreateApply(body.Data); err != nil {
+		code := "004000002"
+		if errors.IsAlreadyBound(err) {
+			code = "004000003"
+		}
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    2,
-			Message: fmt.Errorf("create apply error: %+v", err).Error(),
+			Code:      2,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    fmt.Errorf("create apply error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -91,8 +108,8 @@ func (c *controller) GetApply(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
 	if apl, err := c.service.GetApply(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
-			Code:    1,
-			Message: fmt.Errorf("get apply error: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("get apply error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -106,13 +123,13 @@ func (c *controller) DeleteApply(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	if err := c.service.DeleteApply(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
-			Code:    1,
-			Message: fmt.Errorf("delete apply error: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("delete apply error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
-			Code:    0,
-			Message: "",
+			Code:   0,
+			Detail: "",
 		}
 	}
 }
@@ -123,29 +140,29 @@ func (c *controller) ListApply(req *restful.Request) (int, *ListResponse) {
 	role := req.QueryParameter("role")
 	if len(role) == 0 {
 		return http.StatusInternalServerError, &ListResponse{
-			Code:    1,
-			Message: "need role in query parameter: applicant or approver",
+			Code:   1,
+			Detail: "need role in query parameter: applicant or approver",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
-			Code:    1,
-			Message: "auth model error",
+			Code:   1,
+			Detail: "auth model error",
 		}
 	}
 	if apl, err := c.service.ListApply(role, util.WithUser(authuser.Name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
-			Code:    1,
-			Message: fmt.Errorf("list applies error: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("list applies error: %+v", err).Error(),
 		}
 	} else {
 		var apls ApplyList = apl
 		data, err := util.PageWrap(apls, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
-				Code:    1,
-				Message: fmt.Sprintf("page parameter error: %+v", err),
+				Code:   1,
+				Detail: fmt.Sprintf("page parameter error: %+v", err),
 			}
 		}
 		return http.StatusOK, &ListResponse{
@@ -181,27 +198,27 @@ func (c *controller) ApproveApply(req *restful.Request) (int, *ApproveResponse) 
 	body := &ApproveRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &ApproveResponse{
-			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &ApproveResponse{
-			Code:    1,
-			Message: "read entity error: data is null",
+			Code:   1,
+			Detail: "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ApproveResponse{
-			Code:    1,
-			Message: "auth model error",
+			Code:   1,
+			Detail: "auth model error",
 		}
 	}
 	if _, err := c.service.ApproveApply(id, body.Data.Admitted, body.Data.Reason, util.WithUser(authuser.Name)); err != nil {
 		return http.StatusInternalServerError, &ApproveResponse{
-			Code:    2,
-			Message: fmt.Errorf("create apply error: %+v", err).Error(),
+			Code:   2,
+			Detail: fmt.Errorf("create apply error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &ApproveResponse{

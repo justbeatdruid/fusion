@@ -20,6 +20,7 @@ const (
 	notFound errType = iota
 	nameDuplicated
 	contentNotVoid
+	alreadyBound
 )
 
 func NotFoundError(format string, a ...interface{}) error {
@@ -43,6 +44,13 @@ func ContentNotVoidError(format string, a ...interface{}) error {
 	}
 }
 
+func AlreadyBoundError(format string, a ...interface{}) error {
+	return &Error{
+		t:       alreadyBound,
+		message: fmt.Sprintf(format, a...),
+	}
+}
+
 func IsNotFound(err error) bool {
 	if e, ok := err.(*Error); ok {
 		return e.t == notFound
@@ -60,6 +68,13 @@ func IsNameDuplicated(err error) bool {
 func IsContentNotVoid(err error) bool {
 	if e, ok := err.(*Error); ok {
 		return e.t == contentNotVoid
+	}
+	return strings.Contains(err.Error(), "content not void")
+}
+
+func IsAlreadyBound(err error) bool {
+	if e, ok := err.(*Error); ok {
+		return e.t == alreadyBound
 	}
 	return strings.Contains(err.Error(), "content not void")
 }
