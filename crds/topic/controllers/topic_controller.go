@@ -100,12 +100,9 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 					p.Status.Message = "success"
 				}
 
-				//更新数据库的状态
-				klog.Infof("Final Topic: %+v", *topic)
-				r.Update(ctx, topic)
-
 			}
 		}
+
 		//删除授权
 		for index, p := range topic.Spec.Permissions {
 			if p.Status.Status == "delete" {
@@ -127,6 +124,11 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				}
 			}
 		}
+
+		topic.Status.Status = nlptv1.Updated
+		//更新数据库的状态
+		klog.Infof("Final Topic: %+v", *topic)
+		r.Update(ctx, topic)
 	}
 	return ctrl.Result{}, nil
 }
