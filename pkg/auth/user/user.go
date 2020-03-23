@@ -90,10 +90,7 @@ func idnames(id string) string {
 	} else {
 		klog.Errorf("get user name by id error: %+v, use id as name", err)
 	}
-	if name, ok := getIdNamesMap()[id]; ok {
-		return name
-	}
-	return id
+	return "用户已删除"
 }
 
 func GetUsersFromLabels(labels map[string]string) Users {
