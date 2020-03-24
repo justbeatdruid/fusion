@@ -129,6 +129,16 @@ func GetUsersFromLabels(labels map[string]string) Users {
 	return u
 }
 
+func GetUserCountFromLabels(labels map[string]string) int {
+	count := 0
+	for k, _ := range labels {
+		if len(k) > len(labelPrefix) && k[:len(labelPrefix)] == labelPrefix {
+			count++
+		}
+	}
+	return count
+}
+
 func GetLabelSelector(id string) string {
 	return userLabel(id) + "=true"
 }
