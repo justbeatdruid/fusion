@@ -177,7 +177,8 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 	createTimeEnd := req.QueryParameter("createTimeEnd")
 	expireAtSta := req.QueryParameter("expireAtSta")
 	expireAtEnd := req.QueryParameter("expireAtEnd")
-
+	createUser := req.QueryParameter("createUser")
+	tenant := req.QueryParameter("tenant")
 	//先查出所有用户信息
 	ca, err := c.service.ListClientauth()
 	if err != nil {
@@ -185,6 +186,14 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 			Code:    fail,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
+	}
+	//通过创建用户筛选
+	if len(createUser)>0 {
+		ca = c.ListTopicByCreateUser(createUser,ca)
+	}
+	//通过租户筛选
+	if len(tenant)>0 {
+		ca = c.ListTopicByTenant(tenant,ca)
 	}
 	//接收参数只有authUser
 	if len(authUser) > 0 && len(createTimeSta) == 0 && len(expireAtSta) == 0 {
@@ -354,7 +363,27 @@ func (c *controller) ListTopicByauthUser(caName string, cas []*service.Clientaut
 	}
 	return casResult
 }
+//通过createUser匹配
+func (c *controller) ListTopicByCreateUser(ctUser string, cas []*service.Clientauth) []*service.Clientauth {
+	var casResult []*service.Clientauth
+	for _, ca := range cas {
+		if strings.Contains(ca.CreateUser.Owner.Name, ctUser) {
+			casResult = append(casResult, ca)
+		}
+	}
+	return casResult
+}
 
+//通过tenant匹配
+func (c *controller) ListTopicByTenant(tenant string, cas []*service.Clientauth) []*service.Clientauth {
+	var casResult []*service.Clientauth
+	for _, ca := range cas {
+		if strings.Contains(ca.Tenant, tenant) {
+			casResult = append(casResult, ca)
+		}
+	}
+	return casResult
+}
 //通过tokenExp匹配
 func (c *controller) ListTopicBytokenExp(expireAtSta int64, expireAtEnd int64, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
