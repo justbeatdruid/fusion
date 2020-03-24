@@ -2,6 +2,8 @@ package clientauth
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
 	"strconv"
@@ -71,6 +73,15 @@ func (c *controller) CreateClientauth(req *restful.Request) (int, *CreateRespons
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
+	authUser,err := auth.GetAuthUser(req)
+	if err!=nil{
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: fmt.Errorf("auth model error: %+v", err).Error(),
+		}
+	}
+    body.CreateUser = user.InitWithOwner(authUser.Name)
+    body.Tenant = authUser.Namespace
 	if ca, err := c.service.CreateClientauth(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
