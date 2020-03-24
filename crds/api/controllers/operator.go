@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -24,6 +25,8 @@ type Operator struct {
 	Port           int
 	KongPortalPort int
 	CAFile         string
+	PrometheusHost string
+	PrometheusPort int
 }
 
 type RequestBody struct {
@@ -179,6 +182,58 @@ type CorsResponseBody struct {
 	Code    int         `json:"code"`
 }
 
+type PrometheusRequestBody struct {
+	Name string `json:"name"`
+}
+
+type PrometheusResponseBody struct {
+	CreatedAt int `json:"created_at"`
+	Config    struct {
+	} `json:"config"`
+	ID        string      `json:"id"`
+	Service   interface{} `json:"service"`
+	Name      string      `json:"name"`
+	Protocols []string    `json:"protocols"`
+	Enabled   bool        `json:"enabled"`
+	RunOn     string      `json:"run_on"`
+	Consumer  interface{} `json:"consumer"`
+	Route     struct {
+		ID string `json:"id"`
+	} `json:"route"`
+	Tags    interface{} `json:"tags"`
+	Message string      `json:"message"`
+	Code    int         `json:"code"`
+	Fields  interface{} `json:"fields"`
+}
+
+type Metric struct {
+	Name            string `json:"__name__"`
+	Endpoint        string `json:"endpoint"`
+	ExportedService string `json:"exported_service"`
+	Instance        string `json:"instance"`
+	Job             string `json:"job"`
+	Namespace       string `json:"namespace"`
+	Pod             string `json:"pod"`
+	Route           string `json:"route"`
+	Service         string `json:"service"`
+	Type            string `json:"type"`
+}
+
+type PrometheusResult struct {
+	Metric Metric        `json:"metric"`
+	Value  []interface{} `json:"value"`
+}
+
+type PrometheusData struct {
+	ResultType string             `json:"resultType"`
+	Result     []PrometheusResult `json:"result"`
+}
+
+type PrometheusResponse struct {
+	Status string         `json:"status"`
+	Data   PrometheusData `json:"data"`
+}
+
 /*
 {"host":"apps",
 "created_at":1578378841,
@@ -215,13 +270,15 @@ func (r *requestLogger) Println(v ...interface{}) {
 	klog.V(4).Infof("%+v", v)
 }
 
-func NewOperator(host string, port int, portal int, cafile string) (*Operator, error) {
+func NewOperator(host string, port int, portal int, cafile string, prometheusHost string, prometheusPort int) (*Operator, error) {
 	klog.Infof("NewOperator  event:%s %d %s", host, port, cafile)
 	return &Operator{
 		Host:           host,
 		Port:           port,
 		KongPortalPort: portal,
 		CAFile:         cafile,
+		PrometheusHost: prometheusHost,
+		PrometheusPort: prometheusPort,
 	}, nil
 }
 
@@ -281,7 +338,38 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	(*db).Spec.KongApi.Paths = responseBody.Paths
 	(*db).Spec.KongApi.Methods = responseBody.Methods
 	(*db).Spec.KongApi.KongID = responseBody.ID
+	//
+	_, id = r.AddRoutePrometheusByKong(db, responseBody.ID)
+	(*db).Spec.KongApi.PrometheusID = id
 	return nil
+}
+
+func (r *Operator) AddRoutePrometheusByKong(db *nlptv1.Api, id string) (error, string) {
+	klog.Infof("begin create prometheus for route %s", id)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &PrometheusRequestBody{
+		Name: "prometheus", //插件名称
+	}
+	responseBody := &PrometheusResponseBody{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Infof("add prometheus err: %+v", errs)
+		return fmt.Errorf("request for create prometheus error: %+v", errs), ""
+	}
+	klog.Infof("creation prometheus code: %d, body: %s ", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.V(5).Infof("create prometheus failed msg: %s\n", responseBody.Message)
+		return fmt.Errorf("request for create prometheus error: receive wrong status code: %s", string(body)), ""
+	}
+
+	klog.Infof("prometheus plugins id is %s", responseBody.ID)
+	return nil, responseBody.ID
 }
 
 func (r *Operator) AddRouteJwtByKong(db *nlptv1.Api) (err error) {
@@ -593,5 +681,36 @@ func (r *Operator) UpdateRouteByKong(db *nlptv1.Api) (err error) {
 		}
 		(*db).Spec.KongApi.AclID = ""
 	}
+	return nil
+}
+
+func (r *Operator) syncApiCountFromKong(m map[string]int) error {
+	klog.Infof("sync api count from kong.")
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	responseBody := &PrometheusResponse{}
+
+	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s", schema, r.PrometheusHost, r.PrometheusPort, "/api/v1/query?query=kong_latency_count{type=\"kong\"}")).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Infof("sync api count from kong error %+v.", errs)
+		return fmt.Errorf("get api count error %+v", errs)
+
+	}
+
+	klog.Infof("getApiCountFromKong: %d %s\n", response.StatusCode, string(body))
+	if response.StatusCode != 200 {
+		return fmt.Errorf("request for get api count error: wrong status code: %d", response.StatusCode)
+	}
+	result := responseBody.Data.Result
+	for index := range result {
+		route := responseBody.Data.Result[index].Metric.Route
+		num := responseBody.Data.Result[index].Value[1].(string)
+		count, _ := strconv.Atoi(num)
+		m[route] = count
+	}
+	route := responseBody.Data.Result[0].Metric.Route
+	num := responseBody.Data.Result[0].Value[1].(string)
+	klog.Infof("getApiCountFromKong ROUTE:  %s %s\n", route, num)
+	klog.Infof("getApiCountFromKong Result:  %+v", m)
 	return nil
 }

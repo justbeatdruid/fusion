@@ -60,6 +60,8 @@ spec:
         - --operator-host=kong-kong-admin
         - --operator-port=8001
         - --portal-port=30080
+        - --prometheus-host=10.160.32.31
+        - --prometheus-port=32008
         - -enable-leader-election
         - --v=5
         env:

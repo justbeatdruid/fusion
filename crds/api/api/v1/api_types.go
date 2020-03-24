@@ -222,6 +222,7 @@ type KongApiInfo struct {
 	JwtID         string   `json:"jwt_id"`
 	AclID         string   `json:"acl_id"`
 	CorsID        string   `json:"cors_id"`
+	PrometheusID  string   `json:"prometheus_id"`
 }
 
 func ParameterFromDataWarehouseQuery(q dwv1.QueryProperty) ApiParameter {
