@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/chinamobile/nlpt/crds/clientauth/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"time"
@@ -16,6 +17,8 @@ type Clientauth struct {
 	ID            string         `json:"id"`
 	Name          string         `json:"name"`
 	Namespace     string         `json:"namespace"`
+	Tenant        string         `json:"Name"`  //租户名称
+	CreateUser    user.Users     `json:"createUser"` //创建用户
 	CreatedAt     int64          `json:"createdAt"`
 	IssuedAt      int64          `json:"issuedAt"`
 	ExpireAt      int64          `json:"expireAt"`
@@ -37,6 +40,8 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 
 	crd.Spec = v1.ClientauthSpec{
 		Name:     app.Name,
+		Tenant:   app.Tenant,
+		CreateUser: app.CreateUser,
 		Token:    app.Token,
 		ExipreAt: app.ExpireAt,
 		IssuedAt: app.IssuedAt,

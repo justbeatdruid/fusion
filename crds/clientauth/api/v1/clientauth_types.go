@@ -16,6 +16,7 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,6 +31,8 @@ type ClientauthSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 	Name          string         `json:"name"`
 	Namespace     string         `json:"namespace"`
+	Tenant        string         `json:"Name"`  //租户名称
+	CreateUser    user.Users     `json:"createUser"` //创建用户
 	IssuedAt      int64          `json:"issuedAt"`
 	ExipreAt      int64          `json:"expireAt"`
 	Token         string         `json:"token"`
