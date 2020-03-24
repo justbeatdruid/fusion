@@ -139,21 +139,32 @@ func (s *Service) ListApply(role string, opts ...util.OpOption) ([]*Apply, error
 		}
 		for i, item := range apls.Items {
 			var sobj Object
+			var found bool
 			if item.Spec.SourceType == "api" {
-				sobj = apiMaps[item.Spec.SourceID]
+				sobj, found = apiMaps[item.Spec.SourceID]
 			} else if item.Spec.SourceType == "application" {
-				sobj = appMaps[item.Spec.SourceID]
+				sobj, found = appMaps[item.Spec.SourceID]
 			}
-			apls.Items[i].Spec.SourceName = sobj.Name
-			apls.Items[i].Spec.SourceGroup = sobj.Group
+			if found {
+				apls.Items[i].Spec.SourceName = sobj.Name
+				apls.Items[i].Spec.SourceGroup = sobj.Group
+			} else {
+				apls.Items[i].Spec.SourceName = "已删除"
+				apls.Items[i].Spec.SourceGroup = ""
+			}
 			var tobj Object
 			if item.Spec.TargetType == "api" {
-				tobj = apiMaps[item.Spec.TargetID]
+				tobj, found = apiMaps[item.Spec.TargetID]
 			} else if item.Spec.TargetType == "application" {
-				tobj = appMaps[item.Spec.TargetID]
+				tobj, found = appMaps[item.Spec.TargetID]
 			}
-			apls.Items[i].Spec.TargetName = tobj.Name
-			apls.Items[i].Spec.TargetGroup = tobj.Group
+			if found {
+				apls.Items[i].Spec.TargetName = tobj.Name
+				apls.Items[i].Spec.TargetGroup = tobj.Group
+			} else {
+				apls.Items[i].Spec.TargetName = "已删除"
+				apls.Items[i].Spec.TargetGroup = ""
+			}
 		}
 	}
 	return s.ToListModel(apls)
