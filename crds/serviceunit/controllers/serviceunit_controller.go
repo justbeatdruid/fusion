@@ -77,16 +77,16 @@ func (r *ServiceunitReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 
 	// + update_sunyu
 	if serviceunit.Status.Status == nlptv1.Update {
-		klog.Infof("zhuangtai wei update: %+v", *serviceunit)
+		klog.Infof("serviceunit update: %+v", *serviceunit)
 		// call kong api update
 		serviceunit.Status.Status = nlptv1.Updating
-		klog.Infof("zhuangtai wei updatinging: %+v", *serviceunit)
+		klog.Infof("service unit updatinging: %+v", *serviceunit)
 		if err := r.Operator.UpdateServiceByKong(serviceunit); err != nil {
-			klog.Infof("zhuangtai wei updateerror: %+v", *serviceunit)
+			klog.Infof("serviceunit update error: %+v", *serviceunit)
 			serviceunit.Status.Status = nlptv1.Error
 			serviceunit.Status.Message = err.Error()
 		} else {
-			klog.Infof("zhuangtai wei updateded: %+v", *serviceunit)
+			klog.Infof("serviceunit updateded: %+v", *serviceunit)
 			serviceunit.Status.Status = nlptv1.Updated
 			serviceunit.Status.Message = "success"
 		}
