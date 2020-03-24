@@ -24,13 +24,13 @@ var oofsGVR = schema.GroupVersionResource{
 }
 
 type Service struct {
-	client dynamic.NamespaceableResourceInterface
+	client      dynamic.NamespaceableResourceInterface
 	topicClient dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface) *Service {
 	return &Service{client: client.Resource(oofsGVR),
-		topicClient: client.Resource(topicv1.GetOOFSGVR()),}
+		topicClient: client.Resource(topicv1.GetOOFSGVR())}
 }
 
 func (s *Service) CreateTopicgroup(model *Topicgroup) (*Topicgroup, error) {
@@ -59,11 +59,12 @@ func (s *Service) GetTopicgroup(id string) (*Topicgroup, error) {
 	}
 	return ToModel(tg), nil
 }
+
 //查询topicgroup下的所有topic
 func (s *Service) GetTopics(id string) ([]*service.Topic, error) {
 	//查询topicgroup，得到名字
-    tg, err := s.GetTopicgroup(id)
-	if err!=nil {
+	tg, err := s.GetTopicgroup(id)
+	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	tgName := tg.Name
@@ -80,11 +81,11 @@ func (s *Service) GetTopics(id string) ([]*service.Topic, error) {
 	//遍历所有的topic的topicGroup
 	tps := &topicv1.TopicList{}
 	for _, tp := range topicList.Items {
-		if  tp.Spec.TopicGroup == tgName{
-            tps.Items = append(tps.Items,tp)
+		if tp.Spec.TopicGroup == tgName {
+			tps.Items = append(tps.Items, tp)
 		}
 	}
-	return service.ToListModel(tps),nil
+	return service.ToListModel(tps), nil
 }
 
 func (s *Service) DeleteTopicgroup(id string) (*Topicgroup, error) {

@@ -19,7 +19,6 @@ func newController(cfg *config.Config) *controller {
 	}
 }
 
-
 const (
 	success = iota
 	fail
@@ -98,7 +97,7 @@ func (c *controller) GetTopicgroup(req *restful.Request) (int, *GetResponse) {
 
 func (c *controller) GetTopics(req *restful.Request) (int, *ListResponse) {
 	id := req.PathParameter("id")
-	if tps, err := c.service.GetTopics(id);err != nil {
+	if tps, err := c.service.GetTopics(id); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    fail,
 			Message: fmt.Errorf("get database error: %+v", err).Error(),
@@ -110,6 +109,7 @@ func (c *controller) GetTopics(req *restful.Request) (int, *ListResponse) {
 		}
 	}
 }
+
 //批量删除topicgroups
 func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse) {
 	ids := req.QueryParameters("ids")

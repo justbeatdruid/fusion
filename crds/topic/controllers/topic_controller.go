@@ -54,10 +54,10 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if topic.Status.Status == nlptv1.Init {
 		//klog.Info("Current status is Init")
 		topic.Status.Status = nlptv1.Creating
-		if error := r.Operator.CreateTopic(topic); error != nil {
+		if err := r.Operator.CreateTopic(topic); err != nil {
 			topic.Spec.Url = topic.GetUrl()
 			topic.Status.Status = nlptv1.Error
-			topic.Status.Message = error.Error()
+			topic.Status.Message = fmt.Sprintf("create topic error:%+v", err)
 		} else {
 			topic.Spec.Url = topic.GetUrl()
 			topic.Status.Status = nlptv1.Created
@@ -74,9 +74,9 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	if topic.Status.Status == nlptv1.Delete {
 		topic.Status.Status = nlptv1.Deleting
-		if error := r.Operator.DeleteTopic(topic); error != nil {
+		if err := r.Operator.DeleteTopic(topic); err != nil {
 			topic.Status.Status = nlptv1.Error
-			topic.Status.Message = error.Error()
+			topic.Status.Message = fmt.Sprintf("delete topic error: %+v", err)
 			r.Update(ctx, topic)
 		} else {
 			//更新数据库的状态
@@ -94,7 +94,7 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			if p.Status.Status == nlptv1.Grant {
 				if err := r.Operator.GrantPermission(topic, &p); err != nil {
 					p.Status.Status = "error"
-					p.Status.Message = fmt.Sprintf("failed to grant permission, %+v", err)
+					p.Status.Message = fmt.Sprintf("grant permission error: %+v", err)
 				} else {
 					p.Status.Status = nlptv1.Granted
 					p.Status.Message = "success"
@@ -109,8 +109,7 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				p.Status.Status = "deleting"
 				if err := r.Operator.DeletePer(topic, &p); err != nil {
 					p.Status.Status = "error"
-					p.Status.Message =
-						.Error()
+					p.Status.Message = fmt.Sprintf("revoke permission error: %+v", err)
 
 					//删除失败，将标签重置为true
 					topic.ObjectMeta.Labels[p.AuthUserID] = "true"
