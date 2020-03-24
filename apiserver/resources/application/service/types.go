@@ -28,6 +28,8 @@ type Application struct {
 	UserCount int       `json:"userCount"`
 	APICount  int       `json:"apiCount"`
 
+	Writable bool `json:"writable"`
+
 	CreatedAt util.Time `json:"createdAt"`
 
 	Group     string `json:"group"`
@@ -64,7 +66,7 @@ func ToAPI(app *Application) *v1.Application {
 	return crd
 }
 
-func ToModel(obj *v1.Application) *Application {
+func ToModel(obj *v1.Application, opts ...util.OpOption) *Application {
 	app := &Application{
 		ID:        obj.ObjectMeta.Name,
 		Name:      obj.Spec.Name,
@@ -87,6 +89,10 @@ func ToModel(obj *v1.Application) *Application {
 		app.Group = group
 		app.GroupName = obj.Spec.Group.Name
 	}
+	u := util.OpList(opts...).User()
+	if len(u) > 0 {
+		app.Writable = user.WritePermitted(u, obj.ObjectMeta.Labels)
+	}
 	return app
 }
 
@@ -105,7 +111,7 @@ func ToListModel(items *v1.ApplicationList, groups map[string]string, opts ...ut
 				if gname, ok := groups[item.Spec.Group.ID]; ok {
 					item.Spec.Group.Name = gname
 				}
-				app := ToModel(&item)
+				app := ToModel(&item, opts...)
 				apps = append(apps, app)
 			}
 			return apps
@@ -119,7 +125,7 @@ func ToListModel(items *v1.ApplicationList, groups map[string]string, opts ...ut
 		if gname, ok := groups[item.Spec.Group.ID]; ok {
 			item.Spec.Group.Name = gname
 		}
-		apps[i] = ToModel(&item)
+		apps[i] = ToModel(&item, opts...)
 	}
 	return apps
 }

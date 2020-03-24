@@ -66,7 +66,7 @@ func (s *Service) GetApplication(id string, opts ...util.OpOption) (*Application
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
-	return ToModel(app), nil
+	return ToModel(app, opts...), nil
 }
 
 func (s *Service) DeleteApplication(id string, opts ...util.OpOption) (*Application, error) {
