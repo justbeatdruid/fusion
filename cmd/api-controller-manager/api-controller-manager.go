@@ -17,7 +17,9 @@ package main
 
 import (
 	"flag"
+	"k8s.io/apimachinery/pkg/util/wait"
 	"os"
+	"time"
 
 	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	"github.com/chinamobile/nlpt/crds/api/controllers"
@@ -52,12 +54,16 @@ func main() {
 	var operatorPort int
 	var operatorCAFile string
 	var portalPort int
+	var prometheusHost string
+	var prometheusPort int
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&operatorHost, "operator-host", "127.0.0.1", "Host of kong service.")
 	flag.IntVar(&operatorPort, "operator-port", 800, "Port of kong admin service.")
 	flag.IntVar(&portalPort, "portal-port", 8443, "Port of kong portal service.")
+	flag.StringVar(&prometheusHost, "prometheus-host", "127.0.0.1", "Host of prometheus service.")
+	flag.IntVar(&prometheusPort, "prometheus-port", 32008, "Port of prometheus service.")
 	flag.StringVar(&operatorCAFile, "operator-cafile", "", "Certificate for TLS communication with database warehose service.")
 	flag.Parse()
 
@@ -82,26 +88,39 @@ func main() {
 		os.Exit(1)
 	}
 
-	operator, err := controllers.NewOperator(operatorHost, operatorPort, portalPort, operatorCAFile)
+	operator, err := controllers.NewOperator(operatorHost, operatorPort, portalPort, operatorCAFile, prometheusHost, prometheusPort)
 	if err != nil {
 		setupLog.Error(err, "unable to create operator")
 		os.Exit(1)
 	}
 
-	if err = (&controllers.ApiReconciler{
+	var ar *controllers.ApiReconciler = &controllers.ApiReconciler{
 		Client:   mgr.GetClient(),
 		Log:      ctrl.Log.WithName("controllers").WithName("Api"),
 		Scheme:   mgr.GetScheme(),
 		Operator: operator,
-	}).SetupWithManager(mgr); err != nil {
+	}
+	if ar.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Api")
 		os.Exit(1)
 	}
-	// +kubebuilder:scaffold:builder
 
-	setupLog.Info("starting manager")
-	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		setupLog.Error(err, "problem running manager")
-		os.Exit(1)
-	}
+	// +kubebuilder:scaffold:builder
+	stop := make(chan struct{})
+	go func() {
+		setupLog.Info("starting manager")
+		if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+			setupLog.Error(err, "problem running manager")
+			os.Exit(1)
+		}
+		close(stop)
+	}()
+	// wait for caches up
+	time.Sleep(time.Second)
+	wait.Until(func() {
+		if err := ar.SyncApiCountFromKong(); err != nil {
+			klog.Errorf("sync api count error: %+v", err)
+		}
+		// do not use wait.NerverStop
+	}, time.Second*60, stop)
 }
