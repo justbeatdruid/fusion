@@ -31,6 +31,8 @@ type Serviceunit struct {
 	Published bool      `json:"published"`
 	CreatedAt util.Time `json:"createdAt"`
 
+	Writable bool `json:"writable"`
+
 	Group     string `json:"group"`
 	GroupName string `json:"groupName"`
 }
@@ -103,7 +105,7 @@ func ToAPIUpdate(su *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 	return crd
 }
 
-func ToModel(obj *v1.Serviceunit) *Serviceunit {
+func ToModel(obj *v1.Serviceunit, opts ...util.OpOption) *Serviceunit {
 	su := &Serviceunit{
 		ID:           obj.ObjectMeta.Name,
 		Name:         obj.Spec.Name,
@@ -119,6 +121,11 @@ func ToModel(obj *v1.Serviceunit) *Serviceunit {
 		APICount:  obj.Status.APICount,
 		Published: obj.Status.Published,
 	}
+	u := util.OpList(opts...).User()
+	if len(u) > 0 {
+		su.Writable = user.WritePermitted(u, obj.ObjectMeta.Labels)
+	}
+
 	su.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
 	//TODO UserCount
 	if group, ok := obj.ObjectMeta.Labels[v1.GroupLabel]; ok {
@@ -148,7 +155,7 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[
 						item.Spec.DatasourceID = data
 					}
 				}
-				su := ToModel(&item)
+				su := ToModel(&item, opts...)
 				sus = append(sus, su)
 			}
 			return sus
@@ -167,7 +174,7 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[
 				item.Spec.DatasourceID = data
 			}
 		}
-		sus[i] = ToModel(&item)
+		sus[i] = ToModel(&item, opts...)
 	}
 	return sus
 }

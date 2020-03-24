@@ -94,7 +94,7 @@ func (s *Service) GetServiceunit(id string, opts ...util.OpOption) (*Serviceunit
 		}
 		su.Spec.DatasourceID = ds
 	}
-	return ToModel(su), nil
+	return ToModel(su, opts...), nil
 }
 
 func (s *Service) DeleteServiceunit(id string, opts ...util.OpOption) (*Serviceunit, error) {
