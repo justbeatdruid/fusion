@@ -11,4 +11,3 @@ curl localhost:8001/api/v1/apis/$1/release -H 'content-type:application/json'  -
 
   }
 }'
-~
