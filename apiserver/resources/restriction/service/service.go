@@ -2,6 +2,9 @@ package service
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/util"
+	"strings"
 
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	"github.com/chinamobile/nlpt/crds/restriction/api/v1"
@@ -40,12 +43,12 @@ func (s *Service) CreateRestriction(model *Restriction) (*Restriction, error) {
 	return ToModel(su), nil
 }
 
-func (s *Service) ListRestriction() ([]*Restriction, error) {
-	sus, err := s.List()
+func (s *Service) ListRestriction(opts ...util.OpOption) ([]*Restriction, error) {
+	apps, err := s.List(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	return ToListModel(sus), nil
+	return ToListModel(apps, opts...), nil
 }
 
 func (s *Service) GetRestriction(id string) (*Restriction, error) {
@@ -106,18 +109,26 @@ func (s *Service) Create(su *v1.Restriction) (*v1.Restriction, error) {
 	return su, nil
 }
 
-func (s *Service) List() (*v1.RestrictionList, error) {
+func (s *Service) List(opts ...util.OpOption) (*v1.RestrictionList, error) {
 	var options metav1.ListOptions
+	op := util.OpList(opts...)
+	u := op.User()
+	var labels []string
+	if len(u) > 0 {
+		labels = append(labels, user.GetLabelSelector(u))
+	}
+	options.LabelSelector = strings.Join(labels, ",")
+	klog.V(5).Infof("list with label selector: %s", options.LabelSelector)
 	crd, err := s.client.Namespace(crdNamespace).List(options)
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
-	sus := &v1.RestrictionList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), sus); err != nil {
+	apps := &v1.RestrictionList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apps); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.serviceunitList: %+v", sus)
-	return sus, nil
+	klog.V(5).Infof("get v1.RestrictionList: %+v", apps)
+	return apps, nil
 }
 
 func (s *Service) Get(id string) (*v1.Restriction, error) {

@@ -3,6 +3,8 @@ package restriction
 import (
 	"fmt"
 	v1 "github.com/chinamobile/nlpt/crds/restriction/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"k8s.io/klog"
 	"net/http"
 
@@ -78,6 +80,16 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 			Detail:    "read entity error: data is null",
 		}
 	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "007000010",
+			Message:   c.errMsg.Trafficcontrol["012000010"],
+			Detail:    "auth model error",
+		}
+	}
+	body.Data.Users = user.InitWithOwner(authuser.Name)
 	if db, err := c.service.CreateRestriction(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
@@ -132,7 +144,19 @@ func (c *controller) DeleteRestriction(req *restful.Request) (int, *DeleteRespon
 func (c *controller) ListRestriction(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-	if tc, err := c.service.ListRestriction(); err != nil {
+	name := req.QueryParameter("name")
+
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      1,
+			ErrorCode: "007000010",
+			Message:   c.errMsg.Trafficcontrol["007000010"],
+			Detail:    "auth model error",
+		}
+	}
+
+	if tc, err := c.service.ListRestriction(util.WithNameLike(name), util.WithUser(authuser.Name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			ErrorCode: "007000006",

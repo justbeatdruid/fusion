@@ -4,8 +4,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/chinamobile/nlpt/crds/restriction/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"strings"
 	"time"
 )
 
@@ -16,7 +19,7 @@ type Restriction struct {
 	Type      v1.LimitType  `json:"type"`
 	Action    v1.Action     `json:"action"`
 	Config    v1.ConfigInfo `json:"config"`
-	User      string        `json:"user"`
+	Users     user.Users    `json:"users"`
 	Apis      []v1.Api      `json:"apis"`
 	CreatedAt time.Time     `json:"createdAt"`
 
@@ -41,7 +44,6 @@ func ToAPI(app *Restriction) *v1.Restriction {
 		Action: app.Action,
 		Config: app.Config,
 		Apis:   app.Apis,
-		User:   app.User,
 	}
 	if crd.Spec.Apis == nil {
 		crd.Spec.Apis = make([]v1.Api, 0)
@@ -56,7 +58,8 @@ func ToAPI(app *Restriction) *v1.Restriction {
 		APICount:  0,
 		Published: false,
 	}
-
+	// add user labels
+	crd.ObjectMeta.Labels = user.AddUsersLabels(app.Users, crd.ObjectMeta.Labels)
 	return crd
 }
 
@@ -76,7 +79,7 @@ func ToAPIUpdate(app *Restriction, crd *v1.Restriction) *v1.Restriction {
 }
 
 func ToModel(obj *v1.Restriction) *Restriction {
-	return &Restriction{
+	restriction := &Restriction{
 		ID:        obj.ObjectMeta.Name,
 		Name:      obj.Spec.Name,
 		Namespace: obj.ObjectMeta.Namespace,
@@ -84,7 +87,6 @@ func ToModel(obj *v1.Restriction) *Restriction {
 		Action:    obj.Spec.Action,
 		Config:    obj.Spec.Config,
 		Apis:      obj.Spec.Apis,
-		User:      obj.Spec.User,
 		CreatedAt: obj.ObjectMeta.CreationTimestamp.Time,
 
 		Status:    obj.Status.Status,
@@ -92,14 +94,30 @@ func ToModel(obj *v1.Restriction) *Restriction {
 		APICount:  obj.Status.APICount,
 		Published: obj.Status.Published,
 	}
+	restriction.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
+	return restriction
 }
 
-func ToListModel(items *v1.RestrictionList) []*Restriction {
-	var app []*Restriction = make([]*Restriction, len(items.Items))
-	for i := range items.Items {
-		app[i] = ToModel(&items.Items[i])
+func ToListModel(items *v1.RestrictionList, opts ...util.OpOption) []*Restriction {
+	if len(opts) > 0 {
+		var apps []*Restriction = make([]*Restriction, 0)
+		nameLike := util.OpList(opts...).NameLike()
+		if len(nameLike) > 0 {
+			for _, item := range items.Items {
+				if !strings.Contains(item.Spec.Name, nameLike) {
+					continue
+				}
+				app := ToModel(&item)
+				apps = append(apps, app)
+			}
+			return apps
+		}
 	}
-	return app
+	var apps []*Restriction = make([]*Restriction, len(items.Items))
+	for i := range items.Items {
+		apps[i] = ToModel(&items.Items[i])
+	}
+	return apps
 }
 
 // check create parameters
@@ -134,6 +152,9 @@ func (s *Service) Validate(a *Restriction) error {
 		}
 	default:
 		return fmt.Errorf("wrong config type: %s.", a.Type)
+	}
+	if len(a.Users.Owner.ID) == 0 {
+		return fmt.Errorf("owner not set")
 	}
 
 	a.ID = names.NewID()
