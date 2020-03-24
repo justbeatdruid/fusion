@@ -109,7 +109,8 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				p.Status.Status = "deleting"
 				if err := r.Operator.DeletePer(topic, &p); err != nil {
 					p.Status.Status = "error"
-					p.Status.Message = err.Error()
+					p.Status.Message =
+						.Error()
 
 					//删除失败，将标签重置为true
 					topic.ObjectMeta.Labels[p.AuthUserID] = "true"
