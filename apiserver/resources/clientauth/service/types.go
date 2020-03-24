@@ -17,7 +17,7 @@ type Clientauth struct {
 	ID            string         `json:"id"`
 	Name          string         `json:"name"`
 	Namespace     string         `json:"namespace"`
-	Tenant        string         `json:"Name"`  //租户名称
+	Tenant        string         `json:"Name"`       //租户名称
 	CreateUser    user.Users     `json:"createUser"` //创建用户
 	CreatedAt     int64          `json:"createdAt"`
 	IssuedAt      int64          `json:"issuedAt"`
@@ -39,12 +39,12 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 	crd.ObjectMeta.Namespace = crdNamespace
 
 	crd.Spec = v1.ClientauthSpec{
-		Name:     app.Name,
-		Tenant:   app.Tenant,
+		Name:       app.Name,
+		Tenant:     app.Tenant,
 		CreateUser: app.CreateUser,
-		Token:    app.Token,
-		ExipreAt: app.ExpireAt,
-		IssuedAt: app.IssuedAt,
+		Token:      app.Token,
+		ExipreAt:   app.ExpireAt,
+		IssuedAt:   app.IssuedAt,
 	}
 	if len(crd.Spec.Namespace) == 0 {
 		crd.Spec.Namespace = DefaultNamespace

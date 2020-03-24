@@ -73,15 +73,15 @@ func (c *controller) CreateClientauth(req *restful.Request) (int, *CreateRespons
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
-	authUser,err := auth.GetAuthUser(req)
-	if err!=nil{
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,
 			Message: fmt.Errorf("auth model error: %+v", err).Error(),
 		}
 	}
-    body.CreateUser = user.InitWithOwner(authUser.Name)
-    body.Tenant = authUser.Namespace
+	body.CreateUser = user.InitWithOwner(authUser.Name)
+	body.Tenant = authUser.Namespace
 	if ca, err := c.service.CreateClientauth(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
@@ -188,12 +188,12 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 		}
 	}
 	//通过创建用户筛选
-	if len(createUser)>0 {
-		ca = c.ListTopicByCreateUser(createUser,ca)
+	if len(createUser) > 0 {
+		ca = c.ListTopicByCreateUser(createUser, ca)
 	}
 	//通过租户筛选
-	if len(tenant)>0 {
-		ca = c.ListTopicByTenant(tenant,ca)
+	if len(tenant) > 0 {
+		ca = c.ListTopicByTenant(tenant, ca)
 	}
 	//接收参数只有authUser
 	if len(authUser) > 0 && len(createTimeSta) == 0 && len(expireAtSta) == 0 {
@@ -363,6 +363,7 @@ func (c *controller) ListTopicByauthUser(caName string, cas []*service.Clientaut
 	}
 	return casResult
 }
+
 //通过createUser匹配
 func (c *controller) ListTopicByCreateUser(ctUser string, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
@@ -384,6 +385,7 @@ func (c *controller) ListTopicByTenant(tenant string, cas []*service.Clientauth)
 	}
 	return casResult
 }
+
 //通过tokenExp匹配
 func (c *controller) ListTopicBytokenExp(expireAtSta int64, expireAtEnd int64, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
