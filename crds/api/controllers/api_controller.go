@@ -19,8 +19,10 @@ import (
 	"context"
 	"fmt"
 	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
+	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -126,6 +128,18 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 		api.Status.Status = nlptv1.Success
 		api.Status.PublishStatus = nlptv1.Released
+		//发布成功更新服务单元api的计数
+		su := &suv1.Serviceunit{}
+		suNamespacedName := types.NamespacedName{
+			Namespace: req.NamespacedName.Namespace,
+			Name:      api.Spec.Serviceunit.ID,
+		}
+		if err := r.Get(ctx, suNamespacedName, su); err != nil {
+			klog.Errorf("cannot get service unit with name %s: %+v", suNamespacedName, err)
+			return ctrl.Result{}, nil
+		}
+		klog.Infof("get su info %+v", *su)
+		r.AddApiToServiceUnit(ctx, su, api)
 		api.Status.AccessLink = nlptv1.AccessLink(fmt.Sprintf("%s://%s:%d%s",
 			strings.ToLower(string(api.Spec.ApiDefineInfo.Protocol)),
 			r.Operator.Host, r.Operator.KongPortalPort, api.Spec.KongApi.Paths[0]))
@@ -149,6 +163,17 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		//PublishStatus -> offline
 		api.Status.Status = nlptv1.Success
 		api.Status.PublishStatus = nlptv1.Offlined
+		su := &suv1.Serviceunit{}
+		suNamespacedName := types.NamespacedName{
+			Namespace: req.NamespacedName.Namespace,
+			Name:      api.Spec.Serviceunit.ID,
+		}
+		if err := r.Get(ctx, suNamespacedName, su); err != nil {
+			klog.Errorf("cannot get service unit with name %s: %+v", suNamespacedName, err)
+			return ctrl.Result{}, nil
+		}
+		klog.Infof("get su info %+v", *su)
+		r.RemoveApiFromServiceUnit(ctx, su, api)
 		r.Update(ctx, api)
 		return ctrl.Result{}, nil
 	}
@@ -167,6 +192,18 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		//PublishStatus -> Released
 		api.Status.Status = nlptv1.Success
 		api.Status.PublishStatus = nlptv1.Released
+		//发布成功更新服务单元api的计数
+		su := &suv1.Serviceunit{}
+		suNamespacedName := types.NamespacedName{
+			Namespace: req.NamespacedName.Namespace,
+			Name:      api.Spec.Serviceunit.ID,
+		}
+		if err := r.Get(ctx, suNamespacedName, su); err != nil {
+			klog.Errorf("cannot get service unit with name %s: %+v", suNamespacedName, err)
+			return ctrl.Result{}, nil
+		}
+		klog.Infof("get su info %+v", *su)
+		r.AddApiToServiceUnit(ctx, su, api)
 		r.Update(ctx, api)
 		return ctrl.Result{}, nil
 	}
@@ -222,6 +259,31 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	// your logic here
 
 	return ctrl.Result{}, nil
+}
+
+func (r *ApiReconciler) AddApiToServiceUnit(ctx context.Context, su *suv1.Serviceunit, api *nlptv1.Api) error {
+	su.Spec.APIs = append(su.Spec.APIs, suv1.Api{api.ObjectMeta.Name, api.Name})
+	su.Status.APICount = su.Status.APICount + 1
+	if err := r.Update(ctx, su); err != nil {
+		klog.Errorf("update su error: %+v", err)
+		return err
+	}
+	klog.Infof("update su apis: %+v", *su)
+	return nil
+}
+func (r *ApiReconciler) RemoveApiFromServiceUnit(ctx context.Context, su *suv1.Serviceunit, api *nlptv1.Api) error {
+	for index, value := range su.Spec.APIs {
+		if value.ID == api.ObjectMeta.Name {
+			su.Spec.APIs = append(su.Spec.APIs[:index], su.Spec.APIs[index+1:]...)
+		}
+	}
+	su.Status.APICount = su.Status.APICount - 1
+	if err := r.Update(ctx, su); err != nil {
+		klog.Errorf("update su error: %+v", err)
+		return err
+	}
+	klog.Infof("update su apis: %+v", *su)
+	return nil
 }
 
 func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
