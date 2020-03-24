@@ -212,7 +212,7 @@ func (r *Operator) UpdateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	id := db.Spec.KongService.ID
-	klog.Infof("delete service id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
+	klog.Infof("update service id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
 	request = request.Patch(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
 	for k, v := range headers {
 		request = request.Set(k, v)
@@ -257,7 +257,8 @@ func (r *Operator) UpdateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		return fmt.Errorf("request for update service error: %+v", errs)
 	}
 	klog.V(5).Infof("update service response body: %s", string(body))
-	if response.StatusCode != 201 {
+	//patch接口返回200
+	if response.StatusCode != 200 {
 		return fmt.Errorf("request for update service error: receive wrong status code: %s", string(body))
 	}
 	if db.Spec.Type == nlptv1.DataService {
