@@ -82,7 +82,7 @@ func ToModel(obj *v1.Application) *Application {
 		CreatedAt: util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
 	}
 	app.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
-	//TODO UserCount
+	app.UserCount = user.GetUserCountFromLabels(obj.ObjectMeta.Labels)
 	if group, ok := obj.ObjectMeta.Labels[v1.GroupLabel]; ok {
 		app.Group = group
 		app.GroupName = obj.Spec.Group.Name
