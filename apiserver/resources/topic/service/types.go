@@ -93,6 +93,9 @@ func ToAPI(app *Topic) *v1.Topic {
 		Status:  status,
 		Message: app.Message,
 	}
+
+	crd.ObjectMeta.Labels = user.AddUsersLabels(app.Users, crd.ObjectMeta.Labels)
+
 	return crd
 }
 
@@ -111,6 +114,7 @@ func ToModel(obj *v1.Topic) *Topic {
 		}
 		ps = append(ps, p)
 	}
+
 	return &Topic{
 		ID:              obj.ObjectMeta.Name,
 		Name:            obj.Spec.Name,
@@ -124,7 +128,9 @@ func ToModel(obj *v1.Topic) *Topic {
 		URL:             obj.Spec.Url,
 		CreatedAt:       obj.CreationTimestamp.Unix(),
 		Permissions:     ps,
+		Users:           user.GetUsersFromLabels(obj.ObjectMeta.Labels),
 	}
+
 }
 
 func ToListModel(items *v1.TopicList) []*Topic {

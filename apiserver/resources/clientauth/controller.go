@@ -196,12 +196,12 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 		ca = c.ListTopicByTenant(tenant, ca)
 	}
 	//authUser筛选
-	if len(authUser) > 0{
+	if len(authUser) > 0 {
 		//通过ca字段来匹配
 		ca = c.ListTopicByauthUser(authUser, ca)
 	}
 	//token失效时间段筛选
-	if len(expireAtSta) > 0 &&len(expireAtEnd)>0{
+	if len(expireAtSta) > 0 && len(expireAtEnd) > 0 {
 		//通过expireAtSta字段来匹配
 		eas, err := strconv.ParseInt(expireAtSta, 10, 64)
 		if err != nil {
@@ -220,7 +220,7 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 		ca = c.ListTopicBytokenExp(eas, eae, ca)
 	}
 	//创建时间筛选
-	if len(createTimeSta) > 0 && len(createTimeEnd) > 0  {
+	if len(createTimeSta) > 0 && len(createTimeEnd) > 0 {
 		cts, err := strconv.ParseInt(createTimeSta, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{

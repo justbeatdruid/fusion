@@ -43,11 +43,11 @@ func NewServerRunOptions() *ServerRunOptions {
 		CrdNamespace:  os.Getenv("MY_POD_NAMESPACE"),
 		TenantEnabled: false,
 		ConfigPath:    "/data/err.json",
-		Datasource:  DefaultDatasourceOptions(),
-		Dataservice: DefaultDataserviceOptions(),
-		Topic:       DefaultTopicOptions(),
-		Cas:         DefaultCasOptions(),
-		Audit:       DefaultAuditOptions(),
+		Datasource:    DefaultDatasourceOptions(),
+		Dataservice:   DefaultDataserviceOptions(),
+		Topic:         DefaultTopicOptions(),
+		Cas:           DefaultCasOptions(),
+		Audit:         DefaultAuditOptions(),
 	}
 
 	if len(s.CrdNamespace) == 0 {
@@ -94,7 +94,7 @@ func (s *ServerRunOptions) ParseLocalConfig() (*appconfig.ErrorConfig, error) {
 	}
 	klog.Infof("parse options s.LocalConfig %+v", errConfig)
 	return errConfig, nil
-	}
+}
 
 func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 	kubeconfig, err := clientcmd.BuildConfigFromFlags(s.Master, s.Kubeconfig)
