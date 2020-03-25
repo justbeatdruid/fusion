@@ -66,9 +66,12 @@ type ApproveResponse = ApproveRequest
 func (c *controller) CreateApply(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
+		code := "004000005"
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:   1,
-			Detail: fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
@@ -79,9 +82,12 @@ func (c *controller) CreateApply(req *restful.Request) (int, *CreateResponse) {
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
+		code := "004000005"
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:   1,
-			Detail: "auth model error",
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
 		}
 	}
 	body.Data.Users = user.InitWithApplicant(authuser.Name)
@@ -89,6 +95,9 @@ func (c *controller) CreateApply(req *restful.Request) (int, *CreateResponse) {
 		code := "004000002"
 		if errors.IsAlreadyBound(err) {
 			code = "004000003"
+		}
+		if errors.IsPermissionDenied(err) {
+			code = "004000004"
 		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
@@ -107,9 +116,12 @@ func (c *controller) CreateApply(req *restful.Request) (int, *CreateResponse) {
 func (c *controller) GetApply(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
 	if apl, err := c.service.GetApply(id); err != nil {
+		code := "004000007"
 		return http.StatusInternalServerError, &GetResponse{
-			Code:   1,
-			Detail: fmt.Errorf("get apply error: %+v", err).Error(),
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    fmt.Errorf("get apply error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -122,9 +134,12 @@ func (c *controller) GetApply(req *restful.Request) (int, *GetResponse) {
 func (c *controller) DeleteApply(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	if err := c.service.DeleteApply(id); err != nil {
+		code := "004000002"
 		return http.StatusInternalServerError, &DeleteResponse{
-			Code:   1,
-			Detail: fmt.Errorf("delete apply error: %+v", err).Error(),
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    fmt.Errorf("delete apply error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
@@ -139,30 +154,42 @@ func (c *controller) ListApply(req *restful.Request) (int, *ListResponse) {
 	size := req.QueryParameter("size")
 	role := req.QueryParameter("role")
 	if len(role) == 0 {
+		code := "004000005"
 		return http.StatusInternalServerError, &ListResponse{
-			Code:   1,
-			Detail: "need role in query parameter: applicant or approver",
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "need role in query parameter: applicant or approver",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
+		code := "004000006"
 		return http.StatusInternalServerError, &ListResponse{
-			Code:   1,
-			Detail: "auth model error",
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
 		}
 	}
 	if apl, err := c.service.ListApply(role, util.WithUser(authuser.Name)); err != nil {
+		code := "004000002"
 		return http.StatusInternalServerError, &ListResponse{
-			Code:   1,
-			Detail: fmt.Errorf("list applies error: %+v", err).Error(),
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    fmt.Errorf("list applies error: %+v", err).Error(),
 		}
 	} else {
 		var apls ApplyList = apl
 		data, err := util.PageWrap(apls, page, size)
 		if err != nil {
+			code := "004000005"
 			return http.StatusInternalServerError, &ListResponse{
-				Code:   1,
-				Detail: fmt.Sprintf("page parameter error: %+v", err),
+				Code:      1,
+				ErrorCode: code,
+				Message:   c.errCode[code],
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 			}
 		}
 		return http.StatusOK, &ListResponse{
@@ -197,28 +224,43 @@ func (c *controller) ApproveApply(req *restful.Request) (int, *ApproveResponse) 
 	id := req.PathParameter("id")
 	body := &ApproveRequest{}
 	if err := req.ReadEntity(body); err != nil {
+		code := "004000005"
 		return http.StatusInternalServerError, &ApproveResponse{
-			Code:   1,
-			Detail: fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
+		code := "004000005"
 		return http.StatusInternalServerError, &ApproveResponse{
-			Code:   1,
-			Detail: "read entity error: data is null",
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
+		code := "004000006"
 		return http.StatusInternalServerError, &ApproveResponse{
-			Code:   1,
-			Detail: "auth model error",
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
 		}
 	}
 	if _, err := c.service.ApproveApply(id, body.Data.Admitted, body.Data.Reason, util.WithUser(authuser.Name)); err != nil {
+		code := "004000007"
+		if errors.IsPermissionDenied(err) {
+			code = "004000004"
+		}
 		return http.StatusInternalServerError, &ApproveResponse{
-			Code:   2,
-			Detail: fmt.Errorf("create apply error: %+v", err).Error(),
+			Code:      2,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    fmt.Errorf("create apply error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &ApproveResponse{

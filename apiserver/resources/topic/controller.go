@@ -281,85 +281,46 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 	endTime := req.QueryParameter("endTime")
 	topicGroup := req.QueryParameter("topicGroup")
 	//先查出所有topic的信息
-	tp, err := c.service.ListTopic()
+	tps, err := c.service.ListTopic()
 	if err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:    1,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	}
-	//接收参数只有topicName
-	if len(topicName) > 0 && len(topicGroup) == 0 && len(startTime) == 0 && len(endTime) == 0 {
+	//topicName筛选
+	if len(topicName) > 0 {
 		//通过topicName字段来匹配topic
-		tps := c.ListTopicByTopicName(topicName, tp)
-		var tpUrls []string
-		//获取topic的url
-		for _, tp := range tps {
-			tpUrls = append(tpUrls, tp.URL)
-		}
-		httpStatus, messageResponse := c.ListMessagesByTopicUrl(tpUrls, req)
-		return httpStatus, messageResponse
-	} else if len(topicGroup) > 0 && len(topicName) == 0 && len(startTime) == 0 && len(endTime) == 0 { //接收参数只有topicGroup
+		tps = c.ListTopicByTopicName(topicName, tps)
+	}
+    //topicGroup筛选
+	if len(topicGroup) > 0 {
 		//通过topicGroup字段来匹配topic
-		tps := c.ListTopicByTopicGroup(topicGroup, tp)
-		var tpUrls []string
-		for _, tp := range tps {
-			tpUrls = append(tpUrls, tp.URL)
+		tps = c.ListTopicByTopicGroup(topicGroup, tps)
+	}
+	var tpUrls []string
+	for _, tp := range tps {
+		tpUrls = append(tpUrls, tp.URL)
+	}
+	//时间筛选
+	if len(startTime) > 0 && len(endTime) > 0 {
+		start, err := strconv.ParseInt(startTime, 10, 64)
+		if err!=nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:    1,
+				Message: fmt.Sprintf("startTime parameter error: %+v", err),
+			}
 		}
-		httpStatus, messageResponse := c.ListMessagesByTopicUrl(tpUrls, req)
-		return httpStatus, messageResponse
-	} else if len(startTime) > 0 && len(endTime) > 0 && len(topicGroup) == 0 && len(topicName) == 0 { //接收参数只有时间
-		start, _ := strconv.ParseInt(startTime, 10, 64)
-		end, _ := strconv.ParseInt(endTime, 10, 64)
-		var tpUrls []string
-		for _, tp := range tp {
-			tpUrls = append(tpUrls, tp.URL)
-		}
-		httpStatus, messageResponse := c.ListMessagesByTopicUrlTime(tpUrls, start, end, req)
-		return httpStatus, messageResponse
-	} else if len(topicName) > 0 && len(topicGroup) > 0 && len(startTime) == 0 && len(endTime) == 0 { //接收参数有topicName,topicGroup
-		tps := c.ListTopicByTopicGroupAndName(topicGroup, topicName, tp)
-		var tpUrls []string
-		for _, tp := range tps {
-			tpUrls = append(tpUrls, tp.URL)
-		}
-		httpStatus, messageResponse := c.ListMessagesByTopicUrl(tpUrls, req)
-		return httpStatus, messageResponse
-	} else if len(topicGroup) > 0 && len(topicName) == 0 && len(startTime) > 0 && len(endTime) > 0 { //接收参数有topicGroup和时间
-		start, _ := strconv.ParseInt(startTime, 10, 64)
-		end, _ := strconv.ParseInt(endTime, 10, 64)
-		tps := c.ListTopicByTopicGroup(topicGroup, tp)
-		var tpUrls []string
-		for _, tp := range tps {
-			tpUrls = append(tpUrls, tp.URL)
+		end, err := strconv.ParseInt(endTime, 10, 64)
+		if err!=nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:    1,
+				Message: fmt.Sprintf("endTime parameter error: %+v", err),
+			}
 		}
 		httpStatus, messageResponse := c.ListMessagesByTopicUrlTime(tpUrls, start, end, req)
 		return httpStatus, messageResponse
-	} else if len(topicGroup) == 0 && len(topicName) > 0 && len(startTime) > 0 && len(endTime) > 0 { //接收参数有topicName和时间
-		start, _ := strconv.ParseInt(startTime, 10, 64)
-		end, _ := strconv.ParseInt(endTime, 10, 64)
-		tps := c.ListTopicByTopicName(topicName, tp)
-		var tpUrls []string
-		for _, tp := range tps {
-			tpUrls = append(tpUrls, tp.URL)
-		}
-		httpStatus, messageResponse := c.ListMessagesByTopicUrlTime(tpUrls, start, end, req)
-		return httpStatus, messageResponse
-	} else if len(topicName) > 0 && len(topicGroup) > 0 && len(startTime) > 0 && len(endTime) > 0 { //接收参数有topicName、topicGroup、时间
-		start, _ := strconv.ParseInt(startTime, 10, 64)
-		end, _ := strconv.ParseInt(endTime, 10, 64)
-		tps := c.ListTopicByTopicGroupAndName(topicGroup, topicName, tp)
-		var tpUrls []string
-		for _, tp := range tps {
-			tpUrls = append(tpUrls, tp.URL)
-		}
-		httpStatus, messageResponse := c.ListMessagesByTopicUrlTime(tpUrls, start, end, req)
-		return httpStatus, messageResponse
-	} else { //没有参数
-		var tpUrls []string
-		for _, tp := range tp {
-			tpUrls = append(tpUrls, tp.URL)
-		}
+	} else { //没有时间
 		httpStatus, messageResponse := c.ListMessagesByTopicUrl(tpUrls, req)
 		return httpStatus, messageResponse
 	}
