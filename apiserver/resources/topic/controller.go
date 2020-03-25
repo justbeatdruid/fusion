@@ -3,9 +3,12 @@ package topic
 import (
 	"fmt"
 	"github.com/360EntSecGroup-Skylar/excelize"
+	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/parser"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"github.com/chinamobile/nlpt/pkg/go-restful/log"
 	"github.com/chinamobile/nlpt/pkg/util"
@@ -16,18 +19,22 @@ import (
 
 type controller struct {
 	service *service.Service
+	errMsg  config.ErrorConfig
 }
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient(), cfg.TopicConfig),
+		cfg.LocalConfig,
 	}
 }
 
 type Wrapped struct {
-	Code    int            `json:"code"`
-	Message string         `json:"message"`
-	Data    *service.Topic `json:"data,omitempty"`
+	Code      int            `json:"code"`
+	ErrorCode string         `json:"errorCode"`
+	Message   string         `json:"message"`
+	Data      *service.Topic `json:"data,omitempty"`
+	Detail    string         `json:"detail"`
 }
 
 type CreateResponse = Wrapped
@@ -41,53 +48,61 @@ type GrantResponse = Wrapped
 }*/
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Message   string      `json:"message"`
+	Data      interface{} `json:"data"`
+	Detail    string      `json:"detail"`
 }
 type MessageResponse = struct {
-	Code     int         `json:"code"`
-	Message  string      `json:"message"`
-	Messages interface{} `json:"messages"`
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Message   string      `json:"message"`
+	Messages  interface{} `json:"messages"`
+	Detail    string      `json:"detail"`
 }
 type PingResponse = DeleteResponse
 
 type ImportResponse struct {
-	Code    int             `json:"code"`
-	Message string          `json:"message"`
-	Data    []service.Topic `json:"data"`
+	Code      int             `json:"code"`
+	ErrorCode string          `json:"errorCode"`
+	Message   string          `json:"message"`
+	Data      []service.Topic `json:"data"`
+	Detail    string          `json:"detail"`
 }
 
 type GrantPermissionRequest struct {
 	Actions service.Actions `json:"actions"`
 }
 
+func (c *controller) getCreateResponse(code int, errorCode string, detail string) *CreateResponse {
+	return &CreateResponse{
+		Code:      code,
+		Message:   c.errMsg.Application[errorCode],
+		Detail:    detail,
+		ErrorCode: errorCode,
+	}
+}
+
 func (c *controller) CreateTopic(req *restful.Request) (int, *CreateResponse) {
 	tp := &service.Topic{}
 	if err := req.ReadEntity(tp); err != nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: fmt.Sprintf("cannot read entity: %+v", err),
-		}
+		return http.StatusInternalServerError, c.getCreateResponse(1, tperror.Error_Create_Topic, fmt.Sprintf("cannot read entity: %+v", err))
 	}
 
-	//authuser, err := auth.GetAuthUser(req)
-	//if err != nil {
-	//	return http.StatusInternalServerError, &CreateResponse{
-	//		Code:    1,
-	//		Message: fmt.Sprintf("auth model error: %+v", err),
-	//	}
-	//}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, c.getCreateResponse(1, tperror.Error_Auth_Error, fmt.Sprintf("auth model error: %+v", err))
+	}
 
+	tp.Users = user.InitWithOwner(authuser.Name)
 	if tp, err := c.service.CreateTopic(tp); err != nil {
-		return http.StatusInternalServerError, &CreateResponse{
-			Code:    2,
-			Message: fmt.Sprintf("create database error: %+v", err),
-		}
+		return http.StatusInternalServerError, c.getCreateResponse(2, tperror.Error_Create_Topic, fmt.Sprintf("create database error: %+v", err))
 	} else {
 		return http.StatusOK, &CreateResponse{
-			Code: 0,
-			Data: tp,
+			Code:   0,
+			Data:   tp,
+			Detail: "accepted topic create request, please waiting for create topic on pulsar",
 		}
 	}
 }
@@ -209,7 +224,8 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 	if err != nil {
 		return http.StatusInternalServerError, &ImportResponse{
 			Code:    1,
-			Message: fmt.Errorf("import topics error: %+v", err).Error(),
+			Message: fmt.Sprintf("import topics error: %+v", err),
+			Detail:  fmt.Sprintf("import topics error: %+v", err),
 		}
 	}
 
