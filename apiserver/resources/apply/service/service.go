@@ -103,7 +103,7 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 
 	klog.V(5).Infof("applicant: %s", model.Users.AppliedBy.ID)
 	if !user.WritePermitted(model.Users.AppliedBy.ID, model.Source.Labels) {
-		return nil, fmt.Errorf("user has no permission for source %s", model.Source.Name)
+		return nil, errors.PermissionDeniedError("user has no permission for source %s", model.Source.Name)
 	}
 	model.Users.ApprovedBy.ID = model.Target.Owner
 	if len(model.Users.ApprovedBy.ID) == 0 {
@@ -370,7 +370,7 @@ func (s *Service) ApproveApply(id string, admitted bool, reason string, opts ...
 	apluser := user.GetApplyUserFromLabels(apl.ObjectMeta.Labels)
 	operator := util.OpList(opts...).User()
 	if apluser.ApprovedBy.ID != operator {
-		return nil, fmt.Errorf("user %s has no permission to approve this apply", operator)
+		return nil, errors.PermissionDeniedError("user %s has no permission to approve this apply", operator)
 	}
 
 	if apl.Status.Status != v1.Waiting {

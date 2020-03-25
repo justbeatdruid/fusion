@@ -21,6 +21,7 @@ const (
 	nameDuplicated
 	contentNotVoid
 	alreadyBound
+	permissionDenied
 )
 
 func NotFoundError(format string, a ...interface{}) error {
@@ -51,6 +52,13 @@ func AlreadyBoundError(format string, a ...interface{}) error {
 	}
 }
 
+func PermissionDeniedError(format string, a ...interface{}) error {
+	return &Error{
+		t:       permissionDenied,
+		message: fmt.Sprintf(format, a...),
+	}
+}
+
 func IsNotFound(err error) bool {
 	if e, ok := err.(*Error); ok {
 		return e.t == notFound
@@ -76,5 +84,12 @@ func IsAlreadyBound(err error) bool {
 	if e, ok := err.(*Error); ok {
 		return e.t == alreadyBound
 	}
-	return strings.Contains(err.Error(), "content not void")
+	return strings.Contains(err.Error(), "already bound")
+}
+
+func IsPermissionDenied(err error) bool {
+	if e, ok := err.(*Error); ok {
+		return e.t == permissionDenied
+	}
+	return strings.Contains(err.Error(), "permission denied")
 }
