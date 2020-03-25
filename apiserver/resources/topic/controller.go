@@ -71,6 +71,14 @@ func (c *controller) CreateTopic(req *restful.Request) (int, *CreateResponse) {
 		}
 	}
 
+	//authuser, err := auth.GetAuthUser(req)
+	//if err != nil {
+	//	return http.StatusInternalServerError, &CreateResponse{
+	//		Code:    1,
+	//		Message: fmt.Sprintf("auth model error: %+v", err),
+	//	}
+	//}
+
 	if tp, err := c.service.CreateTopic(tp); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,

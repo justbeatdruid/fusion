@@ -30,6 +30,8 @@ type Service struct {
 	clientAuthClient dynamic.NamespaceableResourceInterface
 	ip               string
 	host             int
+	authEnable       bool
+	adminToken       string
 }
 
 func NewService(client dynamic.Interface, topConfig *config.TopicConfig) *Service {
@@ -37,6 +39,8 @@ func NewService(client dynamic.Interface, topConfig *config.TopicConfig) *Servic
 		clientAuthClient: client.Resource(clientauthv1.GetOOFSGVR()),
 		ip:               topConfig.Host,
 		host:             topConfig.Port,
+		authEnable:       topConfig.AuthEnable,
+		adminToken:       topConfig.AdminToken,
 	}
 }
 func (s *Service) CreateTopic(model *Topic) (*Topic, error) {
@@ -150,7 +154,7 @@ func (s *Service) List() (*v1.TopicList, error) {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.topicList: %+v", tps)
+	//klog.V(5).Infof("get v1.topicList: %+v", tps)
 	return tps, nil
 }
 
@@ -202,18 +206,15 @@ func (s *Service) DeletePer(id string, authUserId string) (*v1.Topic, error) {
 	}
 	//查询授权用户id的标签
 	v, ok := tp.ObjectMeta.Labels[authUserId]
-	if !ok {
-		//TODO 认证用户id的标签不存在，是否报错？
-		return nil, fmt.Errorf("auth user is not exist: %+v", err)
+	if ok {
+		if v == "true" {
+			tp.ObjectMeta.Labels[authUserId] = "false"
+		} else {
+			//TODO 如果value非true，则认为该权限已经在回收中，禁止重复操作
+			return nil, fmt.Errorf("revoke permission error, permission has already revoking")
+		}
+		delete(tp.ObjectMeta.Labels, authUserId)
 	}
-
-	if v == "true" {
-		tp.ObjectMeta.Labels[authUserId] = "false"
-	} else {
-		//TODO 如果value非true，则认为该权限已经在回收中，禁止重复操作
-		return nil, fmt.Errorf("revoke permission error, permission has already revoking")
-	}
-	delete(tp.ObjectMeta.Labels, authUserId)
 
 	for _, P := range tp.Spec.Permissions {
 		if P.AuthUserID == authUserId {
@@ -221,6 +222,7 @@ func (s *Service) DeletePer(id string, authUserId string) (*v1.Topic, error) {
 			break
 		}
 	}
+	tp.Status.Status = v1.Update
 	return s.UpdateStatus(tp)
 }
 
@@ -249,13 +251,9 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 //带时间查询topic中的所有消息
 func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int64) ([]Message, error) {
 	// Instantiate a Pulsar client
-	ip := s.ip
-	host := s.host
-	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://" + ip + ":" + strconv.Itoa(host),
-	})
+	client, err := s.GetPulsarClient()
 	if err != nil {
-		fmt.Printf("Could not create client: %v", err)
+		return nil, err
 	}
 	defer client.Close()
 	var messageStructs []Message
@@ -296,13 +294,10 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 //不带时间查询多个topic中的所有消息
 func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 	// Instantiate a Pulsar client
-	ip := s.ip
-	host := s.host
-	client, err := pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://" + ip + ":" + strconv.Itoa(host),
-	})
+	client, err := s.GetPulsarClient()
 	if err != nil {
 		fmt.Printf("Could not create client: %v", err)
+		return nil, err
 	}
 	defer client.Close()
 	var messageStructs []Message
@@ -314,7 +309,7 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 			StartMessageID: pulsar.EarliestMessage,
 		})
 		if err != nil {
-			fmt.Println("create reader error")
+			fmt.Printf("create reader error: %+v", err)
 			continue
 		}
 		for {
@@ -332,11 +327,24 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 			messageStruct.ID = msg.ID()
 			messageStruct.Messages = string(msg.Payload()[:])
 			messageStructs = append(messageStructs, messageStruct)
+
 		}
 		reader.Close()
 	}
 
 	return messageStructs, err
+}
+
+func (s *Service) GetPulsarClient() (pulsar.Client, error) {
+	if s.authEnable {
+		return pulsar.NewClient(pulsar.ClientOptions{
+			URL:            "pulsar://" + s.ip + ":" + strconv.Itoa(s.host),
+			Authentication: pulsar.NewAuthenticationToken(s.adminToken),
+		})
+	}
+	return pulsar.NewClient(pulsar.ClientOptions{
+		URL: "pulsar://" + s.ip + ":" + strconv.Itoa(s.host),
+	})
 }
 
 //func (s *Service) IsTopicExist(url string) bool {
