@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"strings"
@@ -24,10 +25,11 @@ type Topic struct {
 	Partition       int          `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
 	IsNonPersistent bool         `json:"isNonPersistent"` //非持久化，默认为false，非必填topic
 	URL             string       `json:"url"`             //URL
-	CreatedAt       int64        `json:"createdAt""`      //创建Topic的时间戳
+	CreatedAt       int64        `json:"createdAt"`       //创建Topic的时间戳
 	Status          v1.Status    `json:"status"`
 	Message         string       `json:"message"`
 	Permissions     []Permission `json:"permissions"`
+	Users           user.Users   `json:"users"`
 }
 
 type Message struct {

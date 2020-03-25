@@ -63,8 +63,10 @@ spec:
         - --cas-port=8000
         - --audit-host=fusion-auditlog
         - --audit-port=6868
-        - --pulsar-host=10.160.32.24
-        - --pulsar-port=30003
+        - --pulsar-host=localhost
+        - --pulsar-port=6650
+        - --pulsar-auth-enable=false
+        - --pulsar-admin-token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.eNEbqeuUXxM7bsnP8gnxYq7hRkP50Rqc0nsWFRp8z6A
         env:
         - name: MY_POD_NAMESPACE
           valueFrom:
