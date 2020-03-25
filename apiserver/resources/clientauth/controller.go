@@ -187,147 +187,54 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	}
-	//通过创建用户筛选
+	//创建用户筛选
 	if len(createUser) > 0 {
 		ca = c.ListTopicByCreateUser(createUser, ca)
 	}
-	//通过租户筛选
+	//租户筛选
 	if len(tenant) > 0 {
 		ca = c.ListTopicByTenant(tenant, ca)
 	}
-	//接收参数只有authUser
-	if len(authUser) > 0 && len(createTimeSta) == 0 && len(expireAtSta) == 0 {
+	//authUser筛选
+	if len(authUser) > 0{
 		//通过ca字段来匹配
 		ca = c.ListTopicByauthUser(authUser, ca)
-	} else if len(expireAtSta) > 0 && len(authUser) == 0 && len(createTimeSta) == 0 { //接收参数只有expireAtSta
+	}
+	//token失效时间段筛选
+	if len(expireAtSta) > 0 &&len(expireAtEnd)>0{
 		//通过expireAtSta字段来匹配
 		eas, err := strconv.ParseInt(expireAtSta, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
+				Message: fmt.Errorf("expireAt string to int64 error: %+v", err).Error(),
 			}
 		}
 		eae, err := strconv.ParseInt(expireAtEnd, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
+				Message: fmt.Errorf("expireAt string to int64 error: %+v", err).Error(),
 			}
 		}
 		ca = c.ListTopicBytokenExp(eas, eae, ca)
-	} else if len(createTimeSta) > 0 && len(expireAtSta) == 0 && len(authUser) == 0 { //接收参数只有时间
+	}
+	//创建时间筛选
+	if len(createTimeSta) > 0 && len(createTimeEnd) > 0  {
 		cts, err := strconv.ParseInt(createTimeSta, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
+				Message: fmt.Errorf("createTime string to int64 error: %+v", err).Error(),
 			}
 		}
 		cte, err := strconv.ParseInt(createTimeEnd, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
+				Message: fmt.Errorf("createTime string to int64 error: %+v", err).Error(),
 			}
 		}
-		ca = c.ListTopicBycreateTime(cts, cte, ca)
-	} else if len(authUser) > 0 && len(expireAtSta) > 0 && len(createTimeSta) == 0 { //接收参数有authUser,expireAtSta
-		eas, err := strconv.ParseInt(expireAtSta, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
-			}
-		}
-		eae, err := strconv.ParseInt(expireAtEnd, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
-			}
-		}
-		ca = c.ListTopicByauthUser(authUser, ca)
-		ca = c.ListTopicBytokenExp(eas, eae, ca)
-	} else if len(expireAtSta) > 0 && len(authUser) == 0 && len(createTimeSta) > 0 { //接收参数有expireAtSta和时间
-		eas, err := strconv.ParseInt(expireAtSta, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
-			}
-		}
-		eae, err := strconv.ParseInt(expireAtEnd, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
-			}
-		}
-		cts, err := strconv.ParseInt(createTimeSta, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
-			}
-		}
-		cte, err := strconv.ParseInt(createTimeEnd, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
-			}
-		}
-		ca = c.ListTopicBytokenExp(eas, eae, ca)
-		ca = c.ListTopicBycreateTime(cts, cte, ca)
-	} else if len(expireAtSta) == 0 && len(authUser) > 0 && len(createTimeSta) > 0 { //接收参数有authUser和时间
-		cts, err := strconv.ParseInt(createTimeSta, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
-			}
-		}
-		cte, err := strconv.ParseInt(createTimeEnd, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
-			}
-		}
-		ca = c.ListTopicByauthUser(authUser, ca)
-		ca = c.ListTopicBycreateTime(cts, cte, ca)
-	} else if len(authUser) > 0 && len(expireAtSta) > 0 && len(createTimeSta) > 0 { //接收参数有authUser、expireAtSta、时间
-		eas, err := strconv.ParseInt(expireAtSta, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
-			}
-		}
-		eae, err := strconv.ParseInt(expireAtEnd, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
-			}
-		}
-		cts, err := strconv.ParseInt(createTimeSta, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
-			}
-		}
-		cte, err := strconv.ParseInt(createTimeEnd, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("string to int64 error: %+v", err).Error(),
-			}
-		}
-		ca = c.ListTopicByauthUser(authUser, ca)
-		ca = c.ListTopicBytokenExp(eas, eae, ca)
 		ca = c.ListTopicBycreateTime(cts, cte, ca)
 	}
 	//判断token是否有效
