@@ -113,7 +113,7 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		return nil, err
 	}
 
-	//errConfig, err := s.ParseLocalConfig()
+	errConfig, err := s.ParseLocalConfig()
 	if err != nil {
 		return nil, fmt.Errorf("parse error config error: %+v", err)
 	}
