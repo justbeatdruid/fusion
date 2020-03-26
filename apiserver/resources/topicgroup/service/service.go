@@ -109,7 +109,9 @@ func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, 
 	if policies == nil {
 		return nil, fmt.Errorf("bad request:policies is required")
 	}
-	crd.Spec.Policies = ToPolicesApi(policies)
+
+
+	crd.Spec.Policies = s.MergePolicies(policies, crd.Spec.Policies)
 	crd.Status.Status = v1.Update
 	crd, err = s.UpdateStatus(crd)
 	if err != nil {
@@ -118,6 +120,10 @@ func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, 
 
 	return ToModel(crd), nil
 
+}
+
+func (s *Service) MergePolicies(req *Policies, db v1.Policies) v1.Policies{
+	return db
 }
 
 func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, error) {
@@ -162,7 +168,7 @@ func (s *Service) Get(id string) (*v1.Topicgroup, error) {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tp); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.Topicgroup: %+v", tp)
+	//klog.V(5).Infof("get v1.Topicgroup: %+v", tp)
 	return tp, nil
 }
 
