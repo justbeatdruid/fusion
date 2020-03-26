@@ -2,7 +2,9 @@ package service
 
 import (
 	"fmt"
+	pulsar "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/pulsar"
 	"github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 )
 
@@ -14,14 +16,15 @@ const (
 )
 
 type Topicgroup struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"` //namespace名称
-	Namespace string    `json:"namespace"`
-	Tenant    string    `json:"tenant"`             //namespace的所属租户名称
-	Policies  Policies  `json:"policies,omitempty"` //namespace的策略
-	CreatedAt int64     `json:"createdAt"`          //创建时间
-	Status    v1.Status `json:"status"`
-	Message   string    `json:"message"`
+	ID        string     `json:"id"`
+	Name      string     `json:"name"` //namespace名称
+	Namespace string     `json:"namespace"`
+	Tenant    string     `json:"tenant"`             //namespace的所属租户名称
+	Policies  Policies   `json:"policies,omitempty"` //namespace的策略
+	CreatedAt int64      `json:"createdAt"`          //创建时间
+	Users     user.Users `json:"users"`
+	Status    v1.Status  `json:"status"`
+	Message   string     `json:"message"`
 }
 
 type Policies struct {
@@ -32,8 +35,8 @@ type Policies struct {
 }
 
 type RetentionPolicies struct {
-	RetentionTimeInMinutes int `json:"retentionTimeInMinutes"`
-	RetentionSizeInMB      int `json:"retentionSizeInMB"`
+	RetentionTimeInMinutes int   `json:"retentionTimeInMinutes"`
+	RetentionSizeInMB      int64 `json:"retentionSizeInMB"`
 }
 
 type BacklogQuota struct {
@@ -55,7 +58,9 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 		Name:      app.Name,
 		Tenant:    app.Tenant,
 		Namespace: app.Namespace,
+		Policies:  ToPolicesApi(&app.Policies),
 	}
+
 	status := app.Status
 	if len(status) == 0 {
 		status = v1.Init
@@ -76,7 +81,61 @@ func ToModel(obj *v1.Topicgroup) *Topicgroup {
 		Status:    obj.Status.Status,
 		Message:   obj.Status.Message,
 		CreatedAt: obj.ObjectMeta.CreationTimestamp.Unix(),
+		Policies:  ToPolicesModel(&obj.Spec.Policies),
 	}
+}
+
+func ToPolicesModel(obj *v1.Policies) Policies {
+	return Policies{
+		RetentionPolicies: RetentionPolicies{
+			RetentionSizeInMB:      obj.RetentionPolicies.RetentionSizeInMB,
+			RetentionTimeInMinutes: obj.RetentionPolicies.RetentionTimeInMinutes,
+		},
+		MessageTtlInSeconds: obj.MessageTtlInSeconds,
+		BacklogQuota: BacklogQuota{
+			Limit:  obj.BacklogQuota.Limit,
+			Policy: obj.BacklogQuota.Policy,
+		},
+		NumBundles: obj.NumBundles,
+	}
+}
+func ToPolicesApi(policies *Policies) v1.Policies {
+	if policies == nil {
+		return v1.Policies{}
+	}
+	crd := v1.Policies{
+		NumBundles:          policies.NumBundles,
+		MessageTtlInSeconds: policies.MessageTtlInSeconds,
+		RetentionPolicies: v1.RetentionPolicies{
+			RetentionTimeInMinutes: policies.RetentionPolicies.RetentionTimeInMinutes,
+			RetentionSizeInMB:      policies.RetentionPolicies.RetentionSizeInMB,
+		},
+		BacklogQuota: v1.BacklogQuota{
+			Limit:  policies.BacklogQuota.Limit,
+			Policy: policies.BacklogQuota.Policy,
+		},
+	}
+
+	if policies.NumBundles <= 0 {
+		crd.NumBundles = pulsar.DefaultNumberOfNamespaceBundles
+	}
+
+	if policies.MessageTtlInSeconds < 0 {
+		crd.MessageTtlInSeconds = pulsar.DefaultMessageTTlInSeconds
+	}
+
+	if len(policies.BacklogQuota.Policy) == 0 {
+		crd.BacklogQuota.Policy = pulsar.DefaultBacklogPolicy
+	}
+
+	if policies.RetentionPolicies.RetentionTimeInMinutes < 0 {
+		crd.RetentionPolicies.RetentionTimeInMinutes = pulsar.DefaultRetentionTimeInMinutes
+	}
+
+	if policies.RetentionPolicies.RetentionSizeInMB < 0 {
+		crd.RetentionPolicies.RetentionSizeInMB = pulsar.DefaultRetentionSizeInMB
+	}
+	return crd
 }
 
 func ToListModel(items *v1.TopicgroupList) []*Topicgroup {
@@ -111,7 +170,7 @@ func (a *Topicgroup) Validate() error {
 			return fmt.Errorf("retentionTimeInMinutes is invalid: %d", p.RetentionPolicies.RetentionSizeInMB)
 		}
 
-		if p.NumBundles <= 0 {
+		if p.NumBundles < 0 {
 			return fmt.Errorf("numBundles is invalid: %d", p.NumBundles)
 		}
 
