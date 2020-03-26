@@ -4,6 +4,7 @@ import (
 	"fmt"
 	pulsar "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/pulsar"
 	"github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 )
 
@@ -15,14 +16,15 @@ const (
 )
 
 type Topicgroup struct {
-	ID        string    `json:"id"`
-	Name      string    `json:"name"` //namespace名称
-	Namespace string    `json:"namespace"`
-	Tenant    string    `json:"tenant"`             //namespace的所属租户名称
-	Policies  Policies  `json:"policies,omitempty"` //namespace的策略
-	CreatedAt int64     `json:"createdAt"`          //创建时间
-	Status    v1.Status `json:"status"`
-	Message   string    `json:"message"`
+	ID        string     `json:"id"`
+	Name      string     `json:"name"` //namespace名称
+	Namespace string     `json:"namespace"`
+	Tenant    string     `json:"tenant"`             //namespace的所属租户名称
+	Policies  Policies   `json:"policies,omitempty"` //namespace的策略
+	CreatedAt int64      `json:"createdAt"`          //创建时间
+	Users     user.Users `json:"users"`
+	Status    v1.Status  `json:"status"`
+	Message   string     `json:"message"`
 }
 
 type Policies struct {
@@ -79,9 +81,24 @@ func ToModel(obj *v1.Topicgroup) *Topicgroup {
 		Status:    obj.Status.Status,
 		Message:   obj.Status.Message,
 		CreatedAt: obj.ObjectMeta.CreationTimestamp.Unix(),
+		Policies:  ToPolicesModel(&obj.Spec.Policies),
 	}
 }
 
+func ToPolicesModel(obj *v1.Policies) Policies {
+	return Policies{
+		RetentionPolicies: RetentionPolicies{
+			RetentionSizeInMB:      obj.RetentionPolicies.RetentionSizeInMB,
+			RetentionTimeInMinutes: obj.RetentionPolicies.RetentionTimeInMinutes,
+		},
+		MessageTtlInSeconds: obj.MessageTtlInSeconds,
+		BacklogQuota: BacklogQuota{
+			Limit:  obj.BacklogQuota.Limit,
+			Policy: obj.BacklogQuota.Policy,
+		},
+		NumBundles: obj.NumBundles,
+	}
+}
 func ToPolicesApi(policies *Policies) v1.Policies {
 	if policies == nil {
 		return v1.Policies{}

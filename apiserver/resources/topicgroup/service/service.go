@@ -96,6 +96,30 @@ func (s *Service) DeleteTopicgroup(id string) (*Topicgroup, error) {
 	return ToModel(tg), nil
 }
 
+func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, error) {
+	crd, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+
+	if crd == nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+
+	if policies == nil {
+		return nil, fmt.Errorf("bad request:policies is required")
+	}
+	crd.Spec.Policies = ToPolicesApi(policies)
+	crd.Status.Status = v1.Update
+	crd, err = s.UpdateStatus(crd)
+	if err != nil {
+		return nil, fmt.Errorf("modify topicgroup failed:%+v", err)
+	}
+
+	return ToModel(crd), nil
+
+}
+
 func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
 	if err != nil {

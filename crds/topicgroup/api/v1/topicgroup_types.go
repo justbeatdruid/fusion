@@ -61,6 +61,9 @@ const (
 	Delete   Status = "delete"
 	Deleting Status = "deleting"
 	Error    Status = "error"
+	Update   Status = "update"
+	Updating Status = "updating"
+	Updated  Status = "updated"
 )
 
 // TopicgroupStatus defines the observed state of Topicgroup
