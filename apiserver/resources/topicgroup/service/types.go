@@ -82,6 +82,7 @@ func ToModel(obj *v1.Topicgroup) *Topicgroup {
 		Message:   obj.Status.Message,
 		CreatedAt: obj.ObjectMeta.CreationTimestamp.Unix(),
 		Policies:  ToPolicesModel(&obj.Spec.Policies),
+		Users:     user.GetUsersFromLabels(obj.ObjectMeta.Labels),
 	}
 }
 

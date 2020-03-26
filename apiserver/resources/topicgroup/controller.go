@@ -2,8 +2,11 @@ package topicgroup
 
 import (
 	"fmt"
+	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
 	"github.com/chinamobile/nlpt/apiserver/resources/topicgroup/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
@@ -71,6 +74,16 @@ func (c *controller) CreateTopicgroup(req *restful.Request) (int, *CreateRespons
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
+
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: tgerror.Error_Auth_Error,
+			Message:   fmt.Sprintf("auth model error: %+v", err)}
+	}
+
+	body.Users = user.InitWithOwner(authuser.Name)
 	if tg, err := c.service.CreateTopicgroup(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
