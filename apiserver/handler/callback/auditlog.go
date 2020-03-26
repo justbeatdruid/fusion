@@ -76,23 +76,18 @@ var accepted = []selector{
 	{"api/v1/clientauths",POST},
 	{"api/v1/clientauths/{id}",DELETE},
 	{"api/v1/clientauths/{id}/token",POST},
-	{"api/v1/clientauths/conditional",GET},
 
 	//topic
 	{"api/v1/topics",POST},
 	{"api/v1/topics/{id}",DELETE},
-	{"api/v1/topics/data",GET},
-	{"api/v1/topics/export",GET},
-	{"api/v1/topics/import",GET},
+	{"api/v1/topics/import",POST},
 	{"api/v1/topics/{id}/permissions/{auth-user-id}",POST},
 	{"api/v1/topics/{id}/permissions/{auth-user-id}",PUT},
 	{"api/v1/topics/{id}/permissions/{auth-user-id}",DELETE},
-	{"api/v1/topics/{id}/permissions",GET},
 
 	//topicgroup
 	{"api/v1/topicgroups",POST},
 	{"api/v1/topicgroups/{id}",DELETE},
-	{"api/v1/topicgroups/{id}/topics",GET},
 }
 
 // return event, resource and if this request should be uploaded as event
@@ -130,9 +125,9 @@ func getResourceType(path string) string {
 		case "clientauths":
 			return "认证用户"
 		case "topics":
-			return "主题"
+			return "Topic"
 		case "topicgroups":
-			return "主题分组"
+			return "Topic分组"
 
 
 			
