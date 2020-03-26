@@ -281,12 +281,22 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
 		}
 		//绑定api
 		restriction.ObjectMeta.Labels[api.ID] = "true"
-		restriction.Spec.Apis = append(restriction.Spec.Apis, v1.Api{
-			ID:     api.ID,
-			Name:   apiSource.Spec.Name,
-			KongID: apiSource.Spec.KongApi.KongID,
-			Result: v1.INIT,
-		})
+		isFisrtBind := true
+		for index, v := range restriction.Spec.Apis {
+			if v.ID == apiSource.ObjectMeta.Name {
+				restriction.Spec.Apis[index].Result = v1.INIT
+				isFisrtBind = false
+				break
+			}
+		}
+		if isFisrtBind == true {
+			restriction.Spec.Apis = append(restriction.Spec.Apis, v1.Api{
+				ID:     api.ID,
+				Name:   apiSource.Spec.Name,
+				KongID: apiSource.Spec.KongApi.KongID,
+				Result: v1.INIT,
+			})
+		}
 		//update api 操作时会判断是绑定还是解绑所以先将状态设置成bind
 		if _, err = s.updateApi(api.ID, restriction); err != nil {
 			return nil, fmt.Errorf("cannot update api restriction")

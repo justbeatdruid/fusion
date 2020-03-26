@@ -313,12 +313,22 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 		}
 		//绑定api
 		traffic.ObjectMeta.Labels[api.ID] = "true"
-		traffic.Spec.Apis = append(traffic.Spec.Apis, v1.Api{
-			ID:     api.ID,
-			Name:   apiSource.Spec.Name,
-			KongID: apiSource.Spec.KongApi.KongID,
-			Result: v1.INIT,
-		})
+		isFisrtBind := true
+		for index, v := range traffic.Spec.Apis {
+			if v.ID == apiSource.ObjectMeta.Name {
+				traffic.Spec.Apis[index].Result = v1.INIT
+				isFisrtBind = false
+				break
+			}
+		}
+		if isFisrtBind == true {
+			traffic.Spec.Apis = append(traffic.Spec.Apis, v1.Api{
+				ID:     api.ID,
+				Name:   apiSource.Spec.Name,
+				KongID: apiSource.Spec.KongApi.KongID,
+				Result: v1.INIT,
+			})
+		}
 		//update api 操作时会判断是绑定还是解绑所以先将状态设置成bind
 		if _, err = s.updateApi(api.ID, traffic); err != nil {
 			return nil, fmt.Errorf("cannot update api traffic")
