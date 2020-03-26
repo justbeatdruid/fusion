@@ -110,7 +110,6 @@ func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, 
 		return nil, fmt.Errorf("bad request:policies is required")
 	}
 
-
 	crd.Spec.Policies = s.MergePolicies(policies, crd.Spec.Policies)
 	crd.Status.Status = v1.Update
 	crd, err = s.UpdateStatus(crd)
@@ -122,7 +121,7 @@ func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, 
 
 }
 
-func (s *Service) MergePolicies(req *Policies, db v1.Policies) v1.Policies{
+func (s *Service) MergePolicies(req *Policies, db v1.Policies) v1.Policies {
 	return db
 }
 
