@@ -87,7 +87,7 @@ func (c *controller) getCreateResponse(code int, errorCode string, detail string
 func (c *controller) CreateTopic(req *restful.Request) (int, *CreateResponse) {
 	tp := &service.Topic{}
 	if err := req.ReadEntity(tp); err != nil {
-		return http.StatusInternalServerError, c.getCreateResponse(1, tperror.Error_Create_Topic, fmt.Sprintf("cannot read entity: %+v", err))
+		return http.StatusInternalServerError, c.getCreateResponse(1, tperror.Error_Read_Entity, fmt.Sprintf("cannot read entity: %+v", err))
 	}
 
 	authuser, err := auth.GetAuthUser(req)
@@ -293,7 +293,7 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 		//通过topicName字段来匹配topic
 		tps = c.ListTopicByTopicName(topicName, tps)
 	}
-    //topicGroup筛选
+	//topicGroup筛选
 	if len(topicGroup) > 0 {
 		//通过topicGroup字段来匹配topic
 		tps = c.ListTopicByTopicGroup(topicGroup, tps)
@@ -305,14 +305,14 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 	//时间筛选
 	if len(startTime) > 0 && len(endTime) > 0 {
 		start, err := strconv.ParseInt(startTime, 10, 64)
-		if err!=nil {
+		if err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
 				Code:    1,
 				Message: fmt.Sprintf("startTime parameter error: %+v", err),
 			}
 		}
 		end, err := strconv.ParseInt(endTime, 10, 64)
-		if err!=nil {
+		if err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
 				Code:    1,
 				Message: fmt.Sprintf("endTime parameter error: %+v", err),
