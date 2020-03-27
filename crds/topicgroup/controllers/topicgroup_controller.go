@@ -68,6 +68,7 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 	if namespace.Status.Status == nlptv1.Update {
 		namespace.Status.Status = nlptv1.Updating
+		namespace.Status.Message = "updating topic group policies"
 		ns, err := r.Operator.GetNamespacePolicies(namespace)
 		if err != nil {
 			namespace.Status.Status = nlptv1.Error
@@ -113,7 +114,7 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			}
 		}
 
-		if namespace.Status.Status != nlptv1.Updating {
+		if namespace.Status.Status == nlptv1.Updating {
 			namespace.Status.Status = nlptv1.Updated
 			namespace.Status.Message = "modify topic group polices successfully"
 		}

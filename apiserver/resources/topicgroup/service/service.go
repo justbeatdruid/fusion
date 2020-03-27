@@ -112,6 +112,7 @@ func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, 
 
 	crd.Spec.Policies = s.MergePolicies(policies, crd.Spec.Policies)
 	crd.Status.Status = v1.Update
+	crd.Status.Message = "accepted update topic group policies"
 	crd, err = s.UpdateStatus(crd)
 	if err != nil {
 		return nil, fmt.Errorf("modify topicgroup failed:%+v", err)
