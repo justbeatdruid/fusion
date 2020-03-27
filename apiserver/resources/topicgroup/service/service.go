@@ -122,6 +122,29 @@ func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, 
 }
 
 func (s *Service) MergePolicies(req *Policies, db v1.Policies) v1.Policies {
+	if req.NumBundles != Not_Set {
+		db.NumBundles = req.NumBundles
+	}
+
+	if req.RetentionPolicies.RetentionTimeInMinutes != Not_Set {
+		db.RetentionPolicies.RetentionTimeInMinutes = req.RetentionPolicies.RetentionTimeInMinutes
+	}
+
+	if req.RetentionPolicies.RetentionSizeInMB != Not_Set {
+		db.RetentionPolicies.RetentionSizeInMB = req.RetentionPolicies.RetentionSizeInMB
+	}
+
+	if req.MessageTtlInSeconds != Not_Set {
+		db.MessageTtlInSeconds = req.MessageTtlInSeconds
+	}
+
+	if req.BacklogQuota.Limit != Not_Set {
+		db.BacklogQuota.Limit = req.BacklogQuota.Limit
+	}
+
+	if len(req.BacklogQuota.Policy) != 0 {
+		db.BacklogQuota.Policy = req.BacklogQuota.Policy
+	}
 	return db
 }
 
