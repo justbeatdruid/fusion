@@ -137,7 +137,7 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 		}
 	}
 
-	policies := &service.Policies{}
+	policies := service.NewPolicies()
 	if err := req.ReadEntity(policies); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    1,

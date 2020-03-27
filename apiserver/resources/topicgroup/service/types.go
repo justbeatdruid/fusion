@@ -13,6 +13,7 @@ const (
 	producer_request_hold     = "producer_request_hold"
 	producer_exception        = "producer_exception"
 	consumer_backlog_eviction = "consumer_backlog_eviction"
+	Not_Set                   = -10000
 )
 
 type Topicgroup struct {
@@ -43,6 +44,20 @@ type BacklogQuota struct {
 	Limit  int64  `json:"limit"`  //未确认消息的积压大小
 	Policy string `json:"policy"` //producer_request_hold,producer_exception,consumer_backlog_eviction
 
+}
+
+func NewPolicies() *Policies {
+	return &Policies{
+		RetentionPolicies: RetentionPolicies{
+			RetentionSizeInMB:      Not_Set,
+			RetentionTimeInMinutes: Not_Set,
+		},
+		MessageTtlInSeconds: Not_Set,
+		BacklogQuota: BacklogQuota{
+			Limit: Not_Set,
+		},
+		NumBundles: Not_Set,
+	}
 }
 
 // only used in creation options
