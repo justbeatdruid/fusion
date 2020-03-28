@@ -102,30 +102,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			r.Update(ctx, api)
 			return ctrl.Result{}, nil
 		}
-		if api.Spec.AuthType == nlptv1.APPAUTH {
-			//在route上创建jwt及acl插件
-			if err := r.Operator.AddRouteJwtByKong(api); err != nil {
-				api.Status.Status = nlptv1.Error
-				api.Status.Message = err.Error()
-				r.Update(ctx, api)
-				return ctrl.Result{}, nil
-			}
-			if err := r.Operator.AddRouteAclByKong(api); err != nil {
-				api.Status.Status = nlptv1.Error
-				api.Status.Message = err.Error()
-				r.Update(ctx, api)
-				return ctrl.Result{}, nil
-			}
-
-		}
-		if api.Spec.ApiDefineInfo.Cors == "true" {
-			if err := r.Operator.AddRouteCorsByKong(api); err != nil {
-				api.Status.Status = nlptv1.Error
-				api.Status.Message = err.Error()
-				r.Update(ctx, api)
-				return ctrl.Result{}, nil
-			}
-		}
+		klog.Infof("new api: %s:%s %s", api.Spec.KongApi.PrometheusID, api.Spec.KongApi.AclID, api.Spec.KongApi.JwtID)
 		api.Status.Status = nlptv1.Success
 		api.Status.PublishStatus = nlptv1.Released
 		//发布成功更新服务单元api的计数
