@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"net"
 	"strings"
 	"time"
 )
@@ -132,26 +133,34 @@ func (s *Service) Validate(a *Restriction) error {
 	switch a.Action {
 	case v1.WHITE, v1.BLACK:
 	default:
-		return fmt.Errorf("wrong action: %s.", a.Type)
+		return fmt.Errorf("wrong action: %s", a.Type)
 	}
 
 	switch a.Type {
 	case v1.IP, v1.USER:
 	default:
-		return fmt.Errorf("wrong type: %s.", a.Type)
+		return fmt.Errorf("wrong type: %s", a.Type)
 	}
 
 	switch a.Type {
 	case v1.IP:
 		if len(a.Config.Ip) == 0 {
-			return fmt.Errorf("at least ip limit config must exist.")
+			return fmt.Errorf("at least ip limit config must exist")
 		}
+		address := net.ParseIP(a.Config.Ip)
+		if address == nil {
+			_, _, err := net.ParseCIDR(a.Config.Ip)
+			if err != nil {
+				return fmt.Errorf("ip is invalid")
+			}
+		}
+
 	case v1.USER:
 		if len(a.Config.User) == 0 {
-			return fmt.Errorf("at least user config must exist.")
+			return fmt.Errorf("at least user config must exist")
 		}
 	default:
-		return fmt.Errorf("wrong config type: %s.", a.Type)
+		return fmt.Errorf("wrong config type: %s", a.Type)
 	}
 	if len(a.Users.Owner.ID) == 0 {
 		return fmt.Errorf("owner not set")
