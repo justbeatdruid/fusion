@@ -21,6 +21,9 @@ const (
 	Error_Query_Message_StartTime  = "010000013" //查询消息失败，原因：起始时间错误
 	Error_Query_Message_EndTime    = "010000014" //查询消息失败，原因：结束时间错误
 	Error_Query_Message_Page_Param = "010000015" // 查询消息失败，原因：分页参数错误
+	Error_Grant_Permissions        = "010000016" //用户授权失败
+	Error_Revoke_Permissions       = "010000017" //收回用户权限失败
+
 )
 
 type TopicError struct {
