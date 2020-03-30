@@ -96,6 +96,59 @@ func (s *Service) DeleteTopicgroup(id string) (*Topicgroup, error) {
 	return ToModel(tg), nil
 }
 
+func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, error) {
+	crd, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+
+	if crd == nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+
+	if policies == nil {
+		return nil, fmt.Errorf("bad request:policies is required")
+	}
+
+	crd.Spec.Policies = s.MergePolicies(policies, crd.Spec.Policies)
+	crd.Status.Status = v1.Update
+	crd.Status.Message = "accepted update topic group policies"
+	crd, err = s.UpdateStatus(crd)
+	if err != nil {
+		return nil, fmt.Errorf("modify topicgroup failed:%+v", err)
+	}
+
+	return ToModel(crd), nil
+
+}
+
+func (s *Service) MergePolicies(req *Policies, db v1.Policies) v1.Policies {
+	if req.NumBundles != Not_Set {
+		db.NumBundles = req.NumBundles
+	}
+
+	if req.RetentionPolicies.RetentionTimeInMinutes != Not_Set {
+		db.RetentionPolicies.RetentionTimeInMinutes = req.RetentionPolicies.RetentionTimeInMinutes
+	}
+
+	if req.RetentionPolicies.RetentionSizeInMB != Not_Set {
+		db.RetentionPolicies.RetentionSizeInMB = req.RetentionPolicies.RetentionSizeInMB
+	}
+
+	if req.MessageTtlInSeconds != Not_Set {
+		db.MessageTtlInSeconds = req.MessageTtlInSeconds
+	}
+
+	if req.BacklogQuota.Limit != Not_Set {
+		db.BacklogQuota.Limit = req.BacklogQuota.Limit
+	}
+
+	if len(req.BacklogQuota.Policy) != 0 {
+		db.BacklogQuota.Policy = req.BacklogQuota.Policy
+	}
+	return db
+}
+
 func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
 	if err != nil {
@@ -138,7 +191,7 @@ func (s *Service) Get(id string) (*v1.Topicgroup, error) {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tp); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.Topicgroup: %+v", tp)
+	//klog.V(5).Infof("get v1.Topicgroup: %+v", tp)
 	return tp, nil
 }
 

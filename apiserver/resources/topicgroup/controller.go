@@ -2,8 +2,11 @@ package topicgroup
 
 import (
 	"fmt"
+	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
 	"github.com/chinamobile/nlpt/apiserver/resources/topicgroup/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
@@ -25,9 +28,11 @@ const (
 )
 
 type Wrapped struct {
-	Code    int                 `json:"code"`
-	Message string              `json:"message"`
-	Data    *service.Topicgroup `json:"data,omitempty"`
+	Code      int                 `json:"code"`
+	ErrorCode string              `json:"errorCode"`
+	Message   string              `json:"message"`
+	Data      *service.Topicgroup `json:"data,omitempty"`
+	Detail    string              `json:"detail"`
 }
 
 type CreateResponse = Wrapped
@@ -40,9 +45,11 @@ type DeleteResponse = Wrapped
 }*/
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Message   string      `json:"message"`
+	Data      interface{} `json:"data,omitempty"`
+	Detail    string      `json:"detail"`
 }
 type PingResponse = DeleteResponse
 
@@ -67,6 +74,16 @@ func (c *controller) CreateTopicgroup(req *restful.Request) (int, *CreateRespons
 			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
+
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: tgerror.Error_Auth_Error,
+			Message:   fmt.Sprintf("auth model error: %+v", err)}
+	}
+
+	body.Users = user.InitWithOwner(authuser.Name)
 	if tg, err := c.service.CreateTopicgroup(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
@@ -108,6 +125,40 @@ func (c *controller) GetTopics(req *restful.Request) (int, *ListResponse) {
 			Data: tps,
 		}
 	}
+}
+
+//修改topicgroup的策略
+func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateResponse) {
+	id := req.PathParameter("id")
+	if len(id) == 0 {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    fail,
+			Message: fmt.Sprintf("parameter id is required"),
+		}
+	}
+
+	policies := service.NewPolicies()
+	if err := req.ReadEntity(policies); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    1,
+			Message: fmt.Sprintf("cannot read entity: %+v", err),
+		}
+	}
+
+	data, err := c.service.ModifyTopicgroup(id, policies)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:    2,
+			Message: fmt.Sprintf("modify topic group error: %+v", err),
+		}
+	}
+
+	return http.StatusOK, &CreateResponse{
+		Code:    0,
+		Message: "success",
+		Data:    data,
+	}
+
 }
 
 //批量删除topicgroups

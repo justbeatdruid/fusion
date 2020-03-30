@@ -73,21 +73,22 @@ var accepted = []selector{
 	{"api/v1/api/test", POST},
 
 	//clientauth
-	{"api/v1/clientauths",POST},
-	{"api/v1/clientauths/{id}",DELETE},
-	{"api/v1/clientauths/{id}/token",POST},
+	{"api/v1/clientauths", POST},
+	{"api/v1/clientauths/{id}", DELETE},
+	{"api/v1/clientauths/{id}/token", POST},
 
 	//topic
-	{"api/v1/topics",POST},
-	{"api/v1/topics/{id}",DELETE},
-	{"api/v1/topics/import",POST},
-	{"api/v1/topics/{id}/permissions/{auth-user-id}",POST},
-	{"api/v1/topics/{id}/permissions/{auth-user-id}",PUT},
-	{"api/v1/topics/{id}/permissions/{auth-user-id}",DELETE},
+	{"api/v1/topics", POST},
+	{"api/v1/topics/{id}", DELETE},
+	{"api/v1/topics/import", POST},
+	{"api/v1/topics/{id}/permissions/{auth-user-id}", POST},
+	{"api/v1/topics/{id}/permissions/{auth-user-id}", PUT},
+	{"api/v1/topics/{id}/permissions/{auth-user-id}", DELETE},
 
 	//topicgroup
-	{"api/v1/topicgroups",POST},
-	{"api/v1/topicgroups/{id}",DELETE},
+	{"api/v1/topicgroups", POST},
+	{"api/v1/topicgroups/{id}", DELETE},
+	{"api/v1/topicgroups/{id}", PUT},
 }
 
 // return event, resource and if this request should be uploaded as event
@@ -129,8 +130,6 @@ func getResourceType(path string) string {
 		case "topicgroups":
 			return "Topic分组"
 
-
-			
 		}
 	}
 	return "未知"

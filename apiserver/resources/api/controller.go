@@ -278,6 +278,8 @@ func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
 	name := req.QueryParameter("name")
+	res := req.QueryParameter("restriction")
+	traff := req.QueryParameter("trafficcontrol")
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
@@ -287,7 +289,9 @@ func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 			Detail:    "auth model error",
 		}
 	}
-	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application), util.WithNameLike(name), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application),
+		util.WithNameLike(name), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace),
+		util.WithRestriction(res), util.WithTrafficcontrol(traff)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			ErrorCode: "001000010",

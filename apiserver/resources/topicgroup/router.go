@@ -23,6 +23,13 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.PUT("/topicgroups/{id}").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("modify exist topicgroup").
+		To(r.modifyTopicgroup).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 	ws.Route(ws.GET("/topicgroups/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -90,5 +97,10 @@ func (r *router) listTopicgroup(request *restful.Request, response *restful.Resp
 
 func (r *router) deleteTopicgroups(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DeleteTopicgroups(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) modifyTopicgroup(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ModifyTopicgroup(request)
 	response.WriteHeaderAndEntity(code, result)
 }

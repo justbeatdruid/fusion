@@ -6,6 +6,7 @@ import (
 	v1 "github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
 	"github.com/parnurzeal/gorequest"
 	"k8s.io/klog"
+	"net/http"
 )
 
 type CreateRequest struct {
@@ -32,7 +33,12 @@ type Operator struct {
 	SuperUserToken string
 }
 
-const namespaceUrl, protocol, success204 = "/admin/v2/namespaces/%s/%s", "http", 204
+const namespaceUrl, protocol = "/admin/v2/namespaces/%s/%s", "http"
+const (
+	backlogUrlSuffix = "/backlogQuota?backlogQuotaType=destination_storage"
+	messageTTLSuffix = "/messageTTL"
+	retentionSuffix  = "/retention"
+)
 
 type requestLogger struct {
 	prefix string
@@ -53,8 +59,7 @@ func (r *requestLogger) Println(v ...interface{}) {
 }
 
 func (r *Operator) CreateNamespace(namespace *v1.Topicgroup) error {
-	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-	request = r.AddTokenToHeader(request)
+	request := r.GetHttpRequest()
 	url := r.getUrl(namespace)
 
 	ps := namespace.Spec.Policies
@@ -77,8 +82,8 @@ func (r *Operator) CreateNamespace(namespace *v1.Topicgroup) error {
 		BacklogQuotaMap: bmap,
 	}
 
-	response, _, err := request.Put(url).Send(createRequest).EndStruct("")
-	if response.StatusCode == success204 {
+	response, _, err := request.Put(url).Send(createRequest).End()
+	if response.StatusCode == http.StatusNoContent {
 		return nil
 	} else {
 		klog.Errorf("Create Topicgroup error, error: %+v, response code: %+v", err, response.StatusCode)
@@ -87,11 +92,10 @@ func (r *Operator) CreateNamespace(namespace *v1.Topicgroup) error {
 }
 
 func (r *Operator) DeleteNamespace(namespace *v1.Topicgroup) error {
-	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-	request = r.AddTokenToHeader(request)
+	request := r.GetHttpRequest()
 	url := r.getUrl(namespace)
-	response, _, err := request.Delete(url).Send("").EndStruct("")
-	if response.StatusCode == success204 {
+	response, _, err := request.Delete(url).Send("").End()
+	if response.StatusCode == http.StatusNoContent {
 		return nil
 	} else {
 		//TODO 报错404：{"reason":"Namespace public/test1 does not exist."}的时候应该如何处理
@@ -100,6 +104,64 @@ func (r *Operator) DeleteNamespace(namespace *v1.Topicgroup) error {
 	}
 }
 
+func (r *Operator) GetNamespacePolicies(namespace *v1.Topicgroup) (*CreateRequest, error) {
+	request := r.GetHttpRequest()
+	url := r.getUrl(namespace)
+
+	polices := &CreateRequest{}
+	response, _, errs := request.Get(url).Send("").EndStruct(polices)
+	if response.StatusCode != http.StatusOK || errs != nil {
+		klog.Errorf("get namespace policy finished, url: %+v, response: %+v, errs: %+v", url, response, errs)
+		return nil, fmt.Errorf("get namespace policy error: %+v or http code is not success: %+v", errs, response.StatusCode)
+	}
+
+	return polices, nil
+
+}
+
+func (r *Operator) SetMessageTTL(namespace *v1.Topicgroup) error {
+	request := r.GetHttpRequest()
+	url := r.getUrl(namespace) + messageTTLSuffix
+	response, body, errs := request.Post(url).Send(namespace.Spec.Policies.MessageTtlInSeconds).End()
+
+	klog.Infof("set messageTTLInSeconds finished, url: %+v, response: %+v, body: %+v, errs: %+v", url, response, body, errs)
+	if response.StatusCode != http.StatusNoContent || errs != nil {
+		return fmt.Errorf("set messageTTLInSeconds error: %+v or http code is not success: %+v", errs, response.StatusCode)
+	}
+	return nil
+}
+
+func (r *Operator) SetRetention(namespace *v1.Topicgroup) error {
+	request := r.GetHttpRequest()
+	url := r.getUrl(namespace) + retentionSuffix
+	requestBody := &RetentionPolicies{
+		RetentionTimeInMinutes: namespace.Spec.Policies.RetentionPolicies.RetentionTimeInMinutes,
+		RetentionSizeInMB:      namespace.Spec.Policies.RetentionPolicies.RetentionSizeInMB,
+	}
+	response, body, errs := request.Post(url).Send(requestBody).End()
+
+	klog.Infof("set retention finished, url: %+v, response: %+v, body: %+v, errs: %+v", url, response, body, errs)
+	if response.StatusCode != http.StatusNoContent || errs != nil {
+		return fmt.Errorf("set retention error: %+v or http code is not success: %+v", errs, response.StatusCode)
+	}
+	return nil
+}
+func (r *Operator) SetBacklogQuota(namespace *v1.Topicgroup) error {
+	request := r.GetHttpRequest()
+	url := r.getUrl(namespace) + backlogUrlSuffix
+
+	requestBody := BacklogQuota{
+		Limit:  namespace.Spec.Policies.BacklogQuota.Limit,
+		Policy: namespace.Spec.Policies.BacklogQuota.Policy,
+	}
+	response, body, errs := request.Post(url).Send(requestBody).End()
+	klog.Infof("set backlog quota finished, url: %+v, response: %+v, body: %+v, errs: %+v", url, response, body, errs)
+	if response.StatusCode != http.StatusNoContent || errs != nil {
+		return fmt.Errorf("set backlog quota error: %+v or http code is not success: %+v", errs, response.StatusCode)
+	}
+
+	return nil
+}
 func (r *Operator) getUrl(namespace *v1.Topicgroup) string {
 	url := fmt.Sprintf(namespaceUrl, namespace.Spec.Tenant, namespace.Spec.Name)
 	return fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
@@ -110,4 +172,10 @@ func (r *Operator) AddTokenToHeader(request *gorequest.SuperAgent) *gorequest.Su
 		request.Header.Set("Authorization", "Bearer "+r.SuperUserToken)
 	}
 	return request
+}
+
+func (r *Operator) GetHttpRequest() *gorequest.SuperAgent {
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
+	return r.AddTokenToHeader(request)
+
 }

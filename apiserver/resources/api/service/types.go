@@ -212,6 +212,8 @@ func publicParameters() []v1.ApiParameter {
 func ToListModel(items *v1.ApiList, publishedOnly bool, opts ...util.OpOption) []*Api {
 	if len(opts) > 0 || publishedOnly {
 		nameLike := util.OpList(opts...).NameLike()
+		res := util.OpList(opts...).Restriction()
+		traff := util.OpList(opts...).Trafficcontrol()
 		var apis []*Api = make([]*Api, 0)
 		for i, a := range items.Items {
 			if len(nameLike) > 0 {
@@ -221,6 +223,24 @@ func ToListModel(items *v1.ApiList, publishedOnly bool, opts ...util.OpOption) [
 			}
 			if publishedOnly {
 				if a.Status.PublishStatus != v1.Released {
+					continue
+				}
+			}
+			if res == "bind" {
+				if len(a.Spec.Restriction.ID) == 0 {
+					continue
+				}
+			} else if res == "unbind" {
+				if len(a.Spec.Restriction.ID) != 0 {
+					continue
+				}
+			}
+			if traff == "bind" {
+				if len(a.Spec.Traffic.ID) == 0 && len(a.Spec.Traffic.SpecialID) == 0 {
+					continue
+				}
+			} else if traff == "unbind" {
+				if len(a.Spec.Traffic.ID) !=0 || len(a.Spec.Traffic.SpecialID) != 0 {
 					continue
 				}
 			}
