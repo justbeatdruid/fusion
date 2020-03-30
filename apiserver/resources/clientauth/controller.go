@@ -159,6 +159,14 @@ func (c *controller) DeleteClientauths(req *restful.Request) (int, *ListResponse
 func (c *controller) DeleteClientauth(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	if ca, err := c.service.DeleteClientauth(id); err != nil {
+		if strings.Contains(err.Error(),"cannot delete authorized client auth user"){
+			return http.StatusInternalServerError, &DeleteResponse{
+				Code:    fail,
+				ErrorCode:"013000013",
+				Message: c.errMsg.ClientAuth["013000013"],
+				Detail: fmt.Errorf("delete clientauth error: %+v", err).Error(),
+			}
+		}
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    fail,
 			ErrorCode:"013000006",
