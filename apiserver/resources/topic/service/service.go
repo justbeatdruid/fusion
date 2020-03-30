@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	clientauthv1 "github.com/chinamobile/nlpt/crds/clientauth/api/v1"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
+	topicgroupv1 "github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
 	"github.com/chinamobile/nlpt/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -28,30 +30,34 @@ var oofsGVR = schema.GroupVersionResource{
 type Service struct {
 	client           dynamic.NamespaceableResourceInterface
 	clientAuthClient dynamic.NamespaceableResourceInterface
+	topicGroupClient dynamic.NamespaceableResourceInterface
+	errMsg           config.ErrorConfig
 	ip               string
 	host             int
 	authEnable       bool
 	adminToken       string
 }
 
-func NewService(client dynamic.Interface, topConfig *config.TopicConfig) *Service {
+func NewService(client dynamic.Interface, topConfig *config.TopicConfig, errMsg config.ErrorConfig) *Service {
 	return &Service{client: client.Resource(oofsGVR),
 		clientAuthClient: client.Resource(clientauthv1.GetOOFSGVR()),
+		topicGroupClient: client.Resource(topicgroupv1.GetOOFSGVR()),
+		errMsg:           errMsg,
 		ip:               topConfig.Host,
 		host:             topConfig.Port,
 		authEnable:       topConfig.AuthEnable,
 		adminToken:       topConfig.AdminToken,
 	}
 }
-func (s *Service) CreateTopic(model *Topic) (*Topic, error) {
-	if err := model.Validate(); err != nil {
-		return nil, fmt.Errorf("bad request: %+v", err)
+func (s *Service) CreateTopic(model *Topic) (*Topic, tperror.TopicError) {
+	if tpErr := model.Validate(); tpErr.Err != nil {
+		return nil, tpErr
 	}
-	tp, err := s.Create(ToAPI(model))
-	if err != nil {
-		return nil, fmt.Errorf("cannot create object: %+v", err)
+	tp, tpErr := s.Create(ToAPI(model))
+	if tpErr.Err != nil {
+		return nil, tpErr
 	}
-	return ToModel(tp), nil
+	return ToModel(tp), tperror.TopicError{}
 }
 
 func (s *Service) ListTopic() ([]*Topic, error) {
@@ -121,28 +127,46 @@ func (s *Service) IsTopicExist(tp *v1.Topic) bool {
 
 	return false
 }
-func (s *Service) Create(tp *v1.Topic) (*v1.Topic, error) {
+func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	if s.IsTopicExist(tp) {
-		return nil, fmt.Errorf("topic exists: %+v", tp.GetUrl())
+		return nil, tperror.TopicError{
+			Err:       fmt.Errorf("topic exists: %+v", tp.GetUrl()),
+			ErrorCode: tperror.Error_Topic_Exists,
+			Message:   fmt.Sprintf(s.errMsg.Topic[tperror.Error_Topic_Exists], tp.GetUrl()),
+		}
 	}
 
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
 	if err != nil {
-		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+		return nil, tperror.TopicError{
+			Err:       fmt.Errorf("convert crd to unstructured error: %+v", err),
+			ErrorCode: tperror.Error_Create_Topic,
+		}
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
 
+	//添加标签
+	if tp.ObjectMeta.Labels == nil {
+		tp.ObjectMeta.Labels = make(map[string]string)
+	}
+	tp.ObjectMeta.Labels["topicgroup"] = tp.Spec.TopicGroup
 	crd, err = s.client.Namespace(crdNamespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("error creating crd: %+v", err)
+		return nil, tperror.TopicError{
+			Err:       fmt.Errorf("error creating crd: %+v", err),
+			ErrorCode: tperror.Error_Create_Topic,
+		}
 	}
 
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tp); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+		return nil, tperror.TopicError{
+			Err:       fmt.Errorf("convert unstructured to crd error: %+v", err),
+			ErrorCode: tperror.Error_Create_Topic,
+		}
 	}
 	klog.V(5).Infof("get v1.topic of creating: %+v", tp)
-	return tp, nil
+	return tp, tperror.TopicError{}
 }
 
 func (s *Service) List() (*v1.TopicList, error) {

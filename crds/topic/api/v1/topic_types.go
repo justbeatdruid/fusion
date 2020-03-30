@@ -77,15 +77,18 @@ type PermissionStatus struct {
 type Status string
 
 const (
-	Init     Status = "init"
-	Creating Status = "creating"
-	Created  Status = "created"
-	Delete   Status = "delete"
-	Deleting Status = "deleting"
-	Error    Status = "error"
-	Updating Status = "updating"
-	Updated  Status = "updated"
-	Update   Status = "update"
+	Init              Status = "init"
+	Creating          Status = "creating"
+	Created           Status = "created"
+	Delete            Status = "delete"
+	Deleting          Status = "deleting"
+	Error             Status = "error"
+	Updating          Status = "updating"
+	Updated           Status = "updated"
+	Update            Status = "update"
+	CascadingDelete   Status = "cascadingDelete"   //删除topicgroup时级联删除状态
+	CascadingDeleting Status = "cascadingDeleting" //删除topicgroup时级联删除状态
+	CascadingDeleted  Status = "cascadingDeleted"  //删除topicgroup时级联删除状态
 )
 
 // +kubebuilder:object:root=true

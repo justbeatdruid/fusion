@@ -15,6 +15,7 @@ func NewRouter(cfg *config.Config) *router {
 }
 
 func (r *router) Install(ws *restful.WebService) {
+	//创建Topicgroup接口
 	ws.Route(ws.POST("/topicgroups").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -23,6 +24,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	//修改Topicgroup策略
 	ws.Route(ws.PUT("/topicgroups/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -30,6 +32,8 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.modifyTopicgroup).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	//查询指定Topicgroup的详情
 	ws.Route(ws.GET("/topicgroups/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -38,28 +42,32 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	//删除指定Topicgroup以及其下所有Topic
 	ws.Route(ws.DELETE("/topicgroups/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
-		Doc("delete an topicgroup by id").
+		Doc("delete an topicgroup by id and all topics under it").
 		To(r.deleteTopicgroup).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	//获取Topicgroup列表
 	ws.Route(ws.GET("/topicgroups").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all topicgroups").
 		To(r.listTopicgroup).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
 	//批量删除topicgroup
 	ws.Route(ws.DELETE("/topicgroups").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
-		Doc("delete all topicgroup").
+		Doc("delete all topicgroup and all topics under topicgroup").
 		To(r.deleteTopicgroups).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
 	//查询topicgroup下的所有topic
 	ws.Route(ws.GET("/topicgroups/{id}/topics").
 		Consumes(restful.MIME_JSON).
