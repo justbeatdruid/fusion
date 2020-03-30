@@ -126,7 +126,7 @@ func CanExeAction(api *v1.Api, action v1.Action) error {
 	}
 	switch action {
 	//API发布后不允许更新 发布 删除 解绑 只能先下线再操作最后重新发布
-	case v1.Update, v1.Publish, v1.Delete, v1.UnBind:
+	case v1.Update, v1.Publish, v1.Delete:
 		if api.Status.PublishStatus == v1.Released {
 			klog.Infof("api status is not ok %s", api.Status.PublishStatus)
 			return fmt.Errorf("api has published and cannot exec")
@@ -509,9 +509,9 @@ func (s *Service) getDatasource(id string) (*dsv1.Datasource, error) {
 func (s *Service) BindOrRelease(apiid, appid, operation string, opts ...util.OpOption) (*Api, error) {
 	switch operation {
 	case "bind":
-		return s.BindApi(apiid, appid)
+		return s.BindApi(apiid, appid, opts...)
 	case "release":
-		return s.ReleaseApi(apiid, appid)
+		return s.ReleaseApi(apiid, appid, opts...)
 	default:
 		return nil, fmt.Errorf("unknown operation %s, expect bind or release", operation)
 	}
