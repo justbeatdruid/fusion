@@ -156,7 +156,7 @@ func (s *Service) PatchApi(id string, data interface{}, opts ...util.OpOption) (
 	if ok, err := s.writable(api, opts...); err != nil {
 		return nil, err
 	} else if !ok {
-		return nil, fmt.Errorf("user has no write permission for serviceunit")
+		return nil, fmt.Errorf("user has no write permission for api")
 	}
 	if err = s.assignment(api, data); err != nil {
 		return nil, err
@@ -248,7 +248,7 @@ func (s *Service) DeleteApi(id string, opts ...util.OpOption) (*Api, error) {
 	if ok, err := s.writable(api, opts...); err != nil {
 		return nil, err
 	} else if !ok {
-		return nil, fmt.Errorf("user has no write permission for serviceunit")
+		return nil, fmt.Errorf("user has no write permission for api")
 	}
 	api, err = s.Delete(api)
 	if err != nil {
@@ -269,7 +269,7 @@ func (s *Service) PublishApi(id string, opts ...util.OpOption) (*Api, error) {
 	if ok, err := s.writable(api, opts...); err != nil {
 		return nil, err
 	} else if !ok {
-		return nil, fmt.Errorf("user has no write permission for serviceunit")
+		return nil, fmt.Errorf("user has no write permission for api")
 	}
 	//TODO version随机生成
 	api.Spec.PublishInfo.Version = names.NewID()
@@ -303,7 +303,7 @@ func (s *Service) OfflineApi(id string, opts ...util.OpOption) (*Api, error) {
 	if ok, err := s.writable(api, opts...); err != nil {
 		return nil, err
 	} else if !ok {
-		return nil, fmt.Errorf("user has no write permission for serviceunit")
+		return nil, fmt.Errorf("user has no write permission for api")
 	}
 	//下线API
 	api.Status.Status = v1.Init
@@ -525,13 +525,14 @@ func (s *Service) BindApi(apiid, appid string, opts ...util.OpOption) (*Api, err
 	if err != nil {
 		return nil, fmt.Errorf("get api error: %+v", err)
 	}
-	if ok, err := s.writable(api, opts...); err != nil {
+	app, err := s.getApplication(appid, api.ObjectMeta.Namespace)
+	if err != nil {
+		return nil, fmt.Errorf("get application error: %+v", err)
+	}
+	if ok, err := s.bindPermitted(app, opts...); err != nil {
 		return nil, err
 	} else if !ok {
-		return nil, fmt.Errorf("user has no write permission for serviceunit")
-	}
-	if _, err = s.getApplication(appid, api.ObjectMeta.Namespace); err != nil {
-		return nil, fmt.Errorf("get application error: %+v", err)
+		return nil, fmt.Errorf("user has no write permission for application")
 	}
 	for _, existedapp := range api.Spec.Applications {
 		if existedapp.ID == appid {
@@ -556,13 +557,14 @@ func (s *Service) ReleaseApi(apiid, appid string, opts ...util.OpOption) (*Api, 
 	if err != nil {
 		return nil, fmt.Errorf("get api error: %+v", err)
 	}
-	if ok, err := s.writable(api, opts...); err != nil {
+	app, err := s.getApplication(appid, api.ObjectMeta.Namespace)
+	if err != nil {
+		return nil, fmt.Errorf("get application error: %+v", err)
+	}
+	if ok, err := s.bindPermitted(app, opts...); err != nil {
 		return nil, err
 	} else if !ok {
-		return nil, fmt.Errorf("user has no write permission for serviceunit")
-	}
-	if _, err = s.getApplication(appid, api.ObjectMeta.Namespace); err != nil {
-		return nil, fmt.Errorf("get application error: %+v", err)
+		return nil, fmt.Errorf("user has no write permission for application")
 	}
 	exist := false
 	for _, existedapp := range api.Spec.Applications {
@@ -761,6 +763,16 @@ func (s *Service) writable(api *v1.Api, opts ...util.OpOption) (bool, error) {
 			return false, fmt.Errorf("get serviceunit error: %+v", err)
 		}
 		if !user.WritePermitted(uid, su.ObjectMeta.Labels) {
+			return false, nil
+		}
+	}
+	return true, nil
+}
+
+func (s *Service) bindPermitted(app *appv1.Application, opts ...util.OpOption) (bool, error) {
+	if !s.tenantEnabled {
+		uid := util.OpList(opts...).User()
+		if !user.WritePermitted(uid, app.ObjectMeta.Labels) {
 			return false, nil
 		}
 	}
