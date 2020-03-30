@@ -338,7 +338,7 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 		start, err := strconv.ParseInt(startTime, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
-				Code:      1,
+				Code:      fail,
 				ErrorCode: tperror.Error_Query_Message_StartTime,
 				Message:   c.errMsg.Topic[tperror.Error_Query_Message_StartTime],
 				Detail:    fmt.Sprintf("startTime parameter error: %+v", err),
@@ -347,7 +347,7 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 		end, err := strconv.ParseInt(endTime, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
-				Code:      1,
+				Code:      fail,
 				ErrorCode: tperror.Error_Query_Message_EndTime,
 				Message:   c.errMsg.Topic[tperror.Error_Query_Message_EndTime],
 				Detail:    fmt.Sprintf("endTime parameter error: %+v", err),
@@ -367,7 +367,7 @@ func (c *controller) ListMessagesByTopicUrl(topicUrls []string, req *restful.Req
 	size := req.QueryParameter("size")
 	if messages, err := c.service.ListMessages(topicUrls); err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
-			Code:    1,
+			Code:    fail,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
@@ -375,12 +375,14 @@ func (c *controller) ListMessagesByTopicUrl(topicUrls []string, req *restful.Req
 		data, err := util.PageWrap(ms, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
-				Code:    1,
-				Message: fmt.Sprintf("page parameter error: %+v", err),
+				Code:      fail,
+				ErrorCode: tperror.Error_Query_Message_Page_Param,
+				Message:   c.errMsg.Topic[tperror.Error_Query_Message_Page_Param],
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 			}
 		}
 		return http.StatusOK, &MessageResponse{
-			Code:     0,
+			Code:     success,
 			Messages: data,
 		}
 	}
@@ -392,7 +394,7 @@ func (c *controller) ListMessagesByTopicUrlTime(topicUrls []string, start int64,
 	size := req.QueryParameter("size")
 	if messages, err := c.service.ListMessagesTime(topicUrls, start, end); err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
-			Code:      1,
+			Code:      fail,
 			ErrorCode: tperror.Error_Query_Message,
 			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.Error_Query_Message], err.Error()),
 			Detail:    fmt.Sprintf("list database error: %+v", err),
@@ -402,14 +404,14 @@ func (c *controller) ListMessagesByTopicUrlTime(topicUrls []string, start int64,
 		data, err := util.PageWrap(ms, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
-				Code:      1,
+				Code:      fail,
 				ErrorCode: tperror.Error_Query_Message_Page_Param,
 				Message:   c.errMsg.Topic[tperror.Error_Query_Message_Page_Param],
 				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 			}
 		}
 		return http.StatusOK, &MessageResponse{
-			Code:      0,
+			Code:      success,
 			ErrorCode: tperror.Success,
 			Messages:  data,
 		}
@@ -502,20 +504,25 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 	actions := &GrantPermissionRequest{}
 	if err := req.ReadEntity(actions); err != nil {
 		return http.StatusInternalServerError, &GrantResponse{
-			Code:    1,
-			Message: fmt.Sprintf("grant permissions error: %+v", err),
+			Code:      fail,
+			ErrorCode: tperror.Error_Read_Entity,
+			Message:   c.errMsg.Topic[tperror.Error_Read_Entity],
+			Detail:    fmt.Sprintf("grant permissions error: %+v", err),
 		}
 	}
 
 	if tp, err := c.service.GrantPermissions(id, authUserId, actions.Actions); err != nil {
 		return http.StatusInternalServerError, &GrantResponse{
-			Code:    2,
-			Message: fmt.Errorf("create database error: %+v", err).Error(),
+			Code:      2,
+			ErrorCode: tperror.Error_Grant_Permissions,
+			Message:   c.errMsg.Topic[tperror.Error_Grant_Permissions],
+			Detail:    fmt.Errorf("create database error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GrantResponse{
-			Code: 0,
-			Data: tp,
+			Code:      success,
+			ErrorCode: tperror.Success,
+			Data:      tp,
 		}
 	}
 
@@ -525,14 +532,17 @@ func (c *controller) DeletePermissions(req *restful.Request) (int, *DeleteRespon
 	authUserId := req.PathParameter("auth-user-id")
 	if topic, err := c.service.DeletePermissions(id, authUserId); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
-			Code:    1,
-			Message: fmt.Errorf("delete permissions error: %+v", err).Error(),
+			Code:      fail,
+			ErrorCode: tperror.Error_Revoke_Permissions,
+			Message:   c.errMsg.Topic[tperror.Error_Revoke_Permissions],
+			Detail:    fmt.Sprintf("delete permissions error: %+v", err),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
-			Code:    0,
-			Data:    topic,
-			Message: "deleting",
+			Code:      success,
+			Data:      topic,
+			ErrorCode: tperror.Success,
+			Detail:    "accepted topic delete request",
 		}
 	}
 }
