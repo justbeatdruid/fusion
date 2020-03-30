@@ -58,6 +58,7 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			topic.Spec.Url = topic.GetUrl()
 			topic.Status.Status = nlptv1.Error
 			topic.Status.Message = fmt.Sprintf("create topic error:%+v", err)
+			klog.Errorf("create topic failed, err: %+v", err)
 		} else {
 			topic.Spec.Url = topic.GetUrl()
 			topic.Status.Status = nlptv1.Created

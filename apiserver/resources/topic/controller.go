@@ -24,7 +24,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient(), cfg.TopicConfig),
+		service.NewService(cfg.GetDynamicClient(), cfg.TopicConfig, cfg.LocalConfig),
 		cfg.LocalConfig,
 	}
 }
@@ -71,38 +71,49 @@ type ImportResponse struct {
 	Detail    string          `json:"detail"`
 }
 
+const (
+	success = iota
+	fail
+)
+
 type GrantPermissionRequest struct {
 	Actions service.Actions `json:"actions"`
 }
 
-func (c *controller) getCreateResponse(code int, errorCode string, detail string) *CreateResponse {
-	return &CreateResponse{
+func (c *controller) getCreateResponse(code int, errorCode string, detail string, msg string) *CreateResponse {
+	resp := &CreateResponse{
 		Code:      code,
-		Message:   c.errMsg.Application[errorCode],
 		Detail:    detail,
 		ErrorCode: errorCode,
+		Message:   msg,
 	}
+
+	if len(msg) == 0 {
+		resp.Message = c.errMsg.Topic[resp.ErrorCode]
+	}
+	return resp
 }
 
 func (c *controller) CreateTopic(req *restful.Request) (int, *CreateResponse) {
 	tp := &service.Topic{}
 	if err := req.ReadEntity(tp); err != nil {
-		return http.StatusInternalServerError, c.getCreateResponse(1, tperror.Error_Read_Entity, fmt.Sprintf("cannot read entity: %+v", err))
+		return http.StatusInternalServerError, c.getCreateResponse(fail, tperror.Error_Read_Entity, fmt.Sprintf("cannot read entity: %+v", err), "")
 	}
 
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
-		return http.StatusInternalServerError, c.getCreateResponse(1, tperror.Error_Auth_Error, fmt.Sprintf("auth model error: %+v", err))
+		return http.StatusInternalServerError, c.getCreateResponse(fail, tperror.Error_Auth_Error, fmt.Sprintf("auth model error: %+v", err), "")
 	}
 
 	tp.Users = user.InitWithOwner(authuser.Name)
-	if tp, err := c.service.CreateTopic(tp); err != nil {
-		return http.StatusInternalServerError, c.getCreateResponse(2, tperror.Error_Create_Topic, fmt.Sprintf("create database error: %+v", err))
+	if tp, tpErr := c.service.CreateTopic(tp); tpErr.Err != nil {
+		return http.StatusInternalServerError, c.getCreateResponse(2, tpErr.ErrorCode, fmt.Sprintf("create topic error: %+v", tpErr.Err), "")
 	} else {
 		return http.StatusOK, &CreateResponse{
-			Code:   0,
-			Data:   tp,
-			Detail: "accepted topic create request, please waiting for create topic on pulsar",
+			Code:      success,
+			ErrorCode: tperror.Success,
+			Data:      tp,
+			Detail:    "accepted topic create request, please waiting for create topic on pulsar",
 		}
 	}
 }
@@ -111,13 +122,17 @@ func (c *controller) GetTopic(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
 	if tp, err := c.service.GetTopic(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
-			Code:    1,
-			Message: fmt.Errorf("get database error: %+v", err).Error(),
+			Code:      fail,
+			ErrorCode: tperror.Error_Get_TopicInfo,
+			Message:   c.errMsg.Topic[tperror.Error_Get_TopicInfo],
+			Detail:    fmt.Sprintf("get database error: %+v", err),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
-			Code: 0,
-			Data: tp,
+			Code:      success,
+			ErrorCode: tperror.Success,
+			Data:      tp,
+			Detail:    "get topiclist sucecssfully",
 		}
 	}
 }
@@ -128,13 +143,13 @@ func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
 	for _, id := range ids {
 		if _, err := c.service.DeleteTopic(id); err != nil {
 			return http.StatusInternalServerError, &ListResponse{
-				Code:    1,
+				Code:    fail,
 				Message: fmt.Errorf("delete topic error: %+v", err).Error(),
 			}
 		}
 	}
 	return http.StatusOK, &ListResponse{
-		Code:    0,
+		Code:    success,
 		Message: "delete topic success",
 	}
 }
@@ -142,14 +157,17 @@ func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	if topic, err := c.service.DeleteTopic(id); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
-			Code:    1,
-			Message: fmt.Errorf("delete topic error: %+v", err).Error(),
+			Code:      fail,
+			ErrorCode: tperror.Error_Delete_Topic,
+			Message:   c.errMsg.Topic[tperror.Error_Delete_Topic],
+			Detail:    fmt.Sprintf("delete topic error: %+v", err),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
-			Code:    0,
-			Data:    topic,
-			Message: "deleting",
+			Code:      success,
+			ErrorCode: tperror.Success,
+			Data:      topic,
+			Message:   "deleting",
 		}
 	}
 }
@@ -160,8 +178,10 @@ func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 
 	if tp, err := c.service.ListTopic(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
-			Code:    1,
-			Message: fmt.Errorf("list database error: %+v", err).Error(),
+			Code:      fail,
+			ErrorCode: tperror.Error_Get_TopicList,
+			Message:   c.errMsg.Topic[tperror.Error_Get_TopicList],
+			Detail:    fmt.Sprintf("list database error: %+v", err),
 		}
 	} else {
 		var tps TopicList = c.ListTopicByField(req, tp)
@@ -169,13 +189,17 @@ func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 		data, err := util.PageWrap(tps, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
-				Code:    1,
-				Message: fmt.Sprintf("page parameter error: %+v", err),
+				Code:      fail,
+				ErrorCode: tperror.Error_Page_Param_Invalid,
+				Message:   c.errMsg.Topic[tperror.Error_Page_Param_Invalid],
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 			}
 		} else {
 			return http.StatusOK, &ListResponse{
-				Code: 0,
-				Data: data,
+				Code:      success,
+				ErrorCode: tperror.Success,
+				Data:      data,
+				Detail:    "list topic successfully",
 			}
 		}
 
@@ -223,9 +247,10 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 	tps, err := parser.ParseTopicsFromExcel(req, response, spec)
 	if err != nil {
 		return http.StatusInternalServerError, &ImportResponse{
-			Code:    1,
-			Message: fmt.Sprintf("import topics error: %+v", err),
-			Detail:  fmt.Sprintf("import topics error: %+v", err),
+			Code:      1,
+			ErrorCode: tperror.Error_Parse_Import_File,
+			Message:   c.errMsg.Topic[tperror.Error_Parse_Import_File],
+			Detail:    fmt.Sprintf("import topics error: %+v", err),
 		}
 	}
 
@@ -247,18 +272,22 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 		//	continue
 		//}
 
-		if err := topic.Validate(); err != nil {
+		if tpErr := topic.Validate(); tpErr.Err != nil {
 			return http.StatusInternalServerError, &ImportResponse{
-				Code:    1,
-				Message: fmt.Errorf("import topics error: %+v", err).Error(),
+				Code:      1,
+				ErrorCode: tperror.Error_Import_Bad_Request,
+				Message:   c.errMsg.Topic[tperror.Error_Import_Bad_Request],
+				Detail:    fmt.Sprintf("import topics error: %+v", err),
 			}
 		}
 		topic.URL = topic.GetUrl()
-		t, err := c.service.CreateTopic(topic)
-		if err != nil {
+		t, tpErr := c.service.CreateTopic(topic)
+		if tpErr.Err != nil {
 			return http.StatusInternalServerError, &ImportResponse{
-				Code:    1,
-				Message: fmt.Errorf("import topics error: %+v", err).Error(),
+				Code:      1,
+				ErrorCode: tpErr.ErrorCode,
+				Message:   c.errMsg.Topic[tpErr.ErrorCode],
+				Detail:    fmt.Sprintf("import topics error: %+v", err),
 			}
 		} else {
 			data = append(data, *t)
@@ -267,8 +296,8 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 	}
 
 	return http.StatusOK, &ImportResponse{
-		Code:    0,
-		Message: "success",
+		Code:    success,
+		Message: tperror.Success,
 		Data:    data,
 	}
 
@@ -284,8 +313,10 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 	tps, err := c.service.ListTopic()
 	if err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
-			Code:    1,
-			Message: fmt.Errorf("list database error: %+v", err).Error(),
+			Code:      1,
+			ErrorCode: tperror.Error_Query_Message,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.Error_Query_Message], c.errMsg.Topic[tperror.Error_Get_TopicList]),
+			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	}
 	//topicName筛选
@@ -307,15 +338,19 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 		start, err := strconv.ParseInt(startTime, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
-				Code:    1,
-				Message: fmt.Sprintf("startTime parameter error: %+v", err),
+				Code:      1,
+				ErrorCode: tperror.Error_Query_Message_StartTime,
+				Message:   c.errMsg.Topic[tperror.Error_Query_Message_StartTime],
+				Detail:    fmt.Sprintf("startTime parameter error: %+v", err),
 			}
 		}
 		end, err := strconv.ParseInt(endTime, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
-				Code:    1,
-				Message: fmt.Sprintf("endTime parameter error: %+v", err),
+				Code:      1,
+				ErrorCode: tperror.Error_Query_Message_EndTime,
+				Message:   c.errMsg.Topic[tperror.Error_Query_Message_EndTime],
+				Detail:    fmt.Sprintf("endTime parameter error: %+v", err),
 			}
 		}
 		httpStatus, messageResponse := c.ListMessagesByTopicUrlTime(tpUrls, start, end, req)
@@ -357,21 +392,26 @@ func (c *controller) ListMessagesByTopicUrlTime(topicUrls []string, start int64,
 	size := req.QueryParameter("size")
 	if messages, err := c.service.ListMessagesTime(topicUrls, start, end); err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
-			Code:    1,
-			Message: fmt.Errorf("list database error: %+v", err).Error(),
+			Code:      1,
+			ErrorCode: tperror.Error_Query_Message,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.Error_Query_Message], err.Error()),
+			Detail:    fmt.Sprintf("list database error: %+v", err),
 		}
 	} else {
 		var ms MessageList = messages
 		data, err := util.PageWrap(ms, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
-				Code:    1,
-				Message: fmt.Sprintf("page parameter error: %+v", err),
+				Code:      1,
+				ErrorCode: tperror.Error_Query_Message_Page_Param,
+				Message:   c.errMsg.Topic[tperror.Error_Query_Message_Page_Param],
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 			}
 		}
 		return http.StatusOK, &MessageResponse{
-			Code:     0,
-			Messages: data,
+			Code:      0,
+			ErrorCode: tperror.Success,
+			Messages:  data,
 		}
 	}
 }

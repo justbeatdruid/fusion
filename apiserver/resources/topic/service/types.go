@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	topicerr "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
@@ -20,8 +21,8 @@ type Topic struct {
 	ID              string       `json:"id"`
 	Name            string       `json:"name"` //topic名称
 	Namespace       string       `json:"namespace"`
-	Tenant          string       `json:"tenant"` //topic的所属租户名称
-	TopicGroup      string       `json:"topicGroup"`
+	Tenant          string       `json:"tenant"`          //topic的所属租户名称
+	TopicGroup      string       `json:"topicGroup"`      //topic所属分组ID
 	Partition       int          `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
 	IsNonPersistent bool         `json:"isNonPersistent"` //非持久化，默认为false，非必填topic
 	URL             string       `json:"url"`             //URL
@@ -141,16 +142,21 @@ func ToListModel(items *v1.TopicList) []*Topic {
 	return app
 }
 
-func (a *Topic) Validate() error {
+func (a *Topic) Validate() topicerr.TopicError {
 	for k, v := range map[string]string{
 		"name": a.Name,
 	} {
 		if len(v) == 0 {
-			return fmt.Errorf("%s is null", k)
+			return topicerr.TopicError{
+				Err:       fmt.Errorf("%s is null", k),
+				ErrorCode: topicerr.Error_Bad_Request,
+			}
 		}
 	}
 	a.ID = names.NewID()
-	return nil
+	return topicerr.TopicError{
+		Err: nil,
+	}
 }
 
 func (a *Topic) GetUrl() (url string) {

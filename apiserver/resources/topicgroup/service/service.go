@@ -62,38 +62,57 @@ func (s *Service) GetTopicgroup(id string) (*Topicgroup, error) {
 
 //查询topicgroup下的所有topic
 func (s *Service) GetTopics(id string) ([]*service.Topic, error) {
-	//查询topicgroup，得到名字
-	tg, err := s.GetTopicgroup(id)
+	tps, err := s.getTopicsCrd(id)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get object: %+v", err)
-	}
-	tgName := tg.Name
-
-	//查询所有的topic
-	crd, err := s.topicClient.Namespace(crdNamespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("error get crd: %+v", err)
-	}
-	topicList := &topicv1.TopicList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), topicList); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	//遍历所有的topic的topicGroup
-	tps := &topicv1.TopicList{}
-	for _, tp := range topicList.Items {
-		if tp.Spec.TopicGroup == tgName {
-			tps.Items = append(tps.Items, tp)
-		}
+		return nil, err
 	}
 	return service.ToListModel(tps), nil
 }
 
+func (s *Service) getTopicsCrd(id string) (*topicv1.TopicList, error) {
+	options := metav1.ListOptions{}
+	options.LabelSelector = fmt.Sprintf("topicgroup=%s", id)
+	//查询所有的topic
+	crd, err := s.topicClient.Namespace(crdNamespace).List(options)
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	tps := &topicv1.TopicList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+
+	return tps, nil
+}
 func (s *Service) DeleteTopicgroup(id string) (*Topicgroup, error) {
 	tg, err := s.Delete(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
 	}
+
+	//同步把topicgroup下的topics都标记为删除
+	if err = s.DeleteTopicsUnderTopicgroup(id); err != nil {
+		return nil, fmt.Errorf("cannot delete topicgroup: %+v", err)
+	}
 	return ToModel(tg), nil
+}
+
+func (s *Service) DeleteTopicsUnderTopicgroup(id string) error {
+	tps, err := s.getTopicsCrd(id)
+	if err != nil {
+		return fmt.Errorf("cannot get topics under topicgroup: %+v", err)
+	}
+
+	for _, tp := range tps.Items {
+		//标记为级联删除状态，避免被topic controller直接删除
+		tp.Status.Status = topicv1.CascadingDelete
+		if _, err = s.UpdateTopicStatus(&tp); err != nil {
+			return fmt.Errorf("cannot delete topics under topicgroup: %+v", err)
+		}
+	}
+
+	return nil
+
 }
 
 func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, error) {
@@ -224,4 +243,25 @@ func (s *Service) UpdateStatus(tg *v1.Topicgroup) (*v1.Topicgroup, error) {
 	klog.V(5).Infof("get v1.topicgroup: %+v", tg)
 
 	return tg, nil
+}
+
+func (s *Service) UpdateTopicStatus(tp *topicv1.Topic) (*topicv1.Topic, error) {
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	klog.V(5).Infof("try to update status for crd: %+v", crd)
+	crd, err = s.topicClient.Namespace(tp.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd status: %+v", err)
+	}
+	tp = &topicv1.Topic{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tp); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.topic: %+v", tp)
+
+	return tp, nil
 }
