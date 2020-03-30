@@ -2,7 +2,7 @@ curl localhost:8001/api/v1/apis -H 'content-type:application/json' -H 'X-auth-To
   -d'
 {
   "data": {
-    "name": "rdbtest",
+    "name": "rdbtest222",
     "apitype": "public",
     "authtype": "APPAUTH",
     "serviceunit": {
@@ -19,17 +19,20 @@ curl localhost:8001/api/v1/apis -H 'content-type:application/json' -H 'X-auth-To
         "type": "int",
         "operator": "",
         "description": ""
-      }],
-      "whereFields" : [{
-        "field": "field2",
-        "type": "string",
-        "operator": "equals",
-        "values": ["value1", "value2"],
-        "parameterEnabled": true,
-        "example": "123",
-        "description": "",
-        "required": true
       }]
+    },
+    "apiQueryInfo": {
+      "webParams": [
+      {
+        "name": "id",
+	"type": "varchar",
+	"location": "query",
+	"required": true,
+	"valueDefault": "",
+	"example": "",
+	"description": ""
+      }
+      ]
     }
   }
 }'
