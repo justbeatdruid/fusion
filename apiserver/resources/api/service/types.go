@@ -159,7 +159,7 @@ func ToModel(obj *v1.Api) *Api {
 		}
 		model.ApiResponseParameters = q
 
-		model.ApiPublicParameters = publicParameters()
+		model.ApiPublicParameters = publicParameters(model.ApiDefineInfo.Method == v1.POST)
 	}
 
 	// web params
@@ -178,7 +178,7 @@ func ToModel(obj *v1.Api) *Api {
 		}
 		model.ApiResponseParameters = q
 
-		model.ApiPublicParameters = publicParameters()
+		model.ApiPublicParameters = publicParameters(model.ApiDefineInfo.Method == v1.POST)
 	}
 
 	for l := range obj.ObjectMeta.Labels {
@@ -190,23 +190,33 @@ func ToModel(obj *v1.Api) *Api {
 	return model
 }
 
-func publicParameters() []v1.ApiParameter {
-	return []v1.ApiParameter{
+func publicParameters(post bool) []v1.ApiParameter {
+	ap := []v1.ApiParameter{
 		{
 			Name:        "Authorization",
 			Type:        "string",
 			Example:     "Bearer {application-jwt-token}",
-			Description: "请求Token，位于Headers",
+			Description: "请求头参数，请求Token，以应用的token代替示例括号中内容",
 			Required:    true,
 		},
 		{
 			Name:        "limit",
 			Type:        "int",
 			Example:     "5",
-			Description: "返回条目个数限制。请求参数，位于URL Query。",
+			Description: "查询参数，返回条目个数限制。位于Query",
 			Required:    false,
 		},
 	}
+	if post {
+		ap = append(ap, v1.ApiParameter{
+			Name:        "Content-Type",
+			Type:        "string",
+			Example:     "application/json",
+			Description: "请求头参数，请求数据格式，只接受json类型",
+			Required:    true,
+		})
+	}
+	return ap
 }
 
 func ToListModel(items *v1.ApiList, publishedOnly bool, opts ...util.OpOption) []*Api {
@@ -240,7 +250,7 @@ func ToListModel(items *v1.ApiList, publishedOnly bool, opts ...util.OpOption) [
 					continue
 				}
 			} else if traff == "unbind" {
-				if len(a.Spec.Traffic.ID) !=0 || len(a.Spec.Traffic.SpecialID) != 0 {
+				if len(a.Spec.Traffic.ID) != 0 || len(a.Spec.Traffic.SpecialID) != 0 {
 					continue
 				}
 			}
