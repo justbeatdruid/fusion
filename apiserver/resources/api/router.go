@@ -101,6 +101,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.POST(fmt.Sprintf("/apis/{%s}/{%s}/data", tenantidPath, apiidPath)).
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("query api data").
+		To(r.kongQuery).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.POST("/api/test").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
