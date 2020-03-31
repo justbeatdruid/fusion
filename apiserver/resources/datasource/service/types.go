@@ -6,6 +6,7 @@ import (
 	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
 	rdb "github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 
@@ -18,6 +19,8 @@ type Datasource struct {
 	Name      string  `json:"name"`
 	Namespace string  `json:"namespace"`
 	Type      v1.Type `json:"type"`
+
+	Users user.Users `json:"users"`
 
 	RDB *v1.RDB `json:"rdb,omitempty"`
 
@@ -69,7 +72,7 @@ func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
 
 	crd.ObjectMeta.Name = ds.ID
-	crd.ObjectMeta.Namespace = crdNamespace
+	crd.ObjectMeta.Namespace = ds.Namespace
 	crd.Spec = v1.DatasourceSpec{
 		Name: ds.Name,
 		Type: ds.Type,
@@ -93,6 +96,7 @@ func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 			UpdatedAt: metav1.Now(),
 		}
 	}
+	crd.ObjectMeta.Labels = user.AddUsersLabels(ds.Users, crd.ObjectMeta.Labels)
 	return crd
 }
 
@@ -136,6 +140,7 @@ func ToModel(obj *v1.Datasource) *Datasource {
 			klog.Errorf("datasource %s in type datawarehouse has no datawarehouse instance", obj.ObjectMeta.Name)
 		}
 	}
+	ds.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
 	return ds
 }
 
