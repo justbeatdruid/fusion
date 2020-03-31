@@ -14,6 +14,7 @@ const (
 	producer_exception        = "producer_exception"
 	consumer_backlog_eviction = "consumer_backlog_eviction"
 	Not_Set                   = -10000
+	DefaultTenant             = "public" //暂时默认为public租户
 )
 
 type Topicgroup struct {
@@ -76,6 +77,9 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 		Policies:  ToPolicesApi(&app.Policies),
 	}
 
+	if len(crd.Spec.Tenant) == 0 {
+		crd.Spec.Tenant = DefaultTenant
+	}
 	status := app.Status
 	if len(status) == 0 {
 		status = v1.Init

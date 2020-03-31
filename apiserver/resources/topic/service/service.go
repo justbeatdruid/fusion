@@ -131,8 +131,8 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	if s.IsTopicExist(tp) {
 		return nil, tperror.TopicError{
 			Err:       fmt.Errorf("topic exists: %+v", tp.GetUrl()),
-			ErrorCode: tperror.Error_Topic_Exists,
-			Message:   fmt.Sprintf(s.errMsg.Topic[tperror.Error_Topic_Exists], tp.GetUrl()),
+			ErrorCode: tperror.ErrorTopicExists,
+			Message:   fmt.Sprintf(s.errMsg.Topic[tperror.ErrorTopicExists], tp.GetUrl()),
 		}
 	}
 
@@ -140,7 +140,7 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	if err != nil {
 		return nil, tperror.TopicError{
 			Err:       fmt.Errorf("convert crd to unstructured error: %+v", err),
-			ErrorCode: tperror.Error_Create_Topic,
+			ErrorCode: tperror.ErrorCreateTopic,
 		}
 	}
 	crd := &unstructured.Unstructured{}
@@ -155,14 +155,14 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	if err != nil {
 		return nil, tperror.TopicError{
 			Err:       fmt.Errorf("error creating crd: %+v", err),
-			ErrorCode: tperror.Error_Create_Topic,
+			ErrorCode: tperror.ErrorCreateTopic,
 		}
 	}
 
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tp); err != nil {
 		return nil, tperror.TopicError{
 			Err:       fmt.Errorf("convert unstructured to crd error: %+v", err),
-			ErrorCode: tperror.Error_Create_Topic,
+			ErrorCode: tperror.ErrorCreateTopic,
 		}
 	}
 	klog.V(5).Infof("get v1.topic of creating: %+v", tp)

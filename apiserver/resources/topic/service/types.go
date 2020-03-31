@@ -149,7 +149,7 @@ func (a *Topic) Validate() topicerr.TopicError {
 		if len(v) == 0 {
 			return topicerr.TopicError{
 				Err:       fmt.Errorf("%s is null", k),
-				ErrorCode: topicerr.Error_Bad_Request,
+				ErrorCode: topicerr.ErrorBadRequest,
 			}
 		}
 	}
