@@ -18,14 +18,12 @@ package main
 import (
 	"flag"
 	"os"
-	"time"
 
 	nlptv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/datasource/controllers"
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/util/wait"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/klog"
@@ -81,31 +79,30 @@ func main() {
 	}
 
 	var dr *controllers.DatasourceReconciler = &controllers.DatasourceReconciler{
-		Client:        mgr.GetClient(),
-		Log:           ctrl.Log.WithName("controllers").WithName("Datasource"),
-		Scheme:        mgr.GetScheme(),
-		DataConnector: dw.NewConnector(dataserviceHost, dataservicePort, "", 0),
+		Client: mgr.GetClient(),
+		Log:    ctrl.Log.WithName("controllers").WithName("Datasource"),
+		Scheme: mgr.GetScheme(),
 	}
 	if dr.SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "Datasource")
 		os.Exit(1)
 	}
+
+	setupLog.Info("add backend loop")
+	if err = mgr.Add(&controllers.DatasourceSynchronizer{
+		// func (*DatasourceSynchronizer) NeedLeaderElection() bool { return true } is required
+		Client:        mgr.GetClient(),
+		DataConnector: dw.NewConnector(dataserviceHost, dataservicePort, "", 0),
+	}); err != nil {
+		setupLog.Error(err, "problem add runnable to manager")
+		os.Exit(1)
+	}
+
 	// +kubebuilder:scaffold:builder
-	stop := make(chan struct{})
-	go func() {
-		setupLog.Info("starting manager")
-		if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-			setupLog.Error(err, "problem running manager")
-			os.Exit(1)
-		}
-		close(stop)
-	}()
-	// wait for caches up
-	time.Sleep(time.Second)
-	wait.Until(func() {
-		if err := dr.SyncDatasources(); err != nil {
-			klog.Errorf("sync datasource error: %+v", err)
-		}
-		// do not use wait.NerverStop
-	}, time.Second*60, stop)
+	setupLog.Info("starting manager")
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+	close(make(chan struct{}))
 }
