@@ -5,12 +5,13 @@ import (
 	"fmt"
 	"strconv"
 
-	//api "github.com/chinamobile/nlpt/apiserver/resources/api/service"
+	_ "github.com/go-sql-driver/mysql"
+
 	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
-	//serviceunit "github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
-	_ "github.com/go-sql-driver/mysql"
+	"github.com/chinamobile/nlpt/pkg/util"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -19,7 +20,7 @@ import (
 	"strings"
 )
 
-var crdNamespace = "default"
+var defaultNamespace = "default"
 
 var Supported = []string{}
 
@@ -60,35 +61,34 @@ func (s *Service) UpdateDatasource(model *Datasource) (*Datasource, error) {
 	}
 	return ToModel(ds), nil
 }
-func (s *Service) ListDatasource() ([]*Datasource, error) {
-	dss, err := s.List()
+func (s *Service) ListDatasource(opts ...util.OpOption) ([]*Datasource, error) {
+	dss, err := s.List(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
 	return ToListModel(dss), nil
 }
 
-func (s *Service) GetDatasource(id string) (*Datasource, error) {
-	ds, err := s.Get(id)
+func (s *Service) GetDatasource(id string, opts ...util.OpOption) (*Datasource, error) {
+	ds, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	return ToModel(ds), nil
 }
 
-func (s *Service) DeleteDatasource(id string) error {
-	return s.Delete(id)
+func (s *Service) DeleteDatasource(id string, opts ...util.OpOption) error {
+	return s.Delete(id, opts...)
 }
 
-func (s *Service) Create(ds *v1.Datasource) (*v1.Datasource, error) {
+func (s *Service) Create(ds *v1.Datasource, opts ...util.OpOption) (*v1.Datasource, error) {
+	crdNamespace := util.OpList(opts...).Namespace()
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ds)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-	fmt.Println("crd:")
-	fmt.Println(crd)
 	crd, err = s.client.Namespace(crdNamespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error creating crd: %+v", err)
@@ -101,7 +101,7 @@ func (s *Service) Create(ds *v1.Datasource) (*v1.Datasource, error) {
 	return ds, nil
 }
 
-func (s *Service) Update(ds *v1.Datasource) (*v1.Datasource, error) {
+func (s *Service) Update(ds *v1.Datasource, opts ...util.OpOption) (*v1.Datasource, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ds)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -109,7 +109,7 @@ func (s *Service) Update(ds *v1.Datasource) (*v1.Datasource, error) {
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
 
-	crd, err = s.client.Namespace(crdNamespace).Update(crd, metav1.UpdateOptions{})
+	crd, err = s.client.Namespace(ds.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error updateing crd: %+v", err)
 	}
@@ -121,7 +121,8 @@ func (s *Service) Update(ds *v1.Datasource) (*v1.Datasource, error) {
 	return ds, nil
 }
 
-func (s *Service) List() (*v1.DatasourceList, error) {
+func (s *Service) List(opts ...util.OpOption) (*v1.DatasourceList, error) {
+	crdNamespace := util.OpList(opts...).Namespace()
 	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
@@ -134,7 +135,8 @@ func (s *Service) List() (*v1.DatasourceList, error) {
 	return dss, nil
 }
 
-func (s *Service) Get(id string) (*v1.Datasource, error) {
+func (s *Service) Get(id string, opts ...util.OpOption) (*v1.Datasource, error) {
+	crdNamespace := util.OpList(opts...).Namespace()
 	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -147,7 +149,8 @@ func (s *Service) Get(id string) (*v1.Datasource, error) {
 	return ds, nil
 }
 
-func (s *Service) Delete(id string) error {
+func (s *Service) Delete(id string, opts ...util.OpOption) error {
+	crdNamespace := util.OpList(opts...).Namespace()
 	err := s.client.Namespace(crdNamespace).Delete(id, &metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("error delete crd: %+v", err)

@@ -10,6 +10,8 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	"github.com/chinamobile/nlpt/pkg/go-restful"
@@ -17,68 +19,94 @@ import (
 
 type controller struct {
 	service *service.Service
+	errCode map[string]string
 }
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient(), cfg.DatasourceConfig.Supported),
+		cfg.LocalConfig.DataSource,
 	}
 }
 
 type Wrapped struct {
-	Code    int                 `json:"code"`
-	Message string              `json:"message"`
-	Data    *service.Datasource `json:"data,omitempty"`
+	Code      int                 `json:"code"`
+	ErrorCode string              `json:"errorCode"`
+	Detail    string              `json:"detail"`
+	Message   string              `json:"message"`
+	Data      *service.Datasource `json:"data,omitempty"`
 }
 type QueryDataResponse struct {
-	Code    int                    `json:"code"`
-	Message string                 `json:"message"`
-	Data    map[string]interface{} `json:"queryData"`
+	Code      int                    `json:"code"`
+	ErrorCode string                 `json:"errorCode"`
+	Detail    string                 `json:"detail"`
+	Message   string                 `json:"message"`
+	Data      map[string]interface{} `json:"queryData"`
 }
 type QueryMysqlDataResponse struct {
-	Code    int                 `json:"code"`
-	Message string              `json:"message"`
-	Data    []map[string]string `json:"queryData"`
+	Code      int                 `json:"code"`
+	ErrorCode string              `json:"errorCode"`
+	Detail    string              `json:"detail"`
+	Message   string              `json:"message"`
+	Data      []map[string]string `json:"queryData"`
 }
 type CreateResponse = Wrapped
 type UpdateResponse = Wrapped
 type CreateRequest = Wrapped
 type UpdateRequest = Wrapped
 type DeleteResponse struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
+	Code      int    `json:"code"`
+	ErrorCode string `json:"errorCode"`
+	Detail    string `json:"detail"`
+	Message   string `json:"message"`
 }
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Detail    string      `json:"detail"`
+	Message   string      `json:"message"`
+	Data      interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
 type Unstructured struct {
-	Code    int         `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data,omitempty"`
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Detail    string      `json:"detail"`
+	Message   string      `json:"message"`
+	Data      interface{} `json:"data,omitempty"`
 }
 
 func (c *controller) CreateDatasource(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    1,
-			Message: "read entity error: data is null",
+			Code:   1,
+			Detail: "read entity error: data is null",
 		}
 	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "006000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
+		}
+	}
+	body.Data.Users = user.InitWithOwner(authuser.Name)
+	body.Data.Namespace = authuser.Namespace
 	if db, err := c.service.CreateDatasource(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    2,
-			Message: fmt.Errorf("create database error: %+v", err).Error(),
+			Code:   2,
+			Detail: fmt.Errorf("create database error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -87,24 +115,36 @@ func (c *controller) CreateDatasource(req *restful.Request) (int, *CreateRespons
 		}
 	}
 }
+
 func (c *controller) UpdateDatasource(req *restful.Request) (int, *UpdateResponse) {
 	body := &UpdateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &UpdateResponse{
-			Code:    1,
-			Message: fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &UpdateResponse{
-			Code:    1,
-			Message: "read entity error: data is null",
+			Code:   1,
+			Detail: "read entity error: data is null",
 		}
 	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "006000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
+		}
+	}
+	body.Data.Users = user.InitWithOwner(authuser.Name)
 	if db, err := c.service.UpdateDatasource(body.Data); err != nil {
 		return http.StatusInternalServerError, &UpdateResponse{
-			Code:    2,
-			Message: fmt.Errorf("update database error: %+v", err).Error(),
+			Code:   2,
+			Detail: fmt.Errorf("update database error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &UpdateResponse{
@@ -113,12 +153,23 @@ func (c *controller) UpdateDatasource(req *restful.Request) (int, *UpdateRespons
 		}
 	}
 }
+
 func (c *controller) GetDatasource(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
-	if db, err := c.service.GetDatasource(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "006000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
+		}
+	}
+	if db, err := c.service.GetDatasource(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
-			Code:    1,
-			Message: fmt.Errorf("get database error: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("get database error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -130,15 +181,25 @@ func (c *controller) GetDatasource(req *restful.Request) (int, *GetResponse) {
 
 func (c *controller) DeleteDatasource(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if err := c.service.DeleteDatasource(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "006000005"
 		return http.StatusInternalServerError, &DeleteResponse{
-			Code:    1,
-			Message: fmt.Errorf("delete database error: %+v", err).Error(),
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
+		}
+	}
+	if err := c.service.DeleteDatasource(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:   1,
+			Detail: fmt.Errorf("delete database error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
-			Code:    0,
-			Message: "",
+			Code:   0,
+			Detail: "",
 		}
 	}
 }
@@ -159,24 +220,34 @@ func (dsl DataSourceList) GetItem(i int) (interface{}, error) {
 func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-	if db, err := c.service.ListDatasource(); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "006000005"
 		return http.StatusInternalServerError, &ListResponse{
-			Code:    1,
-			Message: fmt.Errorf("list database error: %+v", err).Error(),
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
+		}
+	}
+	if db, err := c.service.ListDatasource(util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:   1,
+			Detail: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
 		var dbs DataSourceList = db
 		pageStruct, err := util.PageWrap(dbs, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
-				Code:    1,
-				Message: fmt.Sprintf("page parameter error: %+v", err),
+				Code:   1,
+				Detail: fmt.Sprintf("page parameter error: %+v", err),
 			}
 		}
 		return http.StatusOK, &ListResponse{
-			Code:    0,
-			Message: "success",
-			Data:    pageStruct,
+			Code:   0,
+			Detail: "success",
+			Data:   pageStruct,
 		}
 	}
 }
@@ -186,8 +257,8 @@ func (c *controller) Ping(req *restful.Request) (int, *PingResponse) {
 	_, err := c.service.GetDataSourceByApiId(id, id)
 	if err != nil {
 		return http.StatusInternalServerError, &PingResponse{
-			Code:    1,
-			Message: fmt.Errorf("query data error: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("query data error: %+v", err).Error(),
 		}
 	}
 	return http.StatusOK, &PingResponse{
@@ -201,8 +272,8 @@ func (c *controller) GetTables(req *restful.Request) (int, *Unstructured) {
 	result, err := c.service.GetTables(id, associationID)
 	if err != nil {
 		return http.StatusInternalServerError, &Unstructured{
-			Code:    1,
-			Message: fmt.Errorf("get tables error: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("get tables error: %+v", err).Error(),
 		}
 	}
 	return http.StatusOK, &Unstructured{
@@ -217,8 +288,8 @@ func (c *controller) GetTable(req *restful.Request) (int, *Unstructured) {
 	result, err := c.service.GetTable(id, table)
 	if err != nil {
 		return http.StatusInternalServerError, &Unstructured{
-			Code:    1,
-			Message: fmt.Errorf("get tables error: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("get tables error: %+v", err).Error(),
 		}
 	}
 	return http.StatusOK, &Unstructured{
@@ -235,8 +306,8 @@ func (c *controller) GetFields(req *restful.Request) (int, *Unstructured) {
 	result, err := c.service.GetFields(id, table)
 	if err != nil {
 		return http.StatusInternalServerError, &Unstructured{
-			Code:    1,
-			Message: fmt.Errorf("get fields: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("get fields: %+v", err).Error(),
 		}
 	}
 	return http.StatusOK, &Unstructured{
@@ -254,8 +325,8 @@ func (c *controller) GetField(req *restful.Request) (int, *Unstructured) {
 	result, err := c.service.GetField(id, table, field)
 	if err != nil {
 		return http.StatusInternalServerError, &Unstructured{
-			Code:    1,
-			Message: fmt.Errorf("get fields: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("get fields: %+v", err).Error(),
 		}
 	}
 	return http.StatusOK, &Unstructured{
@@ -270,15 +341,15 @@ func (c *controller) getDataByApi(req *restful.Request) (int, *QueryDataResponse
 	parameters, err := req.BodyParameter("params")
 	if err != nil {
 		return http.StatusInternalServerError, &QueryDataResponse{
-			Code:    1,
-			Message: fmt.Errorf("get parameters error: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("get parameters error: %+v", err).Error(),
 		}
 	}
 	result, err := c.service.GetDataSourceByApiId(apiId, parameters)
 	if err != nil {
 		return http.StatusInternalServerError, &QueryDataResponse{
-			Code:    1,
-			Message: fmt.Errorf("query data error: %+v", err).Error(),
+			Code:   1,
+			Detail: fmt.Errorf("query data error: %+v", err).Error(),
 		}
 	}
 	return http.StatusOK, &QueryDataResponse{
@@ -321,14 +392,14 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 		if connect.QType == "3" && connect.QueryCondition == nil {
 			fmt.Println("parameter error,条件为空")
 			return http.StatusInternalServerError, &QueryMysqlDataResponse{
-				Code:    1,
-				Message: "parameter error,条件不能为空",
+				Code:   1,
+				Detail: "parameter error,条件不能为空",
 			}
 		}
 		fmt.Println("parameter error,qType 为空")
 		return http.StatusInternalServerError, &QueryMysqlDataResponse{
-			Code:    1,
-			Message: "parameter error,qType 不能为空",
+			Code:   1,
+			Detail: "parameter error,qType 不能为空",
 		}
 	}
 	buildPath := strings.Builder{}
@@ -347,8 +418,8 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 		fmt.Println("open DB err", err)
 		fmt.Println(err)
 		return http.StatusInternalServerError, &QueryMysqlDataResponse{
-			Code:    1,
-			Message: "open DB err，path :" + path,
+			Code:   1,
+			Detail: "open DB err，path :" + path,
 		}
 	}
 	//设置数据库最大连接数
@@ -359,8 +430,8 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 	if err := db.Ping(); err != nil {
 		fmt.Println("open database fail")
 		return http.StatusInternalServerError, &QueryMysqlDataResponse{
-			Code:    1,
-			Message: "open database fail",
+			Code:   1,
+			Detail: "open database fail",
 		}
 	}
 	var querySql string
@@ -394,13 +465,13 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 	data, err := service.GetMySQLDbData(db, querySql)
 	if err != nil {
 		return http.StatusInternalServerError, &QueryMysqlDataResponse{
-			Code:    1,
-			Message: "deal data fail",
+			Code:   1,
+			Detail: "deal data fail",
 		}
 	}
 	return http.StatusOK, &QueryMysqlDataResponse{
-		Code:    0,
-		Message: "查询成功",
-		Data:    data,
+		Code:   0,
+		Detail: "查询成功",
+		Data:   data,
 	}
 }
