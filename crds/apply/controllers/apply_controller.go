@@ -142,7 +142,7 @@ func (r *ApplyReconciler) UpdateApi(ctx context.Context, api *apiv1.Api, appid s
 	return nil
 }
 func (r *ApplyReconciler) UpdateApp(ctx context.Context, app *appv1.Application, api *apiv1.Api) error {
-	app.Spec.APIs = append(app.Spec.APIs, appv1.Api{api.ObjectMeta.Name, api.Name})
+	app.Spec.APIs = append(app.Spec.APIs, appv1.Api{api.ObjectMeta.Name, api.Spec.Name})
 	if err := r.Update(ctx, app); err != nil {
 		klog.Errorf("update app error: %+v", err)
 		return err
