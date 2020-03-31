@@ -43,6 +43,10 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenan
 	}
 }
 
+func (s *Service) GetClient() dynamic.NamespaceableResourceInterface {
+	return s.client
+}
+
 func (s *Service) CreateServiceunit(model *Serviceunit) (*Serviceunit, error, string) {
 	if err := s.Validate(model); err != nil {
 		return nil, err, "008000019"
@@ -102,7 +106,8 @@ func (s *Service) DeleteServiceunit(id string, opts ...util.OpOption) (*Serviceu
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
 	}
-	return ToModel(su), nil
+	util.WaitDelete(s, su.ObjectMeta)
+	return ToModel(su), err
 }
 
 // + update_sunyu

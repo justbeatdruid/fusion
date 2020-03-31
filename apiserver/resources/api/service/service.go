@@ -57,6 +57,10 @@ func NewService(client dynamic.Interface, dsConnector dw.Connector, kubeClient *
 	}
 }
 
+func (s *Service) GetClient() dynamic.NamespaceableResourceInterface {
+	return s.client
+}
+
 func (s *Service) CreateApi(model *Api) (*Api, error, string) {
 	if err := s.Validate(model); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err), "001000016"
@@ -254,6 +258,7 @@ func (s *Service) DeleteApi(id string, opts ...util.OpOption) (*Api, error) {
 	if err != nil {
 		return nil, err
 	}
+	util.WaitDelete(s, api.ObjectMeta)
 	return ToModel(api), nil
 }
 

@@ -38,6 +38,10 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenan
 	}
 }
 
+func (s *Service) GetClient() dynamic.NamespaceableResourceInterface {
+	return s.client
+}
+
 func (s *Service) CreateApplication(model *Application) (*Application, error, string) {
 	if err := s.Validate(model); err != nil {
 		return nil, err, "002000019"
@@ -74,6 +78,7 @@ func (s *Service) DeleteApplication(id string, opts ...util.OpOption) (*Applicat
 	if err != nil {
 		return nil, fmt.Errorf("cannot delete object: %+v", err)
 	}
+	util.WaitDelete(s, app.ObjectMeta)
 	return ToModel(app), err
 }
 
