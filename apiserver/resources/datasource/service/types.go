@@ -26,9 +26,6 @@ type Datasource struct {
 	Status    v1.Status `json:"status"`
 	UpdatedAt util.Time `json:"updatedAt"`
 	CreatedAt util.Time `json:"createdAt"`
-
-	CreateUser v1.User `json:"createdBy"`
-	UpdateUser v1.User `json:"updatedBy"`
 }
 
 type Tables struct {
