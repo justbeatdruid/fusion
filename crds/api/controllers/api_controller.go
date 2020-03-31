@@ -20,6 +20,7 @@ import (
 	"fmt"
 	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
+	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -79,7 +80,25 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
 				delete(api.ObjectMeta.Labels, nlptv1.ApplicationLabel(app.ID))
 				delete(api.Status.Applications, app.ID)
-				r.Update(ctx, api)
+				application := &appv1.Application{}
+				appNamespacedName := types.NamespacedName{
+					Namespace: req.NamespacedName.Namespace,
+					Name:      app.ID,
+				}
+				if err := r.Get(ctx, appNamespacedName, application); err != nil {
+					klog.Errorf("cannot get application with name %s: %+v", appNamespacedName, err)
+					api.Status.Status = nlptv1.Error
+					api.Status.Message = err.Error()
+					r.Update(ctx, api)
+					return ctrl.Result{}, nil
+				}
+				if err := r.UpdateApp(ctx, application, api); err != nil {
+					klog.Errorf("cannot update application with name %s: %+v", appNamespacedName, err)
+					api.Status.Status = nlptv1.Error
+					api.Status.Message = err.Error()
+					r.Update(ctx, api)
+					return ctrl.Result{}, nil
+				}
 			} else {
 				index++
 			}
@@ -113,6 +132,9 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 		if err := r.Get(ctx, suNamespacedName, su); err != nil {
 			klog.Errorf("cannot get service unit with name %s: %+v", suNamespacedName, err)
+			api.Status.Status = nlptv1.Error
+			api.Status.Message = err.Error()
+			r.Update(ctx, api)
 			return ctrl.Result{}, nil
 		}
 		klog.Infof("get su info %+v", *su)
@@ -260,6 +282,20 @@ func (r *ApiReconciler) RemoveApiFromServiceUnit(ctx context.Context, su *suv1.S
 		return err
 	}
 	klog.Infof("update su apis: %+v", *su)
+	return nil
+}
+
+func (r *ApiReconciler) UpdateApp(ctx context.Context, app *appv1.Application, api *nlptv1.Api) error {
+	for index, value := range app.Spec.APIs {
+		if value.ID == api.ObjectMeta.Name {
+			app.Spec.APIs = append(app.Spec.APIs[:index], app.Spec.APIs[index+1:]...)
+		}
+	}
+	if err := r.Update(ctx, app); err != nil {
+		klog.Errorf("update app error: %+v", err)
+		return err
+	}
+	klog.Infof("update app apis: %+v", *app)
 	return nil
 }
 

@@ -24,6 +24,7 @@ import (
 	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	"github.com/chinamobile/nlpt/crds/api/controllers"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
+	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
@@ -43,6 +44,7 @@ func init() {
 
 	_ = nlptv1.AddToScheme(scheme)
 	_ = suv1.AddToScheme(scheme)
+	_ = appv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 	klog.InitFlags(nil)
 }

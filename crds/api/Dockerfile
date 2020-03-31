@@ -7,6 +7,7 @@ COPY cmd/ cmd/
 COPY crds/api crds/api
 COPY crds/datasource/datawarehouse/api/v1 crds/datasource/datawarehouse/api/v1
 COPY crds/serviceunit/api/v1 crds/serviceunit/api/v1
+COPY crds/application/api/v1 crds/application/api/v1
 COPY pkg/ pkg/
 COPY vendor/ vendor/
 
