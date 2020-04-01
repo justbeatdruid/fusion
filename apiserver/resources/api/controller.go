@@ -470,6 +470,17 @@ func (c *controller) TestApi(req *restful.Request) (int, interface{}) {
 			Detail:    "read entity error: data is null",
 		}
 	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "001000003",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
+		}
+	}
+	body.Data.Users = user.InitWithOwner(authuser.Name)
+	body.Data.Namespace = authuser.Namespace
 	if resp, err := c.service.TestApi(body.Data); err != nil {
 		return http.StatusInternalServerError, &TestApiResponse{
 			Code:      2,
