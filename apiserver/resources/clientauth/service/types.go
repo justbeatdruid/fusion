@@ -64,6 +64,8 @@ func ToModel(obj *v1.Clientauth) *Clientauth {
 	return &Clientauth{
 		ID:            obj.ObjectMeta.Name,
 		Name:          obj.Spec.Name,
+		CreateUser:    obj.Spec.CreateUser,
+		Tenant:        obj.Spec.Tenant,
 		Namespace:     obj.Spec.Namespace,
 		CreatedAt:     util.NewTime(obj.ObjectMeta.CreationTimestamp.Time).Unix(),
 		IssuedAt:      obj.Spec.IssuedAt,
