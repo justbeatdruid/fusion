@@ -699,10 +699,23 @@ func (s *Service) Query(apiid string, params map[string][]string, limitstr strin
 //TestApi ...
 func (s *Service) TestApi(model *Api) (interface{}, error) {
 	client := &http.Client{}
-	remoteUrl := strings.ToLower(string(model.Protocol)) + "://" + model.Serviceunit.Host + ":" + strconv.Itoa(model.Serviceunit.Port)
+	var crdNamespace = model.Namespace
+	var su *suv1.Serviceunit
+	su, err := s.getServiceunit(model.Serviceunit.ID, crdNamespace)
+	if err != nil {
+		return nil, fmt.Errorf("get serviceunit error: %+v", err)
+	}
+	if !s.tenantEnabled {
+		if !user.WritePermitted(model.Users.Owner.ID, su.ObjectMeta.Labels) {
+			return nil, fmt.Errorf("user %s has no permission for writting serviceunit %s",
+				model.Users.Owner.ID, su.ObjectMeta.Name)
+		}
+	}
+	remoteUrl := strings.ToLower(string(su.Spec.KongService.Protocol)) + "://" + su.Spec.KongService.Host + ":" + strconv.Itoa(su.Spec.KongService.Port)
 	for i := range model.KongApi.Paths {
 		remoteUrl += model.KongApi.Paths[i]
 	}
+	klog.V(5).Infof("host is %s, remote url is %s", su.Spec.KongService.Host, remoteUrl)
 
 	body := map[string]interface{}{}
 	headers := map[string]string{}
