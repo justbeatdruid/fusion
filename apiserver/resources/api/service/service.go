@@ -657,39 +657,44 @@ func (s *Service) Query(apiid string, params map[string][]string, limitstr strin
 		if ds.Spec.RDB == nil {
 			return d, fmt.Errorf("cannot find rdb info in datasource")
 		}
-		if ds.Spec.RDB.Type == "mysql" { //mysql查询
-			//获取数据源连接信息
-			queryFields := api.Spec.RDBQuery.QueryFields //查询字段
-			//whereFields := api.Spec.RDBQuery.WhereFields //查询条件
-			sqlBuilder := strings.Builder{}
-			sqlBuilder.WriteString("select ")
-			fields := make([]string, len(queryFields))
-			for i := range queryFields {
-				fields[i] = queryFields[i].Field
-			}
-			sqlBuilder.WriteString(strings.Join(fields, ","))
+		//获取数据源连接信息
+		queryFields := api.Spec.RDBQuery.QueryFields //查询字段
+		//whereFields := api.Spec.RDBQuery.WhereFields //查询条件
+		sqlBuilder := strings.Builder{}
+		sqlBuilder.WriteString("select ")
+		fields := make([]string, len(queryFields))
+		for i := range queryFields {
+			fields[i] = queryFields[i].Field
+		}
+		sqlBuilder.WriteString(strings.Join(fields, ","))
+		switch ds.Spec.RDB.Type {
+		case "mysql":
 			sqlBuilder.WriteString(" from " + api.Spec.RDBQuery.Table)
-			whereFields := make([]string, 0)
-			for _, w := range api.Spec.ApiQueryInfo.WebParams {
-				if vs, ok := params[w.Name]; ok {
-					if len(vs) > 0 {
-						whereFields = append(whereFields, fmt.Sprintf("%s='%s'", w.Name, vs[0]))
-					}
+		case "postgres", "potgresql":
+			sqlBuilder.WriteString(" from " + ds.Spec.RDB.Schema + "." + api.Spec.RDBQuery.Table)
+		default:
+			return d, fmt.Errorf("unsupported rdb type %s", ds.Spec.RDB.Type)
+		}
+		whereFields := make([]string, 0)
+		for _, w := range api.Spec.ApiQueryInfo.WebParams {
+			if vs, ok := params[w.Name]; ok {
+				if len(vs) > 0 {
+					whereFields = append(whereFields, fmt.Sprintf("%s='%s'", w.Name, vs[0]))
 				}
 			}
-			if len(whereFields) > 0 {
-				sqlBuilder.WriteString(" where ")
-				sqlBuilder.WriteString(strings.Join(whereFields, " and "))
-			}
-			sql := sqlBuilder.String()
-			klog.V(4).Infof("query rdb data with sql %s", sql)
-			MysqlData, err := driver.GetRDBData(ds, sql)
-			if err != nil {
-				return d, fmt.Errorf("get mysqldata error: %+v", err)
-			}
-			d.Data = MysqlData
-			return d, nil
 		}
+		if len(whereFields) > 0 {
+			sqlBuilder.WriteString(" where ")
+			sqlBuilder.WriteString(strings.Join(whereFields, " and "))
+		}
+		sql := sqlBuilder.String()
+		klog.V(4).Infof("query rdb data with sql %s", sql)
+		MysqlData, err := driver.GetRDBData(ds, sql)
+		if err != nil {
+			return d, fmt.Errorf("get mysqldata error: %+v", err)
+		}
+		d.Data = MysqlData
+		return d, nil
 
 	} else {
 		klog.V(4).Infof("api %s is not dataservice api", apiid)

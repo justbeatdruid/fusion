@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strings"
 
 	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
@@ -177,8 +178,8 @@ func (s *Service) GetTables(id, associationID string, opts ...util.OpOption) (*T
 		if len(ds.Spec.RDB.Type) == 0 {
 			return nil, fmt.Errorf("datasource %s in type rdb has no databasetype", ds.ObjectMeta.Name)
 		}
-		//mysql类型
 		if ds.Spec.RDB.Type == "mysql" {
+			//mysql类型
 			querySql := "SELECT distinct table_name FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + ds.Spec.RDB.Database + "'"
 			mysqlData, err := driver.GetRDBData(ds, querySql)
 			if err != nil {
@@ -191,6 +192,24 @@ func (s *Service) GetTables(id, associationID string, opts ...util.OpOption) (*T
 			}
 			//fmt.Println(result)
 			return result, nil
+		} else if ds.Spec.RDB.Type == "postgres" || ds.Spec.RDB.Type == "postgresql" {
+			if ds.Spec.RDB.Schema == "" {
+				ds.Spec.RDB.Schema = "public"
+			}
+			querySql := "select * from pg_tables where schemaname = '" + ds.Spec.RDB.Schema + "'"
+			mysqlData, err := driver.GetRDBData(ds, querySql)
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range mysqlData {
+				table := rdb.Table{}
+				table.Name = v["tablename"]
+				result.RDBTables = append(result.RDBTables, table)
+			}
+			//fmt.Println(result)
+			return result, nil
+		} else {
+			return nil, fmt.Errorf("unsupported rdb type %s", ds.Spec.RDB.Type)
 		}
 	case v1.DataWarehouseType:
 		if ds.Spec.DataWarehouse == nil {
@@ -264,7 +283,7 @@ func (s *Service) GetFields(id, table string, opts ...util.OpOption) (*Fields, e
 				} else {
 					table.PrimaryKey = true
 				}
-				table.IsNullAble = v["空标识"]
+				table.IsNullAble = strings.ToUpper(v["空标识"]) == "YES"
 				result.RDBFields = append(result.RDBFields, table)
 			}
 			//查询索引sql
@@ -284,6 +303,42 @@ func (s *Service) GetFields(id, table string, opts ...util.OpOption) (*Fields, e
 				}
 			}
 			return result, nil
+		} else if ds.Spec.RDB.Type == "postgres" || ds.Spec.RDB.Type == "postgresql" {
+			if ds.Spec.RDB.Schema == "" {
+				ds.Spec.RDB.Schema = "public"
+			}
+			querySql := `SELECT
+    "pg_attribute".attname                                                    as "Column",
+    pg_catalog.format_type("pg_attribute".atttypid, "pg_attribute".atttypmod) as "Datatype",
+    not("pg_attribute".attnotnull) AS "Nullable"
+FROM
+    pg_catalog.pg_attribute "pg_attribute"
+WHERE
+    "pg_attribute".attnum > 0
+    AND NOT "pg_attribute".attisdropped
+    AND "pg_attribute".attrelid = (
+        SELECT "pg_class".oid
+        FROM pg_catalog.pg_class "pg_class"
+            LEFT JOIN pg_catalog.pg_namespace "pg_namespace" ON "pg_namespace".oid = "pg_class".relnamespace
+        WHERE
+            "pg_namespace".nspname = '%s'
+            AND "pg_class".relname = '%s'
+    );`
+			querySql = fmt.Sprintf(querySql, ds.Spec.RDB.Schema, table)
+			data, err := driver.GetRDBData(ds, querySql)
+			if err != nil {
+				return nil, err
+			}
+			for _, v := range data {
+				table := rdb.Field{}
+				table.Name = v["Column"]
+				table.DataType = v["Datatype"]
+				table.IsNullAble = strings.ToLower(v["Nullable"]) == "true"
+				result.RDBFields = append(result.RDBFields, table)
+			}
+			return result, nil
+		} else {
+			return nil, fmt.Errorf("unsupported rdb type %s", ds.Spec.RDB.Type)
 		}
 	case v1.DataWarehouseType:
 		if ds.Spec.DataWarehouse == nil {
