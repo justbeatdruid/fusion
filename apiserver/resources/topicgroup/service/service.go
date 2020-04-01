@@ -188,7 +188,11 @@ func (s *Service) IsTopicgroupExist(tp *v1.Topicgroup) (bool, error) {
 	}
 
 	if len(tpList.Items) > 0 {
-		return true, nil
+		for _, t := range tpList.Items {
+			if t.Spec.Name == tp.Spec.Name {
+				return true, nil
+			}
+		}
 	}
 	return false, nil
 
