@@ -14,6 +14,7 @@ require (
 	github.com/google/btree v1.0.0
 	github.com/json-iterator/go v1.1.8
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
+	github.com/lib/pq v1.3.0
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
 	github.com/parnurzeal/gorequest v0.2.16
