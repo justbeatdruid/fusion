@@ -654,7 +654,10 @@ func (s *Service) Query(apiid string, params map[string][]string, limitstr strin
 		if err != nil {
 			return d, fmt.Errorf("get datasource error: %+v", err)
 		}
-		if ds.Spec.Type == "mysql" { //mysql查询
+		if ds.Spec.RDB == nil {
+			return d, fmt.Errorf("cannot find rdb info in datasource")
+		}
+		if ds.Spec.RDB.Type == "mysql" { //mysql查询
 			//获取数据源连接信息
 			queryFields := api.Spec.RDBQuery.QueryFields //查询字段
 			//whereFields := api.Spec.RDBQuery.WhereFields //查询条件
@@ -666,12 +669,11 @@ func (s *Service) Query(apiid string, params map[string][]string, limitstr strin
 			}
 			sqlBuilder.WriteString(strings.Join(fields, ","))
 			sqlBuilder.WriteString(" from " + api.Spec.RDBQuery.Table)
-			sqlBuilder.WriteString(" where " + api.Spec.RDBQuery.Table)
 			whereFields := make([]string, 0)
 			for _, w := range api.Spec.ApiQueryInfo.WebParams {
 				if vs, ok := params[w.Name]; ok {
 					if len(vs) > 0 {
-						whereFields = append(whereFields, fmt.Sprintf("%s = '%s'", w.Name, vs[0]))
+						whereFields = append(whereFields, fmt.Sprintf("%s='%s'", w.Name, vs[0]))
 					}
 				}
 			}
