@@ -1,14 +1,11 @@
 package service
 
 import (
-	"database/sql"
 	"fmt"
-	"strconv"
-
-	_ "github.com/go-sql-driver/mysql"
 
 	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
+	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb/driver"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/pkg/util"
 
@@ -17,7 +14,6 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
-	"strings"
 )
 
 var defaultNamespace = "default"
@@ -66,7 +62,7 @@ func (s *Service) ListDatasource(opts ...util.OpOption) ([]*Datasource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	return ToListModel(dss), nil
+	return ToListModel(dss, opts...), nil
 }
 
 func (s *Service) GetDatasource(id string, opts ...util.OpOption) (*Datasource, error) {
@@ -78,18 +74,24 @@ func (s *Service) GetDatasource(id string, opts ...util.OpOption) (*Datasource, 
 }
 
 func (s *Service) DeleteDatasource(id string, opts ...util.OpOption) error {
+	ds, err := s.Get(id, opts...)
+	if err != nil {
+		return fmt.Errorf("get datasource error: %+v", err)
+	}
+	if ds.Spec.Type == v1.DataWarehouseType {
+		return fmt.Errorf("cannot delete datawarehouse datasource")
+	}
 	return s.Delete(id, opts...)
 }
 
-func (s *Service) Create(ds *v1.Datasource, opts ...util.OpOption) (*v1.Datasource, error) {
-	crdNamespace := util.OpList(opts...).Namespace()
+func (s *Service) Create(ds *v1.Datasource) (*v1.Datasource, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ds)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-	crd, err = s.client.Namespace(crdNamespace).Create(crd, metav1.CreateOptions{})
+	crd, err = s.client.Namespace(ds.ObjectMeta.Namespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error creating crd: %+v", err)
 	}
@@ -137,6 +139,9 @@ func (s *Service) List(opts ...util.OpOption) (*v1.DatasourceList, error) {
 
 func (s *Service) Get(id string, opts ...util.OpOption) (*v1.Datasource, error) {
 	crdNamespace := util.OpList(opts...).Namespace()
+	if len(crdNamespace) == 0 {
+		crdNamespace = "default"
+	}
 	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -157,43 +162,10 @@ func (s *Service) Delete(id string, opts ...util.OpOption) error {
 	}
 	return nil
 }
-func ConnectMysql(ds *v1.Datasource, querySql string) ([]map[string]string, error) {
-	buildPath := strings.Builder{}
-	buildPath.WriteString(ds.Spec.RDB.Connect.Username)
-	buildPath.WriteString(":")
-	buildPath.WriteString(ds.Spec.RDB.Connect.Password)
-	buildPath.WriteString("@tcp(")
-	buildPath.WriteString(ds.Spec.RDB.Connect.Host)
-	buildPath.WriteString(":")
-	buildPath.WriteString(strconv.Itoa(ds.Spec.RDB.Connect.Port))
-	buildPath.WriteString(")/")
-	buildPath.WriteString(ds.Spec.RDB.Database)
-	path := buildPath.String()
-	db, err := sql.Open("mysql", path)
-	if err != nil {
-		fmt.Println("open DB err", err)
-		return nil, fmt.Errorf("open DB err")
-	}
-	//设置数据库最大连接数
-	db.SetConnMaxLifetime(100)
-	//设置上数据库最大闲置连接数
-	db.SetMaxIdleConns(10)
-	//验证连接
-	fmt.Println("lianjia:" + path)
-	fmt.Println(db)
-	if err := db.Ping(); err != nil {
-		fmt.Println("open database fail")
-		return nil, fmt.Errorf("check database fail")
-	}
-	data, err := GetMySQLDbData(db, querySql)
-	if err != nil {
-		return nil, fmt.Errorf("deal data fail")
-	}
-	return data, nil
-}
-func (s *Service) GetTables(id, associationID string) (*Tables, error) {
+
+func (s *Service) GetTables(id, associationID string, opts ...util.OpOption) (*Tables, error) {
 	result := &Tables{}
-	ds, err := s.Get(id)
+	ds, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot datasource: %+v", err)
 	}
@@ -208,7 +180,7 @@ func (s *Service) GetTables(id, associationID string) (*Tables, error) {
 		//mysql类型
 		if ds.Spec.RDB.Type == "mysql" {
 			querySql := "SELECT distinct table_name FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = '" + ds.Spec.RDB.Database + "'"
-			mysqlData, err := ConnectMysql(ds, querySql)
+			mysqlData, err := driver.GetRDBData(ds, querySql)
 			if err != nil {
 				return nil, err
 			}
@@ -236,8 +208,8 @@ func (s *Service) GetTables(id, associationID string) (*Tables, error) {
 	return result, nil
 }
 
-func (s *Service) GetTable(id, table string) (*Table, error) {
-	ds, err := s.Get(id)
+func (s *Service) GetTable(id, table string, opts ...util.OpOption) (*Table, error) {
+	ds, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot datasource: %+v", err)
 	}
@@ -260,9 +232,9 @@ func (s *Service) GetTable(id, table string) (*Table, error) {
 	}
 }
 
-func (s *Service) GetFields(id, table string) (*Fields, error) {
+func (s *Service) GetFields(id, table string, opts ...util.OpOption) (*Fields, error) {
 	result := &Fields{}
-	ds, err := s.Get(id)
+	ds, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot datasource: %+v", err)
 	}
@@ -278,7 +250,7 @@ func (s *Service) GetFields(id, table string) (*Fields, error) {
 				"'(', IF(EXTRA='auto_increment','自增长',EXTRA),')'),COLUMN_KEY) '主外键',IS_NULLABLE '空标识',COLUMN_COMMENT " +
 				"'字段说明' from information_schema.columns where table_name='" + table + "'" +
 				" and table_schema='" + ds.Spec.RDB.Database + "'"
-			mysqlData, err := ConnectMysql(ds, querySql)
+			mysqlData, err := driver.GetRDBData(ds, querySql)
 			if err != nil {
 				return nil, err
 			}
@@ -297,7 +269,7 @@ func (s *Service) GetFields(id, table string) (*Fields, error) {
 			}
 			//查询索引sql
 			querySql = "show keys  from " + table
-			data, err := ConnectMysql(ds, querySql)
+			data, err := driver.GetRDBData(ds, querySql)
 			if err != nil {
 				return nil, err
 			}
@@ -334,8 +306,8 @@ rt:
 	return result, nil
 }
 
-func (s *Service) GetField(id, table, field string) (*Field, error) {
-	ds, err := s.Get(id)
+func (s *Service) GetField(id, table, field string, opts ...util.OpOption) (*Field, error) {
+	ds, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot datasource: %+v", err)
 	}
@@ -363,67 +335,46 @@ func (s *Service) GetField(id, table, field string) (*Field, error) {
 	}
 }
 
+func (s *Service) Ping(ds *Datasource) error {
+	if err := ds.ValidateConnection(); err != nil {
+		return fmt.Errorf("database connection validate error: %+v", err)
+	}
+	if ds == nil {
+		return fmt.Errorf("datasource is null")
+	}
+	switch ds.Type {
+	case v1.RDBType:
+		return driver.PingRDB(ToAPI(ds, "create"))
+	default:
+		return fmt.Errorf("not supported for %s", ds.Type)
+	}
+}
+
+/*
 func (s *Service) GetDataSourceByApiId(apiId string, parames string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})
-	/*
-		//get api by apiID
-		api, err := s.apiService.Get(apiId)
-		if err != nil {
-			return nil, fmt.Errorf("error query api: %+v", err)
-		}
-		//get serviceunitId by api
-		serverUnitID := api.Spec.Serviceunit.ID
-		//get serviceunit by serviceunitId
-		serverUnit, err := s.suService.Get(serverUnitID)
-		if err != nil {
-			return nil, fmt.Errorf("error query serverUnit: %+v", err)
-		}
-		//check unit type (single or multi)
-		//get dataSources by  multiDateSourceId
-		for _, v := range serverUnit.Spec.DatasourceID {
-			datasource, err := s.Get(v.ID)
-			if err != nil {
-				return nil, fmt.Errorf("error query singleDateSourceId: %+v", err)
-			}
-			//TODO The remaining operation after the query to the data source
-			result["Fields"] = datasource.Spec.Fields
-		}
-	*/
-	return result, nil
-}
-
-/**
-golang连接查询mysql
-*/
-func GetMySQLDbData(db *sql.DB, querySql string) ([]map[string]string, error) {
-	rows, err := db.Query(querySql)
+	//get api by apiID
+	api, err := s.apiService.Get(apiId)
 	if err != nil {
-		fmt.Println("Query fail 。。。")
 		return nil, fmt.Errorf("error query api: %+v", err)
 	}
-	//获取列名
-	columns, _ := rows.Columns()
-
-	//定义一个切片,长度是字段的个数,切片里面的元素类型是sql.RawBytes
-	values := make([]sql.RawBytes, len(columns))
-	//定义一个切片,元素类型是interface{} 接口
-	scanArgs := make([]interface{}, len(values))
-	for i := range values {
-		//把sql.RawBytes类型的地址存进去了
-		scanArgs[i] = &values[i]
+	//get serviceunitId by api
+	serverUnitID := api.Spec.Serviceunit.ID
+	//get serviceunit by serviceunitId
+	serverUnit, err := s.suService.Get(serverUnitID)
+	if err != nil {
+		return nil, fmt.Errorf("error query serverUnit: %+v", err)
 	}
-	//获取字段值
-	var result []map[string]string
-	for rows.Next() {
-		res := make(map[string]string)
-		rows.Scan(scanArgs...)
-		for i, col := range values {
-			res[columns[i]] = string(col)
+	//check unit type (single or multi)
+	//get dataSources by  multiDateSourceId
+	for _, v := range serverUnit.Spec.DatasourceID {
+		datasource, err := s.Get(v.ID)
+		if err != nil {
+			return nil, fmt.Errorf("error query singleDateSourceId: %+v", err)
 		}
-		result = append(result, res)
+		//TODO The remaining operation after the query to the data source
+		result["Fields"] = datasource.Spec.Fields
 	}
-
-	fmt.Println("Query success")
-	rows.Close()
 	return result, nil
 }
+*/

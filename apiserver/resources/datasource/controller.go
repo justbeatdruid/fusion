@@ -1,12 +1,9 @@
 package datasource
 
 import (
-	"database/sql"
-	"encoding/json"
 	"fmt"
 	_ "github.com/go-sql-driver/mysql"
 	"net/http"
-	"strings"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
@@ -36,30 +33,13 @@ type Wrapped struct {
 	Message   string              `json:"message"`
 	Data      *service.Datasource `json:"data,omitempty"`
 }
-type QueryDataResponse struct {
-	Code      int                    `json:"code"`
-	ErrorCode string                 `json:"errorCode"`
-	Detail    string                 `json:"detail"`
-	Message   string                 `json:"message"`
-	Data      map[string]interface{} `json:"queryData"`
-}
-type QueryMysqlDataResponse struct {
-	Code      int                 `json:"code"`
-	ErrorCode string              `json:"errorCode"`
-	Detail    string              `json:"detail"`
-	Message   string              `json:"message"`
-	Data      []map[string]string `json:"queryData"`
-}
-type CreateResponse = Wrapped
-type UpdateResponse = Wrapped
 type CreateRequest = Wrapped
 type UpdateRequest = Wrapped
-type DeleteResponse struct {
-	Code      int    `json:"code"`
-	ErrorCode string `json:"errorCode"`
-	Detail    string `json:"detail"`
-	Message   string `json:"message"`
-}
+type PingRequest = Wrapped
+
+type CreateResponse = Wrapped
+type UpdateResponse = Wrapped
+type DeleteResponse Wrapped
 type GetResponse = Wrapped
 type ListResponse = struct {
 	Code      int         `json:"code"`
@@ -69,6 +49,7 @@ type ListResponse = struct {
 	Data      interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
+
 type Unstructured struct {
 	Code      int         `json:"code"`
 	ErrorCode string      `json:"errorCode"`
@@ -220,6 +201,7 @@ func (dsl DataSourceList) GetItem(i int) (interface{}, error) {
 func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
+	name := req.QueryParameter("name")
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		code := "006000005"
@@ -230,7 +212,8 @@ func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 			Detail:    "auth model error",
 		}
 	}
-	if db, err := c.service.ListDatasource(util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+	if db, err := c.service.ListDatasource(util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace),
+		util.WithNameLike(name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:   1,
 			Detail: fmt.Errorf("list database error: %+v", err).Error(),
@@ -253,12 +236,35 @@ func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 }
 
 func (c *controller) Ping(req *restful.Request) (int, *PingResponse) {
-	id := req.PathParameter("id")
-	_, err := c.service.GetDataSourceByApiId(id, id)
-	if err != nil {
+	body := &PingRequest{}
+	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &PingResponse{
 			Code:   1,
-			Detail: fmt.Errorf("query data error: %+v", err).Error(),
+			Detail: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &PingResponse{
+			Code:   1,
+			Detail: "read entity error: data is null",
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "006000005"
+		return http.StatusInternalServerError, &PingResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
+		}
+	}
+	body.Data.Users = user.InitWithOwner(authuser.Name)
+	body.Data.Namespace = authuser.Namespace
+	if err = c.service.Ping(body.Data); err != nil {
+		return http.StatusInternalServerError, &PingResponse{
+			Code:   1,
+			Detail: fmt.Errorf("ping database error: %+v", err).Error(),
 		}
 	}
 	return http.StatusOK, &PingResponse{
@@ -269,7 +275,17 @@ func (c *controller) Ping(req *restful.Request) (int, *PingResponse) {
 func (c *controller) GetTables(req *restful.Request) (int, *Unstructured) {
 	id := req.PathParameter("id")
 	associationID := req.QueryParameter("association")
-	result, err := c.service.GetTables(id, associationID)
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "006000005"
+		return http.StatusInternalServerError, &Unstructured{
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
+		}
+	}
+	result, err := c.service.GetTables(id, associationID, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &Unstructured{
 			Code:   1,
@@ -285,7 +301,17 @@ func (c *controller) GetTables(req *restful.Request) (int, *Unstructured) {
 func (c *controller) GetTable(req *restful.Request) (int, *Unstructured) {
 	id := req.PathParameter("id")
 	table := req.PathParameter("table")
-	result, err := c.service.GetTable(id, table)
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "006000005"
+		return http.StatusInternalServerError, &Unstructured{
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
+		}
+	}
+	result, err := c.service.GetTable(id, table, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &Unstructured{
 			Code:   1,
@@ -303,7 +329,17 @@ func (c *controller) GetFields(req *restful.Request) (int, *Unstructured) {
 	// for quering RDB fields, pass table name in query parameter "table"
 	// for quering datawarehouse fields, pass table ID in parameter
 	table := req.PathParameter("table")
-	result, err := c.service.GetFields(id, table)
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "006000005"
+		return http.StatusInternalServerError, &Unstructured{
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
+		}
+	}
+	result, err := c.service.GetFields(id, table, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &Unstructured{
 			Code:   1,
@@ -322,7 +358,17 @@ func (c *controller) GetField(req *restful.Request) (int, *Unstructured) {
 	// for quering datawarehouse fields, pass table ID in parameter
 	table := req.PathParameter("table")
 	field := req.PathParameter("field")
-	result, err := c.service.GetField(id, table, field)
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "006000005"
+		return http.StatusInternalServerError, &Unstructured{
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
+		}
+	}
+	result, err := c.service.GetField(id, table, field, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &Unstructured{
 			Code:   1,
@@ -335,6 +381,7 @@ func (c *controller) GetField(req *restful.Request) (int, *Unstructured) {
 	}
 }
 
+/*
 func (c *controller) getDataByApi(req *restful.Request) (int, *QueryDataResponse) {
 	apiId := req.PathParameter("apiId")
 	//todo Acquisition parameters in the request body（Provisional use this method）
@@ -357,6 +404,7 @@ func (c *controller) getDataByApi(req *restful.Request) (int, *QueryDataResponse
 		Data: result,
 	}
 }
+*/
 
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
@@ -365,6 +413,8 @@ func returns200(b *restful.RouteBuilder) {
 func returns500(b *restful.RouteBuilder) {
 	b.Returns(http.StatusInternalServerError, "internal server error", nil)
 }
+
+/**链接MySQL
 func getParams(req *restful.Request) *service.Connect {
 	connect := &service.Connect{}
 	connect.UserName = req.QueryParameter("UserName")
@@ -384,8 +434,6 @@ func getParams(req *restful.Request) *service.Connect {
 	return connect
 }
 
-/**链接MySQL
- */
 func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 	connect := getParams(req)
 	if len(connect.QType) == 0 {
@@ -475,3 +523,4 @@ func (c *controller) ConnectMysql(req *restful.Request) (int, interface{}) {
 		Data:   data,
 	}
 }
+*/

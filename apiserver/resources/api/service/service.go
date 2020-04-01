@@ -4,7 +4,8 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	datasource "github.com/chinamobile/nlpt/apiserver/resources/datasource/service"
+
+	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb/driver"
 	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
@@ -657,32 +658,30 @@ func (s *Service) Query(apiid string, params map[string][]string, limitstr strin
 			//获取数据源连接信息
 			queryFields := api.Spec.RDBQuery.QueryFields //查询字段
 			//whereFields := api.Spec.RDBQuery.WhereFields //查询条件
-			sql := strings.Builder{}
-			sql.WriteString("select ")
-			for _, v := range queryFields {
-				sql.WriteString(v.Field + ", ")
+			sqlBuilder := strings.Builder{}
+			sqlBuilder.WriteString("select ")
+			fields := make([]string, len(queryFields))
+			for i := range queryFields {
+				fields[i] = queryFields[i].Field
 			}
-			newSql := sql.String()
-			newSql = newSql[0 : len(newSql)-2] //窃取多余的","
-			fmt.Println("newSql:" + newSql)
-			sqlEnd := strings.Builder{}
-			sqlEnd.WriteString(newSql)
-			sqlEnd.WriteString(" from " + api.Spec.RDBQuery.Table)
-			/*
-				if len(whereFields) > 0 {
-					sqlEnd.WriteString(" where ")
-					for _, v := range whereFields {
-						if v.ParameterEnabled {
-							sqlEnd.WriteString(v.Field + "=" + "'" + v.Values[0] + "'" + " and ")
-						} else {
-							sqlEnd.WriteString(v.Field + "=" + "'" + req.QueryParameter(v.Field) + "'" + " and ")
-						}
+			sqlBuilder.WriteString(strings.Join(fields, ","))
+			sqlBuilder.WriteString(" from " + api.Spec.RDBQuery.Table)
+			sqlBuilder.WriteString(" where " + api.Spec.RDBQuery.Table)
+			whereFields := make([]string, 0)
+			for _, w := range api.Spec.ApiQueryInfo.WebParams {
+				if vs, ok := params[w.Name]; ok {
+					if len(vs) > 0 {
+						whereFields = append(whereFields, fmt.Sprintf("%s = '%s'", w.Name, vs[0]))
 					}
 				}
-			*/
-			sqlFanal := sqlEnd.String()
-			sqlFanal = sqlFanal[0 : len(sqlFanal)-4]
-			MysqlData, err := datasource.ConnectMysql(ds, sqlFanal)
+			}
+			if len(whereFields) > 0 {
+				sqlBuilder.WriteString(" where ")
+				sqlBuilder.WriteString(strings.Join(whereFields, " and "))
+			}
+			sql := sqlBuilder.String()
+			klog.V(4).Infof("query rdb data with sql %s", sql)
+			MysqlData, err := driver.GetRDBData(ds, sql)
 			if err != nil {
 				return d, fmt.Errorf("get mysqldata error: %+v", err)
 			}
