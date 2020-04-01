@@ -52,20 +52,6 @@ type Field struct {
 	RDBField           *rdb.Field   `json:"rdbField,omitempty"`
 }
 
-/**
-mysql 连接
-*/
-type Connect struct {
-	UserName       string
-	Password       string
-	Ip             string
-	Port           string
-	DBName         string
-	TableName      string
-	QueryCondition map[string]string
-	QType          string
-}
-
 // only used in creation or update options
 func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 	crd := &v1.Datasource{}
@@ -192,6 +178,15 @@ func (a *Datasource) Validate() error {
 	}
 	a.ID = names.NewID()
 	return nil
+}
+
+func (a *Datasource) ValidateConnection() error {
+	switch a.Type {
+	case v1.RDBType:
+		return a.RDB.Validate()
+	default:
+		return nil
+	}
 }
 
 func (a *Datasource) ValidateForUpdate() error {
