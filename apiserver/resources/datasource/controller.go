@@ -220,6 +220,7 @@ func (dsl DataSourceList) GetItem(i int) (interface{}, error) {
 func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
+	name := req.QueryParameter("name")
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		code := "006000005"
@@ -230,7 +231,8 @@ func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 			Detail:    "auth model error",
 		}
 	}
-	if db, err := c.service.ListDatasource(util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+	if db, err := c.service.ListDatasource(util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace),
+		util.WithNameLike(name)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:   1,
 			Detail: fmt.Errorf("list database error: %+v", err).Error(),

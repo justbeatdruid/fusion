@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"strings"
 
 	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
 	rdb "github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
@@ -144,7 +145,21 @@ func ToModel(obj *v1.Datasource) *Datasource {
 	return ds
 }
 
-func ToListModel(items *v1.DatasourceList) []*Datasource {
+func ToListModel(items *v1.DatasourceList, opts ...util.OpOption) []*Datasource {
+	if len(opts) > 0 {
+		nameLike := util.OpList(opts...).NameLike()
+		if len(nameLike) > 0 {
+			var dss []*Datasource = make([]*Datasource, 0)
+			for _, item := range items.Items {
+				if !strings.Contains(item.Spec.Name, nameLike) {
+					continue
+				}
+				ds := ToModel(&item)
+				dss = append(dss, ds)
+			}
+			return dss
+		}
+	}
 	var ds []*Datasource = make([]*Datasource, len(items.Items))
 	for i := range items.Items {
 		ds[i] = ToModel(&items.Items[i])
@@ -178,6 +193,7 @@ func (a *Datasource) Validate() error {
 	a.ID = names.NewID()
 	return nil
 }
+
 func (a *Datasource) ValidateForUpdate() error {
 	for k, v := range map[string]string{
 		"id":   a.ID,

@@ -66,7 +66,7 @@ func (s *Service) ListDatasource(opts ...util.OpOption) ([]*Datasource, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	return ToListModel(dss), nil
+	return ToListModel(dss, opts...), nil
 }
 
 func (s *Service) GetDatasource(id string, opts ...util.OpOption) (*Datasource, error) {
