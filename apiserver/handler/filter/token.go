@@ -99,7 +99,7 @@ func (o *TokenFilter) getUserName(req *restful.Request) string {
 	if len(u) > 0 {
 		return u
 	}
-	return "admin"
+	return "0"
 }
 
 func (o *TokenFilter) getUserNamespace(req *restful.Request) string {
