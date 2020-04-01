@@ -90,6 +90,9 @@ func idnames(id string) string {
 	} else {
 		klog.Errorf("get user name by id error: %+v, use id as name", err)
 	}
+	if id == "0" {
+		return "system"
+	}
 	return "用户已删除"
 }
 
