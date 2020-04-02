@@ -68,7 +68,7 @@ func (r *Operator) CreatePartitionedTopic(topic *nlptv1.Topic) (err error) {
 	klog.Infof("CreatePartitionedTopic Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl := r.getUrl(topic)
 
-	response, _, errs := request.Put(topicUrl).Send(topic.Spec.Partition -1).EndStruct("")
+	response, _, errs := request.Put(topicUrl).Send(topic.Spec.Partition - 1).EndStruct("")
 	if response.StatusCode == 204 {
 		return nil
 	} else {

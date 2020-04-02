@@ -136,6 +136,12 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 		}
 	}
 
+	//添加标签
+	if tp.ObjectMeta.Labels == nil {
+		tp.ObjectMeta.Labels = make(map[string]string)
+	}
+	tp.ObjectMeta.Labels["topicgroup"] = tp.Spec.TopicGroup
+
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
 	if err != nil {
 		return nil, tperror.TopicError{
@@ -146,11 +152,6 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
 
-	//添加标签
-	if tp.ObjectMeta.Labels == nil {
-		tp.ObjectMeta.Labels = make(map[string]string)
-	}
-	tp.ObjectMeta.Labels["topicgroup"] = tp.Spec.TopicGroup
 	crd, err = s.client.Namespace(crdNamespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
 		return nil, tperror.TopicError{

@@ -80,8 +80,15 @@ func (s *Service) GetTopics(id string) ([]*service.Topic, error) {
 }
 
 func (s *Service) getTopicsCrd(id string) (*topicv1.TopicList, error) {
+	tg, err := s.GetTopicgroup(id)
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	if tg == nil {
+		return nil, fmt.Errorf("topicgroup not exist: %+v", id)
+	}
 	options := metav1.ListOptions{}
-	options.LabelSelector = fmt.Sprintf("topicgroup=%s", id)
+	options.LabelSelector = fmt.Sprintf("topicgroup=%s", tg.Name)
 	//查询所有的topic
 	crd, err := s.topicClient.Namespace(crdNamespace).List(options)
 	if err != nil {
