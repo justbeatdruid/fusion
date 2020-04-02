@@ -50,12 +50,15 @@ func TestAPIs(t *testing.T) {
 
 func TestOperator_CreateTopic(t *testing.T) {
 	op = new(Operator)
-	op.Host = "192.168.100.71"
+	op.Host = "10.160.32.24"
 	op.Port = 30002
+	op.AuthEnable = true
+	op.SuperUserToken = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.eNEbqeuUXxM7bsnP8gnxYq7hRkP50Rqc0nsWFRp8z6A"
 	topic := new(nlptv1.Topic)
-	topic.Spec.TopicGroup = "functions"
-	topic.Spec.Name = "test0115"
+	topic.Spec.TopicGroup = "default"
+	topic.Spec.Name = "nonPartitionTopic"
 	topic.Spec.Tenant = "public"
+	topic.Spec.Partition = 1
 
 	op.CreateTopic(topic)
 }

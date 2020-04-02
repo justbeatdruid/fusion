@@ -46,17 +46,33 @@ type Operator struct {
 
 //CreateTopic 调用Pulsar的Restful Admin API，创建Topic
 func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
+	if topic.Spec.Partition > 1 {
+		return r.CreatePartitionedTopic(topic)
+	}
+
 	request := r.GetHttpRequest()
 	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl := r.getUrl(topic)
-	response, body, errs := request.Put(topicUrl).Send("").EndStruct("")
-	fmt.Println("URL:", topicUrl)
-	fmt.Println(" Response: ", body, response, errs)
-
+	response, _, errs := request.Put(topicUrl).Send("").EndStruct("")
 	if response.StatusCode == 204 {
 		return nil
 	} else {
-		errMsg := fmt.Sprintf("Create topic error, url: %s, Error code: %d, Error Message: %s", topicUrl, response.StatusCode, body)
+		errMsg := fmt.Sprintf("Create topic error, url: %s, Error code: %d, Error Message: %+v", topicUrl, response.StatusCode, errs)
+		klog.Error(errMsg)
+		return errors.New(errMsg)
+	}
+}
+
+func (r *Operator) CreatePartitionedTopic(topic *nlptv1.Topic) (err error) {
+	request := r.GetHttpRequest()
+	klog.Infof("CreatePartitionedTopic Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
+	topicUrl := r.getUrl(topic)
+
+	response, _, errs := request.Put(topicUrl).Send(topic.Spec.Partition -1).EndStruct("")
+	if response.StatusCode == 204 {
+		return nil
+	} else {
+		errMsg := fmt.Sprintf("Create topic error, url: %s, Error code: %d, Error Message: %+v", topicUrl, response.StatusCode, errs)
 		klog.Error(errMsg)
 		return errors.New(errMsg)
 	}
