@@ -6,4 +6,6 @@ const (
 	DefaultBacklogPolicy            = "producer_request_hold"
 	DefaultRetentionTimeInMinutes   = 0
 	DefaultRetentionSizeInMB        = 0
+	MinRetentionTimeInMinutes       = -1 //-1代表unlimited
+	MinRetentionSizeInMB            = -1 //-1代表unlimited
 )
