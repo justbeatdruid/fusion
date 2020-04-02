@@ -19,8 +19,8 @@ import (
 	"context"
 	"fmt"
 	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
-	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
+	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -303,30 +303,4 @@ func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&nlptv1.Api{}).
 		Complete(r)
-}
-
-func (r *ApiReconciler) SyncApiCountFromKong() error {
-	klog.Infof("begin sync api count from kong")
-	ctx := context.Background()
-	apiList := &nlptv1.ApiList{}
-	if err := r.List(ctx, apiList); err != nil {
-		return fmt.Errorf("cannot list datasources: %+v", err)
-	}
-	countMap := make(map[string]int)
-	if err := r.Operator.syncApiCountFromKong(countMap); err != nil {
-		return fmt.Errorf("sync api count from kong failed: %+v", err)
-	}
-	klog.Infof("sync api count map list : %+v", countMap)
-
-	for _, value := range apiList.Items {
-		apiID := value.ObjectMeta.Name
-		if _, ok := countMap[apiID]; ok {
-			if value.Status.CalledCount != countMap[apiID] {
-				value.Status.CalledCount = countMap[apiID]
-				r.Update(ctx, &value)
-			}
-		}
-	}
-	klog.Infof("sync api list %d", len(apiList.Items))
-	return nil
 }

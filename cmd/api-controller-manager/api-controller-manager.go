@@ -17,18 +17,15 @@ package main
 
 import (
 	"flag"
-	"k8s.io/apimachinery/pkg/util/wait"
-	"os"
-	"time"
-
 	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	"github.com/chinamobile/nlpt/crds/api/controllers"
-	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
+	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"k8s.io/klog"
+	"os"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	// +kubebuilder:scaffold:imports
@@ -107,22 +104,20 @@ func main() {
 		os.Exit(1)
 	}
 
+	setupLog.Info("add backend loop")
+	if err = mgr.Add(&controllers.ApiSynchronizer{
+		Client:        mgr.GetClient(),
+		Operator: operator,
+	}); err != nil {
+		setupLog.Error(err, "problem add runnable to manager")
+		os.Exit(1)
+	}
+
 	// +kubebuilder:scaffold:builder
-	stop := make(chan struct{})
-	go func() {
-		setupLog.Info("starting manager")
-		if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-			setupLog.Error(err, "problem running manager")
-			os.Exit(1)
-		}
-		close(stop)
-	}()
-	// wait for caches up
-	time.Sleep(time.Second)
-	wait.Until(func() {
-		if err := ar.SyncApiCountFromKong(); err != nil {
-			klog.Errorf("sync api count error: %+v", err)
-		}
-		// do not use wait.NerverStop
-	}, time.Second*60, stop)
+	setupLog.Info("starting manager")
+	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
+		setupLog.Error(err, "problem running manager")
+		os.Exit(1)
+	}
+	close(make(chan struct{}))
 }
