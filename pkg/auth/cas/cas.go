@@ -88,7 +88,10 @@ func GetUserNameByID(id string) (string, error) {
 	}); u != nil {
 		return u.(User).Username, nil
 	}
-	return GetUserNameByIDFromCas(id)
+	if false {
+		return GetUserNameByIDFromCas(id)
+	}
+	return "", fmt.Errorf("user id not found")
 }
 
 func GetUserNameByIDFromCas(id string) (string, error) {
