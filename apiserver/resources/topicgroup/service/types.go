@@ -9,11 +9,11 @@ import (
 )
 
 const (
-	MIN_MESSAGE_TTL           = -1
 	producer_request_hold     = "producer_request_hold"
 	producer_exception        = "producer_exception"
 	consumer_backlog_eviction = "consumer_backlog_eviction"
-	Not_Set                   = -10000
+	NotSet                    = -12323344
+	NotSetString              = "NotSet"
 	DefaultTenant             = "public" //暂时默认为public租户
 )
 
@@ -47,18 +47,36 @@ type BacklogQuota struct {
 
 }
 
-func NewPolicies() *Policies {
-	return &Policies{
-		RetentionPolicies: RetentionPolicies{
-			RetentionSizeInMB:      Not_Set,
-			RetentionTimeInMinutes: Not_Set,
-		},
-		MessageTtlInSeconds: Not_Set,
-		BacklogQuota: BacklogQuota{
-			Limit: Not_Set,
-		},
-		NumBundles: Not_Set,
+func NewPolicies(fillDefaultValue bool) *Policies {
+	if fillDefaultValue {
+		//如果此参数未填，则返回默认值
+		return &Policies{
+			RetentionPolicies: RetentionPolicies{
+				RetentionTimeInMinutes: pulsar.DefaultRetentionTimeInMinutes,
+				RetentionSizeInMB:      pulsar.DefaultRetentionSizeInMB,
+			},
+			MessageTtlInSeconds: pulsar.DefaultMessageTTlInSeconds,
+			BacklogQuota: BacklogQuota{
+				Limit:  -1,
+				Policy: producer_request_hold,
+			},
+			NumBundles: pulsar.DefaultNumberOfNamespaceBundles,
+		}
+	} else {
+		return &Policies{
+			RetentionPolicies: RetentionPolicies{
+				RetentionSizeInMB:      NotSet,
+				RetentionTimeInMinutes: NotSet,
+			},
+			MessageTtlInSeconds: NotSet,
+			BacklogQuota: BacklogQuota{
+				Limit:  NotSet,
+				Policy: NotSetString,
+			},
+			NumBundles: NotSet,
+		}
 	}
+
 }
 
 // only used in creation options
@@ -168,6 +186,41 @@ func ToListModel(items *v1.TopicgroupList) []*Topicgroup {
 	return app
 }
 
+func (p Policies) Validate() error {
+	//TODO 参数校验待验证
+	if p != (Policies{}) {
+		if p.MessageTtlInSeconds < pulsar.DefaultMessageTTlInSeconds && p.MessageTtlInSeconds != NotSet {
+			return fmt.Errorf("messageTtlInSeconds is invalid: %d", p.MessageTtlInSeconds)
+		}
+
+		if p.RetentionPolicies.RetentionTimeInMinutes < pulsar.MinRetentionTimeInMinutes && p.RetentionPolicies.RetentionTimeInMinutes != NotSet {
+			return fmt.Errorf("retentionTimeInMinutes is invalid: %d", p.RetentionPolicies.RetentionTimeInMinutes)
+		}
+
+		if p.RetentionPolicies.RetentionSizeInMB < pulsar.MinRetentionSizeInMB && p.RetentionPolicies.RetentionTimeInMinutes != NotSet {
+			return fmt.Errorf("retentionTimeInMinutes is invalid: %d", p.RetentionPolicies.RetentionSizeInMB)
+		}
+
+		if p.NumBundles <= 0 && p.NumBundles != NotSet {
+			return fmt.Errorf("numBundles is invalid: %d", p.NumBundles)
+		}
+
+		if p.BacklogQuota != (BacklogQuota{}) {
+			switch p.BacklogQuota.Policy {
+			case producer_request_hold:
+			case consumer_backlog_eviction:
+			case producer_exception:
+				break
+			default:
+				if p.BacklogQuota.Policy != NotSetString {
+					return fmt.Errorf("backlogQuota policy is invalid: %s", p.BacklogQuota.Policy)
+				}
+			}
+		}
+	}
+	return nil
+
+}
 func (a *Topicgroup) Validate() error {
 	for k, v := range map[string]string{
 		"name": a.Name,
@@ -179,50 +232,9 @@ func (a *Topicgroup) Validate() error {
 
 	p := a.Policies
 	//TODO 参数校验待验证
-	if p != (Policies{}) {
-		if p.MessageTtlInSeconds < MIN_MESSAGE_TTL {
-			return fmt.Errorf("messageTtlInSeconds is invalid: %d", p.MessageTtlInSeconds)
-		}
-
-		if p.RetentionPolicies.RetentionTimeInMinutes < -1 {
-			return fmt.Errorf("retentionTimeInMinutes is invalid: %d", p.RetentionPolicies.RetentionTimeInMinutes)
-		}
-
-		if p.RetentionPolicies.RetentionSizeInMB < -1 {
-			return fmt.Errorf("retentionTimeInMinutes is invalid: %d", p.RetentionPolicies.RetentionSizeInMB)
-		}
-
-		if p.NumBundles < 0 {
-			return fmt.Errorf("numBundles is invalid: %d", p.NumBundles)
-		}
-
-		if p.BacklogQuota != (BacklogQuota{}) {
-			switch p.BacklogQuota.Policy {
-			case producer_request_hold:
-			case consumer_backlog_eviction:
-			case producer_exception:
-				break
-			default:
-				return fmt.Errorf("backlogQuota policy is invalid: %s", p.BacklogQuota.Policy)
-			}
-		}
-	} else {
-		//如果此参数未填，则返回默认值
-		a.Policies = Policies{
-			RetentionPolicies: RetentionPolicies{
-				RetentionTimeInMinutes: 0,
-				RetentionSizeInMB:      0,
-			},
-			MessageTtlInSeconds: -1,
-			BacklogQuota: BacklogQuota{
-				Limit:  -1,
-				Policy: producer_request_hold,
-			},
-			NumBundles: 4,
-		}
-
+	if err := p.Validate(); err != nil {
+		return err
 	}
-
 	a.ID = names.NewID()
 	return nil
 }

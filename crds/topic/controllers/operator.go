@@ -126,16 +126,14 @@ func (r *Operator) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err err
 
 	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl = fmt.Sprintf("%s://%s:%d%s%s%s", protocol, r.Host, r.Port, topicUrl, "permissions", P.AuthUserName)
-	response, body, errs := request.Delete(topicUrl).Retry(3, 5*time.Second).Send("").EndStruct("")
-	fmt.Println("URL:", topicUrl)
-	fmt.Print(" Response: ", body, response, errs)
+	response, _, errs := request.Delete(topicUrl).Retry(3, 5*time.Second).Send("").EndStruct("")
+
 	if response.StatusCode == 204 {
 		return nil
-	} else {
-		errMsg := fmt.Sprintf("delete topic error, url: %s, Error code: %d, Error Message: %s", topicUrl, response.StatusCode, body)
-		klog.Error(errMsg)
-		return errors.New(errMsg)
 	}
+	errMsg := fmt.Sprintf("delete topic error, url: %s, Error code: %d, Error Message: %+v", topicUrl, response.StatusCode, errs)
+	klog.Error(errMsg)
+	return errors.New(errMsg)
 }
 
 func (r *Operator) AddTokenToHeader(request *gorequest.SuperAgent) *gorequest.SuperAgent {

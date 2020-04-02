@@ -17,7 +17,7 @@ type Clientauth struct {
 	ID            string         `json:"id"`
 	Name          string         `json:"name"`
 	Namespace     string         `json:"namespace"`
-	Tenant        string         `json:"tenant"`       //租户名称
+	Tenant        string         `json:"tenant"`     //租户名称
 	CreateUser    user.Users     `json:"createUser"` //创建用户
 	CreatedAt     int64          `json:"createdAt"`
 	IssuedAt      int64          `json:"issuedAt"`

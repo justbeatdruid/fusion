@@ -17,7 +17,7 @@ import (
 
 type controller struct {
 	service *service.Service
-	errMsg config.ErrorConfig
+	errMsg  config.ErrorConfig
 }
 
 func newController(cfg *config.Config) *controller {
@@ -33,11 +33,11 @@ const (
 )
 
 type Wrapped struct {
-	Code    int                 `json:"code"`
-    ErrorCode string            `json:"errorCode"`
-	Detail     string           `json:"detail"` 
-	Message string              `json:"message"`
-	Data    *service.Clientauth `json:"data,omitempty"`
+	Code      int                 `json:"code"`
+	ErrorCode string              `json:"errorCode"`
+	Detail    string              `json:"detail"`
+	Message   string              `json:"message"`
+	Data      *service.Clientauth `json:"data,omitempty"`
 }
 
 type CreateResponse = Wrapped
@@ -50,11 +50,11 @@ type DeleteResponse = Wrapped
 }*/
 type GetResponse = Wrapped
 type ListResponse = struct {
-	Code    int      `json:"code"`
-	ErrorCode string    `json:"errorCode"`
-	Detail     string           `json:"detail"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Detail    string      `json:"detail"`
+	Message   string      `json:"message"`
+	Data      interface{} `json:"data"`
 }
 type PingResponse = DeleteResponse
 
@@ -75,45 +75,45 @@ func (c *controller) CreateClientauth(req *restful.Request) (int, *CreateRespons
 	body := &service.Clientauth{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    fail,
+			Code:      fail,
 			ErrorCode: "013000004",
 			Message:   c.errMsg.ClientAuth["013000004"],
-			Detail: fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	authUser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    fail,
+			Code:      fail,
 			ErrorCode: "013000003",
-			Message:     c.errMsg.ClientAuth["013000003"],
-			Detail: fmt.Errorf("auth model error: %+v", err).Error(),
+			Message:   c.errMsg.ClientAuth["013000003"],
+			Detail:    fmt.Errorf("auth model error: %+v", err).Error(),
 		}
 	}
 	body.CreateUser = user.InitWithOwner(authUser.Name)
 	body.Tenant = authUser.Namespace
 	if ca, err := c.service.CreateClientauth(body); err != nil {
-		if strings.Contains(err.Error(),"username already exists") {
+		if strings.Contains(err.Error(), "username already exists") {
 			return http.StatusInternalServerError, &CreateResponse{
-				Code:   fail ,
+				Code:      fail,
 				ErrorCode: "013000011",
-				Message:     c.errMsg.ClientAuth["013000011"],
-				Detail: fmt.Errorf("create database error: %+v", err).Error(),
+				Message:   c.errMsg.ClientAuth["013000011"],
+				Detail:    fmt.Errorf("create database error: %+v", err).Error(),
 			}
 		}
-		if strings.Contains(err.Error(),"token expire time"){
+		if strings.Contains(err.Error(), "token expire time") {
 			return http.StatusInternalServerError, &CreateResponse{
-				Code:   fail ,
+				Code:      fail,
 				ErrorCode: "013000012",
-				Message:     c.errMsg.ClientAuth["013000012"],
-				Detail: fmt.Errorf("create database error: %+v", err).Error(),
+				Message:   c.errMsg.ClientAuth["013000012"],
+				Detail:    fmt.Errorf("create database error: %+v", err).Error(),
 			}
 		}
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:   fail ,
+			Code:      fail,
 			ErrorCode: "013000002",
-			Message:     c.errMsg.ClientAuth["013000002"],
-			Detail: fmt.Errorf("create database error: %+v", err).Error(),
+			Message:   c.errMsg.ClientAuth["013000002"],
+			Detail:    fmt.Errorf("create database error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
@@ -127,10 +127,10 @@ func (c *controller) GetClientauth(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
 	if ca, err := c.service.GetClientauth(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
-			Code:    fail,
+			Code:      fail,
 			ErrorCode: "013000005",
-			Message: c.errMsg.ClientAuth["013000005"],
-			Detail: fmt.Errorf("get database error: %+v", err).Error(),
+			Message:   c.errMsg.ClientAuth["013000005"],
+			Detail:    fmt.Errorf("get database error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -159,19 +159,19 @@ func (c *controller) DeleteClientauths(req *restful.Request) (int, *ListResponse
 func (c *controller) DeleteClientauth(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	if ca, err := c.service.DeleteClientauth(id); err != nil {
-		if strings.Contains(err.Error(),"cannot delete authorized client auth user"){
+		if strings.Contains(err.Error(), "cannot delete authorized client auth user") {
 			return http.StatusInternalServerError, &DeleteResponse{
-				Code:    fail,
-				ErrorCode:"013000013",
-				Message: c.errMsg.ClientAuth["013000013"],
-				Detail: fmt.Errorf("delete clientauth error: %+v", err).Error(),
+				Code:      fail,
+				ErrorCode: "013000013",
+				Message:   c.errMsg.ClientAuth["013000013"],
+				Detail:    fmt.Errorf("delete clientauth error: %+v", err).Error(),
 			}
 		}
 		return http.StatusInternalServerError, &DeleteResponse{
-			Code:    fail,
-			ErrorCode:"013000006",
-			Message: c.errMsg.ClientAuth["013000006"],
-			Detail: fmt.Errorf("delete clientauth error: %+v", err).Error(),
+			Code:      fail,
+			ErrorCode: "013000006",
+			Message:   c.errMsg.ClientAuth["013000006"],
+			Detail:    fmt.Errorf("delete clientauth error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
@@ -187,10 +187,10 @@ func (c *controller) ListClientauth(req *restful.Request) (int, *ListResponse) {
 
 	if ca, err := c.service.ListClientauth(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
-			Code:    fail,
-			ErrorCode:"013000007",
-			Message:c.errMsg.ClientAuth["013000007"],
-			Detail: fmt.Errorf("list database error: %+v", err).Error(),
+			Code:      fail,
+			ErrorCode: "013000007",
+			Message:   c.errMsg.ClientAuth["013000007"],
+			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
 		var cas ClientauthList = ca
@@ -198,10 +198,10 @@ func (c *controller) ListClientauth(req *restful.Request) (int, *ListResponse) {
 		data, err := util.PageWrap(cas, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
+				Code:      fail,
 				ErrorCode: "013000008",
-				Message: c.errMsg.ClientAuth["013000008"],
-				Detail: fmt.Sprintf("page parameter error: %+v", err),
+				Message:   c.errMsg.ClientAuth["013000008"],
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 			}
 		} else {
 			return http.StatusOK, &ListResponse{
@@ -227,10 +227,10 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 	ca, err := c.service.ListClientauth()
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
-			Code:    fail,
-			ErrorCode:"013000007",
-			Message:c.errMsg.ClientAuth["013000007"],
-			Detail: fmt.Errorf("list database error: %+v", err).Error(),
+			Code:      fail,
+			ErrorCode: "013000007",
+			Message:   c.errMsg.ClientAuth["013000007"],
+			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	}
 	//创建用户筛选
@@ -252,19 +252,19 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 		eas, err := strconv.ParseInt(expireAtSta, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
+				Code:      fail,
 				ErrorCode: "013000009",
-				Message: c.errMsg.ClientAuth["013000009"],
-				Detail: fmt.Errorf("expireAt string to int64 error: %+v", err).Error(),
+				Message:   c.errMsg.ClientAuth["013000009"],
+				Detail:    fmt.Errorf("expireAt string to int64 error: %+v", err).Error(),
 			}
 		}
 		eae, err := strconv.ParseInt(expireAtEnd, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
+				Code:      fail,
 				ErrorCode: "013000009",
-				Message: c.errMsg.ClientAuth["013000009"],
-				Detail: fmt.Errorf("expireAt string to int64 error: %+v", err).Error(),
+				Message:   c.errMsg.ClientAuth["013000009"],
+				Detail:    fmt.Errorf("expireAt string to int64 error: %+v", err).Error(),
 			}
 		}
 		ca = c.ListTopicBytokenExp(eas, eae, ca)
@@ -274,19 +274,19 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 		cts, err := strconv.ParseInt(createTimeSta, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
+				Code:      fail,
 				ErrorCode: "013000009",
-				Message: c.errMsg.ClientAuth["013000009"],
-				Detail: fmt.Errorf("createTime string to int64 error: %+v", err).Error(),
+				Message:   c.errMsg.ClientAuth["013000009"],
+				Detail:    fmt.Errorf("createTime string to int64 error: %+v", err).Error(),
 			}
 		}
 		cte, err := strconv.ParseInt(createTimeEnd, 10, 64)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
+				Code:      fail,
 				ErrorCode: "013000009",
-				Message: c.errMsg.ClientAuth["013000009"],
-				Detail: fmt.Errorf("createTime string to int64 error: %+v", err).Error(),
+				Message:   c.errMsg.ClientAuth["013000009"],
+				Detail:    fmt.Errorf("createTime string to int64 error: %+v", err).Error(),
 			}
 		}
 		ca = c.ListTopicBycreateTime(cts, cte, ca)
@@ -303,10 +303,10 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 	data, err := util.PageWrap(cas, page, size)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
-			Code:    fail,
+			Code:      fail,
 			ErrorCode: "013000008",
-			Message: c.errMsg.ClientAuth["013000008"],
-			Detail: fmt.Sprintf("page parameter error: %+v", err),
+			Message:   c.errMsg.ClientAuth["013000008"],
+			Detail:    fmt.Sprintf("page parameter error: %+v", err),
 		}
 	} else {
 		return http.StatusOK, &ListResponse{
@@ -375,20 +375,20 @@ func (c *controller) RegenerateToken(req *restful.Request) (int, *CreateResponse
 	body := &service.Clientauth{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    fail,
+			Code:      fail,
 			ErrorCode: "013000005",
-			Message: c.errMsg.ClientAuth["013000005"],
-			Detail: fmt.Errorf("cannot read entity: %+v", err).Error(),
+			Message:   c.errMsg.ClientAuth["013000005"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	body.ID = id
 	ca, err := c.service.RegenerateToken(body)
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:    fail,
+			Code:      fail,
 			ErrorCode: "013000010",
-			Message: c.errMsg.ClientAuth["013000010"],
-			Detail: fmt.Sprintf("regenerate token error: %+v", err),
+			Message:   c.errMsg.ClientAuth["013000010"],
+			Detail:    fmt.Sprintf("regenerate token error: %+v", err),
 		}
 	}
 

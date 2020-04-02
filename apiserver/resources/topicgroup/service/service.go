@@ -139,6 +139,9 @@ func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, 
 		return nil, fmt.Errorf("bad request:policies is required")
 	}
 
+	if err = policies.Validate(); err != nil {
+		return nil, fmt.Errorf("bad request: %+v", err)
+	}
 	crd.Spec.Policies = s.MergePolicies(policies, crd.Spec.Policies)
 	crd.Status.Status = v1.Update
 	crd.Status.Message = "accepted update topic group policies"
@@ -152,27 +155,27 @@ func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, 
 }
 
 func (s *Service) MergePolicies(req *Policies, db v1.Policies) v1.Policies {
-	if req.NumBundles != Not_Set {
+	if req.NumBundles != NotSet {
 		db.NumBundles = req.NumBundles
 	}
 
-	if req.RetentionPolicies.RetentionTimeInMinutes != Not_Set {
+	if req.RetentionPolicies.RetentionTimeInMinutes != NotSet {
 		db.RetentionPolicies.RetentionTimeInMinutes = req.RetentionPolicies.RetentionTimeInMinutes
 	}
 
-	if req.RetentionPolicies.RetentionSizeInMB != Not_Set {
+	if req.RetentionPolicies.RetentionSizeInMB != NotSet {
 		db.RetentionPolicies.RetentionSizeInMB = req.RetentionPolicies.RetentionSizeInMB
 	}
 
-	if req.MessageTtlInSeconds != Not_Set {
+	if req.MessageTtlInSeconds != NotSet {
 		db.MessageTtlInSeconds = req.MessageTtlInSeconds
 	}
 
-	if req.BacklogQuota.Limit != Not_Set {
+	if req.BacklogQuota.Limit != NotSet {
 		db.BacklogQuota.Limit = req.BacklogQuota.Limit
 	}
 
-	if len(req.BacklogQuota.Policy) != 0 {
+	if req.BacklogQuota.Policy != NotSetString {
 		db.BacklogQuota.Policy = req.BacklogQuota.Policy
 	}
 	return db

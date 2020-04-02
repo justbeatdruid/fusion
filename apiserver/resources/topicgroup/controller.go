@@ -84,6 +84,7 @@ func (c *controller) newCreateResponse(code int, errorCode string, detail string
 
 func (c *controller) CreateTopicgroup(req *restful.Request) (int, *CreateResponse) {
 	body := &service.Topicgroup{}
+	body.Policies = *service.NewPolicies(true)
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      fail,
@@ -118,9 +119,10 @@ func (c *controller) GetTopicgroup(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
 	if tp, err := c.service.GetTopicgroup(id); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
-			Code:    fail,
-			Message: fmt.Errorf("get database error: %+v", err).Error(),
-			Detail:  fmt.Sprintf("get database error: %+v", err),
+			Code:      fail,
+			ErrorCode: tgerror.ErrorQueryTopicgroupInfo,
+			Message:   c.errMsg.TopicGroup[tgerror.ErrorQueryTopicgroupInfo],
+			Detail:    fmt.Sprintf("get database error: %+v", err),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
@@ -159,7 +161,7 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 		}
 	}
 
-	policies := service.NewPolicies()
+	policies := service.NewPolicies(false)
 	if err := req.ReadEntity(policies); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      fail,
