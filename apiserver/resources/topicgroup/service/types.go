@@ -88,6 +88,8 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 		Status:  status,
 		Message: app.Message,
 	}
+
+	crd.ObjectMeta.Labels = user.AddUsersLabels(app.Users, crd.ObjectMeta.Labels)
 	return crd
 }
 
