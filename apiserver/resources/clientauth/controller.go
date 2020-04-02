@@ -353,7 +353,7 @@ func (c *controller) ListTopicByTenant(tenant string, cas []*service.Clientauth)
 func (c *controller) ListTopicBytokenExp(expireAtSta int64, expireAtEnd int64, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
 	for _, ca := range cas {
-		if ca.ExpireAt < expireAtEnd && ca.ExpireAt > expireAtSta {
+		if ca.ExpireAt <= expireAtEnd && ca.ExpireAt >= expireAtSta {
 			casResult = append(casResult, ca)
 		}
 	}
@@ -364,7 +364,7 @@ func (c *controller) ListTopicBytokenExp(expireAtSta int64, expireAtEnd int64, c
 func (c *controller) ListTopicBycreateTime(createTimeSta int64, createTimeEnd int64, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
 	for _, ca := range cas {
-		if ca.CreatedAt < createTimeEnd && ca.CreatedAt > createTimeSta {
+		if ca.CreatedAt <= createTimeEnd && ca.CreatedAt >= createTimeSta {
 			casResult = append(casResult, ca)
 		}
 	}
