@@ -699,7 +699,7 @@ func (r *Operator) UpdateRouteByKong(db *nlptv1.Api) (err error) {
 	return nil
 }
 
-func (r *Operator) syncApiCountFromKong(m map[string]int) error {
+func (r *Operator) SyncApiCountFromPrometheus(m map[string]int) error {
 	klog.Infof("sync api count from kong.")
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -712,7 +712,7 @@ func (r *Operator) syncApiCountFromKong(m map[string]int) error {
 
 	}
 
-	klog.Infof("getApiCountFromKong: %d %s\n", response.StatusCode, string(body))
+	klog.Infof("SyncApiCountFromPrometheus: %d %s\n", response.StatusCode, string(body))
 	if response.StatusCode != 200 {
 		return fmt.Errorf("request for get api count error: wrong status code: %d", response.StatusCode)
 	}
@@ -725,7 +725,7 @@ func (r *Operator) syncApiCountFromKong(m map[string]int) error {
 	}
 	route := responseBody.Data.Result[0].Metric.Route
 	num := responseBody.Data.Result[0].Value[1].(string)
-	klog.Infof("getApiCountFromKong ROUTE:  %s %s\n", route, num)
-	klog.Infof("getApiCountFromKong Result:  %+v", m)
+	klog.Infof("SyncApiCountFromPrometheus ROUTE:  %s %s\n", route, num)
+	klog.Infof("SyncApiCountFromPrometheus Result:  %+v", m)
 	return nil
 }
