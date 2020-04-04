@@ -158,32 +158,32 @@ func (c *controller) DoStatisticsOnTopics(req *restful.Request) (int, *Statistic
 
 	}
 
-	data:= service.Statistics{}
+	data := service.Statistics{}
 	data.Total = len(tp)
 	data.Increment = c.CountTopicsIncrement(tp)
 	return http.StatusOK, &StatisticsResponse{
 		Code:      success,
 		ErrorCode: "",
-		Message :"",
-		Data:   data,
+		Message:   "",
+		Data:      data,
 		Detail:    "do statistics on topics successfully",
 	}
 }
 
-
 func (c *controller) CountTopicsIncrement(tp []*service.Topic) int {
 	var increment int
 	now := time.Now()
-	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0,0,time.UTC)
+	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 	end := start.AddDate(0, 0, 1)
 	for _, t := range tp {
 		if t.CreatedAt < end.Unix() && t.CreatedAt >= start.Unix() {
-			increment ++
+			increment++
 		}
 	}
 
 	return increment
 }
+
 //批量删除topics
 func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
 	ids := req.QueryParameters("ids")
