@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type controller struct {
@@ -60,6 +61,14 @@ type MessageResponse = struct {
 	Message   string      `json:"message"`
 	Messages  interface{} `json:"messages"`
 	Detail    string      `json:"detail"`
+}
+
+type StatisticsResponse = struct {
+	Code      int                `json:"code"`
+	ErrorCode string             `json:"errorCode"`
+	Message   string             `json:"message"`
+	Data      service.Statistics `json:"data"`
+	Detail    string             `json:"detail"`
 }
 type PingResponse = DeleteResponse
 
@@ -137,6 +146,44 @@ func (c *controller) GetTopic(req *restful.Request) (int, *GetResponse) {
 	}
 }
 
+func (c *controller) DoStatisticsOnTopics(req *restful.Request) (int, *StatisticsResponse) {
+	tp, err := c.service.ListTopic()
+	if err != nil {
+		return http.StatusInternalServerError, &StatisticsResponse{
+			Code:      fail,
+			ErrorCode: "",
+			Message:   "",
+			Detail:    fmt.Sprintf("do statistics on topics error, %+v", err),
+		}
+
+	}
+
+	data:= service.Statistics{}
+	data.Total = len(tp)
+	data.Increment = c.CountTopicsIncrement(tp)
+	return http.StatusOK, &StatisticsResponse{
+		Code:      success,
+		ErrorCode: "",
+		Message :"",
+		Data:   data,
+		Detail:    "do statistics on topics successfully",
+	}
+}
+
+
+func (c *controller) CountTopicsIncrement(tp []*service.Topic) int {
+	var increment int
+	now := time.Now()
+	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0,0,time.UTC)
+	end := start.AddDate(0, 0, 1)
+	for _, t := range tp {
+		if t.CreatedAt < end.Unix() && t.CreatedAt >= start.Unix() {
+			increment ++
+		}
+	}
+
+	return increment
+}
 //批量删除topics
 func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
 	ids := req.QueryParameters("ids")

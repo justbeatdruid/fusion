@@ -49,6 +49,12 @@ type Permission struct {
 	Status       string  `json:"status"`       //用户的授权状态，已授权、待删除、待授权
 }
 
+type Statistics struct {
+	Total        int `json:"total"`
+	Increment    int `json:"increment"`
+	TotalMessage int `json:"totalMessage"`
+}
+
 const (
 	Consume = "consume"
 	Produce = "produce"
@@ -82,9 +88,6 @@ func ToAPI(app *Topic) *v1.Topic {
 		crd.Spec.TopicGroup = DefaultNamespace
 	}
 
-	if len(crd.Spec.Tenant) == 0 {
-		crd.Spec.Tenant = "public"
-	}
 	status := app.Status
 	if len(status) == 0 {
 		status = v1.Init
