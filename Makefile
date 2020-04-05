@@ -82,7 +82,7 @@ fmt:
 
 # Run go vet against code
 vet:
-	CGO_CFLAGS="-I$(shell pwd)/include" CGO_LDFLAGS="-L$(shell pwd)/lib" go vet ./...
+	go vet ./...
 
 vd:
 	go mod tidy
@@ -94,7 +94,7 @@ alpine:
 ### following methods for local test
 apiserver-binary:
 	@if rm bin/fusion-apiserver;then test 0;fi
-	CGO_CFLAGS="-I$(shell pwd)/include" CGO_LDFLAGS="-L$(shell pwd)/lib" go build -o bin/fusion-apiserver cmd/apiserver/apiserver.go
+	go build -o bin/fusion-apiserver cmd/apiserver/apiserver.go
 
 datasource-binary:
 	@if rm bin/fusion-datasource-controller-manager;then test 0;fi
@@ -117,7 +117,7 @@ apply-binary:
 	go build -o bin/fusion-apply-controller-manager cmd/apply-controller-manager/apply-controller-manager.go
 
 apiserver-run:
-	LD_LIBRARY_PATH=$(shell pwd)/lib $(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5 --dataservice-data-host=10.160.32.24 --audit-host=10.160.32.24 --audit-port=30068 --cas-host=10.160.32.30 --cas-port=8000 --tenant-enabled=true --local-config=$(shell pwd)/config/err.json
+    $(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5 --dataservice-data-host=10.160.32.24 --audit-host=10.160.32.24 --audit-port=30068 --cas-host=10.160.32.30 --cas-port=8000 --tenant-enabled=true --local-config=$(shell pwd)/config/err.json
 
 datasource-run:
 	$(shell pwd)/bin/fusion-datasource-controller-manager --kubeconfig=/root/.kube/config --v=5 --dataservice-host=10.160.32.24
