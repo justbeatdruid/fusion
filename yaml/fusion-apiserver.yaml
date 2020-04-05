@@ -48,7 +48,7 @@ spec:
                 operator: In
                 values:
                 - fusion-apiserver
-              - key: version
+               - key: version
                 operator: In
                 values:
                 - v0.1-alpha

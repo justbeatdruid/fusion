@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"fmt"
-	"github.com/apache/pulsar/pulsar-client-go/pulsar"
+	"github.com/apache/pulsar-client-go/pulsar"
 	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	clientauthv1 "github.com/chinamobile/nlpt/crds/clientauth/api/v1"
@@ -287,17 +287,14 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 	for _, topicUrl := range topicUrls {
 		reader, err := client.CreateReader(pulsar.ReaderOptions{
 			Topic:          topicUrl,
-			StartMessageID: pulsar.EarliestMessage,
+			StartMessageID: pulsar.EarliestMessageID(),
 		})
 		if err != nil {
 			fmt.Println("create reader error")
 			continue
 		}
 		ctx := context.Background()
-		for {
-			if flag, _ := reader.HasNext(); flag == false {
-				break
-			}
+		for reader.HasNext(){
 			msg, err := reader.Next(ctx)
 			if err != nil {
 				fmt.Printf("Error reading from topic: %v", err)
@@ -331,16 +328,13 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 		fmt.Println(topicUrl)
 		reader, err := client.CreateReader(pulsar.ReaderOptions{
 			Topic:          topicUrl,
-			StartMessageID: pulsar.EarliestMessage,
+			StartMessageID: pulsar.EarliestMessageID(),
 		})
 		if err != nil {
 			fmt.Printf("create reader error: %+v", err)
 			continue
 		}
-		for {
-			if flag, _ := reader.HasNext(); flag == false {
-				break
-			}
+		for reader.HasNext(){
 			ctx := context.Background()
 			msg, err := reader.Next(ctx)
 			if err != nil {
