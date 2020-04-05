@@ -1,4 +1,3 @@
-
 # Image URL to use all building/pushing image targets
 REG ?= registry.cmcc.com
 APITAG ?= library/fusion-apiserver:0.1.0
@@ -117,7 +116,7 @@ apply-binary:
 	go build -o bin/fusion-apply-controller-manager cmd/apply-controller-manager/apply-controller-manager.go
 
 apiserver-run:
-    $(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5 --dataservice-data-host=10.160.32.24 --audit-host=10.160.32.24 --audit-port=30068 --cas-host=10.160.32.30 --cas-port=8000 --tenant-enabled=true --local-config=$(shell pwd)/config/err.json
+	$(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5 --dataservice-data-host=10.160.32.24 --audit-host=10.160.32.24 --audit-port=30068 --cas-host=10.160.32.30 --cas-port=8000 --tenant-enabled=true --local-config=$(shell pwd)/config/err.json
 
 datasource-run:
 	$(shell pwd)/bin/fusion-datasource-controller-manager --kubeconfig=/root/.kube/config --v=5 --dataservice-host=10.160.32.24
