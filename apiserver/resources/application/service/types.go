@@ -36,6 +36,12 @@ type Application struct {
 	GroupName string `json:"groupName"`
 }
 
+type Statistics struct {
+	Total      int    `json:"total"`
+	Increment  int    `json:"increment"`
+	Percentage string `json:"percentage"`
+}
+
 // only used in creation options
 func ToAPI(app *Application) *v1.Application {
 	crd := &v1.Application{}

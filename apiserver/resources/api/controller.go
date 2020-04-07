@@ -528,7 +528,7 @@ func (c *controller) DoStatisticsOncApis(req *restful.Request) (int, *Statistics
 
 	data := service.Statistics{}
 	data.Total = len(apiList.Items)
-	data.Increment, data.TotalCalled = c.CountTopicsIncrement(apiList.Items)
+	data.Increment, data.TotalCalled = c.CountApisIncrement(apiList.Items)
 	return http.StatusOK, &StatisticsResponse{
 		Code:      0,
 		ErrorCode: "",
@@ -538,7 +538,7 @@ func (c *controller) DoStatisticsOncApis(req *restful.Request) (int, *Statistics
 	}
 }
 
-func (c *controller) CountTopicsIncrement(apis []v1.Api) (int, int) {
+func (c *controller) CountApisIncrement(apis []v1.Api) (int, int) {
 	var increment int
 	var totalCalled int
 	now := time.Now()
