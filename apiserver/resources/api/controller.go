@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	v1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	"net/http"
 	"time"
 
@@ -67,6 +68,14 @@ type TestApiResponse = struct {
 	Detail     string      `json:"detail"`
 	Message    string      `json:"message"`
 	TestResult interface{} `json:"data,omitempty"`
+}
+
+type StatisticsResponse = struct {
+	Code      int                `json:"code"`
+	ErrorCode string             `json:"errorCode"`
+	Message   string             `json:"message"`
+	Data      service.Statistics `json:"data"`
+	Detail    string             `json:"detail"`
 }
 
 func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
@@ -495,6 +504,55 @@ func (c *controller) TestApi(req *restful.Request) (int, interface{}) {
 			TestResult: resp,
 		}
 	}
+}
+
+func (c *controller) DoStatisticsOncApis(req *restful.Request) (int, *StatisticsResponse) {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &StatisticsResponse{
+			Code:      1,
+			ErrorCode: "001000003",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
+		}
+	}
+	apiList, err := c.service.ListApis(authuser.Namespace)
+	if err != nil {
+		return http.StatusInternalServerError, &StatisticsResponse{
+			Code:      1,
+			ErrorCode: "001000010",
+			Message:   c.errMsg.Api["001000010"],
+			Detail:    fmt.Sprintf("do statistics on apis error, %+v", err),
+		}
+	}
+
+	data := service.Statistics{}
+	data.Total = len(apiList.Items)
+	data.Increment, data.TotalCalled = c.CountTopicsIncrement(apiList.Items)
+	return http.StatusOK, &StatisticsResponse{
+		Code:      0,
+		ErrorCode: "",
+		Message:   "",
+		Data:      data,
+		Detail:    "do statistics on apis successfully",
+	}
+}
+
+func (c *controller) CountTopicsIncrement(apis []v1.Api) (int, int) {
+	var increment int
+	var totalCalled int
+	now := time.Now()
+	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	end := start.AddDate(0, 0, 1)
+	for _, t := range apis {
+		if t.Status.ReleasedAt.Unix() < end.Unix() && t.Status.ReleasedAt.Unix() >= start.Unix() {
+			increment++
+		}
+		totalCalled = totalCalled + t.Status.CalledCount
+
+	}
+
+	return increment, totalCalled
 }
 
 func returns200(b *restful.RouteBuilder) {
