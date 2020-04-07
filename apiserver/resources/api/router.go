@@ -116,6 +116,15 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.testApi).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	//api统计接口
+	ws.Route(ws.GET("/apis/statistics").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("statistic apis").
+		To(r.doStatisticsOnApis).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func process(f func(*restful.Request) (int, interface{}), request *restful.Request, response *restful.Response) {
@@ -165,4 +174,9 @@ func (r *router) kongQuery(request *restful.Request, response *restful.Response)
 
 func (r *router) testApi(request *restful.Request, response *restful.Response) {
 	process(r.controller.TestApi, request, response)
+}
+
+func (r *router) doStatisticsOnApis(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.DoStatisticsOncApis(request)
+	response.WriteHeaderAndEntity(code, result)
 }

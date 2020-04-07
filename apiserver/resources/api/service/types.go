@@ -62,6 +62,12 @@ type Api struct {
 	ApplicationBindStatus *v1.ApiApplicationStatus `json:"applicationBindStatus"`
 }
 
+type Statistics struct {
+	Total        int `json:"total"`
+	Increment    int `json:"increment"`
+	TotalCalled  int `json:"totalCalled"`
+}
+
 // only used in creation
 func ToAPI(api *Api) *v1.Api {
 	crd := &v1.Api{}
