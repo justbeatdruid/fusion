@@ -81,6 +81,14 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.changeOwner).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+	//app统计接口
+	ws.Route(ws.GET("/applications/statistics").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("statistic apps").
+		To(r.doStatisticsOnApps).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func (r *router) createApplication(request *restful.Request, response *restful.Response) {
@@ -125,5 +133,10 @@ func (r *router) changeUser(request *restful.Request, response *restful.Response
 
 func (r *router) changeOwner(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ChangeOwner(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) doStatisticsOnApps(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.DoStatisticsOncApps(request)
 	response.WriteHeaderAndEntity(code, result)
 }
