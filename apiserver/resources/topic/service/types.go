@@ -51,9 +51,9 @@ type Permission struct {
 }
 
 type Statistics struct {
-	Total        int `json:"total"`
-	Increment    int `json:"increment"`
-	TotalMessage int `json:"totalMessage"`
+	Total       int    `json:"total"`
+	Increment   int    `json:"increment"`
+	MessageSize string `json:"MessageSize"`
 }
 
 const (

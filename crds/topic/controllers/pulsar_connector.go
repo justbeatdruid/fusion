@@ -174,10 +174,16 @@ func (r *Connector) GetStats(topic nlptv1.Topic) (nlptv1.Stats, error) {
 	}
 
 	url += statsUrl
+	url = fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
+	url = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
 	stats := nlptv1.Stats{}
 	response, _, errs := request.Get(url).Retry(3, 5*time.Second, http.StatusNotFound, http.StatusBadGateway).EndStruct(stats)
+	if errs != nil {
+		klog.Errorf("get stats error, url: %+v, errs: %+v", url, errs)
+		return nlptv1.Stats{}, fmt.Errorf("get stats error: %+v", errs)
+	}
 	if response.StatusCode == http.StatusNoContent {
-		return nlptv1.Stats{}, nil
+		return stats, nil
 	}
 	klog.Errorf("get stats error, url: %+v, status code: %+v, errs: %+v", url, response.StatusCode, errs)
 	return nlptv1.Stats{}, fmt.Errorf("get stats error: %+v", errs)

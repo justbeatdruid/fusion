@@ -258,12 +258,12 @@ func (c *controller) ListTopicByField(req *restful.Request, tps []*service.Topic
 	name := req.QueryParameter("name")
 	topicGroup := req.QueryParameter("topicGroup")
 	//Topic名称查询参数
-	if len(name)>0 {
-		tps = c.ListTopicByTopicName(name,tps)
+	if len(name) > 0 {
+		tps = c.ListTopicByTopicName(name, tps)
 	}
 	//TopicGroup查询参数
-	if len(topicGroup)>0 {
-		tps = c.ListTopicByTopicGroup(topicGroup,tps)
+	if len(topicGroup) > 0 {
+		tps = c.ListTopicByTopicGroup(topicGroup, tps)
 	}
 
 	return tps
@@ -480,7 +480,7 @@ func (c *controller) ListTopicByTopicGroup(topicGroup string, tps []*service.Top
 	var tpsResult []*service.Topic
 	topicGroup = strings.ToLower(topicGroup)
 	for _, tp := range tps {
-		if strings.Contains(strings.ToLower(tp.TopicGroup),topicGroup){
+		if strings.Contains(strings.ToLower(tp.TopicGroup), topicGroup) {
 			tpsResult = append(tpsResult, tp)
 		}
 	}

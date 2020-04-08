@@ -43,10 +43,12 @@ func (r *TopicSynchronizer) SyncTopicStats() error {
 	if err := r.List(ctx, topicList, &client.ListOptions{
 		Namespace: defaultNamespace,
 	}); err != nil {
-		return fmt.Errorf("cannot list datasources: %+v", err)
+		return fmt.Errorf("cannot list topics: %+v", err)
 	}
-
 	for _, tp := range topicList.Items {
+		if tp.Status.Status == nlptv1.Init || tp.Status.Status == nlptv1.Creating {
+			continue
+		}
 		stats, err := r.Connector.GetStats(tp)
 		if err != nil {
 			continue
