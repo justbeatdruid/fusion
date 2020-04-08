@@ -96,7 +96,7 @@ func (s *Service) UpdateTrafficcontrol(id string, reqData interface{}) (*Traffic
 	//更新crd的状态为开始更新
 	crd.Status.Status = v1.Update
 	for index := range crd.Spec.Apis {
-		crd.Spec.Apis[index].Result = v1.INIT
+		crd.Spec.Apis[index].Result = v1.UPDATING
 	}
 	su, err := s.Update(crd)
 	if err != nil {
@@ -316,7 +316,7 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 		isFisrtBind := true
 		for index, v := range traffic.Spec.Apis {
 			if v.ID == apiSource.ObjectMeta.Name {
-				traffic.Spec.Apis[index].Result = v1.INIT
+				traffic.Spec.Apis[index].Result = v1.BINDING
 				isFisrtBind = false
 				break
 			}
@@ -326,7 +326,7 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 				ID:     api.ID,
 				Name:   apiSource.Spec.Name,
 				KongID: apiSource.Spec.KongApi.KongID,
-				Result: v1.INIT,
+				Result: v1.BINDING,
 			})
 		}
 		//update api 操作时会判断是绑定还是解绑所以先将状态设置成bind
@@ -369,7 +369,7 @@ func (s *Service) UnBindApi(id string, apis []v1.Api) (*Trafficcontrol, error) {
 		//解除绑定
 		for index, v := range traffic.Spec.Apis {
 			if v.ID == apiSource.ObjectMeta.Name {
-				traffic.Spec.Apis[index].Result = v1.INIT
+				traffic.Spec.Apis[index].Result = v1.UNBINDING
 			}
 		}
 		//update api 操作时会判断是绑定还是解绑所以先将状态设置成unbind
