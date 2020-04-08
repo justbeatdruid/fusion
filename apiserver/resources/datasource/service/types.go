@@ -52,6 +52,12 @@ type Field struct {
 	RDBField           *rdb.Field   `json:"rdbField,omitempty"`
 }
 
+type Statistics struct {
+	Total      int    `json:"total"`
+	Increment  int    `json:"increment"`
+	Percentage string `json:"percentage"`
+}
+
 // only used in creation or update options
 func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 	crd := &v1.Datasource{}
