@@ -121,11 +121,9 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 					//收回权限成功，删除标签
 					delete(topic.ObjectMeta.Labels, p.AuthUserID)
-					r.Delete(ctx, topic)
 				}
 			}
 		}
-
 		topic.Status.Status = nlptv1.Updated
 		//更新数据库的状态
 		klog.Infof("Final Topic: %+v", *topic)
