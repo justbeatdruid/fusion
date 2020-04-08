@@ -107,12 +107,14 @@ func ToModel(obj *v1.Datasource) *Datasource {
 	case v1.RDBType:
 		if obj.Spec.RDB != nil {
 			ds.RDB = obj.Spec.RDB
-			ds.RDB.Connect = v1.ConnectInfo{
-				Host:     opaque,
-				Port:     0,
-				Username: opaque,
-				Password: opaque,
-			}
+			/*
+				ds.RDB.Connect = v1.ConnectInfo{
+					Host:     opaque,
+					Port:     0,
+					Username: opaque,
+					Password: opaque,
+				}
+			*/
 		} else {
 			klog.Errorf("datasource %s in type rdb has no rdb instance", obj.ObjectMeta.Name)
 		}
