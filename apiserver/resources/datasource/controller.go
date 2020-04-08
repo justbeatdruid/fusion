@@ -120,6 +120,12 @@ func (c *controller) UpdateDatasource(req *restful.Request) (int, *UpdateRespons
 			Detail: "read entity error: data is null",
 		}
 	}
+	if len(body.Data.ID) == 0 {
+		return http.StatusInternalServerError, &UpdateResponse{
+			Code:   1,
+			Detail: "read entity error: id in body is null",
+		}
+	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		code := "006000005"
@@ -131,7 +137,7 @@ func (c *controller) UpdateDatasource(req *restful.Request) (int, *UpdateRespons
 		}
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
-	if db, err := c.service.UpdateDatasource(body.Data); err != nil {
+	if db, err := c.service.UpdateDatasource(body.Data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:   2,
 			Detail: fmt.Errorf("update database error: %+v", err).Error(),
