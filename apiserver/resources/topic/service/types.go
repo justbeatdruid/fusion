@@ -31,6 +31,7 @@ type Topic struct {
 	Message         string       `json:"message"`
 	Permissions     []Permission `json:"permissions"`
 	Users           user.Users   `json:"users"`
+	MessageSize     float64      `json:"messageSize"` //消息总量
 }
 
 type Message struct {
@@ -50,9 +51,9 @@ type Permission struct {
 }
 
 type Statistics struct {
-	Total        int `json:"total"`
-	Increment    int `json:"increment"`
-	TotalMessage int `json:"totalMessage"`
+	Total       int    `json:"total"`
+	Increment   int    `json:"increment"`
+	MessageSize string `json:"MessageSize"`
 }
 
 const (

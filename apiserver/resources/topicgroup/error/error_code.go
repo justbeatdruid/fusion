@@ -13,7 +13,7 @@ const (
 	ErrorModify               = "011000008" //修改Topic分组策略失败
 	ErrorDelete               = "011000009" //删除Topic分组失败
 	ErrorDuplicatedTopicgroup = "011000010" //创建Topic分组失败，原因：Topic分组已存在
-	ErrorQueryTopicgroupInfo  = "010000011" //查询Topic分组失败
+	ErrorQueryTopicgroupInfo  = "011000011" //查询Topic分组失败
 
 )
 

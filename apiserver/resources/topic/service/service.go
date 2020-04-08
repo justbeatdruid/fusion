@@ -294,7 +294,7 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 			continue
 		}
 		ctx := context.Background()
-		for reader.HasNext(){
+		for reader.HasNext() {
 			msg, err := reader.Next(ctx)
 			if err != nil {
 				fmt.Printf("Error reading from topic: %v", err)
@@ -334,7 +334,7 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 			fmt.Printf("create reader error: %+v", err)
 			continue
 		}
-		for reader.HasNext(){
+		for reader.HasNext() {
 			ctx := context.Background()
 			msg, err := reader.Next(ctx)
 			if err != nil {
