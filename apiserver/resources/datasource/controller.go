@@ -2,11 +2,12 @@ package datasource
 
 import (
 	"fmt"
-	_ "github.com/go-sql-driver/mysql"
 	"net/http"
+	"time"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
@@ -56,6 +57,14 @@ type Unstructured struct {
 	Detail    string      `json:"detail"`
 	Message   string      `json:"message"`
 	Data      interface{} `json:"data,omitempty"`
+}
+
+type StatisticsResponse = struct {
+	Code      int                `json:"code"`
+	ErrorCode string             `json:"errorCode"`
+	Message   string             `json:"message"`
+	Data      service.Statistics `json:"data"`
+	Detail    string             `json:"detail"`
 }
 
 func (c *controller) CreateDatasource(req *restful.Request) (int, *CreateResponse) {
@@ -111,6 +120,12 @@ func (c *controller) UpdateDatasource(req *restful.Request) (int, *UpdateRespons
 			Detail: "read entity error: data is null",
 		}
 	}
+	if len(body.Data.ID) == 0 {
+		return http.StatusInternalServerError, &UpdateResponse{
+			Code:   1,
+			Detail: "read entity error: id in body is null",
+		}
+	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		code := "006000005"
@@ -122,7 +137,7 @@ func (c *controller) UpdateDatasource(req *restful.Request) (int, *UpdateRespons
 		}
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
-	if db, err := c.service.UpdateDatasource(body.Data); err != nil {
+	if db, err := c.service.UpdateDatasource(body.Data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:   2,
 			Detail: fmt.Errorf("update database error: %+v", err).Error(),
@@ -405,6 +420,57 @@ func (c *controller) getDataByApi(req *restful.Request) (int, *QueryDataResponse
 	}
 }
 */
+
+func (c *controller) DoStatistics(req *restful.Request) (int, *StatisticsResponse) {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &StatisticsResponse{
+			Code:      1,
+			ErrorCode: "002000003",
+			Message:   c.errCode["002000003"],
+			Detail:    "auth model error",
+		}
+	}
+	appList, err := c.service.List(util.WithNamespace(authuser.Namespace))
+	if err != nil {
+		return http.StatusInternalServerError, &StatisticsResponse{
+			Code:      1,
+			ErrorCode: "002000008",
+			Message:   c.errCode["002000008"],
+			Detail:    fmt.Sprintf("do statistics on apps error, %+v", err),
+		}
+	}
+
+	data := service.Statistics{}
+	data.Total = len(appList.Items)
+	data.Increment, data.Percentage = c.CountAppsIncrement(appList.Items)
+	return http.StatusOK, &StatisticsResponse{
+		Code:      0,
+		ErrorCode: "",
+		Message:   "",
+		Data:      data,
+		Detail:    "do statistics successfully",
+	}
+}
+
+func (c *controller) CountAppsIncrement(dss []v1.Datasource) (int, string) {
+	var increment int
+	var percentage string
+	now := time.Now()
+	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
+	end := start.AddDate(0, 0, 1)
+	for _, t := range dss {
+		createTime := util.NewTime(t.ObjectMeta.CreationTimestamp.Time)
+		if createTime.Unix() < end.Unix() && createTime.Unix() >= start.Unix() {
+			increment++
+		}
+	}
+	total := len(dss)
+	pre := float64(increment) / float64(total) * 100
+	percentage = fmt.Sprintf("%.0f%s", pre, "%")
+
+	return increment, percentage
+}
 
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")

@@ -52,8 +52,14 @@ type Field struct {
 	RDBField           *rdb.Field   `json:"rdbField,omitempty"`
 }
 
+type Statistics struct {
+	Total      int    `json:"total"`
+	Increment  int    `json:"increment"`
+	Percentage string `json:"percentage"`
+}
+
 // only used in creation or update options
-func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
+func ToAPI(ds *Datasource, specOnly bool) *v1.Datasource {
 	crd := &v1.Datasource{}
 	crd.TypeMeta.Kind = "Datasource"
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
@@ -71,15 +77,10 @@ func ToAPI(ds *Datasource, dealType string) *v1.Datasource {
 	if len(status) == 0 {
 		status = v1.Init
 	}
-	if dealType == "create" {
+	if !specOnly {
 		crd.Status = v1.DatasourceStatus{
 			Status:    status,
 			CreatedAt: metav1.Now(),
-			UpdatedAt: metav1.Now(),
-		}
-	} else if dealType == "update" {
-		crd.Status = v1.DatasourceStatus{
-			Status:    status,
 			UpdatedAt: metav1.Now(),
 		}
 	}
@@ -168,7 +169,7 @@ func (a *Datasource) Validate() error {
 			return err
 		}
 	case v1.DataWarehouseType:
-		return fmt.Errorf("cannot create datawarehouse datasource")
+		return fmt.Errorf("cannot create or update datawarehouse datasource")
 	default:
 		return fmt.Errorf("unknown datasource type: %s", a.Type)
 	}
@@ -176,7 +177,9 @@ func (a *Datasource) Validate() error {
 	if !support(a.Type) {
 		return fmt.Errorf("type %s not supported", a.Type)
 	}
-	a.ID = names.NewID()
+	if len(a.ID) == 0 {
+		a.ID = names.NewID()
+	}
 	return nil
 }
 
@@ -187,28 +190,6 @@ func (a *Datasource) ValidateConnection() error {
 	default:
 		return nil
 	}
-}
-
-func (a *Datasource) ValidateForUpdate() error {
-	for k, v := range map[string]string{
-		"id":   a.ID,
-		"name": a.Name,
-		"type": a.Type.String(),
-	} {
-		if len(v) == 0 {
-			return fmt.Errorf("%s is null", k)
-		}
-	}
-	if a.Type == v1.RDBType {
-		if err := a.RDB.Validate(); err != nil {
-			return err
-		}
-	}
-
-	if !support(a.Type) {
-		return fmt.Errorf("type %s not supported", a.Type)
-	}
-	return nil
 }
 
 func support(tp v1.Type) bool {

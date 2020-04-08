@@ -37,22 +37,27 @@ func NewService(client dynamic.Interface, supported []string) *Service {
 }
 
 func (s *Service) CreateDatasource(model *Datasource) (*Datasource, error) {
-	dealType := "create"
 	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
-	ds, err := s.Create(ToAPI(model, dealType))
+	ds, err := s.Create(ToAPI(model, false))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
 	}
 	return ToModel(ds), nil
 }
-func (s *Service) UpdateDatasource(model *Datasource) (*Datasource, error) {
-	dealType := "update"
-	if err := model.ValidateForUpdate(); err != nil {
+func (s *Service) UpdateDatasource(model *Datasource, opts ...util.OpOption) (*Datasource, error) {
+	if err := model.Validate(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
-	ds, err := s.Update(ToAPI(model, dealType))
+	ds, err := s.Get(model.ID, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	api := ToAPI(model, true)
+	ds.Spec = api.Spec
+	ds.Status.UpdatedAt = metav1.Now()
+	ds, err = s.Update(ds)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update object: %+v", err)
 	}
@@ -399,7 +404,7 @@ func (s *Service) Ping(ds *Datasource) error {
 	}
 	switch ds.Type {
 	case v1.RDBType:
-		return driver.PingRDB(ToAPI(ds, "create"))
+		return driver.PingRDB(ToAPI(ds, true))
 	default:
 		return fmt.Errorf("not supported for %s", ds.Type)
 	}
