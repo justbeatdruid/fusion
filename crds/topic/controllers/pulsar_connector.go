@@ -88,7 +88,7 @@ func (r *Connector) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	fmt.Print(" Response: ", body, response, errs)
 	if response.StatusCode == 204 {
 		return nil
-	} else if body == "Topic not found" || body == "Partitioned topic not found" {
+	} else if body == "Topic not found" || body == "Partitioned topic does not exist" {
 		return nil
 	} else {
 		errMsg := fmt.Sprintf("delete topic error, url: %s, Error code: %d, Error Message: %s", topicUrl, response.StatusCode, body)
@@ -142,7 +142,7 @@ func (r *Connector) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err er
 	}
 
 	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
-	topicUrl = fmt.Sprintf("%s://%s:%d%s%s%s", protocol, r.Host, r.Port, topicUrl, "permissions", P.AuthUserName)
+	topicUrl = fmt.Sprintf("%s://%s:%d%s/%s/%s", protocol, r.Host, r.Port, topicUrl, "permissions", P.AuthUserName)
 	response, _, errs := request.Delete(topicUrl).Retry(3, 5*time.Second).Send("").EndStruct("")
 
 	if response.StatusCode == http.StatusNoContent {

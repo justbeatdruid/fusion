@@ -241,9 +241,9 @@ func (s *Service) DeletePer(id string, authUserId string) (*v1.Topic, error) {
 		delete(tp.ObjectMeta.Labels, authUserId)
 	}
 
-	for _, P := range tp.Spec.Permissions {
-		if P.AuthUserID == authUserId {
-			P.Status.Status = "delete"
+	for index, _ := range tp.Spec.Permissions {
+		if tp.Spec.Permissions[index].AuthUserID == authUserId {
+			tp.Spec.Permissions[index].Status.Status = "delete"
 			break
 		}
 	}

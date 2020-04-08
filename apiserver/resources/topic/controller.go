@@ -255,20 +255,18 @@ func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 
 //根据可选搜索字段过滤topic列表,大小写不敏感
 func (c *controller) ListTopicByField(req *restful.Request, tps []*service.Topic) []*service.Topic {
-	//Topic名称查询参数
-	var tpsResult []*service.Topic
 	name := req.QueryParameter("name")
-	if len(name) == 0 {
-		return tps
-	} else {
-		name = strings.ToLower(name)
-		for _, tp := range tps {
-			if strings.Contains(strings.ToLower(tp.Name), name) {
-				tpsResult = append(tpsResult, tp)
-			}
-		}
+	topicGroup := req.QueryParameter("topicGroup")
+	//Topic名称查询参数
+	if len(name)>0 {
+		tps = c.ListTopicByTopicName(name,tps)
 	}
-	return tpsResult
+	//TopicGroup查询参数
+	if len(topicGroup)>0 {
+		tps = c.ListTopicByTopicGroup(topicGroup,tps)
+	}
+
+	return tps
 }
 
 type TopicList []*service.Topic
@@ -465,29 +463,31 @@ func (c *controller) ListMessagesByTopicUrlTime(topicUrls []string, start int64,
 	}
 }
 
-//通过topicName匹配topic
+//通过topicName匹配topic(模糊匹配)
 func (c *controller) ListTopicByTopicName(topicName string, tps []*service.Topic) []*service.Topic {
 	var tpsResult []*service.Topic
+	topicName = strings.ToLower(topicName)
 	for _, tp := range tps {
-		if strings.Compare(tp.Name, topicName) == 0 {
+		if strings.Contains(strings.ToLower(tp.Name), topicName) {
 			tpsResult = append(tpsResult, tp)
 		}
 	}
 	return tpsResult
 }
 
-//通过topicGroup匹配topic
+//通过topicGroup匹配topic(模糊匹配)
 func (c *controller) ListTopicByTopicGroup(topicGroup string, tps []*service.Topic) []*service.Topic {
 	var tpsResult []*service.Topic
+	topicGroup = strings.ToLower(topicGroup)
 	for _, tp := range tps {
-		if strings.Compare(tp.TopicGroup, topicGroup) == 0 {
+		if strings.Contains(strings.ToLower(tp.TopicGroup),topicGroup){
 			tpsResult = append(tpsResult, tp)
 		}
 	}
 	return tpsResult
 }
 
-//通过topicGroup和topicName匹配topic
+/*//通过topicGroup和topicName匹配topic
 func (c *controller) ListTopicByTopicGroupAndName(topicGroup string, topicName string, tps []*service.Topic) []*service.Topic {
 	var tpsResult []*service.Topic
 	for _, tp := range tps {
@@ -496,7 +496,7 @@ func (c *controller) ListTopicByTopicGroupAndName(topicGroup string, topicName s
 		}
 	}
 	return tpsResult
-}
+}*/
 
 type MessageList []service.Message
 

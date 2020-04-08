@@ -111,6 +111,14 @@ func (r *router) Install(ws *restful.WebService) {
 			Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 			Do(returns200, returns500))
 	*/
+
+	ws.Route(ws.GET("/datasources/statistics").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("statistic datasources").
+		To(r.doStatistics).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func (r *router) createDatasource(request *restful.Request, response *restful.Response) {
@@ -158,5 +166,10 @@ func (r *router) getField(request *restful.Request, response *restful.Response) 
 
 func (r *router) testConnection(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.Ping(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) doStatistics(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.DoStatistics(request)
 	response.WriteHeaderAndEntity(code, result)
 }
