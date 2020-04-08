@@ -213,6 +213,14 @@ func (dsl DataSourceList) GetItem(i int) (interface{}, error) {
 	return dsl[i], nil
 }
 
+func (dsl DataSourceList) Less(i, j int) bool {
+	return dsl[i].CreatedAt.Time.After(dsl[j].CreatedAt.Time)
+}
+
+func (dsl DataSourceList) Swap(i, j int) {
+	dsl[i], dsl[j] = dsl[j], dsl[i]
+}
+
 func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
