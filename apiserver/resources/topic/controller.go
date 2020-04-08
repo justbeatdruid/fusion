@@ -6,6 +6,7 @@ import (
 	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/parser"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
+	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
@@ -163,8 +164,7 @@ func (c *controller) DoStatisticsOnTopics(req *restful.Request) (int, *Statistic
 	data.Increment = c.CountTopicsIncrement(tp)
 	return http.StatusOK, &StatisticsResponse{
 		Code:      success,
-		ErrorCode: "",
-		Message:   "",
+		ErrorCode: tgerror.Success,
 		Data:      data,
 		Detail:    "do statistics on topics successfully",
 	}

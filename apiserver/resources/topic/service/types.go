@@ -31,6 +31,7 @@ type Topic struct {
 	Message         string       `json:"message"`
 	Permissions     []Permission `json:"permissions"`
 	Users           user.Users   `json:"users"`
+	MessageSize     float64      `json:"messageSize"` //消息总量
 }
 
 type Message struct {

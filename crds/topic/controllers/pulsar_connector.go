@@ -16,6 +16,7 @@ const (
 	protocol                   = "http"
 	persistentPermissionUrl    = "/admin/v2/persistent/%s/%s/%s/permissions/%s"
 	nonPersistentPermissionUrl = "/admin/v2/non-persistent/%s/%s/%s/permissions/%s"
+	statsUrl                   = "/stats"
 )
 
 type requestLogger struct {
@@ -36,8 +37,8 @@ func (r *requestLogger) Println(v ...interface{}) {
 	klog.V(4).Infof("%+v", v)
 }
 
-//Operator 定义连接Pulsar所需要的参数
-type Operator struct {
+//Connector 定义连接Pulsar所需要的参数
+type Connector struct {
 	Host           string
 	Port           int
 	AuthEnable     bool
@@ -45,7 +46,7 @@ type Operator struct {
 }
 
 //CreateTopic 调用Pulsar的Restful Admin API，创建Topic
-func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
+func (r *Connector) CreateTopic(topic *nlptv1.Topic) (err error) {
 	if topic.Spec.Partition > 1 {
 		return r.CreatePartitionedTopic(topic)
 	}
@@ -63,7 +64,7 @@ func (r *Operator) CreateTopic(topic *nlptv1.Topic) (err error) {
 	}
 }
 
-func (r *Operator) CreatePartitionedTopic(topic *nlptv1.Topic) (err error) {
+func (r *Connector) CreatePartitionedTopic(topic *nlptv1.Topic) (err error) {
 	request := r.GetHttpRequest()
 	klog.Infof("CreatePartitionedTopic Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl := r.getUrl(topic)
@@ -79,7 +80,7 @@ func (r *Operator) CreatePartitionedTopic(topic *nlptv1.Topic) (err error) {
 }
 
 //DeleteTopic 调用Pulsar的Restful Admin API，删除Topic
-func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
+func (r *Connector) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	request := r.GetHttpRequest()
 	topicUrl := r.getUrl(topic)
 	response, body, errs := request.Delete(topicUrl).Retry(3, 5*time.Second, http.StatusBadRequest, http.StatusInternalServerError).End()
@@ -96,7 +97,7 @@ func (r *Operator) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	}
 }
 
-func (r *Operator) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Permission) (err error) {
+func (r *Connector) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Permission) (err error) {
 	request := r.GetHttpRequest()
 	var url string
 	if topic.Spec.IsNonPersistent {
@@ -118,7 +119,7 @@ func (r *Operator) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Permi
 
 }
 
-func (r *Operator) getUrl(topic *nlptv1.Topic) string {
+func (r *Connector) getUrl(topic *nlptv1.Topic) string {
 	url := persistentTopicUrl
 	if topic.Spec.IsNonPersistent {
 		url = nonPersistentTopicUrl
@@ -133,7 +134,7 @@ func (r *Operator) getUrl(topic *nlptv1.Topic) string {
 }
 
 //删除授权
-func (r *Operator) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err error) {
+func (r *Connector) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err error) {
 	request := r.GetHttpRequest()
 	url := persistentTopicUrl
 	if topic.Spec.IsNonPersistent {
@@ -144,7 +145,7 @@ func (r *Operator) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err err
 	topicUrl = fmt.Sprintf("%s://%s:%d%s%s%s", protocol, r.Host, r.Port, topicUrl, "permissions", P.AuthUserName)
 	response, _, errs := request.Delete(topicUrl).Retry(3, 5*time.Second).Send("").EndStruct("")
 
-	if response.StatusCode == 204 {
+	if response.StatusCode == http.StatusNoContent {
 		return nil
 	}
 	errMsg := fmt.Sprintf("delete topic error, url: %s, Error code: %d, Error Message: %+v", topicUrl, response.StatusCode, errs)
@@ -152,15 +153,33 @@ func (r *Operator) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err err
 	return errors.New(errMsg)
 }
 
-func (r *Operator) AddTokenToHeader(request *gorequest.SuperAgent) *gorequest.SuperAgent {
+func (r *Connector) AddTokenToHeader(request *gorequest.SuperAgent) *gorequest.SuperAgent {
 	if r.AuthEnable {
 		request.Header.Set("Authorization", "Bearer "+r.SuperUserToken)
 	}
 	return request
 }
 
-func (r *Operator) GetHttpRequest() *gorequest.SuperAgent {
+func (r *Connector) GetHttpRequest() *gorequest.SuperAgent {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
 	return r.AddTokenToHeader(request)
+
+}
+
+func (r *Connector) GetStats(topic nlptv1.Topic) (nlptv1.Stats, error) {
+	request := r.GetHttpRequest()
+	url := persistentTopicUrl
+	if topic.Spec.IsNonPersistent {
+		url = nonPersistentTopicUrl
+	}
+
+	url += statsUrl
+	stats := nlptv1.Stats{}
+	response, _, errs := request.Get(url).Retry(3, 5*time.Second, http.StatusNotFound, http.StatusBadGateway).EndStruct(stats)
+	if response.StatusCode == http.StatusNoContent {
+		return nlptv1.Stats{}, nil
+	}
+	klog.Errorf("get stats error, url: %+v, status code: %+v, errs: %+v", url, response.StatusCode, errs)
+	return nlptv1.Stats{}, fmt.Errorf("get stats error: %+v", errs)
 
 }

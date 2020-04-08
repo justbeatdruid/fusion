@@ -5,6 +5,8 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
 	topicv1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
+	"github.com/chinamobile/nlpt/pkg/util"
+	"strings"
 
 	"github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
 
@@ -62,6 +64,39 @@ func (s *Service) ListTopicgroup() ([]*Topicgroup, error) {
 	return ToListModel(tgs), nil
 }
 
+func (s *Service) SearchTopicgroup(tgList []*Topicgroup, opts ...util.OpOption) ([]*Topicgroup, error) {
+	nameLike := util.OpList(opts...).NameLike()
+	topic := util.OpList(opts...).Topic()
+
+	var names []string
+	if len(nameLike) > 0 {
+		names = append(names, nameLike)
+	}
+
+	tps, err := s.listTopics(topic)
+	if err != nil {
+		return nil, err
+	}
+	for _, tp := range tps {
+		names = append(names, tp.TopicGroup)
+	}
+	var tgs []*Topicgroup
+
+	if len(names) > 0 {
+		for _, tg := range tgList {
+			if strings.Contains(tg.Name, nameLike) {
+				tgs = append(tgs, tg)
+			}
+
+		}
+	} else {
+		tgs = tgList
+	}
+
+	return tgs, nil
+
+}
+
 func (s *Service) GetTopicgroup(id string) (*Topicgroup, error) {
 	tg, err := s.Get(id)
 	if err != nil {
@@ -79,6 +114,25 @@ func (s *Service) GetTopics(id string) ([]*service.Topic, error) {
 	return service.ToListModel(tps), nil
 }
 
+func (s *Service) listTopics(topicName string) ([]*service.Topic, error) {
+	crd, err := s.topicClient.List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	tps := &topicv1.TopicList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+
+	var tpsResult []*service.Topic
+	for _, tp := range tps.Items {
+		var name = strings.ToLower(tp.Spec.Name)
+		if strings.Contains(name, topicName) {
+			tpsResult = append(tpsResult, service.ToModel(&tp))
+		}
+	}
+	return tpsResult, nil
+}
 func (s *Service) getTopicsCrd(id string) (*topicv1.TopicList, error) {
 	tg, err := s.GetTopicgroup(id)
 	if err != nil {
