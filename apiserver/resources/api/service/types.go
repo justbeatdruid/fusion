@@ -101,6 +101,12 @@ func ToAPI(api *Api) *v1.Api {
 		Restriction:        api.Restriction,
 		PublishInfo:        api.PublishInfo,
 	}
+	if len(crd.Spec.ApiDefineInfo.Method) == 0 {
+		crd.Spec.ApiDefineInfo.Method = api.Method
+	}
+	if len(crd.Spec.ApiDefineInfo.Protocol) == 0 {
+		crd.Spec.ApiDefineInfo.Protocol = api.Protocol
+	}
 	crd.Status = v1.ApiStatus{
 		Status: v1.Init,
 		Action: v1.Create,
@@ -320,13 +326,20 @@ func (s *Service) Validate(a *Api) error {
 		return fmt.Errorf("cannot get serviceunit: %+v", err)
 	}
 	if su.Spec.Type == "data" {
+		if len(a.ApiDefineInfo.Method) == 0 {
+			a.ApiDefineInfo.Method = a.Method
+		}
+
+		if len(a.ApiDefineInfo.Protocol) == 0 {
+			a.ApiDefineInfo.Protocol = a.Protocol
+		}
 		if a.Frequency == 0 {
 			return fmt.Errorf("frequency is null")
 		}
-		switch a.Method {
+		switch a.ApiDefineInfo.Method {
 		case v1.GET, v1.POST:
 		default:
-			return fmt.Errorf("wrong method type: %s. only %s and %s are allowed", a.Method, v1.GET, v1.POST)
+			return fmt.Errorf("wrong method type: %s. only %s and %s are allowed", a.ApiDefineInfo.Method, v1.GET, v1.POST)
 		}
 		if a.RDBQuery != nil {
 			for _, p := range a.RDBQuery.QueryFields {
