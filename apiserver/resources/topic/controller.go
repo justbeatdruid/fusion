@@ -162,6 +162,7 @@ func (c *controller) DoStatisticsOnTopics(req *restful.Request) (int, *Statistic
 	data := service.Statistics{}
 	data.Total = len(tp)
 	data.Increment = c.CountTopicsIncrement(tp)
+	data.MessageSize = "20MB"
 	return http.StatusOK, &StatisticsResponse{
 		Code:      success,
 		ErrorCode: tgerror.Success,
