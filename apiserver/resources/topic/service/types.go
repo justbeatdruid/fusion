@@ -38,6 +38,7 @@ type Message struct {
 	ID        pulsar.MessageID `json:"id"`
 	Time      util.Time        `json:"time"`
 	Messages  string           `json:"messages"`
+	Size      int              `json:"size"`
 }
 
 type Actions []string
