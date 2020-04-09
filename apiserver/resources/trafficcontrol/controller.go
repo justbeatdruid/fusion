@@ -21,7 +21,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient(), cfg.LocalConfig),
+		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TenantEnabled, cfg.LocalConfig),
 		cfg.LocalConfig,
 	}
 }
@@ -89,6 +89,7 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 		}
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
+	body.Data.Namespace = authuser.Namespace
 	if db, err := c.service.CreateTrafficcontrol(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
@@ -107,7 +108,16 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 
 func (c *controller) GetTrafficcontrol(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
-	if db, err := c.service.GetTrafficcontrol(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "012000003",
+			Message:   c.errMsg.Api["012000003"],
+			Detail:    "auth model error",
+		}
+	}
+	if db, err := c.service.GetTrafficcontrol(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      2,
 			ErrorCode: "012000005",
@@ -125,7 +135,16 @@ func (c *controller) GetTrafficcontrol(req *restful.Request) (int, *GetResponse)
 
 func (c *controller) DeleteTrafficcontrol(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if err := c.service.DeleteTrafficcontrol(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "012000003",
+			Message:   c.errMsg.Api["012000003"],
+			Detail:    "auth model error",
+		}
+	}
+	if err := c.service.DeleteTrafficcontrol(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      2,
 			ErrorCode: "012000006",
@@ -153,7 +172,7 @@ func (c *controller) ListTrafficcontrol(req *restful.Request) (int, *ListRespons
 			Detail:    "auth model error",
 		}
 	}
-	if tc, err := c.service.ListTrafficcontrol(util.WithNameLike(name), util.WithUser(authuser.Name)); err != nil {
+	if tc, err := c.service.ListTrafficcontrol(util.WithNameLike(name), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			ErrorCode: "012000007",
@@ -213,7 +232,18 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 		}
 	}
 
-	if db, err := c.service.UpdateTrafficcontrol(req.PathParameter("id"), data); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "012000003",
+			Message:   c.errMsg.Trafficcontrol["012000003"],
+			Detail:    "auth model error",
+		}
+	}
+
+	if db, err := c.service.UpdateTrafficcontrol(req.PathParameter("id"), data,
+		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:      2,
 			ErrorCode: "012000009",
@@ -240,7 +270,17 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 		}
 	}
 	trafficID := req.PathParameter("id")
-	if api, err := c.service.BindOrUnbindApis(body.Data.Operation, trafficID, body.Data.Apis); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:      1,
+			ErrorCode: "012000003",
+			Message:   c.errMsg.Trafficcontrol["012000003"],
+			Detail:    "auth model error",
+		}
+	}
+	if api, err := c.service.BindOrUnbindApis(body.Data.Operation, trafficID, body.Data.Apis,
+		util.WithNamespace(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      2,
 			ErrorCode: "012000010",
