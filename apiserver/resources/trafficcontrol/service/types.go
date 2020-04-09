@@ -37,7 +37,7 @@ func ToAPI(app *Trafficcontrol) *v1.Trafficcontrol {
 	crd.TypeMeta.Kind = "Trafficcontrol"
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
 	crd.ObjectMeta.Name = app.ID
-	crd.ObjectMeta.Namespace = crdNamespace
+	crd.ObjectMeta.Namespace = app.Namespace
 	crd.ObjectMeta.Labels = make(map[string]string)
 	crd.ObjectMeta.Labels[app.ID] = app.ID
 	crd.Spec = v1.TrafficcontrolSpec{
@@ -59,27 +59,6 @@ func ToAPI(app *Trafficcontrol) *v1.Trafficcontrol {
 	}
 	// add user labels
 	crd.ObjectMeta.Labels = user.AddUsersLabels(app.Users, crd.ObjectMeta.Labels)
-	return crd
-}
-
-// +update
-func ToAPIUpdate(app *Trafficcontrol, crd *v1.Trafficcontrol) *v1.Trafficcontrol {
-	crd.Spec = v1.TrafficcontrolSpec{
-		Name:        app.Name,
-		Type:        app.Type,
-		Config:      app.Config,
-		Description: app.Description,
-	}
-	status := app.Status
-	if len(status) == 0 {
-		status = v1.Update
-	}
-	crd.Status = v1.TrafficcontrolStatus{
-		Status:    status,
-		UpdatedAt: metav1.Now(),
-		APICount:  0,
-		Published: false,
-	}
 	return crd
 }
 
@@ -177,7 +156,7 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 			return fmt.Errorf("special config maxnum limit exceeded.")
 		}
 		for _, value := range a.Config.Special {
-			if _, err := s.getApplication(value.ID); err != nil {
+			if _, err := s.getApplication(value.ID, a.Namespace); err != nil {
 				return fmt.Errorf("get application for create traffic error: %+v", err)
 			}
 		}
