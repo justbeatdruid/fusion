@@ -15,7 +15,7 @@ func DefaultTopicOptions() *TopicOptions {
 	return &TopicOptions{
 		Host:       "10.160.32.24",
 		Port:       30003,
-		AuthEnable: false,
+		AuthEnable: true,
 		AdminToken: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.eNEbqeuUXxM7bsnP8gnxYq7hRkP50Rqc0nsWFRp8z6A",
 	}
 }
