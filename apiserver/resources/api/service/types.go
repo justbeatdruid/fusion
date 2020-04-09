@@ -63,9 +63,9 @@ type Api struct {
 }
 
 type Statistics struct {
-	Total        int `json:"total"`
-	Increment    int `json:"increment"`
-	TotalCalled  int `json:"totalCalled"`
+	Total       int `json:"total"`
+	Increment   int `json:"increment"`
+	TotalCalled int `json:"totalCalled"`
 }
 
 // only used in creation
@@ -131,8 +131,8 @@ func ToModel(obj *v1.Api) *Api {
 		AuthType:       obj.Spec.AuthType,
 		Tags:           obj.Spec.Tags,
 		ApiBackendType: obj.Spec.Serviceunit.Type,
-		Method:         obj.Spec.Method,
-		Protocol:       obj.Spec.Protocol,
+		Method:         obj.Spec.ApiDefineInfo.Method,
+		Protocol:       obj.Spec.ApiDefineInfo.Protocol,
 		ReturnType:     obj.Spec.ReturnType,
 		ApiDefineInfo:  obj.Spec.ApiDefineInfo,
 		KongApi:        obj.Spec.KongApi,
@@ -151,6 +151,14 @@ func ToModel(obj *v1.Api) *Api {
 		ApplicationCount: 0,
 		CalledCount:      obj.Status.CalledCount,
 	}
+
+	if len(model.Method) == 0 {
+		model.Method = obj.Spec.Method
+	}
+	if len(model.Protocol) == 0 {
+		model.Protocol = obj.Spec.Protocol
+	}
+
 	if model.Applications == nil {
 		model.Applications = []v1.Application{}
 	}
