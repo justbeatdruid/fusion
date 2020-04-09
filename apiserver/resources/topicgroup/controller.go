@@ -10,6 +10,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
+	"strings"
 )
 
 type controller struct {
@@ -77,7 +78,7 @@ func (c *controller) newCreateResponse(code int, errorCode string, detail string
 	}
 
 	if len(msg) == 0 {
-		resp.Message = c.errMsg.Topic[resp.ErrorCode]
+		resp.Message = c.errMsg.TopicGroup[resp.ErrorCode]
 	}
 	return resp
 }
@@ -228,6 +229,16 @@ func (c *controller) DeleteTopicgroup(req *restful.Request) (int, *DeleteRespons
 func (c *controller) ListTopicgroup(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
+	name := req.QueryParameter("name")
+	topicName := req.QueryParameter("topicName")
+
+	if len(topicName) > 0 {
+		topicName = strings.ToLower(strings.Trim(topicName, " "))
+	}
+
+	if len(name) > 0 {
+		name = strings.ToLower(strings.Trim(name, " "))
+	}
 
 	if tg, err := c.service.ListTopicgroup(); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
@@ -237,8 +248,16 @@ func (c *controller) ListTopicgroup(req *restful.Request) (int, *ListResponse) {
 			Detail:    fmt.Sprintf("list database error: %+v", err),
 		}
 	} else {
+		tg, err = c.service.SearchTopicgroup(tg, util.WithNameLike(name), util.WithTopic(topicName))
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:      fail,
+				ErrorCode: tgerror.ErrorGetTopicgroupList,
+				Message:   c.errMsg.TopicGroup[tgerror.ErrorGetTopicgroupList],
+				Detail:    fmt.Sprintf("list database error: %+v", err),
+			}
+		}
 		var tps TopicgroupList = tg
-
 		data, err := util.PageWrap(tps, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{

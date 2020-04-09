@@ -6,6 +6,7 @@ import (
 	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/parser"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
+	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
@@ -161,10 +162,10 @@ func (c *controller) DoStatisticsOnTopics(req *restful.Request) (int, *Statistic
 	data := service.Statistics{}
 	data.Total = len(tp)
 	data.Increment = c.CountTopicsIncrement(tp)
+	data.MessageSize = "20MB"
 	return http.StatusOK, &StatisticsResponse{
 		Code:      success,
-		ErrorCode: "",
-		Message:   "",
+		ErrorCode: tgerror.Success,
 		Data:      data,
 		Detail:    "do statistics on topics successfully",
 	}
@@ -258,12 +259,12 @@ func (c *controller) ListTopicByField(req *restful.Request, tps []*service.Topic
 	name := req.QueryParameter("name")
 	topicGroup := req.QueryParameter("topicGroup")
 	//Topic名称查询参数
-	if len(name)>0 {
-		tps = c.ListTopicByTopicName(name,tps)
+	if len(name) > 0 {
+		tps = c.ListTopicByTopicName(name, tps)
 	}
 	//TopicGroup查询参数
-	if len(topicGroup)>0 {
-		tps = c.ListTopicByTopicGroup(topicGroup,tps)
+	if len(topicGroup) > 0 {
+		tps = c.ListTopicByTopicGroup(topicGroup, tps)
 	}
 
 	return tps
@@ -480,7 +481,7 @@ func (c *controller) ListTopicByTopicGroup(topicGroup string, tps []*service.Top
 	var tpsResult []*service.Topic
 	topicGroup = strings.ToLower(topicGroup)
 	for _, tp := range tps {
-		if strings.Contains(strings.ToLower(tp.TopicGroup),topicGroup){
+		if strings.Contains(strings.ToLower(tp.TopicGroup), topicGroup) {
 			tpsResult = append(tpsResult, tp)
 		}
 	}

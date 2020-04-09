@@ -35,9 +35,10 @@ type TopicSpec struct {
 	TopicGroup      string       `json:"topicGroup"` //topic分组ID
 	Namespace       string       `json:"namespace"`
 	Partition       int          `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
-	IsNonPersistent bool         `json:"isNonPersistent"` //topic是否不持久化
-	Url             string       `json:"url"`             //topic url
+	IsNonPersistent bool         `json:"isNonPersistent"` //Topic是否不持久化
+	Url             string       `json:"url"`             //Topic url
 	Permissions     []Permission `json:"permissions"`
+	Stats           Stats        `json:"stats"` //Topic的统计数据
 }
 
 type Actions []string
@@ -109,6 +110,49 @@ type TopicList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Topic `json:"items"`
+}
+
+type Stats struct {
+	SubscriptionsCount   int                         `json:"subscriptionsCount"`
+	ProducersCount       int                         `json:"producersCount"`
+	ConsumersCount       int                         `json:"consumersCount"`
+	RateIn               float64                     `json:"rateIn"`
+	RateOut              float64                     `json:"rateOut"`
+	ThroughputIn         float64                     `json:"throughputIn"`
+	ThroughputOut        float64                     `json:"ThroughputOut"`
+	MsgInCounter         int64                       `json:"MsgInCounter"`
+	BytesInCounter       int64                       `json:"bytesInCounter"`
+	StorageSize          int64                       `json:"storageSize"`
+	MsgBacklog           int64                       `json:"msgBacklog"`
+	BacklogSize          int64                       `json:"backlogSize"`
+	OffloadedStorageUsed int64                       `json:"offloadedStorageUsed"`
+	BacklogQuotaLimit    int64                       `json:"backlogQuotaLimit"`
+	StorageWriteRate     float64                     `json:"storageWriteRate"`
+	StorageReadRate      float64                     `json:"storageReadRate"`
+	DeduplicationStatus  string                      `json:"deduplicationStatus"`
+	Subscriptions        map[string]SubscriptionStat `json:"subscriptions"`
+}
+
+type SubscriptionStat struct {
+	MsgRateOut                       float64        `json:"msgRateOut"`
+	MsgThroughputOut                 float64        `json:"msgThroughputOut"`
+	MsgRateRedeliver                 float64        `json:"msgRateRedeliver"`
+	MsgBacklog                       int64          `json:"msgBacklog"`
+	BlockedSubscriptionOnUnackedMsgs bool           `json:"blockedSubscriptionOnUnackedMsgs"`
+	MsgDelayed                       int64          `json:"msgDelayed"`
+	UnackedMessages                  int64          `json:"unackedMessages"`
+	Type                             string         `json:"type"`
+	MsgRateExpired                   float64        `json:"msgRateExpired"`
+	LastExpireTimestamp              int64          `json:"lastExpireTimestamp"`
+	LastConsumedFlowTimestamp        int64          `json:"lastConsumedFlowTimestamp"`
+	LastConsumedTimestamp            int64          `json:"lastConsumedTimestamp"`
+	LastAckedTimestamp               int64          `json:"lastAckedTimestamp"`
+	Consumers                        []ConsumerStat `json:"consumers"`
+	IsReplicated                     bool           `json:"isReplicated"`
+}
+
+type ConsumerStat struct {
+	MsgRateOut float64 `json:"msgRateOut"`
 }
 
 func init() {

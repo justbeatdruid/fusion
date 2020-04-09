@@ -32,7 +32,7 @@ type TopicReconciler struct {
 	client.Client
 	Log      logr.Logger
 	Scheme   *runtime.Scheme
-	Operator *Operator
+	Operator *Connector
 }
 
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=topics,verbs=get;list;watch;create;update;patch;delete

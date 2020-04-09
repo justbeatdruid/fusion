@@ -38,7 +38,7 @@ import (
 var cfg *rest.Config
 var k8sClient client.Client
 var testEnv *envtest.Environment
-var op *Operator
+var op *Connector
 
 func TestAPIs(t *testing.T) {
 	RegisterFailHandler(Fail)
@@ -49,7 +49,7 @@ func TestAPIs(t *testing.T) {
 }
 
 func TestOperator_CreateTopic(t *testing.T) {
-	op = new(Operator)
+	op = new(Connector)
 	op.Host = "10.160.32.24"
 	op.Port = 30002
 	op.AuthEnable = true
