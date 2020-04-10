@@ -144,14 +144,16 @@ func (s *Service) Validate(a *Restriction) error {
 
 	switch a.Type {
 	case v1.IP:
-		if len(a.Config.Ip) == 0 {
+		if len(a.Config.Ip[0]) == 0 {
 			return fmt.Errorf("at least ip limit config must exist")
 		}
-		address := net.ParseIP(a.Config.Ip)
-		if address == nil {
-			_, _, err := net.ParseCIDR(a.Config.Ip)
-			if err != nil {
-				return fmt.Errorf("ip is invalid")
+		for index,_ := range a.Config.Ip {
+			address := net.ParseIP(a.Config.Ip[index])
+			if address == nil {
+				_, _, err := net.ParseCIDR(a.Config.Ip[index])
+				if err != nil {
+					return fmt.Errorf("ip is invalid")
+				}
 			}
 		}
 

@@ -40,7 +40,7 @@ type RestrictionSpec struct {
 }
 
 type ConfigInfo struct {
-	Ip   string `json:"ip"`
+	Ip   []string `json:"ip"`
 	User string `json:"user"`
 }
 

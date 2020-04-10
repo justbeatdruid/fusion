@@ -131,9 +131,13 @@ func (r *Operator) AddRestrictionByKong(db *nlptv1.Restriction) (err error) {
 			requestBody := &RestrictionRequestBody{}
 			requestBody.Name = "ip-restriction"
 			if db.Spec.Action == "white" {
-				requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, db.Spec.Config.Ip)
+				for index,_ := range db.Spec.Config.Ip {
+					requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, db.Spec.Config.Ip[index])
+				}
 			} else if db.Spec.Action == "black" {
-				requestBody.Config.BlackList = append(requestBody.Config.BlackList, db.Spec.Config.Ip)
+				for index,_ := range db.Spec.Config.Ip {
+					requestBody.Config.BlackList = append(requestBody.Config.BlackList, db.Spec.Config.Ip[index])
+				}
 			}
 			responseBody := &RestrictionResponseBody{}
 			response, body, errs := request.Send(requestBody).EndStruct(responseBody)
@@ -201,9 +205,13 @@ func (r *Operator) UpdateRestrictionByKong(db *nlptv1.Restriction) (err error) {
 			requestBody := &RestrictionRequestBody{}
 			requestBody.Name = "ip-restriction"
 			if db.Spec.Action == "white" {
-				requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, db.Spec.Config.Ip)
+				for index,_ := range db.Spec.Config.Ip {
+					requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, db.Spec.Config.Ip[index])
+				}
 			} else if db.Spec.Action == "black" {
-				requestBody.Config.BlackList = append(requestBody.Config.BlackList, db.Spec.Config.Ip)
+				for index,_ := range db.Spec.Config.Ip {
+					requestBody.Config.BlackList = append(requestBody.Config.BlackList, db.Spec.Config.Ip[index])
+				}
 			}
 			response, body, errs := request.Send(requestBody).EndStruct(&RestrictionResponseBody{})
 
