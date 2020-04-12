@@ -79,7 +79,7 @@ func (s *Service) UpdateRestriction(id string, reqData interface{}) (*Restrictio
 	//更新crd的状态为开始更新
 	crd.Status.Status = v1.Update
 	for index := range crd.Spec.Apis {
-		crd.Spec.Apis[index].Result = v1.INIT
+		crd.Spec.Apis[index].Result = v1.UPDATING
 	}
 	su, err := s.Update(crd)
 	if err != nil {
@@ -284,7 +284,7 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
 		isFisrtBind := true
 		for index, v := range restriction.Spec.Apis {
 			if v.ID == apiSource.ObjectMeta.Name {
-				restriction.Spec.Apis[index].Result = v1.INIT
+				restriction.Spec.Apis[index].Result = v1.BINDING
 				isFisrtBind = false
 				break
 			}
@@ -294,7 +294,7 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
 				ID:     api.ID,
 				Name:   apiSource.Spec.Name,
 				KongID: apiSource.Spec.KongApi.KongID,
-				Result: v1.INIT,
+				Result: v1.BINDING,
 			})
 		}
 		//update api 操作时会判断是绑定还是解绑所以先将状态设置成bind
@@ -335,7 +335,7 @@ func (s *Service) UnBindApi(id string, apis []v1.Api) (*Restriction, error) {
 		//解除绑定
 		for index, v := range restriction.Spec.Apis {
 			if v.ID == apiSource.ObjectMeta.Name {
-				restriction.Spec.Apis[index].Result = v1.INIT
+				restriction.Spec.Apis[index].Result = v1.UNBINDING
 			}
 		}
 		////update api 操作时会判断是绑定还是解绑所以先将状态设置成unbind

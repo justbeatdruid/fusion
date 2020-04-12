@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 	"net"
 	"strings"
 	"time"
@@ -80,6 +81,22 @@ func ToAPIUpdate(app *Restriction, crd *v1.Restriction) *v1.Restriction {
 }
 
 func ToModel(obj *v1.Restriction) *Restriction {
+	for index, value := range obj.Spec.Apis {
+		switch value.Result {
+		case v1.BINDING:
+			(*obj).Spec.Apis[index].DisplayStatus = v1.ApiBinding
+		case v1.UNBINDING, v1.UPDATING, v1.SUCCESS:
+			(*obj).Spec.Apis[index].DisplayStatus = v1.BindedSuccess
+		case v1.UNBINDFAILED:
+			(*obj).Spec.Apis[index].DisplayStatus = v1.UnBindFail
+		case v1.BINDFAILED, v1.UPDATEFAILED:
+			(*obj).Spec.Apis[index].DisplayStatus = v1.BindedFail
+		}
+	}
+	for _, value := range obj.Spec.Apis {
+		klog.V(5).Infof("get api config : %+v", value)
+	}
+
 	restriction := &Restriction{
 		ID:        obj.ObjectMeta.Name,
 		Name:      obj.Spec.Name,

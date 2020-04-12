@@ -142,12 +142,12 @@ func (r *Operator) AddRestrictionByKong(db *nlptv1.Restriction) (err error) {
 			responseBody := &RestrictionResponseBody{}
 			response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 			if len(errs) > 0 {
-				db.Spec.Apis[index].Result = nlptv1.FAILED
+				db.Spec.Apis[index].Result = nlptv1.BINDFAILED
 				return fmt.Errorf("request for add restriction error: %+v", errs)
 			}
 			klog.V(5).Infof("creation restriction code: %d, body: %s ", response.StatusCode, string(body))
 			if response.StatusCode != 201 {
-				db.Spec.Apis[index].Result = nlptv1.FAILED
+				db.Spec.Apis[index].Result = nlptv1.BINDFAILED
 				klog.V(5).Infof("create restriction failed msg: %s\n", responseBody.Message)
 				return fmt.Errorf("request for create restriction error: receive wrong status code: %s", string(body))
 			}
@@ -175,12 +175,12 @@ func (r *Operator) DeleteRestrictionByKong(db *nlptv1.Restriction) (err error) {
 			request = request.Retry(3, 5*time.Second, retryStatus...)
 
 			if len(errs) > 0 {
-				db.Spec.Apis[index].Result = nlptv1.FAILED
+				db.Spec.Apis[index].Result = nlptv1.UNBINDFAILED
 				return fmt.Errorf("request for delete ip-restriction error: %+v", errs)
 			}
 			klog.V(5).Infof("delete ip-restriction response code: %d%s", response.StatusCode, string(body))
 			if response.StatusCode != 204 {
-				db.Spec.Apis[index].Result = nlptv1.FAILED
+				db.Spec.Apis[index].Result = nlptv1.UNBINDFAILED
 				return fmt.Errorf("request for delete ip-restriction error: receive wrong status code: %d", response.StatusCode)
 			}
 			db.Spec.Apis[index].Result = nlptv1.SUCCESS
@@ -217,7 +217,7 @@ func (r *Operator) UpdateRestrictionByKong(db *nlptv1.Restriction) (err error) {
 
 			if len(errs) > 0 || response.StatusCode != 200 {
 				klog.Infof("request for update route error: %+v, response:%v,body:%v", errs, response, string(body))
-				db.Spec.Apis[index].Result = nlptv1.FAILED
+				db.Spec.Apis[index].Result = nlptv1.UPDATEFAILED
 				return fmt.Errorf("request for update route error: %+v, code:%v", errs, response.StatusCode)
 			} else {
 				db.Spec.Apis[index].Result = nlptv1.SUCCESS
