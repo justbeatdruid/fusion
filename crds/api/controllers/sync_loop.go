@@ -32,7 +32,6 @@ type ApiSynchronizer struct {
 	Operator *Operator
 }
 
-
 func (r *ApiSynchronizer) Start(stop <-chan struct{}) error {
 	// wait for cache up
 	time.Sleep(time.Second * 10)

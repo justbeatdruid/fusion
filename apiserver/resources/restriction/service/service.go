@@ -22,20 +22,20 @@ import (
 var crdNamespace = "default"
 
 type Service struct {
-	kubeClient        *clientset.Clientset
-	client            dynamic.NamespaceableResourceInterface
-	apiClient         dynamic.NamespaceableResourceInterface
-	tenantEnabled     bool
-	localConfig       appconfig.ErrorConfig
+	kubeClient    *clientset.Clientset
+	client        dynamic.NamespaceableResourceInterface
+	apiClient     dynamic.NamespaceableResourceInterface
+	tenantEnabled bool
+	localConfig   appconfig.ErrorConfig
 }
 
 func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool, localConfig appconfig.ErrorConfig) *Service {
 	return &Service{
-		kubeClient:        kubeClient,
-		client:            client.Resource(v1.GetOOFSGVR()),
-		apiClient:         client.Resource(apiv1.GetOOFSGVR()),
-		tenantEnabled:     tenantEnabled,
-		localConfig:       localConfig,
+		kubeClient:    kubeClient,
+		client:        client.Resource(v1.GetOOFSGVR()),
+		apiClient:     client.Resource(apiv1.GetOOFSGVR()),
+		tenantEnabled: tenantEnabled,
+		localConfig:   localConfig,
 	}
 }
 

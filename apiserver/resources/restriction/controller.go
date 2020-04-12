@@ -112,10 +112,10 @@ func (c *controller) GetRestriction(req *restful.Request) (int, *GetResponse) {
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &GetResponse{
-			Code: 1,
+			Code:      1,
 			ErrorCode: "007000010",
-			Message: c.errMsg.Api["007000010"],
-			Detail: "auth model error",
+			Message:   c.errMsg.Api["007000010"],
+			Detail:    "auth model error",
 		}
 	}
 	if db, err := c.service.GetRestriction(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
@@ -139,10 +139,10 @@ func (c *controller) DeleteRestriction(req *restful.Request) (int, *DeleteRespon
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
-			Code: 1,
+			Code:      1,
 			ErrorCode: "007000010",
-			Message: c.errMsg.Api["007000010"],
-			Detail: "auth model error",
+			Message:   c.errMsg.Api["007000010"],
+			Detail:    "auth model error",
 		}
 	}
 	if err := c.service.DeleteRestriction(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
@@ -240,10 +240,10 @@ func (c *controller) UpdateRestriction(req *restful.Request) (int, *UpdateRespon
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &UpdateResponse{
-			Code: 1,
+			Code:      1,
 			ErrorCode: "007000010",
-			Message: c.errMsg.Restriction["007000010"],
-			Detail: "auth model error",
+			Message:   c.errMsg.Restriction["007000010"],
+			Detail:    "auth model error",
 		}
 	}
 

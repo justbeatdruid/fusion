@@ -164,7 +164,7 @@ func (s *Service) Validate(a *Restriction) error {
 		if len(a.Config.Ip[0]) == 0 {
 			return fmt.Errorf("at least ip limit config must exist")
 		}
-		for index,_ := range a.Config.Ip {
+		for index, _ := range a.Config.Ip {
 			address := net.ParseIP(a.Config.Ip[index])
 			if address == nil {
 				_, _, err := net.ParseCIDR(a.Config.Ip[index])

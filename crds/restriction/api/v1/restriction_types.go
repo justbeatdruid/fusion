@@ -41,7 +41,7 @@ type RestrictionSpec struct {
 
 type ConfigInfo struct {
 	Ip   []string `json:"ip"`
-	User string `json:"user"`
+	User string   `json:"user"`
 }
 
 type Action string
@@ -65,9 +65,9 @@ type Api struct {
 	//ip 限制 kong插件id
 	PluginID string `json:"pluginID"`
 	//特殊应用 记录的kong插件id列表
-	Result Result `json:"result"`
+	Result        Result    `json:"result"`
 	DisplayStatus DisStatus `json:"disStatus"`
-	Detail string `json:"detail"`
+	Detail        string    `json:"detail"`
 }
 type Result string
 
