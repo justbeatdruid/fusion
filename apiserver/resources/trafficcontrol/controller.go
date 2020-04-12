@@ -280,7 +280,7 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 		}
 	}
 	if api, err := c.service.BindOrUnbindApis(body.Data.Operation, trafficID, body.Data.Apis,
-		util.WithNamespace(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      2,
 			ErrorCode: "012000010",

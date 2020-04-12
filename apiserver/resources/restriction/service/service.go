@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
+	clientset "k8s.io/client-go/kubernetes"
 	"strings"
 
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
@@ -21,14 +22,20 @@ import (
 var crdNamespace = "default"
 
 type Service struct {
-	client    dynamic.NamespaceableResourceInterface
-	apiClient dynamic.NamespaceableResourceInterface
+	kubeClient        *clientset.Clientset
+	client            dynamic.NamespaceableResourceInterface
+	apiClient         dynamic.NamespaceableResourceInterface
+	tenantEnabled     bool
+	localConfig       appconfig.ErrorConfig
 }
 
-func NewService(client dynamic.Interface, localConfig appconfig.ErrorConfig) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool, localConfig appconfig.ErrorConfig) *Service {
 	return &Service{
-		client:    client.Resource(v1.GetOOFSGVR()),
-		apiClient: client.Resource(apiv1.GetOOFSGVR()),
+		kubeClient:        kubeClient,
+		client:            client.Resource(v1.GetOOFSGVR()),
+		apiClient:         client.Resource(apiv1.GetOOFSGVR()),
+		tenantEnabled:     tenantEnabled,
+		localConfig:       localConfig,
 	}
 }
 
@@ -51,7 +58,7 @@ func (s *Service) ListRestriction(opts ...util.OpOption) ([]*Restriction, error)
 	return ToListModel(apps, opts...), nil
 }
 
-func (s *Service) GetRestriction(id string) (*Restriction, error) {
+func (s *Service) GetRestriction(id string, opts ...util.OpOption) (*Restriction, error) {
 	su, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
@@ -59,7 +66,7 @@ func (s *Service) GetRestriction(id string) (*Restriction, error) {
 	return ToModel(su), nil
 }
 
-func (s *Service) DeleteRestriction(id string) error {
+func (s *Service) DeleteRestriction(id string, opts ...util.OpOption) error {
 	err := s.Delete(id)
 	if err != nil {
 		return fmt.Errorf("cannot delete traffic control: %+v", err)
@@ -68,7 +75,7 @@ func (s *Service) DeleteRestriction(id string) error {
 }
 
 // + update
-func (s *Service) UpdateRestriction(id string, reqData interface{}) (*Restriction, error) {
+func (s *Service) UpdateRestriction(id string, reqData interface{}, opts ...util.OpOption) (*Restriction, error) {
 	crd, err := s.Get(id)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
@@ -245,7 +252,7 @@ func (s *Service) updateApi(apiid string, restriction *v1.Restriction) (*apiv1.A
 	return api, nil
 }
 
-func (s *Service) BindOrUnbindApis(operation, id string, apis []v1.Api) (*Restriction, error) {
+func (s *Service) BindOrUnbindApis(operation, id string, apis []v1.Api, opts ...util.OpOption) (*Restriction, error) {
 	if operation == "unbind" {
 		return s.UnBindApi(id, apis)
 	} else if operation == "bind" {

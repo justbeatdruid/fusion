@@ -37,7 +37,7 @@ func ToAPI(app *Restriction) *v1.Restriction {
 	crd.TypeMeta.Kind = "Restriction"
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
 	crd.ObjectMeta.Name = app.ID
-	crd.ObjectMeta.Namespace = crdNamespace
+	crd.ObjectMeta.Namespace = app.Namespace
 	crd.ObjectMeta.Labels = make(map[string]string)
 	crd.ObjectMeta.Labels[app.ID] = app.ID
 	crd.Spec = v1.RestrictionSpec{
