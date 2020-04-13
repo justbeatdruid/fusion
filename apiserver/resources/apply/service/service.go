@@ -2,7 +2,9 @@ package service
 
 import (
 	"fmt"
+	"sync"
 
+	k8s "github.com/chinamobile/nlpt/apiserver/kubernetes"
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"github.com/chinamobile/nlpt/crds/apply/api/v1"
@@ -15,24 +17,31 @@ import (
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/dynamic"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 )
 
 var crdNamespace = "default"
 
 type Service struct {
+	kubeClient        *clientset.Clientset
 	client            dynamic.NamespaceableResourceInterface
 	apiClient         dynamic.NamespaceableResourceInterface
 	serviceunitClient dynamic.NamespaceableResourceInterface
 	applicationClient dynamic.NamespaceableResourceInterface
+
+	tenantEnabled bool
 }
 
-func NewService(client dynamic.Interface) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool) *Service {
 	return &Service{
+		kubeClient:        kubeClient,
 		client:            client.Resource(v1.GetOOFSGVR()),
 		apiClient:         client.Resource(apiv1.GetOOFSGVR()),
 		serviceunitClient: client.Resource(suv1.GetOOFSGVR()),
 		applicationClient: client.Resource(appv1.GetOOFSGVR()),
+
+		tenantEnabled: tenantEnabled,
 	}
 }
 
@@ -50,7 +59,7 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 	check := func(r *Resource) error {
 		switch r.Type {
 		case v1.Serviceunit:
-			su, err := s.getServiceunit(r.ID)
+			su, err := s.getServiceunit(r.ID, r.Tenant)
 			if err != nil {
 				return fmt.Errorf("get serviceunit error: %+v", err)
 			}
@@ -58,7 +67,7 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 			r.Owner = user.GetOwner(su.ObjectMeta.Labels)
 			r.Labels = su.ObjectMeta.Labels
 		case v1.Api:
-			api, err := s.getApi(r.ID)
+			api, err := s.getApi(r.ID, r.Tenant)
 			if err != nil {
 				return fmt.Errorf("get api error: %+v", err)
 			}
@@ -68,7 +77,7 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 			targetName = api.Spec.Name
 			targetApi = api
 		case v1.Application:
-			app, err := s.getApplication(r.ID)
+			app, err := s.getApplication(r.ID, r.Tenant)
 			if err != nil {
 				return fmt.Errorf("get application error: %+v", err)
 			}
@@ -101,9 +110,11 @@ func (s *Service) CreateApply(model *Apply) (*Apply, error) {
 		return nil, errors.AlreadyBoundError("api already bound to application")
 	}
 
-	klog.V(5).Infof("applicant: %s", model.Users.AppliedBy.ID)
-	if !user.WritePermitted(model.Users.AppliedBy.ID, model.Source.Labels) {
-		return nil, errors.PermissionDeniedError("user has no permission for source %s", model.Source.Name)
+	if !s.tenantEnabled {
+		klog.V(5).Infof("applicant: %s", model.Users.AppliedBy.ID)
+		if !user.WritePermitted(model.Users.AppliedBy.ID, model.Source.Labels) {
+			return nil, errors.PermissionDeniedError("user has no permission for source %s", model.Source.Name)
+		}
 	}
 	model.Users.ApprovedBy.ID = model.Target.Owner
 	if len(model.Users.ApprovedBy.ID) == 0 {
@@ -175,12 +186,12 @@ func (s *Service) GetApply(id string) (*Apply, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
-	app, err := s.getApplication(apl.Spec.SourceID)
+	app, err := s.getApplication(apl.Spec.SourceID, apl.Spec.SourceTenant)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get application: %+v", err)
 	}
 	apl.Spec.SourceName = app.Spec.Name
-	api, err := s.getApi(apl.Spec.TargetID)
+	api, err := s.getApi(apl.Spec.TargetID, apl.Spec.TargetTenant)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get api: %+v", err)
 	}
@@ -236,7 +247,7 @@ func (s *Service) List(role string, opts ...util.OpOption) (*v1.ApplyList, error
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apls); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.applyList: %+v", apls)
+	klog.V(6).Infof("get v1.applyList: %+v", apls)
 	return apls, nil
 }
 
@@ -261,8 +272,8 @@ func (s *Service) Delete(id string) error {
 	return nil
 }
 
-func (s *Service) getServiceunit(id string) (*suv1.Serviceunit, error) {
-	crd, err := s.serviceunitClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+func (s *Service) getServiceunit(id, namespace string) (*suv1.Serviceunit, error) {
+	crd, err := s.serviceunitClient.Namespace(namespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
@@ -274,8 +285,8 @@ func (s *Service) getServiceunit(id string) (*suv1.Serviceunit, error) {
 	return su, nil
 }
 
-func (s *Service) getApplication(id string) (*appv1.Application, error) {
-	crd, err := s.applicationClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+func (s *Service) getApplication(id, namespace string) (*appv1.Application, error) {
+	crd, err := s.applicationClient.Namespace(namespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
@@ -287,8 +298,8 @@ func (s *Service) getApplication(id string) (*appv1.Application, error) {
 	return app, nil
 }
 
-func (s *Service) getApi(id string) (*apiv1.Api, error) {
-	crd, err := s.apiClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+func (s *Service) getApi(id, namespace string) (*apiv1.Api, error) {
+	crd, err := s.apiClient.Namespace(namespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
@@ -301,46 +312,94 @@ func (s *Service) getApi(id string) (*apiv1.Api, error) {
 }
 
 func (s *Service) getApplications() (map[string]Object, error) {
-	crd, err := s.applicationClient.Namespace(crdNamespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("error get crd: %+v", err)
-	}
-	apps := &appv1.ApplicationList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apps); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	klog.V(5).Infof("get v1.applicationList: %+v", apps)
-	result := make(map[string]Object)
-	for _, app := range apps.Items {
-		result[app.ObjectMeta.Name] = Object{
-			Group: app.ObjectMeta.Labels[appv1.GroupLabel],
-			Name:  app.Spec.Name,
+	namespaces := []string{crdNamespace}
+	var err error
+	if s.tenantEnabled {
+		namespaces, err = k8s.GetAllNamespaces(s.kubeClient)
+		if err != nil {
+			return nil, fmt.Errorf("get namespaces error: %+v", err)
 		}
 	}
+	result := make(map[string]Object)
+	var mutex sync.Mutex
+	var wg sync.WaitGroup
+	wg.Add(len(namespaces))
+	for _, n := range namespaces {
+		go func(namespace string) {
+			klog.Infof("namespace %s start", namespace)
+			defer klog.Infof("namespace %s done", namespace)
+			defer wg.Done()
+			crd, err := s.applicationClient.Namespace(namespace).List(metav1.ListOptions{})
+			if err != nil {
+				klog.Errorf("error get crd: %+v", err)
+				return
+			}
+			apps := &appv1.ApplicationList{}
+			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apps); err != nil {
+				klog.Errorf("convert unstructured to crd error: %+v", err)
+				return
+			}
+			klog.V(6).Infof("get v1.applicationList: %+v", apps)
+			mutex.Lock()
+			defer mutex.Unlock()
+			for _, app := range apps.Items {
+				result[app.ObjectMeta.Name] = Object{
+					Group:     app.ObjectMeta.Labels[appv1.GroupLabel],
+					Name:      app.Spec.Name,
+					Namespace: namespace,
+				}
+			}
+		}(n)
+	}
+	wg.Wait()
+	klog.V(5).Infof("get %d applications", len(result))
 	return result, nil
 }
 
 func (s *Service) getApis() (map[string]Object, error) {
-	crd, err := s.apiClient.Namespace(crdNamespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("error get crd: %+v", err)
-	}
-	apis := &apiv1.ApiList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apis); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	klog.V(5).Infof("get v1.apiList: %+v", apis)
-	result := make(map[string]Object)
-	for _, api := range apis.Items {
-		result[api.ObjectMeta.Name] = Object{
-			Name: api.Spec.Name,
+	namespaces := []string{crdNamespace}
+	var err error
+	if s.tenantEnabled {
+		namespaces, err = k8s.GetAllNamespaces(s.kubeClient)
+		if err != nil {
+			return nil, fmt.Errorf("get namespaces error: %+v", err)
 		}
 	}
+	result := make(map[string]Object)
+	var mutex sync.Mutex
+	var wg sync.WaitGroup
+	wg.Add(len(namespaces))
+	for _, n := range namespaces {
+		go func(namespace string) {
+			defer wg.Done()
+			crd, err := s.apiClient.Namespace(namespace).List(metav1.ListOptions{})
+			if err != nil {
+				klog.Errorf("error get crd: %+v", err)
+				return
+			}
+			apis := &apiv1.ApiList{}
+			if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apis); err != nil {
+				klog.Errorf("convert unstructured to crd error: %+v", err)
+				return
+			}
+			klog.V(6).Infof("get v1.apiList: %+v", apis)
+			mutex.Lock()
+			defer mutex.Unlock()
+			for _, api := range apis.Items {
+				result[api.ObjectMeta.Name] = Object{
+					Name:      api.Spec.Name,
+					Namespace: namespace,
+				}
+			}
+		}(n)
+	}
+	wg.Wait()
+	klog.V(5).Infof("get %d apis", len(result))
 	return result, nil
 }
 
-func (s *Service) getApiOwners(id string) (map[string]string, error) {
-	crd, err := s.apiClient.Namespace(crdNamespace).List(metav1.ListOptions{})
+func (s *Service) getApiOwners(id, namespace string) (map[string]string, error) {
+	crd, err := s.apiClient.Namespace(namespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
