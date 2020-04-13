@@ -106,7 +106,7 @@ func (r *router) Install(ws *restful.WebService) {
 	ws.Route(ws.GET("/topics/{id}/permissions").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
-		Doc("list all messages ").
+		Doc("list all permissions").
 		To(r.listUsers).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
