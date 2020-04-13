@@ -28,3 +28,15 @@ func EnsureNamespace(client *clientset.Clientset, namespace string) error {
 	}
 	return nil
 }
+
+func GetAllNamespaces(client *clientset.Clientset) ([]string, error) {
+	nsl, err := client.CoreV1().Namespaces().List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("cannot list namespace: %+v", err)
+	}
+	namespaces := make([]string, len(nsl.Items))
+	for i := range nsl.Items {
+		namespaces[i] = nsl.Items[i].ObjectMeta.Name
+	}
+	return namespaces, nil
+}
