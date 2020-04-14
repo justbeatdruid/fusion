@@ -78,15 +78,15 @@ type PermissionStatus struct {
 type Status string
 
 const (
-	Init              Status = "init"
-	Creating          Status = "creating"
-	Created           Status = "created"
-	Delete            Status = "delete"
-	Deleting          Status = "deleting"
-	Error             Status = "error"
-	Updating          Status = "updating"
-	Updated           Status = "updated"
-	Update            Status = "update"
+	Init     Status = "init"
+	Creating Status = "creating"
+	Created  Status = "created"
+	Delete   Status = "delete"
+	Deleting Status = "deleting"
+	Error    Status = "error"
+	Updating Status = "updating"
+	Updated  Status = "updated"
+	Update   Status = "update"
 )
 
 // +kubebuilder:object:root=true
@@ -110,39 +110,38 @@ type TopicList struct {
 }
 
 type Stats struct {
-	MsgRateIn           string                     `json:"msgRateIn"`
-	MsgRateOut          string                     `json:"msgRateOut"`
-	MsgThroughputIn     string                     `json:"msgThroughputIn"`
-	MsgThroughputOut    string                     `json:"msgThroughputOut"`
+	MsgRateIn           string                      `json:"msgRateIn"`
+	MsgRateOut          string                      `json:"msgRateOut"`
+	MsgThroughputIn     string                      `json:"msgThroughputIn"`
+	MsgThroughputOut    string                      `json:"msgThroughputOut"`
 	MsgInCounter        int64                       `json:"MsgInCounter"`
-	AverageMsgSize      string                     `json:"averageMsgSize"`
+	AverageMsgSize      string                      `json:"averageMsgSize"`
 	BytesInCounter      int64                       `json:"bytesInCounter"`
 	StorageSize         int64                       `json:"storageSize"`
 	BacklogSize         int64                       `json:"backlogSize"`
 	DeduplicationStatus string                      `json:"deduplicationStatus"`
 	Subscriptions       map[string]SubscriptionStat `json:"subscriptions"`
 	Publishers          []Publisher                 `json:"publishers"`
-
 }
 type Publisher struct {
 	MsgRateIn       string `json:"msgRateIn"`
 	MsgThroughputIn string `json:"msgThroughputIn"`
 	AverageMsgSize  string `json:"averageMsgSize"`
-	ProducerId      int64   `json:"producerId"`
-	ProducerName    string  `json:"producerName"`
-	Address         string  `json:"address"`
-	ConnectedSince  string  `json:"connectedSince"`
+	ProducerId      int64  `json:"producerId"`
+	ProducerName    string `json:"producerName"`
+	Address         string `json:"address"`
+	ConnectedSince  string `json:"connectedSince"`
 }
 type SubscriptionStat struct {
-	MsgRateOut                       string        `json:"msgRateOut"`
-	MsgThroughputOut                 string        `json:"msgThroughputOut"`
-	MsgRateRedeliver                 string        `json:"msgRateRedeliver"`
+	MsgRateOut                       string         `json:"msgRateOut"`
+	MsgThroughputOut                 string         `json:"msgThroughputOut"`
+	MsgRateRedeliver                 string         `json:"msgRateRedeliver"`
 	MsgBacklog                       int64          `json:"msgBacklog"`
 	BlockedSubscriptionOnUnackedMsgs bool           `json:"blockedSubscriptionOnUnackedMsgs"`
 	MsgDelayed                       int64          `json:"msgDelayed"`
 	UnackedMessages                  int64          `json:"unackedMessages"`
 	Type                             string         `json:"type"`
-	MsgRateExpired                   string        `json:"msgRateExpired"`
+	MsgRateExpired                   string         `json:"msgRateExpired"`
 	LastExpireTimestamp              int64          `json:"lastExpireTimestamp"`
 	LastConsumedFlowTimestamp        int64          `json:"lastConsumedFlowTimestamp"`
 	LastConsumedTimestamp            int64          `json:"lastConsumedTimestamp"`
@@ -158,7 +157,6 @@ type ConsumerStat struct {
 func init() {
 	SchemeBuilder.Register(&Topic{}, &TopicList{})
 }
-
 
 func (in *Topic) GetUrl() (url string) {
 

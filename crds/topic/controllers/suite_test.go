@@ -90,7 +90,6 @@ var _ = BeforeSuite(func(done Done) {
 	close(done)
 }, 60)
 
-
 func TestConnector_GetStats(t *testing.T) {
 	var tmp float64 = 0
 	fmt.Println(fmt.Sprintf("%.8f", tmp))
