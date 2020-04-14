@@ -66,11 +66,11 @@ type MessageResponse = struct {
 }
 
 type StatisticsResponse = struct {
-	Code      int                `json:"code"`
-	ErrorCode string             `json:"errorCode"`
-	Message   string             `json:"message"`
-	Data      service.Statistics `json:"data"`
-	Detail    string             `json:"detail"`
+	Code      int                 `json:"code"`
+	ErrorCode string              `json:"errorCode"`
+	Message   string              `json:"message"`
+	Data      *service.Statistics `json:"data"`
+	Detail    string              `json:"detail"`
 }
 type PingResponse = DeleteResponse
 
@@ -206,11 +206,7 @@ func (c *controller) DoStatisticsOnTopics(req *restful.Request) (int, *Statistic
 		}
 
 	}
-
-	data := service.Statistics{}
-	data.Total = len(tp)
-	data.Increment = c.CountTopicsIncrement(tp)
-	data.MessageSize = "20MB"
+	var data = c.CountTopics(tp)
 	return http.StatusOK, &StatisticsResponse{
 		Code:      success,
 		ErrorCode: tgerror.Success,
@@ -219,7 +215,12 @@ func (c *controller) DoStatisticsOnTopics(req *restful.Request) (int, *Statistic
 	}
 }
 
-func (c *controller) CountTopicsIncrement(tp []*service.Topic) int {
+func (c *controller) CountTopics(tp []*service.Topic) *service.Statistics {
+	data := &service.Statistics{}
+	data.Total = len(tp)
+
+	var totalMessageSize int64
+
 	var increment int
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
@@ -228,9 +229,30 @@ func (c *controller) CountTopicsIncrement(tp []*service.Topic) int {
 		if t.CreatedAt < end.Unix() && t.CreatedAt >= start.Unix() {
 			increment++
 		}
-	}
+		totalMessageSize += t.Stats.BytesInCounter
 
-	return increment
+	}
+	data.Increment = increment
+	data.MessageSize = c.formatSize(totalMessageSize)
+	return data
+}
+
+// 字节的单位转换 保留两位小数
+func (c *controller) formatSize(messageSize int64) (size string) {
+	if messageSize < 1024 {
+		//return strconv.FormatInt(fileSize, 10) + "B"
+		return fmt.Sprintf("%.fB", float64(messageSize)/float64(1))
+	} else if messageSize < (1024 * 1024) {
+		return fmt.Sprintf("%.fKB", float64(messageSize)/float64(1024))
+	} else if messageSize < (1024 * 1024 * 1024) {
+		return fmt.Sprintf("%.fMB", float64(messageSize)/float64(1024*1024))
+	} else if messageSize < (1024 * 1024 * 1024 * 1024) {
+		return fmt.Sprintf("%.fGB", float64(messageSize)/float64(1024*1024*1024))
+	} else if messageSize < (1024 * 1024 * 1024 * 1024 * 1024) {
+		return fmt.Sprintf("%.fTB", float64(messageSize)/float64(1024*1024*1024*1024))
+	} else { //if fileSize < (1024 * 1024 * 1024 * 1024 * 1024 * 1024)
+		return fmt.Sprintf("%.fEB", float64(messageSize)/float64(1024*1024*1024*1024*1024))
+	}
 }
 
 //批量删除topics
@@ -381,11 +403,6 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 			IsNonPersistent: isNonPersisten,
 		}
 
-		//TODO 数据重复判断
-		//if c.service.IsTopicExist(topic) {
-		//	continue
-		//}
-
 		if tpErr := topic.Validate(); tpErr.Err != nil {
 			return http.StatusInternalServerError, &ImportResponse{
 				Code:      1,
@@ -405,7 +422,18 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 				Detail:    "",
 			}
 		}
+		//TODO 数据重复判断
+		if c.service.IsTopicUrlExist(topic.GetUrl()) {
+			return http.StatusInternalServerError, &ImportResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorTopicExists,
+				Message:   c.errMsg.Topic[tperror.ErrorTopicExists],
+				Detail:    fmt.Sprintf("import topics error: %+v", err),
+			}
+		}
 		topic.Users = user.InitWithOwner(authuser.Name)
+		topic.Namespace = authuser.Namespace
+		// 创建Topic
 		t, tpErr := c.service.CreateTopic(topic)
 		if tpErr.Err != nil {
 			return http.StatusInternalServerError, &ImportResponse{

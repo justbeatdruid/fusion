@@ -16,7 +16,9 @@ limitations under the License.
 package controllers
 
 import (
+	"fmt"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	. "github.com/onsi/ginkgo"
@@ -87,6 +89,27 @@ var _ = BeforeSuite(func(done Done) {
 
 	close(done)
 }, 60)
+
+func TestConnector_GetStats(t *testing.T) {
+	var tmp float64 = 0
+	fmt.Println(fmt.Sprintf("%.8f", tmp))
+	var tmp2 float64 = 5.000
+	fmt.Println(tmp2)
+	tmpValue, _ := strconv.ParseFloat(fmt.Sprintf("%.8f", tmp), 64)
+	fmt.Println(tmpValue)
+	op = new(Connector)
+	op.Host = "10.160.32.24"
+	op.Port = 30002
+	op.AuthEnable = true
+	op.SuperUserToken = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.eNEbqeuUXxM7bsnP8gnxYq7hRkP50Rqc0nsWFRp8z6A"
+	topic := nlptv1.Topic{}
+	topic.Spec.TopicGroup = "default"
+	topic.Spec.Name = "nonPartitionTopic"
+	topic.Spec.Tenant = "public"
+	topic.Spec.Partition = 1
+
+	op.GetStats(topic)
+}
 
 var _ = AfterSuite(func() {
 	By("tearing down the test environment")

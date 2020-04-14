@@ -6,6 +6,7 @@ import (
 	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
 	topicv1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/chinamobile/nlpt/pkg/util"
+	"strconv"
 	"strings"
 
 	"github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
@@ -67,6 +68,7 @@ func (s *Service) ListTopicgroup() ([]*Topicgroup, error) {
 func (s *Service) SearchTopicgroup(tgList []*Topicgroup, opts ...util.OpOption) ([]*Topicgroup, error) {
 	nameLike := util.OpList(opts...).NameLike()
 	topic := util.OpList(opts...).Topic()
+	available := util.OpList(opts...).Available()
 
 	var names []string
 	if len(nameLike) > 0 {
@@ -80,20 +82,35 @@ func (s *Service) SearchTopicgroup(tgList []*Topicgroup, opts ...util.OpOption) 
 	for _, tp := range tps {
 		names = append(names, tp.TopicGroup)
 	}
-	var tgs []*Topicgroup
+
+	var finalSearchResult []*Topicgroup
 
 	if len(names) > 0 {
 		for _, tg := range tgList {
-			if strings.Contains(tg.Name, nameLike) {
-				tgs = append(tgs, tg)
+			for _, name := range names {
+				if strings.Contains(tg.Name, name) {
+					finalSearchResult = append(finalSearchResult, tg)
+				}
 			}
-
 		}
 	} else {
-		tgs = tgList
+		//未输入name搜索条件
+		finalSearchResult = tgList
 	}
 
-	return tgs, nil
+	if len(available) > 0 {
+		var tgss []*Topicgroup
+		a, _ := strconv.ParseBool(available)
+
+		for _, tg := range finalSearchResult {
+			if tg.Available == a {
+				tgss = append(tgss, tg)
+			}
+		}
+		finalSearchResult = tgss
+	}
+
+	return finalSearchResult, nil
 
 }
 
@@ -115,6 +132,9 @@ func (s *Service) GetTopics(id string) ([]*service.Topic, error) {
 }
 
 func (s *Service) listTopics(topicName string) ([]*service.Topic, error) {
+	if len(topicName) == 0 {
+		return nil, nil
+	}
 	crd, err := s.topicClient.List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -160,30 +180,7 @@ func (s *Service) DeleteTopicgroup(id string) (*Topicgroup, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
 	}
-
-	//同步把topicgroup下的topics都标记为删除
-	if err = s.DeleteTopicsUnderTopicgroup(id); err != nil {
-		return nil, fmt.Errorf("cannot delete topicgroup: %+v", err)
-	}
 	return ToModel(tg), nil
-}
-
-func (s *Service) DeleteTopicsUnderTopicgroup(id string) error {
-	tps, err := s.getTopicsCrd(id)
-	if err != nil {
-		return fmt.Errorf("cannot get topics under topicgroup: %+v", err)
-	}
-
-	for _, tp := range tps.Items {
-		//标记为级联删除状态，避免被topic controller直接删除
-		tp.Status.Status = topicv1.CascadingDelete
-		if _, err = s.UpdateTopicStatus(&tp); err != nil {
-			return fmt.Errorf("cannot delete topics under topicgroup: %+v", err)
-		}
-	}
-
-	return nil
-
 }
 
 func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, error) {
@@ -331,7 +328,7 @@ func (s *Service) List() (*v1.TopicgroupList, error) {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.topicgroupList: %+v", tps)
+	//	klog.V(5).Infof("get v1.topicgroupList: %+v", tps)
 	return tps, nil
 }
 

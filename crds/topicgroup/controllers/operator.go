@@ -58,6 +58,8 @@ func (r *requestLogger) Println(v ...interface{}) {
 	klog.V(4).Infof("%+v", v)
 }
 
+//在pulsar中创建命名空间
+//403：无权限；404：租户或者集群不存在；409：命名空间已存在；412：名称非法
 func (r *Operator) CreateNamespace(namespace *v1.Topicgroup) error {
 	request := r.GetHttpRequest()
 	url := r.getUrl(namespace)

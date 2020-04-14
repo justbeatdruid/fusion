@@ -23,6 +23,7 @@ const (
 	ErrorQueryMessagePageParam = "010000015" // 查询消息失败，原因：分页参数错误
 	ErrorGrantPermissions      = "010000016" //用户授权失败
 	ErrorRevokePermissions     = "010000017" //收回用户权限失败
+	ErrorImportTopics          = "010000018" //导入失败
 
 )
 
