@@ -34,6 +34,7 @@ type TopicgroupSpec struct {
 	Tenant    string   `json:"tenant"` //namespace的所属租户名称
 	Url       string   `json:"url"`
 	Policies  Policies `json:"policies,omitempty"`
+	Available bool     `json:"available"` //资源是否可用
 }
 type Policies struct {
 	RetentionPolicies   RetentionPolicies `json:"retentionPolicies,omitempty"` //消息保留策略
