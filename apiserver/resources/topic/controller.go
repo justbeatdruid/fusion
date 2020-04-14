@@ -212,7 +212,7 @@ func (c *controller) CountTopics(tp []*service.Topic) *service.Statistics {
 		totalMessageSize += t.Stats.BytesInCounter
 
 	}
-
+	data.Increment = increment
 	data.MessageSize = c.formatSize(totalMessageSize)
 	return data
 }
