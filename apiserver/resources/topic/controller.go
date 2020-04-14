@@ -144,6 +144,7 @@ func (c *controller) CreateTopic(req *restful.Request) (int, *CreateResponse) {
 	}
 
 	tp.Users = user.InitWithOwner(authuser.Name)
+	tp.Namespace = authuser.Namespace
 	if tp, tpErr := c.service.CreateTopic(tp); tpErr.Err != nil {
 		return http.StatusInternalServerError, c.getCreateResponse(2, tpErr.ErrorCode, fmt.Sprintf("create topic error: %+v", tpErr.Err), "")
 	} else {
@@ -158,7 +159,17 @@ func (c *controller) CreateTopic(req *restful.Request) (int, *CreateResponse) {
 
 func (c *controller) GetTopic(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
-	if tp, err := c.service.GetTopic(id); err != nil {
+	authUser, err := auth.GetAuthUser(req)
+	if err !=nil{
+			return http.StatusInternalServerError, &GetResponse{
+				Code:      fail,
+				ErrorCode: tperror.ErrorAuthError,
+				Message:   fmt.Sprintf("auth model error: %+v", err),
+				Data:      nil,
+				Detail:    "",
+			}
+	}
+	if tp, err := c.service.GetTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorGetTopicInfo,
@@ -176,7 +187,16 @@ func (c *controller) GetTopic(req *restful.Request) (int, *GetResponse) {
 }
 
 func (c *controller) DoStatisticsOnTopics(req *restful.Request) (int, *StatisticsResponse) {
-	tp, err := c.service.ListTopic()
+	authUser, err := auth.GetAuthUser(req)
+	if err !=nil{
+		return http.StatusInternalServerError, &StatisticsResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Detail:    "",
+		}
+	}
+	tp, err := c.service.ListTopic(util.WithNamespace(authUser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &StatisticsResponse{
 			Code:      fail,
@@ -236,7 +256,7 @@ func (c *controller) formatSize(messageSize int64) (size string) {
 }
 
 //批量删除topics
-func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
+/*func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
 	ids := req.QueryParameters("ids")
 	for _, id := range ids {
 		if _, err := c.service.DeleteTopic(id); err != nil {
@@ -250,10 +270,20 @@ func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
 		Code:    success,
 		Message: "delete topic success",
 	}
-}
+}*/
 func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if topic, err := c.service.DeleteTopic(id); err != nil {
+	authUser, err := auth.GetAuthUser(req)
+	if err!=nil {
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Data:      nil,
+			Detail:    "",
+		}
+	}
+	if topic, err := c.service.DeleteTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorDeleteTopic,
@@ -273,8 +303,17 @@ func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-
-	if tp, err := c.service.ListTopic(); err != nil {
+    authUser, err := auth.GetAuthUser(req)
+	if err!=nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Data:      nil,
+			Detail:    "",
+		}
+	}
+	if tp, err := c.service.ListTopic(util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorGetTopicList,
@@ -373,6 +412,16 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 			}
 		}
 		topic.URL = topic.GetUrl()
+		authuser, err := auth.GetAuthUser(req)
+		if err != nil {
+			return http.StatusInternalServerError, &ImportResponse{
+				Code:      fail,
+				ErrorCode: tperror.ErrorAuthError,
+				Message:   fmt.Sprintf("auth model error: %+v", err),
+				Data:      nil,
+				Detail:    "",
+			}
+		}
 		//TODO 数据重复判断
 		if c.service.IsTopicUrlExist(topic.GetUrl()) {
 			return http.StatusInternalServerError, &ImportResponse{
@@ -382,7 +431,8 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 				Detail:    fmt.Sprintf("import topics error: %+v", err),
 			}
 		}
-
+		topic.Users = user.InitWithOwner(authuser.Name)
+		topic.Namespace = authuser.Namespace
 		// 创建Topic
 		t, tpErr := c.service.CreateTopic(topic)
 		if tpErr.Err != nil {
@@ -412,8 +462,18 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 	startTime := req.QueryParameter("startTime")
 	endTime := req.QueryParameter("endTime")
 	topicGroup := req.QueryParameter("topicGroup")
+	authUser, err := auth.GetAuthUser(req)
+	if err!=nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      fail,
+				ErrorCode: tperror.ErrorAuthError,
+				Message:   fmt.Sprintf("auth model error: %+v", err),
+				Messages:  nil,
+				Detail:    "",
+			}
+	}
 	//先查出所有topic的信息
-	tps, err := c.service.ListTopic()
+	tps, err := c.service.ListTopic(util.WithNamespace(authUser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:      1,
@@ -617,8 +677,17 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 			Detail:    fmt.Sprintf("grant permissions error: %+v", err),
 		}
 	}
-
-	if tp, err := c.service.GrantPermissions(id, authUserId, actions.Actions); err != nil {
+	authUser, err := auth.GetAuthUser(req)
+	if err!=nil {
+			return http.StatusInternalServerError, &GrantResponse{
+				Code:      fail,
+				ErrorCode: tperror.ErrorAuthError,
+				Message:   fmt.Sprintf("auth model error: %+v", err),
+				Data:      nil,
+				Detail:    "",
+			}
+	}
+	if tp, err := c.service.GrantPermissions(id, authUserId, actions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GrantResponse{
 			Code:      2,
 			ErrorCode: tperror.ErrorGrantPermissions,
@@ -637,7 +706,17 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 func (c *controller) DeletePermissions(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	authUserId := req.PathParameter("auth-user-id")
-	if topic, err := c.service.DeletePermissions(id, authUserId); err != nil {
+	authUser, err := auth.GetAuthUser(req)
+	if err!=nil {
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Data:      nil,
+			Detail:    "",
+		}
+	}
+	if topic, err := c.service.DeletePermissions(id, authUserId, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorRevokePermissions,
