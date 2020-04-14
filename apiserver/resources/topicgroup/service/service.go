@@ -82,35 +82,35 @@ func (s *Service) SearchTopicgroup(tgList []*Topicgroup, opts ...util.OpOption) 
 	for _, tp := range tps {
 		names = append(names, tp.TopicGroup)
 	}
-	var tgs []*Topicgroup
+
+	var finalSearchResult []*Topicgroup
 
 	if len(names) > 0 {
 		for _, tg := range tgList {
 			for _, name := range names {
 				if strings.Contains(tg.Name, name) {
-					tgs = append(tgs, tg)
+					finalSearchResult = append(finalSearchResult, tg)
 				}
 			}
 		}
 	} else {
-		tgs = tgList
+		//未输入name搜索条件
+		finalSearchResult = tgList
 	}
 
 	if len(available) > 0 {
 		var tgss []*Topicgroup
 		a, _ := strconv.ParseBool(available)
 
-		for _, tg := range tgs {
+		for _, tg := range finalSearchResult {
 			if tg.Available == a {
 				tgss = append(tgss, tg)
 			}
 		}
-		tgs = tgss
-	} else {
-		tgs = tgList
+		finalSearchResult = tgss
 	}
 
-	return tgs, nil
+	return finalSearchResult, nil
 
 }
 
