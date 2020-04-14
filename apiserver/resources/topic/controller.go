@@ -221,17 +221,17 @@ func (c *controller) CountTopics(tp []*service.Topic) *service.Statistics {
 func (c *controller) formatSize(messageSize int64) (size string) {
 	if messageSize < 1024 {
 		//return strconv.FormatInt(fileSize, 10) + "B"
-		return fmt.Sprintf("%.2fB", float64(messageSize)/float64(1))
+		return fmt.Sprintf("%.fB", float64(messageSize)/float64(1))
 	} else if messageSize < (1024 * 1024) {
-		return fmt.Sprintf("%.2fKB", float64(messageSize)/float64(1024))
+		return fmt.Sprintf("%.fKB", float64(messageSize)/float64(1024))
 	} else if messageSize < (1024 * 1024 * 1024) {
-		return fmt.Sprintf("%.2fMB", float64(messageSize)/float64(1024*1024))
+		return fmt.Sprintf("%.fMB", float64(messageSize)/float64(1024*1024))
 	} else if messageSize < (1024 * 1024 * 1024 * 1024) {
-		return fmt.Sprintf("%.2fGB", float64(messageSize)/float64(1024*1024*1024))
+		return fmt.Sprintf("%.fGB", float64(messageSize)/float64(1024*1024*1024))
 	} else if messageSize < (1024 * 1024 * 1024 * 1024 * 1024) {
-		return fmt.Sprintf("%.2fTB", float64(messageSize)/float64(1024*1024*1024*1024))
+		return fmt.Sprintf("%.fTB", float64(messageSize)/float64(1024*1024*1024*1024))
 	} else { //if fileSize < (1024 * 1024 * 1024 * 1024 * 1024 * 1024)
-		return fmt.Sprintf("%.2fEB", float64(messageSize)/float64(1024*1024*1024*1024*1024))
+		return fmt.Sprintf("%.fEB", float64(messageSize)/float64(1024*1024*1024*1024*1024))
 	}
 }
 
