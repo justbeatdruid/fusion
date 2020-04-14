@@ -45,6 +45,53 @@ type Connector struct {
 	SuperUserToken string
 }
 
+
+
+type Stats struct {
+	MsgRateIn           float64                     `json:"msgRateIn"`
+	MsgRateOut          float64                     `json:"msgRateOut"`
+	MsgThroughputIn     float64                     `json:"msgThroughputIn"`
+	MsgThroughputOut    float64                     `json:"msgThroughputOut"`
+	MsgInCounter        int64                       `json:"MsgInCounter"`
+	AverageMsgSize      float64                     `json:"averageMsgSize"`
+	BytesInCounter      int64                       `json:"bytesInCounter"`
+	StorageSize         int64                       `json:"storageSize"`
+	BacklogSize         int64                       `json:"backlogSize"`
+	DeduplicationStatus string                      `json:"deduplicationStatus"`
+	Subscriptions       map[string]SubscriptionStat `json:"subscriptions"`
+	Publishers          []Publisher                 `json:"publishers"`
+}
+type Publisher struct {
+	MsgRateIn       float64 `json:"msgRateIn"`
+	MsgThroughputIn float64 `json:"msgThroughputIn"`
+	AverageMsgSize  float64 `json:"averageMsgSize"`
+	ProducerId      int64   `json:"producerId"`
+	ProducerName    string  `json:"producerName"`
+	Address         string  `json:"address"`
+	ConnectedSince  string  `json:"connectedSince"`
+}
+type SubscriptionStat struct {
+	MsgRateOut                       float64        `json:"msgRateOut"`
+	MsgThroughputOut                 float64        `json:"msgThroughputOut"`
+	MsgRateRedeliver                 float64        `json:"msgRateRedeliver"`
+	MsgBacklog                       int64          `json:"msgBacklog"`
+	BlockedSubscriptionOnUnackedMsgs bool           `json:"blockedSubscriptionOnUnackedMsgs"`
+	MsgDelayed                       int64          `json:"msgDelayed"`
+	UnackedMessages                  int64          `json:"unackedMessages"`
+	Type                             string         `json:"type"`
+	MsgRateExpired                   float64        `json:"msgRateExpired"`
+	LastExpireTimestamp              int64          `json:"lastExpireTimestamp"`
+	LastConsumedFlowTimestamp        int64          `json:"lastConsumedFlowTimestamp"`
+	LastConsumedTimestamp            int64          `json:"lastConsumedTimestamp"`
+	LastAckedTimestamp               int64          `json:"lastAckedTimestamp"`
+	Consumers                        []ConsumerStat `json:"consumers"`
+	IsReplicated                     bool           `json:"isReplicated"`
+}
+
+type ConsumerStat struct {
+	MsgRateOut float64 `json:"msgRateOut"`
+}
+
 //CreateTopic 调用Pulsar的Restful Admin API，创建Topic
 func (r *Connector) CreateTopic(topic *nlptv1.Topic) (err error) {
 	if topic.Spec.Partition > 1 {
@@ -166,26 +213,76 @@ func (r *Connector) GetHttpRequest() *gorequest.SuperAgent {
 
 }
 
-func (r *Connector) GetStats(topic nlptv1.Topic) (nlptv1.Stats, error) {
+func (r *Connector) GetStats(topic nlptv1.Topic) (*nlptv1.Stats, error) {
 	request := r.GetHttpRequest()
 	url := persistentTopicUrl
 	if topic.Spec.IsNonPersistent {
 		url = nonPersistentTopicUrl
 	}
-
 	url += statsUrl
 	url = fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
 	url = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
-	stats := nlptv1.Stats{}
+	stats := &Stats{}
 	response, _, errs := request.Get(url).Retry(3, 5*time.Second, http.StatusNotFound, http.StatusBadGateway).EndStruct(stats)
 	if errs != nil {
 		klog.Errorf("get stats error, url: %+v, errs: %+v", url, errs)
-		return nlptv1.Stats{}, fmt.Errorf("get stats error: %+v", errs)
+		return nil, fmt.Errorf("get stats error: %+v", errs)
 	}
-	if response.StatusCode == http.StatusNoContent {
-		return stats, nil
+
+	if response.StatusCode == http.StatusOK {
+		//处理float64的精度，float类型自动省略.00的问题
+		//直接将无小数点的float类型数据保存在crd中，反序列化时会当成int64类型，导致类型出错
+		return r.FormatStats(stats), nil
 	}
 	klog.Errorf("get stats error, url: %+v, status code: %+v, errs: %+v", url, response.StatusCode, errs)
-	return nlptv1.Stats{}, fmt.Errorf("get stats error: %+v", errs)
+	return nil, fmt.Errorf("get stats error: %+v", errs)
 
+}
+
+
+func (r *Connector) FormatStats(stats *Stats) *nlptv1.Stats{
+	parsedStats := &nlptv1.Stats{
+		DeduplicationStatus: stats.DeduplicationStatus,
+		MsgInCounter:stats.MsgInCounter,
+		BytesInCounter:stats.BytesInCounter,
+		StorageSize:stats.StorageSize,
+		BacklogSize:stats.BacklogSize,
+	}
+
+	parsedStats.MsgRateIn = fmt.Sprintf("%.3f", stats.MsgRateIn)
+	parsedStats.MsgRateOut = fmt.Sprintf("%.3f", stats.MsgRateOut)
+	parsedStats.MsgThroughputOut = fmt.Sprintf("%.3f", stats.MsgThroughputOut)
+	parsedStats.AverageMsgSize = fmt.Sprintf("%.3f", stats.AverageMsgSize)
+	parsedStats.MsgThroughputIn = fmt.Sprintf("%.3f", stats.MsgThroughputIn)
+
+	var subscriptions  = make(map[string]nlptv1.SubscriptionStat)
+	if len(stats.Subscriptions) > 0 {
+		for k, v := range stats.Subscriptions {
+			var subscription nlptv1.SubscriptionStat
+			subscription.IsReplicated = v.IsReplicated
+			subscription.LastAckedTimestamp = v.LastAckedTimestamp
+			subscription.LastConsumedTimestamp = v.LastConsumedTimestamp
+			subscription.Type = v.Type
+			subscription.LastExpireTimestamp = v.LastExpireTimestamp
+			subscription.UnackedMessages = v.UnackedMessages
+			subscription.LastConsumedFlowTimestamp = v.LastConsumedFlowTimestamp
+			subscription.BlockedSubscriptionOnUnackedMsgs = v.BlockedSubscriptionOnUnackedMsgs
+			subscription.UnackedMessages = v.UnackedMessages
+			subscription.MsgThroughputOut = fmt.Sprintf("%.3f", v.MsgThroughputOut)
+			subscription.MsgRateOut = fmt.Sprintf("%.3f", v.MsgRateOut)
+			subscription.MsgRateExpired = fmt.Sprintf("%.3f", v.MsgRateExpired)
+			subscription.MsgRateRedeliver = fmt.Sprintf("%.3f", v.MsgRateRedeliver)
+
+			var consumers = make([]nlptv1.ConsumerStat, len(v.Consumers))
+			for _,consumer := range v.Consumers {
+				var c nlptv1.ConsumerStat
+				c.MsgRateOut = fmt.Sprintf("%.8f", consumer.MsgRateOut)
+				consumers = append(consumers, c)
+			}
+			subscription.Consumers = consumers
+			subscriptions[k] = subscription
+		}
+	}
+	parsedStats.Subscriptions = subscriptions
+	return parsedStats
 }

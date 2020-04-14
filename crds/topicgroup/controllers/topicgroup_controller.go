@@ -58,6 +58,7 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 		} else {
 			namespace.Status.Status = nlptv1.Created
 			namespace.Status.Message = "success"
+			namespace.Spec.Available = true
 		}
 
 		klog.Infof("Final Namespace: %+v", *namespace)

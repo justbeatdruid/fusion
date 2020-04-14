@@ -49,6 +49,20 @@ func NewService(client dynamic.Interface, topConfig *config.TopicConfig, errMsg 
 		adminToken:       topConfig.AdminToken,
 	}
 }
+
+func (s *Service) ListTopicgroups() (*topicgroupv1.TopicgroupList, error) {
+	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	tps := &topicgroupv1.TopicgroupList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.topicgroupList: %+v", tps)
+	return tps, nil
+}
+
 func (s *Service) CreateTopic(model *Topic) (*Topic, tperror.TopicError) {
 	if tpErr := model.Validate(); tpErr.Err != nil {
 		return nil, tpErr
@@ -111,6 +125,10 @@ func (s *Service) ListMessages(topicUrls []string) ([]Message, error) {
 }
 
 func (s *Service) IsTopicExist(tp *v1.Topic) bool {
+	return s.IsTopicUrlExist(tp.GetUrl())
+}
+
+func (s *Service) IsTopicUrlExist(url string) bool {
 	tps, err := s.List()
 	if err != nil {
 		return false
@@ -119,12 +137,11 @@ func (s *Service) IsTopicExist(tp *v1.Topic) bool {
 	//判重复
 	if len(tps.Items) > 0 {
 		for _, t := range tps.Items {
-			if t.GetUrl() == tp.GetUrl() {
+			if t.GetUrl() == url {
 				return true
 			}
 		}
 	}
-
 	return false
 }
 func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {

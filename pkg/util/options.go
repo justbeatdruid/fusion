@@ -8,6 +8,7 @@ type Op struct {
 	restriction    string
 	trafficcontrol string
 	topic          string
+	available      string
 }
 
 func (o Op) NameLike() string       { return o.nameLike }
@@ -17,6 +18,7 @@ func (o Op) Namespace() string      { return o.namespace }
 func (o Op) Restriction() string    { return o.restriction }
 func (o Op) Trafficcontrol() string { return o.trafficcontrol }
 func (o Op) Topic() string          { return o.topic }
+func (o Op) Available() string      { return o.available }
 
 type OpOption func(*Op)
 
@@ -27,6 +29,7 @@ func WithNamespace(s string) OpOption      { return func(op *Op) { op.namespace 
 func WithRestriction(s string) OpOption    { return func(op *Op) { op.restriction = s } }
 func WithTrafficcontrol(s string) OpOption { return func(op *Op) { op.trafficcontrol = s } }
 func WithTopic(s string) OpOption          { return func(op *Op) { op.topic = s } }
+func WithAvailable(s string) OpOption      { return func(op *Op) { op.available = s } }
 
 func OpList(opts ...OpOption) Op {
 	ret := Op{}

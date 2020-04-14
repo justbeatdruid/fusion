@@ -231,6 +231,7 @@ func (c *controller) ListTopicgroup(req *restful.Request) (int, *ListResponse) {
 	size := req.QueryParameter("size")
 	name := req.QueryParameter("name")
 	topicName := req.QueryParameter("topicName")
+	available := req.QueryParameter("available")
 
 	if len(topicName) > 0 {
 		topicName = strings.ToLower(strings.Trim(topicName, " "))
@@ -238,6 +239,22 @@ func (c *controller) ListTopicgroup(req *restful.Request) (int, *ListResponse) {
 
 	if len(name) > 0 {
 		name = strings.ToLower(strings.Trim(name, " "))
+	}
+
+	if len(available) > 0 {
+		switch available {
+		case "true":
+		case "false":
+			break
+		default:
+			return http.StatusInternalServerError, &ListResponse{
+				Code:      fail,
+				ErrorCode: tgerror.ErrorGetTopicgroupList,
+				Message:   c.errMsg.TopicGroup[tgerror.ErrorGetTopicgroupList],
+				Detail:    fmt.Sprintf("list database error: available param error"),
+			}
+		}
+
 	}
 
 	if tg, err := c.service.ListTopicgroup(); err != nil {
@@ -248,7 +265,7 @@ func (c *controller) ListTopicgroup(req *restful.Request) (int, *ListResponse) {
 			Detail:    fmt.Sprintf("list database error: %+v", err),
 		}
 	} else {
-		tg, err = c.service.SearchTopicgroup(tg, util.WithNameLike(name), util.WithTopic(topicName))
+		tg, err = c.service.SearchTopicgroup(tg, util.WithNameLike(name), util.WithTopic(topicName), util.WithAvailable(available))
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:      fail,

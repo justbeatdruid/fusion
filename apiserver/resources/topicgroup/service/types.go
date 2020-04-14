@@ -27,6 +27,7 @@ type Topicgroup struct {
 	Users     user.Users `json:"users"`
 	Status    v1.Status  `json:"status"`
 	Message   string     `json:"message"`
+	Available bool       `json:"available"` //是否可用
 }
 
 type Policies struct {
@@ -122,6 +123,7 @@ func ToModel(obj *v1.Topicgroup) *Topicgroup {
 		CreatedAt: obj.ObjectMeta.CreationTimestamp.Unix(),
 		Policies:  ToPolicesModel(&obj.Spec.Policies),
 		Users:     user.GetUsersFromLabels(obj.ObjectMeta.Labels),
+		Available: obj.Spec.Available,
 	}
 }
 

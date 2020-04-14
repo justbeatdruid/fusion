@@ -54,7 +54,7 @@ func (r *TopicSynchronizer) SyncTopicStats() error {
 			continue
 		}
 
-		tp.Spec.Stats = stats
+		tp.Spec.Stats = *stats
 		if err := r.Update(ctx, &tp); err != nil {
 			klog.Errorf("update topic stats error")
 		}

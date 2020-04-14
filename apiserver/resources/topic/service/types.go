@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
+	"strconv"
 	"strings"
 )
 
@@ -31,7 +32,52 @@ type Topic struct {
 	Message         string       `json:"message"`
 	Permissions     []Permission `json:"permissions"`
 	Users           user.Users   `json:"users"`
-	MessageSize     float64      `json:"messageSize"` //消息总量
+	Stats           *Stats       `json:"stats"` //Topic的统计数据
+}
+
+type Stats struct {
+	MsgRateIn           float64                     `json:"msgRateIn"`
+	MsgRateOut          float64                     `json:"msgRateOut"`
+	MsgThroughputIn     float64                     `json:"msgThroughputIn"`
+	MsgThroughputOut    float64                     `json:"msgThroughputOut"`
+	MsgInCounter        int64                       `json:"MsgInCounter"`
+	AverageMsgSize      float64                     `json:"averageMsgSize"`
+	BytesInCounter      int64                       `json:"bytesInCounter"`
+	StorageSize         int64                       `json:"storageSize"`
+	BacklogSize         int64                       `json:"backlogSize"`
+	DeduplicationStatus string                      `json:"deduplicationStatus"`
+	Subscriptions       map[string]SubscriptionStat `json:"subscriptions"`
+	Publishers          []Publisher                 `json:"publishers"`
+}
+type Publisher struct {
+	MsgRateIn       float64 `json:"msgRateIn"`
+	MsgThroughputIn float64 `json:"msgThroughputIn"`
+	AverageMsgSize  float64 `json:"averageMsgSize"`
+	ProducerId      int64   `json:"producerId"`
+	ProducerName    string  `json:"producerName"`
+	Address         string  `json:"address"`
+	ConnectedSince  string  `json:"connectedSince"`
+}
+type SubscriptionStat struct {
+	MsgRateOut                       float64        `json:"msgRateOut"`
+	MsgThroughputOut                 float64        `json:"msgThroughputOut"`
+	MsgRateRedeliver                 float64        `json:"msgRateRedeliver"`
+	MsgBacklog                       int64          `json:"msgBacklog"`
+	BlockedSubscriptionOnUnackedMsgs bool           `json:"blockedSubscriptionOnUnackedMsgs"`
+	MsgDelayed                       int64          `json:"msgDelayed"`
+	UnackedMessages                  int64          `json:"unackedMessages"`
+	Type                             string         `json:"type"`
+	MsgRateExpired                   float64        `json:"msgRateExpired"`
+	LastExpireTimestamp              int64          `json:"lastExpireTimestamp"`
+	LastConsumedFlowTimestamp        int64          `json:"lastConsumedFlowTimestamp"`
+	LastConsumedTimestamp            int64          `json:"lastConsumedTimestamp"`
+	LastAckedTimestamp               int64          `json:"lastAckedTimestamp"`
+	Consumers                        []ConsumerStat `json:"consumers"`
+	IsReplicated                     bool           `json:"isReplicated"`
+}
+
+type ConsumerStat struct {
+	MsgRateOut float64 `json:"msgRateOut"`
 }
 
 type Message struct {
@@ -134,10 +180,66 @@ func ToModel(obj *v1.Topic) *Topic {
 		CreatedAt:       obj.CreationTimestamp.Unix(),
 		Permissions:     ps,
 		Users:           user.GetUsersFromLabels(obj.ObjectMeta.Labels),
+		Stats:           ToStatsModel(obj.Spec.Stats),
 	}
 
 }
 
+func ToSubscriptionStatModel(obj v1.SubscriptionStat) SubscriptionStat {
+	var consumers []ConsumerStat = make([]ConsumerStat, len(obj.Consumers))
+	for _, c := range obj.Consumers {
+		consumers = append(consumers, ToConsumersModel(c))
+	}
+	return SubscriptionStat{
+		MsgRateOut:                       ParseFloat(obj.MsgRateOut),
+		MsgThroughputOut:                 ParseFloat(obj.MsgThroughputOut),
+		MsgRateRedeliver:                 ParseFloat(obj.MsgRateRedeliver),
+		MsgBacklog:                       obj.MsgBacklog,
+		BlockedSubscriptionOnUnackedMsgs: obj.BlockedSubscriptionOnUnackedMsgs,
+		MsgDelayed:                       obj.MsgDelayed,
+		UnackedMessages:                  obj.UnackedMessages,
+		Type:                             obj.Type,
+		MsgRateExpired:                   ParseFloat(obj.MsgRateExpired),
+		LastExpireTimestamp:              obj.LastExpireTimestamp,
+		LastConsumedFlowTimestamp:        obj.LastConsumedFlowTimestamp,
+		LastConsumedTimestamp:            obj.LastConsumedTimestamp,
+		LastAckedTimestamp:               obj.LastAckedTimestamp,
+		Consumers:                        consumers,
+		IsReplicated:                     obj.IsReplicated,
+	}
+}
+
+func ParseFloat(s string)float64 {
+	value,err:= strconv.ParseFloat(s, 64)
+	if err != nil {
+		return 0
+	}
+	return value
+
+}
+
+func ToConsumersModel(obj v1.ConsumerStat) ConsumerStat {
+	return ConsumerStat{MsgRateOut: ParseFloat(obj.MsgRateOut)}
+}
+
+func ToStatsModel(obj v1.Stats) *Stats {
+	var subscriptions map[string]SubscriptionStat
+	for k, v := range obj.Subscriptions {
+		subscriptions[k] = ToSubscriptionStatModel(v)
+	}
+	return &Stats{
+		MsgRateIn:           ParseFloat(obj.MsgRateIn),
+		MsgRateOut:          ParseFloat(obj.MsgRateOut),
+		MsgThroughputIn:     ParseFloat(obj.MsgThroughputIn),
+		MsgThroughputOut:    ParseFloat(obj.MsgThroughputOut),
+		MsgInCounter:        obj.MsgInCounter,
+		BytesInCounter:      obj.BytesInCounter,
+		StorageSize:         obj.StorageSize,
+		BacklogSize:         obj.BacklogSize,
+		DeduplicationStatus: obj.DeduplicationStatus,
+		Subscriptions:       subscriptions,
+	}
+}
 func ToListModel(items *v1.TopicList) []*Topic {
 	var app []*Topic = make([]*Topic, len(items.Items))
 	for i := range items.Items {
