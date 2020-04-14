@@ -33,7 +33,6 @@ type TopicSpec struct {
 	Name            string       `json:"name"`
 	Tenant          string       `json:"tenant"`
 	TopicGroup      string       `json:"topicGroup"` //topic分组ID
-	Namespace       string       `json:"namespace"`
 	Partition       int          `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
 	IsNonPersistent bool         `json:"isNonPersistent"` //Topic是否不持久化
 	Url             string       `json:"url"`             //Topic url

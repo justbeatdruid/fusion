@@ -60,32 +60,32 @@ func (s *Service) CreateTopic(model *Topic) (*Topic, tperror.TopicError) {
 	return ToModel(tp), tperror.TopicError{}
 }
 
-func (s *Service) ListTopic() ([]*Topic, error) {
-	tps, err := s.List()
+func (s *Service) ListTopic(opts ...util.OpOption) ([]*Topic, error) {
+	tps, err := s.List(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
 	return ToListModel(tps), nil
 }
 
-func (s *Service) GetTopic(id string) (*Topic, error) {
-	tp, err := s.Get(id)
+func (s *Service) GetTopic(id string, opts ...util.OpOption) (*Topic, error) {
+	tp, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	return ToModel(tp), nil
 }
 
-func (s *Service) DeleteTopic(id string) (*Topic, error) {
-	tp, err := s.Delete(id)
+func (s *Service) DeleteTopic(id string, opts ...util.OpOption) (*Topic, error) {
+	tp, err := s.Delete(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
 	}
 	return ToModel(tp), nil
 }
 
-func (s *Service) DeletePermissions(id string, authUserId string) (*Topic, error) {
-	tp, err := s.DeletePer(id, authUserId)
+func (s *Service) DeletePermissions(id string, authUserId string, opts ...util.OpOption) (*Topic, error) {
+	tp, err := s.DeletePer(id, authUserId, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to delete permission: %+v", err)
 	}
@@ -111,7 +111,7 @@ func (s *Service) ListMessages(topicUrls []string) ([]Message, error) {
 }
 
 func (s *Service) IsTopicExist(tp *v1.Topic) bool {
-	tps, err := s.List()
+	tps, err := s.List(util.WithNamespace(tp.Namespace))
 	if err != nil {
 		return false
 	}
@@ -152,7 +152,7 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
 
-	crd, err = s.client.Namespace(crdNamespace).Create(crd, metav1.CreateOptions{})
+	crd, err = s.client.Namespace(tp.Namespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
 		return nil, tperror.TopicError{
 			Err:       fmt.Errorf("error creating crd: %+v", err),
@@ -170,8 +170,9 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	return tp, tperror.TopicError{}
 }
 
-func (s *Service) List() (*v1.TopicList, error) {
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
+func (s *Service) List(opts ...util.OpOption) (*v1.TopicList, error) {
+	op := util.OpList(opts...)
+	crd, err := s.client.Namespace(op.Namespace()).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
@@ -202,8 +203,9 @@ func (s *Service) ListByOptions(options metav1.ListOptions) (*v1.TopicList, erro
 	return tps, nil
 }
 
-func (s *Service) Get(id string) (*v1.Topic, error) {
-	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+func (s *Service) Get(id string, opts ...util.OpOption) (*v1.Topic, error) {
+	op := util.OpList(opts...)
+	crd, err := s.client.Namespace(op.Namespace()).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
@@ -215,8 +217,8 @@ func (s *Service) Get(id string) (*v1.Topic, error) {
 	return tp, nil
 }
 
-func (s *Service) Delete(id string) (*v1.Topic, error) {
-	tp, err := s.Get(id)
+func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topic, error) {
+	tp, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
@@ -224,8 +226,8 @@ func (s *Service) Delete(id string) (*v1.Topic, error) {
 	return s.UpdateStatus(tp)
 }
 
-func (s *Service) DeletePer(id string, authUserId string) (*v1.Topic, error) {
-	tp, err := s.Get(id)
+func (s *Service) DeletePer(id string, authUserId string, opts ...util.OpOption) (*v1.Topic, error) {
+	tp, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
@@ -388,9 +390,9 @@ func (s *Service) GetPulsarClient() (pulsar.Client, error) {
 //
 //}
 
-func (s *Service) GrantPermissions(topicId string, authUserId string, actions Actions) (*Topic, error) {
+func (s *Service) GrantPermissions(topicId string, authUserId string, actions Actions, opts ...util.OpOption) (*Topic, error) {
 	//1.根据id查询topic
-	tp, err := s.Get(topicId)
+	tp, err := s.Get(topicId, opts...)
 	if err != nil {
 		klog.Errorf("error get crd: %+v", err)
 		return nil, fmt.Errorf("error get crd: %+v", err)
