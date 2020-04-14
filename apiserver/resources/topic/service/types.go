@@ -210,8 +210,8 @@ func ToSubscriptionStatModel(obj v1.SubscriptionStat) SubscriptionStat {
 	}
 }
 
-func ParseFloat(s string)float64 {
-	value,err:= strconv.ParseFloat(s, 64)
+func ParseFloat(s string) float64 {
+	value, err := strconv.ParseFloat(s, 64)
 	if err != nil {
 		return 0
 	}

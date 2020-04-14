@@ -183,7 +183,6 @@ func (s *Service) DeleteTopicgroup(id string) (*Topicgroup, error) {
 	return ToModel(tg), nil
 }
 
-
 func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, error) {
 	crd, err := s.Get(id)
 	if err != nil {
@@ -329,7 +328,7 @@ func (s *Service) List() (*v1.TopicgroupList, error) {
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-//	klog.V(5).Infof("get v1.topicgroupList: %+v", tps)
+	//	klog.V(5).Infof("get v1.topicgroupList: %+v", tps)
 	return tps, nil
 }
 

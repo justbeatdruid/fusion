@@ -45,8 +45,6 @@ type Connector struct {
 	SuperUserToken string
 }
 
-
-
 type Stats struct {
 	MsgRateIn           float64                     `json:"msgRateIn"`
 	MsgRateOut          float64                     `json:"msgRateOut"`
@@ -239,14 +237,13 @@ func (r *Connector) GetStats(topic nlptv1.Topic) (*nlptv1.Stats, error) {
 
 }
 
-
-func (r *Connector) FormatStats(stats *Stats) *nlptv1.Stats{
+func (r *Connector) FormatStats(stats *Stats) *nlptv1.Stats {
 	parsedStats := &nlptv1.Stats{
 		DeduplicationStatus: stats.DeduplicationStatus,
-		MsgInCounter:stats.MsgInCounter,
-		BytesInCounter:stats.BytesInCounter,
-		StorageSize:stats.StorageSize,
-		BacklogSize:stats.BacklogSize,
+		MsgInCounter:        stats.MsgInCounter,
+		BytesInCounter:      stats.BytesInCounter,
+		StorageSize:         stats.StorageSize,
+		BacklogSize:         stats.BacklogSize,
 	}
 
 	parsedStats.MsgRateIn = fmt.Sprintf("%.3f", stats.MsgRateIn)
@@ -255,7 +252,7 @@ func (r *Connector) FormatStats(stats *Stats) *nlptv1.Stats{
 	parsedStats.AverageMsgSize = fmt.Sprintf("%.3f", stats.AverageMsgSize)
 	parsedStats.MsgThroughputIn = fmt.Sprintf("%.3f", stats.MsgThroughputIn)
 
-	var subscriptions  = make(map[string]nlptv1.SubscriptionStat)
+	var subscriptions = make(map[string]nlptv1.SubscriptionStat)
 	if len(stats.Subscriptions) > 0 {
 		for k, v := range stats.Subscriptions {
 			var subscription nlptv1.SubscriptionStat
@@ -274,7 +271,7 @@ func (r *Connector) FormatStats(stats *Stats) *nlptv1.Stats{
 			subscription.MsgRateRedeliver = fmt.Sprintf("%.3f", v.MsgRateRedeliver)
 
 			var consumers = make([]nlptv1.ConsumerStat, len(v.Consumers))
-			for _,consumer := range v.Consumers {
+			for _, consumer := range v.Consumers {
 				var c nlptv1.ConsumerStat
 				c.MsgRateOut = fmt.Sprintf("%.8f", consumer.MsgRateOut)
 				consumers = append(consumers, c)
