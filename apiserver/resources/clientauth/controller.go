@@ -298,8 +298,9 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 //通过authUser匹配
 func (c *controller) ListTopicByauthUser(caName string, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
+	caName = strings.ToLower(caName)
 	for _, ca := range cas {
-		if strings.Contains(ca.Name, caName) {
+		if strings.Contains(strings.ToLower(ca.Name), caName) {
 			casResult = append(casResult, ca)
 		}
 	}
@@ -309,8 +310,9 @@ func (c *controller) ListTopicByauthUser(caName string, cas []*service.Clientaut
 //通过createUser匹配
 func (c *controller) ListTopicByCreateUser(ctUser string, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
+	ctUser = strings.ToLower(ctUser)
 	for _, ca := range cas {
-		if strings.Contains(ca.CreateUser.Owner.Name, ctUser) {
+		if strings.Contains(strings.ToLower(ca.CreateUser.Owner.Name), ctUser) {
 			casResult = append(casResult, ca)
 		}
 	}
@@ -320,8 +322,9 @@ func (c *controller) ListTopicByCreateUser(ctUser string, cas []*service.Clienta
 //通过tenant匹配
 func (c *controller) ListTopicByTenant(tenant string, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
+	tenant = strings.ToLower(tenant)
 	for _, ca := range cas {
-		if strings.Contains(ca.Tenant, tenant) {
+		if strings.Contains(strings.ToLower(ca.Tenant), tenant) {
 			casResult = append(casResult, ca)
 		}
 	}
