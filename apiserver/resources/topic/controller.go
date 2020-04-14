@@ -14,6 +14,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/go-restful/log"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -81,6 +82,8 @@ type ImportResponse struct {
 	Detail    string          `json:"detail"`
 }
 
+type TopicSlice TopicList
+type MessageSlice MessageList
 const (
 	success = iota
 	fail
@@ -88,6 +91,31 @@ const (
 
 type GrantPermissionRequest struct {
 	Actions service.Actions `json:"actions"`
+}
+//重写Interface的len方法
+func (t TopicSlice) Len() int{
+	return len(t)
+}
+//重写Interface的Swap方法
+func (t TopicSlice) Swap(i,j int) {
+	t[i],t[j] = t[j],t[i]
+}
+//重写Interface的Less方法
+func (t TopicSlice) Less(i,j int) bool{
+	return t[i].CreatedAt > t[j].CreatedAt
+}
+
+
+func (m MessageSlice) Len() int{
+	return len(m)
+}
+
+func (m MessageSlice) Swap(i,j int) {
+	m[i],m[j] = m[j],m[i]
+}
+
+func (m MessageSlice) Less(i,j int) bool{
+	return m[i].Time.Unix() > m[j].Time.Unix()
 }
 
 func (c *controller) getCreateResponse(code int, errorCode string, detail string, msg string) *CreateResponse {
@@ -255,7 +283,8 @@ func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 		}
 	} else {
 		var tps TopicList = c.ListTopicByField(req, tp)
-
+        //按照创建时间排序
+        sort.Sort(TopicSlice(tps))
 		data, err := util.PageWrap(tps, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
@@ -446,6 +475,7 @@ func (c *controller) ListMessagesByTopicUrl(topicUrls []string, req *restful.Req
 		}
 	} else {
 		var ms MessageList = messages
+		sort.Sort(MessageSlice(ms))
 		data, err := util.PageWrap(ms, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
@@ -475,6 +505,7 @@ func (c *controller) ListMessagesByTopicUrlTime(topicUrls []string, start int64,
 		}
 	} else {
 		var ms MessageList = messages
+		sort.Sort(MessageSlice(ms))
 		data, err := util.PageWrap(ms, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &MessageResponse{
@@ -651,6 +682,7 @@ func (c *controller) ListUsers(req *restful.Request) (int, *ListResponse) {
 	if len(AuthUserName) > 0 {
 		permissionList = c.ListUsersByName(AuthUserName, permissionList)
 	}
+
 	data, err := util.PageWrap(permissionList, page, size)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{

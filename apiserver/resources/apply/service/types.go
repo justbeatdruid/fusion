@@ -33,13 +33,15 @@ type Apply struct {
 }
 
 type Resource struct {
-	Type      v1.Type   `json:"type"`
-	ID        string    `json:"id"`
-	Group     string    `json:"group"`
-	Name      string    `json:"name"`
-	Owner     string    `json:"owner"`
-	Status    string    `json:"status"`
-	CreatedAt time.Time `json:"createdAt"`
+	Type       v1.Type   `json:"type"`
+	ID         string    `json:"id"`
+	Group      string    `json:"group"`
+	Name       string    `json:"name"`
+	Tenant     string    `json:"tenant"`
+	TenantName string    `json:"tenantName"`
+	Owner      string    `json:"owner"`
+	Status     string    `json:"status"`
+	CreatedAt  time.Time `json:"createdAt"`
 
 	Labels map[string]string `json:"-"`
 }
@@ -54,13 +56,15 @@ func ToAPI(app *Apply) *v1.Apply {
 	crd.ObjectMeta.Name = app.ID
 	crd.ObjectMeta.Namespace = crdNamespace
 	crd.Spec = v1.ApplySpec{
-		TargetType: app.Target.Type,
-		TargetID:   app.Target.ID,
-		SourceType: app.Source.Type,
-		SourceID:   app.Source.ID,
-		Action:     app.Action,
-		ExpireAt:   metav1.NewTime(app.ExpireAt.Time),
-		Message:    app.Message,
+		TargetType:   app.Target.Type,
+		TargetID:     app.Target.ID,
+		TargetTenant: app.Target.Tenant,
+		SourceType:   app.Source.Type,
+		SourceID:     app.Source.ID,
+		SourceTenant: app.Source.Tenant,
+		Action:       app.Action,
+		ExpireAt:     metav1.NewTime(app.ExpireAt.Time),
+		Message:      app.Message,
 	}
 	crd.Status = v1.ApplyStatus{
 		Status:     v1.Waiting,
@@ -86,16 +90,18 @@ func (s *Service) ToModel(obj *v1.Apply) (*Apply, error) {
 		Namespace: obj.ObjectMeta.Namespace,
 
 		Target: Resource{
-			Type:  obj.Spec.TargetType,
-			ID:    obj.Spec.TargetID,
-			Name:  obj.Spec.TargetName,
-			Group: obj.Spec.TargetGroup,
+			Type:   obj.Spec.TargetType,
+			ID:     obj.Spec.TargetID,
+			Name:   obj.Spec.TargetName,
+			Tenant: obj.Spec.TargetTenant,
+			Group:  obj.Spec.TargetGroup,
 		},
 		Source: Resource{
-			Type:  obj.Spec.SourceType,
-			ID:    obj.Spec.SourceID,
-			Name:  obj.Spec.SourceName,
-			Group: obj.Spec.SourceGroup,
+			Type:   obj.Spec.SourceType,
+			ID:     obj.Spec.SourceID,
+			Name:   obj.Spec.SourceName,
+			Tenant: obj.Spec.SourceTenant,
+			Group:  obj.Spec.SourceGroup,
 		},
 		Action:   obj.Spec.Action,
 		Message:  obj.Spec.Message,
@@ -115,7 +121,7 @@ func (s *Service) ToModel(obj *v1.Apply) (*Apply, error) {
 func (s *Service) Completion(r Resource) (Resource, error) {
 	switch r.Type {
 	case v1.Api:
-		api, err := s.getApi(r.ID)
+		api, err := s.getApi(r.ID, r.Tenant)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				r.Status = "missing"
@@ -128,7 +134,7 @@ func (s *Service) Completion(r Resource) (Resource, error) {
 		r.CreatedAt = api.ObjectMeta.CreationTimestamp.Time
 		r.Status = string(api.Status.Status)
 	case v1.Application:
-		app, err := s.getApplication(r.ID)
+		app, err := s.getApplication(r.ID, r.Tenant)
 		if err != nil {
 			if errors.IsNotFound(err) {
 				r.Status = "missing"
@@ -180,6 +186,12 @@ func (a *Apply) Validate() error {
 	default:
 		return fmt.Errorf("wrong action: %s", a.Action)
 	}
+	if len(a.Source.Tenant) == 0 {
+		a.Source.Tenant = "default"
+	}
+	if len(a.Target.Tenant) == 0 {
+		a.Target.Tenant = "default"
+	}
 	if a.ExpireTimestamp > 0 {
 		s := a.ExpireTimestamp
 		var sec int64 = 0
@@ -202,7 +214,7 @@ func (a *Apply) Validate() error {
 		} else {
 			return fmt.Errorf("wrong expireTimestamp: wrong timestamp format, expect 10 or 13 digits")
 		}
-		fmt.Println(sec, nano)
+		//fmt.Println(sec, nano)
 		a.ExpireAt = util.NewTime(time.Unix(sec, nano))
 	}
 	if a.ExpireAt.IsZero() {
@@ -213,6 +225,7 @@ func (a *Apply) Validate() error {
 }
 
 type Object struct {
-	Group string
-	Name  string
+	Group     string
+	Name      string
+	Namespace string
 }

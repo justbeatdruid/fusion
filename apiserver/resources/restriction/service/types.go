@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/klog"
 	"net"
 	"strings"
 	"time"
@@ -36,7 +37,7 @@ func ToAPI(app *Restriction) *v1.Restriction {
 	crd.TypeMeta.Kind = "Restriction"
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
 	crd.ObjectMeta.Name = app.ID
-	crd.ObjectMeta.Namespace = crdNamespace
+	crd.ObjectMeta.Namespace = app.Namespace
 	crd.ObjectMeta.Labels = make(map[string]string)
 	crd.ObjectMeta.Labels[app.ID] = app.ID
 	crd.Spec = v1.RestrictionSpec{
@@ -80,6 +81,22 @@ func ToAPIUpdate(app *Restriction, crd *v1.Restriction) *v1.Restriction {
 }
 
 func ToModel(obj *v1.Restriction) *Restriction {
+	for index, value := range obj.Spec.Apis {
+		switch value.Result {
+		case v1.BINDING:
+			(*obj).Spec.Apis[index].DisplayStatus = v1.ApiBinding
+		case v1.UNBINDING, v1.UPDATING, v1.SUCCESS:
+			(*obj).Spec.Apis[index].DisplayStatus = v1.BindedSuccess
+		case v1.UNBINDFAILED:
+			(*obj).Spec.Apis[index].DisplayStatus = v1.UnBindFail
+		case v1.BINDFAILED, v1.UPDATEFAILED:
+			(*obj).Spec.Apis[index].DisplayStatus = v1.BindedFail
+		}
+	}
+	for _, value := range obj.Spec.Apis {
+		klog.V(5).Infof("get api config : %+v", value)
+	}
+
 	restriction := &Restriction{
 		ID:        obj.ObjectMeta.Name,
 		Name:      obj.Spec.Name,
@@ -144,14 +161,16 @@ func (s *Service) Validate(a *Restriction) error {
 
 	switch a.Type {
 	case v1.IP:
-		if len(a.Config.Ip) == 0 {
+		if len(a.Config.Ip[0]) == 0 {
 			return fmt.Errorf("at least ip limit config must exist")
 		}
-		address := net.ParseIP(a.Config.Ip)
-		if address == nil {
-			_, _, err := net.ParseCIDR(a.Config.Ip)
-			if err != nil {
-				return fmt.Errorf("ip is invalid")
+		for index, _ := range a.Config.Ip {
+			address := net.ParseIP(a.Config.Ip[index])
+			if address == nil {
+				_, _, err := net.ParseCIDR(a.Config.Ip[index])
+				if err != nil {
+					return fmt.Errorf("ip is invalid")
+				}
 			}
 		}
 

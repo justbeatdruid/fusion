@@ -6,6 +6,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -60,8 +61,16 @@ type PingResponse = DeleteResponse
 
 type ClientauthList []*service.Clientauth
 
+
 func (cas ClientauthList) Len() int {
 	return len(cas)
+}
+
+func (cas ClientauthList) Swap(i,j int){
+	cas[i],cas[j] = cas[j],cas[i]
+}
+func (cas ClientauthList) Less(i,j int) bool {
+	return cas[j].CreatedAt < cas[i].CreatedAt
 }
 
 func (cas ClientauthList) GetItem(i int) (interface{}, error) {
@@ -181,37 +190,6 @@ func (c *controller) DeleteClientauth(req *restful.Request) (int, *DeleteRespons
 	}
 }
 
-func (c *controller) ListClientauth(req *restful.Request) (int, *ListResponse) {
-	page := req.QueryParameter("page")
-	size := req.QueryParameter("size")
-
-	if ca, err := c.service.ListClientauth(); err != nil {
-		return http.StatusInternalServerError, &ListResponse{
-			Code:      fail,
-			ErrorCode: "013000007",
-			Message:   c.errMsg.ClientAuth["013000007"],
-			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
-		}
-	} else {
-		var cas ClientauthList = ca
-
-		data, err := util.PageWrap(cas, page, size)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:      fail,
-				ErrorCode: "013000008",
-				Message:   c.errMsg.ClientAuth["013000008"],
-				Detail:    fmt.Sprintf("page parameter error: %+v", err),
-			}
-		} else {
-			return http.StatusOK, &ListResponse{
-				Code: success,
-				Data: data,
-			}
-		}
-	}
-}
-
 //模糊查询
 func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
@@ -300,6 +278,7 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 		}
 	}
 	var cas ClientauthList = ca
+	sort.Sort(cas)
 	data, err := util.PageWrap(cas, page, size)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
@@ -319,8 +298,9 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 //通过authUser匹配
 func (c *controller) ListTopicByauthUser(caName string, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
+	caName = strings.ToLower(caName)
 	for _, ca := range cas {
-		if strings.Contains(ca.Name, caName) {
+		if strings.Contains(strings.ToLower(ca.Name), caName) {
 			casResult = append(casResult, ca)
 		}
 	}
@@ -330,8 +310,9 @@ func (c *controller) ListTopicByauthUser(caName string, cas []*service.Clientaut
 //通过createUser匹配
 func (c *controller) ListTopicByCreateUser(ctUser string, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
+	ctUser = strings.ToLower(ctUser)
 	for _, ca := range cas {
-		if strings.Contains(ca.CreateUser.Owner.Name, ctUser) {
+		if strings.Contains(strings.ToLower(ca.CreateUser.Owner.Name), ctUser) {
 			casResult = append(casResult, ca)
 		}
 	}
@@ -341,8 +322,9 @@ func (c *controller) ListTopicByCreateUser(ctUser string, cas []*service.Clienta
 //通过tenant匹配
 func (c *controller) ListTopicByTenant(tenant string, cas []*service.Clientauth) []*service.Clientauth {
 	var casResult []*service.Clientauth
+	tenant = strings.ToLower(tenant)
 	for _, ca := range cas {
-		if strings.Contains(ca.Tenant, tenant) {
+		if strings.Contains(strings.ToLower(ca.Tenant), tenant) {
 			casResult = append(casResult, ca)
 		}
 	}

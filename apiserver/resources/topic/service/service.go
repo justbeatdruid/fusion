@@ -322,6 +322,7 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 			if timeStamp >= start && timeStamp <= end {
 				messageStruct.ID = msg.ID()
 				messageStruct.Messages = string(msg.Payload()[:])
+				messageStruct.Size = len(msg.Payload())
 				messageStructs = append(messageStructs, messageStruct)
 			}
 		}
@@ -360,8 +361,9 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 			// Process the message
 			messageStruct.TopicName = msg.Topic()
 			messageStruct.Time = util.NewTime(msg.PublishTime())
-			messageStruct.ID = msg.ID()
+			messageStruct.ID, _ = pulsar.DeserializeMessageID(msg.ID().Serialize())
 			messageStruct.Messages = string(msg.Payload()[:])
+			messageStruct.Size = len(msg.Payload())
 			messageStructs = append(messageStructs, messageStruct)
 
 		}

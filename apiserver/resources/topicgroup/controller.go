@@ -2,6 +2,8 @@ package topicgroup
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/apiserver/resources/topic"
+	topicservice "github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
 	"github.com/chinamobile/nlpt/apiserver/resources/topicgroup/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
@@ -10,6 +12,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
+	"sort"
 	"strings"
 )
 
@@ -57,6 +60,32 @@ type ListResponse = struct {
 type PingResponse = DeleteResponse
 
 type TopicgroupList []*service.Topicgroup
+type TopicgroupSlice TopicgroupList
+type TopicList []*topicservice.Topic
+
+func (tps TopicList) Len() int {
+	return len(tps)
+}
+
+func (tps TopicList) GetItem(i int) (interface{}, error) {
+	if i >= len(tps) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return tps[i], nil
+}
+
+//重写Interface的len方法
+func (t TopicgroupSlice) Len() int{
+	return len(t)
+}
+//重写Interface的Swap方法
+func (t TopicgroupSlice) Swap(i,j int) {
+	t[i],t[j] = t[j],t[i]
+}
+//重写Interface的Less方法
+func (t TopicgroupSlice) Less(i,j int) bool{
+	return t[i].CreatedAt > t[j].CreatedAt
+}
 
 func (tgs TopicgroupList) Len() int {
 	return len(tgs)
@@ -136,16 +165,29 @@ func (c *controller) GetTopicgroup(req *restful.Request) (int, *GetResponse) {
 
 func (c *controller) GetTopics(req *restful.Request) (int, *ListResponse) {
 	id := req.PathParameter("id")
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
 	if tps, err := c.service.GetTopics(id); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    fail,
 			Message: fmt.Errorf("get database error: %+v", err).Error(),
 		}
 	} else {
+        var tl TopicList = tps
+        sort.Sort(topic.TopicSlice(tl))
+		data, err := util.PageWrap(tl, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:      fail,
+				ErrorCode: tgerror.ErrorPageParamInvalid,
+				Message:   c.errMsg.Topic[tgerror.ErrorPageParamInvalid],
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
 		return http.StatusOK, &ListResponse{
 			Code:      success,
 			ErrorCode: tgerror.Success,
-			Data:      tps,
+			Data:      data,
 		}
 	}
 }
@@ -275,6 +317,7 @@ func (c *controller) ListTopicgroup(req *restful.Request) (int, *ListResponse) {
 			}
 		}
 		var tps TopicgroupList = tg
+		sort.Sort(TopicgroupSlice(tps))
 		data, err := util.PageWrap(tps, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{

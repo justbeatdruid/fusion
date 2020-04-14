@@ -40,8 +40,8 @@ type RestrictionSpec struct {
 }
 
 type ConfigInfo struct {
-	Ip   string `json:"ip"`
-	User string `json:"user"`
+	Ip   []string `json:"ip"`
+	User string   `json:"user"`
 }
 
 type Action string
@@ -65,15 +65,33 @@ type Api struct {
 	//ip 限制 kong插件id
 	PluginID string `json:"pluginID"`
 	//特殊应用 记录的kong插件id列表
-	Result Result `json:"result"`
-	Detail string `json:"detail"`
+	Result        Result    `json:"result"`
+	DisplayStatus DisStatus `json:"disStatus"`
+	Detail        string    `json:"detail"`
 }
 type Result string
 
 const (
-	INIT    Result = "init"
-	FAILED  Result = "failed"
-	SUCCESS Result = "success"
+	//INIT    Result = "init"
+	//FAILED  Result = "failed"
+	//SUCCESS Result = "success"
+	BINDING      Result = "binding"      //绑定中
+	UNBINDING    Result = "unbinding"    //解绑中
+	UPDATING     Result = "updating"     //更新中
+	BINDFAILED   Result = "bindFailed"   //绑定失败
+	UNBINDFAILED Result = "unbindFailed" //解绑失败
+	UPDATEFAILED Result = "updateFailed" //更新失败
+	SUCCESS      Result = "bindSuccess"  //绑定成功
+
+)
+
+type DisStatus string
+
+const (
+	ApiBinding    DisStatus = "绑定中"  //绑定中
+	BindedSuccess DisStatus = "已绑定"  //绑定成功, 解绑中, 更新中
+	BindedFail    DisStatus = "绑定失败" //绑定失败, 更新失败
+	UnBindFail    DisStatus = "解绑失败" //解绑失败
 )
 
 type Status string

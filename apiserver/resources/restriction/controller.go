@@ -22,7 +22,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient(), cfg.LocalConfig),
+		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TenantEnabled, cfg.LocalConfig),
 		cfg.LocalConfig,
 	}
 }
@@ -81,6 +81,7 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
+	body.Data.Namespace = authuser.Namespace
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
@@ -108,7 +109,16 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 
 func (c *controller) GetRestriction(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
-	if db, err := c.service.GetRestriction(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &GetResponse{
+			Code:      1,
+			ErrorCode: "007000010",
+			Message:   c.errMsg.Api["007000010"],
+			Detail:    "auth model error",
+		}
+	}
+	if db, err := c.service.GetRestriction(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      2,
 			ErrorCode: "007000004",
@@ -126,7 +136,16 @@ func (c *controller) GetRestriction(req *restful.Request) (int, *GetResponse) {
 
 func (c *controller) DeleteRestriction(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if err := c.service.DeleteRestriction(id); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:      1,
+			ErrorCode: "007000010",
+			Message:   c.errMsg.Api["007000010"],
+			Detail:    "auth model error",
+		}
+	}
+	if err := c.service.DeleteRestriction(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      2,
 			ErrorCode: "007000005",
@@ -156,7 +175,7 @@ func (c *controller) ListRestriction(req *restful.Request) (int, *ListResponse) 
 		}
 	}
 
-	if tc, err := c.service.ListRestriction(util.WithNameLike(name), util.WithUser(authuser.Name)); err != nil {
+	if tc, err := c.service.ListRestriction(util.WithNameLike(name), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			ErrorCode: "007000006",
@@ -218,7 +237,18 @@ func (c *controller) UpdateRestriction(req *restful.Request) (int, *UpdateRespon
 		}
 	}
 
-	if db, err := c.service.UpdateRestriction(req.PathParameter("id"), data); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &UpdateResponse{
+			Code:      1,
+			ErrorCode: "007000010",
+			Message:   c.errMsg.Restriction["007000010"],
+			Detail:    "auth model error",
+		}
+	}
+
+	if db, err := c.service.UpdateRestriction(req.PathParameter("id"), data,
+		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:      2,
 			ErrorCode: "007000008",
@@ -245,7 +275,18 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 		}
 	}
 	id := req.PathParameter("id")
-	if api, err := c.service.BindOrUnbindApis(body.Data.Operation, id, body.Data.Apis); err != nil {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:      1,
+			ErrorCode: "007000010",
+			Message:   c.errMsg.Restriction["007000010"],
+			Detail:    "auth model error",
+		}
+	}
+
+	if api, err := c.service.BindOrUnbindApis(body.Data.Operation, id, body.Data.Apis,
+		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      2,
 			ErrorCode: "007000009",

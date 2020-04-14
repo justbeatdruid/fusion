@@ -106,7 +106,7 @@ func main() {
 
 	setupLog.Info("add backend loop")
 	if err = mgr.Add(&controllers.ApiSynchronizer{
-		Client:        mgr.GetClient(),
+		Client:   mgr.GetClient(),
 		Operator: operator,
 	}); err != nil {
 		setupLog.Error(err, "problem add runnable to manager")
