@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/apiserver/kubernetes"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
+	clientset "k8s.io/client-go/kubernetes"
 )
 
 var crdNamespace = "default"
@@ -26,14 +28,16 @@ var oofsGVR = schema.GroupVersionResource{
 }
 
 type Service struct {
+	kubeClient  *clientset.Clientset
 	client      dynamic.NamespaceableResourceInterface
 	topicClient dynamic.NamespaceableResourceInterface
 }
 
-func NewService(client dynamic.Interface) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset) *Service {
 	return &Service{
 		client:      client.Resource(oofsGVR),
 		topicClient: client.Resource(topicv1.GetOOFSGVR()),
+		kubeClient:  kubeClient,
 	}
 }
 
@@ -111,7 +115,12 @@ func (s *Service) Create(ca *v1.Clientauth) (*v1.Clientauth, error) {
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-
+    err = kubernetes.EnsureNamespace(s.kubeClient, ca.Namespace)
+    if err!=nil{
+		if err != nil {
+			return nil, fmt.Errorf("cannot ensure k8s namespace: %+v", err)
+		}
+	}
 	crd, err = s.client.Namespace(ca.Namespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error creating crd: %+v", err)

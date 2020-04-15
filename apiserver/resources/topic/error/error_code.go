@@ -24,7 +24,7 @@ const (
 	ErrorGrantPermissions      = "010000016" //用户授权失败
 	ErrorRevokePermissions     = "010000017" //收回用户权限失败
 	ErrorImportTopics          = "010000018" //导入失败
-
+	ErrorEnsureNamespace       = "010000019" //确认k8s命名空间错误
 )
 
 type TopicError struct {
