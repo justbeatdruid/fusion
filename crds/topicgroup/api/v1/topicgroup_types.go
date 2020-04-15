@@ -30,7 +30,6 @@ type TopicgroupSpec struct {
 	// Foo is an example field of Topicgroup. Edit Topicgroup_types.go to remove/update
 	ID        string   `json:"id"`
 	Name      string   `json:"name"` //namespace名称
-	Namespace string   `json:"namespace"`
 	Tenant    string   `json:"tenant"` //namespace的所属租户名称
 	Url       string   `json:"url"`
 	Policies  Policies `json:"policies,omitempty"`

@@ -87,12 +87,11 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
 
 	crd.ObjectMeta.Name = app.ID
-	crd.ObjectMeta.Namespace = crdNamespace
+	crd.ObjectMeta.Namespace = app.Namespace
 
 	crd.Spec = v1.TopicgroupSpec{
 		Name:      app.Name,
 		Tenant:    app.Tenant,
-		Namespace: app.Namespace,
 		Policies:  ToPolicesApi(&app.Policies),
 	}
 

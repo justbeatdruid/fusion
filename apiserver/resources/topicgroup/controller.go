@@ -136,6 +136,7 @@ func (c *controller) CreateTopicgroup(req *restful.Request) (int, *CreateRespons
 	}
 
 	body.Users = user.InitWithOwner(authuser.Name)
+	body.Namespace = authuser.Namespace
 	if tg, tgErr := c.service.CreateTopicgroup(body); tgErr.Err != nil {
 		return http.StatusInternalServerError, c.newCreateResponse(fail, tgErr.ErrorCode, fmt.Sprintf("create database error: %+v", tgErr.Err), tgErr.Message)
 	} else {
@@ -169,7 +170,16 @@ func (c *controller) GetTopics(req *restful.Request) (int, *ListResponse) {
 	id := req.PathParameter("id")
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-	if tps, err := c.service.GetTopics(id); err != nil {
+	authUser, err := auth.GetAuthUser(req)
+	if err!=nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tgerror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+	if tps, err := c.service.GetTopics(id, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    fail,
 			Message: fmt.Errorf("get database error: %+v", err).Error(),
@@ -215,8 +225,16 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 			Detail:    fmt.Sprintf("cannot read entity: %+v", err),
 		}
 	}
-
-	data, err := c.service.ModifyTopicgroup(id, policies)
+    authUser, err := auth.GetAuthUser(req)
+    if err!=nil{
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tgerror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+	data, err := c.service.ModifyTopicgroup(id, policies,util.WithNamespace(authUser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
@@ -236,7 +254,7 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 }
 
 //批量删除topicgroups
-func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse) {
+/*func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse) {
 	ids := req.QueryParameters("ids")
 	for _, id := range ids {
 		if _, err := c.service.DeleteTopicgroup(id); err != nil {
@@ -251,10 +269,19 @@ func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse
 		ErrorCode: tgerror.Success,
 		Message:   "delete success",
 	}
-}
+}*/
 func (c *controller) DeleteTopicgroup(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if tp, err := c.service.DeleteTopicgroup(id); err != nil {
+	authUser, err := auth.GetAuthUser(req)
+	if err!=nil{
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tgerror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+	if tp, err := c.service.DeleteTopicgroup(id, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: tgerror.ErrorDelete,
@@ -300,8 +327,16 @@ func (c *controller) ListTopicgroup(req *restful.Request) (int, *ListResponse) {
 		}
 
 	}
-
-	if tg, err := c.service.ListTopicgroup(); err != nil {
+    authUser, err := auth.GetAuthUser(req)
+    if err!=nil{
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tgerror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+	if tg, err := c.service.ListTopicgroup(util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      fail,
 			ErrorCode: tgerror.ErrorGetTopicgroupList,
