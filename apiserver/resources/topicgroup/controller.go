@@ -136,6 +136,7 @@ func (c *controller) CreateTopicgroup(req *restful.Request) (int, *CreateRespons
 	}
 
 	body.Users = user.InitWithOwner(authuser.Name)
+	body.Namespace = authuser.Namespace
 	if tg, tgErr := c.service.CreateTopicgroup(body); tgErr.Err != nil {
 		return http.StatusInternalServerError, c.newCreateResponse(fail, tgErr.ErrorCode, fmt.Sprintf("create database error: %+v", tgErr.Err), tgErr.Message)
 	} else {
@@ -169,7 +170,16 @@ func (c *controller) GetTopics(req *restful.Request) (int, *ListResponse) {
 	id := req.PathParameter("id")
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-	if tps, err := c.service.GetTopics(id); err != nil {
+	authUser, err := auth.GetAuthUser(req)
+	if err!=nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tgerror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+	if tps, err := c.service.GetTopics(id, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    fail,
 			Message: fmt.Errorf("get database error: %+v", err).Error(),
@@ -300,8 +310,16 @@ func (c *controller) ListTopicgroup(req *restful.Request) (int, *ListResponse) {
 		}
 
 	}
-
-	if tg, err := c.service.ListTopicgroup(); err != nil {
+    authUser, err := auth.GetAuthUser(req)
+    if err!=nil{
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tgerror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+	if tg, err := c.service.ListTopicgroup(util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      fail,
 			ErrorCode: tgerror.ErrorGetTopicgroupList,
