@@ -74,7 +74,17 @@ apply-image: aplimg := ${REG}/library/fusion-apply-controller-manager:0.1.0
 apply-image:
 	docker build . -f crds/apply/Dockerfile -t ${aplimg}
 	docker push ${aplimg}
-	
+
+topicgroup-image: image := ${REG}/library/fusion-topicgroup-controller-manager:0.1.0
+topicgroup-image:
+	docker build . -f crds/topicgroup/Dockerfile -t ${image}
+	docker push ${image}
+
+clientauth-image: image := ${REG}/library/fusion-clientauth-controller-manager:0.1.0
+clientauth-image:
+	docker build . -f crds/clientauth/Dockerfile -t ${image}
+	docker push ${image}
+
 # Run go fmt against code
 fmt:
 	go fmt ./...
