@@ -168,7 +168,6 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-
 	crd, err = s.client.Namespace(tp.Namespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
 		return nil, tperror.TopicError{
