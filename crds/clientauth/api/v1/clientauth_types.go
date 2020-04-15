@@ -30,7 +30,6 @@ type ClientauthSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	Name          string         `json:"name"`
-	Namespace     string         `json:"namespace"`
 	Tenant        string         `json:"Name"`       //租户名称
 	CreateUser    user.Users     `json:"createUser"` //创建用户
 	IssuedAt      int64          `json:"issuedAt"`

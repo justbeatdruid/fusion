@@ -36,7 +36,7 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 	crd.TypeMeta.APIVersion = v1.GroupVersion.Group + "/" + v1.GroupVersion.Version
 
 	crd.ObjectMeta.Name = app.ID
-	crd.ObjectMeta.Namespace = crdNamespace
+	crd.ObjectMeta.Namespace = app.Namespace
 
 	crd.Spec = v1.ClientauthSpec{
 		Name:       app.Name,
@@ -46,8 +46,8 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 		ExipreAt:   app.ExpireAt,
 		IssuedAt:   app.IssuedAt,
 	}
-	if len(crd.Spec.Namespace) == 0 {
-		crd.Spec.Namespace = DefaultNamespace
+	if len(crd.Namespace) == 0 {
+		crd.Namespace = DefaultNamespace
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -66,7 +66,7 @@ func ToModel(obj *v1.Clientauth) *Clientauth {
 		Name:          obj.Spec.Name,
 		CreateUser:    obj.Spec.CreateUser,
 		Tenant:        obj.Spec.Tenant,
-		Namespace:     obj.Spec.Namespace,
+		Namespace:     obj.Namespace,
 		CreatedAt:     util.NewTime(obj.ObjectMeta.CreationTimestamp.Time).Unix(),
 		IssuedAt:      obj.Spec.IssuedAt,
 		ExpireAt:      obj.Spec.ExipreAt,
