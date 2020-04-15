@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	k8s "github.com/chinamobile/nlpt/apiserver/kubernetes"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/util"
 	clientset "k8s.io/client-go/kubernetes"
@@ -19,7 +20,7 @@ import (
 	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 )
 
-var crdNamespace = "default"
+var defaultNamespace = "default"
 
 type Service struct {
 	kubeClient    *clientset.Clientset
@@ -59,7 +60,7 @@ func (s *Service) ListRestriction(opts ...util.OpOption) ([]*Restriction, error)
 }
 
 func (s *Service) GetRestriction(id string, opts ...util.OpOption) (*Restriction, error) {
-	su, err := s.Get(id)
+	su, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -76,7 +77,7 @@ func (s *Service) DeleteRestriction(id string, opts ...util.OpOption) error {
 
 // + update
 func (s *Service) UpdateRestriction(id string, reqData interface{}, opts ...util.OpOption) (*Restriction, error) {
-	crd, err := s.Get(id)
+	crd, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -97,6 +98,18 @@ func (s *Service) UpdateRestriction(id string, reqData interface{}, opts ...util
 }
 
 func (s *Service) Create(su *v1.Restriction) (*v1.Restriction, error) {
+	var crdNamespace = defaultNamespace
+	if s.tenantEnabled {
+		crdNamespace = su.ObjectMeta.Namespace
+		if len(crdNamespace) == 0 {
+			return nil, fmt.Errorf("namespace not set")
+		}
+	} else {
+		su.ObjectMeta.Namespace = defaultNamespace
+	}
+	if err := k8s.EnsureNamespace(s.kubeClient, crdNamespace); err != nil {
+		return nil, fmt.Errorf("cannot ensure k8s namespace: %+v", err)
+	}
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(su)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -120,9 +133,18 @@ func (s *Service) List(opts ...util.OpOption) (*v1.RestrictionList, error) {
 	var options metav1.ListOptions
 	op := util.OpList(opts...)
 	u := op.User()
+	ns := op.Namespace()
 	var labels []string
-	if len(u) > 0 {
-		labels = append(labels, user.GetLabelSelector(u))
+	var crdNamespace = defaultNamespace
+	if s.tenantEnabled {
+		if len(ns) == 0 {
+			return nil, fmt.Errorf("namespace not set")
+		}
+		crdNamespace = ns
+	} else {
+		if len(u) > 0 {
+			labels = append(labels,user.GetLabelSelector(u))
+		}
 	}
 	options.LabelSelector = strings.Join(labels, ",")
 	klog.V(5).Infof("list with label selector: %s", options.LabelSelector)
@@ -138,7 +160,14 @@ func (s *Service) List(opts ...util.OpOption) (*v1.RestrictionList, error) {
 	return apps, nil
 }
 
-func (s *Service) Get(id string) (*v1.Restriction, error) {
+func (s *Service) Get(id string, opts ...util.OpOption) (*v1.Restriction, error) {
+	var crdNamespace = defaultNamespace
+	if s.tenantEnabled {
+		crdNamespace = util.OpList(opts...).Namespace()
+		if len(crdNamespace) == 0 {
+			return nil, fmt.Errorf("namespace not set")
+		}
+	}
 	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -151,7 +180,7 @@ func (s *Service) Get(id string) (*v1.Restriction, error) {
 	return su, nil
 }
 
-func (s *Service) ForceDelete(id string) error {
+func (s *Service) ForceDelete(id string, crdNamespace string) error {
 	err := s.client.Namespace(crdNamespace).Delete(id, &metav1.DeleteOptions{})
 	if err != nil {
 		return fmt.Errorf("error delete crd: %+v", err)
@@ -159,14 +188,27 @@ func (s *Service) ForceDelete(id string) error {
 	return nil
 }
 
-func (s *Service) Delete(id string) error {
-	su, err := s.Get(id)
+func (s *Service) Delete(id string, opts ...util.OpOption) error {
+	var crdNamespace = defaultNamespace
+	if s.tenantEnabled {
+		crdNamespace = util.OpList(opts...).Namespace()
+		if len(crdNamespace) == 0 {
+			return fmt.Errorf("namespace not set")
+		}
+	}
+	su, err := s.Get(id, opts...)
 	if err != nil {
 		return fmt.Errorf("get crd by id error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.restriction: %+v", su)
 	if len(su.Spec.Apis) != 0 {
 		return fmt.Errorf("please unbind apis")
+	}
+	if !s.tenantEnabled {
+		u := util.OpList(opts...).User()
+		if !user.WritePermitted(u, su.ObjectMeta.Labels) {
+			return fmt.Errorf("write permission denied")
+		}
 	}
 	err = s.client.Namespace(crdNamespace).Delete(id, &metav1.DeleteOptions{})
 	if err != nil {
@@ -207,7 +249,7 @@ func (s *Service) UpdateStatus(su *v1.Restriction) (*v1.Restriction, error) {
 	return su, nil
 }
 
-func (s *Service) getAPi(id string) (*apiv1.Api, error) {
+func (s *Service) getAPi(id string, crdNamespace string) (*apiv1.Api, error) {
 	crd, err := s.apiClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
@@ -220,8 +262,8 @@ func (s *Service) getAPi(id string) (*apiv1.Api, error) {
 	return su, nil
 }
 
-func (s *Service) updateApi(apiid string, restriction *v1.Restriction) (*apiv1.Api, error) {
-	api, err := s.getAPi(apiid)
+func (s *Service) updateApi(apiid string, restriction *v1.Restriction, crdNamespace string) (*apiv1.Api, error) {
+	api, err := s.getAPi(apiid, crdNamespace)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update api: %+v", err)
 	}
@@ -254,23 +296,30 @@ func (s *Service) updateApi(apiid string, restriction *v1.Restriction) (*apiv1.A
 
 func (s *Service) BindOrUnbindApis(operation, id string, apis []v1.Api, opts ...util.OpOption) (*Restriction, error) {
 	if operation == "unbind" {
-		return s.UnBindApi(id, apis)
+		return s.UnBindApi(id, apis, opts...)
 	} else if operation == "bind" {
-		return s.BindApi(id, apis)
+		return s.BindApi(id, apis, opts...)
 	} else {
 		return nil, fmt.Errorf("error operation type")
 	}
 
 }
 
-func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
-	restriction, err := s.Get(id)
+func (s *Service) BindApi(id string, apis []v1.Api, opts ...util.OpOption) (*Restriction, error) {
+	restriction, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("get restriction error: %+v", err)
 	}
+	crdNamespace := util.OpList(opts...).Namespace()
+	if !s.tenantEnabled {
+		u := util.OpList(opts...).User()
+		if !user.WritePermitted(u, restriction.ObjectMeta.Labels) {
+			return nil, fmt.Errorf("write permission denied")
+		}
+	}
 	//先校验完所有API再执行操作
 	for _, api := range apis {
-		apiSource, err := s.getAPi(api.ID)
+		apiSource, err := s.getAPi(api.ID, crdNamespace)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get api: %+v", err)
 		}
@@ -282,7 +331,7 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
 	//update status bind
 	restriction.Status.Status = v1.Bind
 	for _, api := range apis {
-		apiSource, err := s.getAPi(api.ID)
+		apiSource, err := s.getAPi(api.ID, crdNamespace)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get api: %+v", err)
 		}
@@ -304,8 +353,12 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
 				Result: v1.BINDING,
 			})
 		}
+
+		fmt.Printf("kongID:%s\n",apiSource.Spec.KongApi.KongID)
+		fmt.Printf("crdNamespace: %s\n",crdNamespace)
+
 		//update api 操作时会判断是绑定还是解绑所以先将状态设置成bind
-		if _, err = s.updateApi(api.ID, restriction); err != nil {
+		if _, err = s.updateApi(api.ID, restriction, crdNamespace); err != nil {
 			return nil, fmt.Errorf("cannot update api restriction")
 		}
 	}
@@ -315,14 +368,21 @@ func (s *Service) BindApi(id string, apis []v1.Api) (*Restriction, error) {
 	return ToModel(restriction), err
 }
 
-func (s *Service) UnBindApi(id string, apis []v1.Api) (*Restriction, error) {
-	restriction, err := s.Get(id)
+func (s *Service) UnBindApi(id string, apis []v1.Api, opts ...util.OpOption) (*Restriction, error) {
+	restriction, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("get restriction error: %+v", err)
 	}
+	crdNamespace := util.OpList(opts...).Namespace()
+	if !s.tenantEnabled {
+		u := util.OpList(opts...).User()
+		if !user.WritePermitted(u, restriction.ObjectMeta.Labels) {
+			return nil, fmt.Errorf("write permission denied")
+		}
+	}
 	//校验API
 	for _, api := range apis {
-		apiSource, err := s.getAPi(api.ID)
+		apiSource, err := s.getAPi(api.ID, crdNamespace)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get api: %+v", err)
 		}
@@ -335,7 +395,7 @@ func (s *Service) UnBindApi(id string, apis []v1.Api) (*Restriction, error) {
 	//update status unbind
 	restriction.Status.Status = v1.UnBind
 	for _, api := range apis {
-		apiSource, err := s.getAPi(api.ID)
+		apiSource, err := s.getAPi(api.ID, crdNamespace)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get api: %+v", err)
 		}
@@ -347,7 +407,7 @@ func (s *Service) UnBindApi(id string, apis []v1.Api) (*Restriction, error) {
 		}
 		////update api 操作时会判断是绑定还是解绑所以先将状态设置成unbind
 		restriction.ObjectMeta.Labels[api.ID] = "false"
-		if _, err = s.updateApi(api.ID, restriction); err != nil {
+		if _, err = s.updateApi(api.ID, restriction, crdNamespace); err != nil {
 			return nil, fmt.Errorf("cannot update api restriction")
 		}
 	}

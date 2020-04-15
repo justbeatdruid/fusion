@@ -130,6 +130,7 @@ func (r *Operator) AddRestrictionByKong(db *nlptv1.Restriction) (err error) {
 			request = request.Retry(3, 5*time.Second, retryStatus...)
 			requestBody := &RestrictionRequestBody{}
 			requestBody.Name = "ip-restriction"
+
 			if db.Spec.Action == "white" {
 				for index, _ := range db.Spec.Config.Ip {
 					requestBody.Config.WhiteList = append(requestBody.Config.WhiteList, db.Spec.Config.Ip[index])
