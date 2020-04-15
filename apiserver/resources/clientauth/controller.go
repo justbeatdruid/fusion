@@ -61,15 +61,14 @@ type PingResponse = DeleteResponse
 
 type ClientauthList []*service.Clientauth
 
-
 func (cas ClientauthList) Len() int {
 	return len(cas)
 }
 
-func (cas ClientauthList) Swap(i,j int){
-	cas[i],cas[j] = cas[j],cas[i]
+func (cas ClientauthList) Swap(i, j int) {
+	cas[i], cas[j] = cas[j], cas[i]
 }
-func (cas ClientauthList) Less(i,j int) bool {
+func (cas ClientauthList) Less(i, j int) bool {
 	return cas[j].CreatedAt < cas[i].CreatedAt
 }
 

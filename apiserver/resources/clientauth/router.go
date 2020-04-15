@@ -80,7 +80,6 @@ func (r *router) deleteClientauth(request *restful.Request, response *restful.Re
 	response.WriteHeaderAndEntity(code, result)
 }
 
-
 func (r *router) listClientauths(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListClientauths(request)
 	response.WriteHeaderAndEntity(code, result)
