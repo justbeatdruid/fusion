@@ -176,16 +176,16 @@ func (s *Service) getTopicsCrd(id string, opts ...util.OpOption) (*topicv1.Topic
 
 	return tps, nil
 }
-func (s *Service) DeleteTopicgroup(id string) (*Topicgroup, error) {
-	tg, err := s.Delete(id)
+func (s *Service) DeleteTopicgroup(id string, opts ...util.OpOption) (*Topicgroup, error) {
+	tg, err := s.Delete(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
 	}
 	return ToModel(tg), nil
 }
 
-func (s *Service) ModifyTopicgroup(id string, policies *Policies) (*Topicgroup, error) {
-	crd, err := s.Get(id)
+func (s *Service) ModifyTopicgroup(id string, policies *Policies,opts ...util.OpOption) (*Topicgroup, error) {
+	crd, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -349,8 +349,8 @@ func (s *Service) Get(id string, ops ...util.OpOption) (*v1.Topicgroup, error) {
 	return tp, nil
 }
 
-func (s *Service) Delete(id string) (*v1.Topicgroup, error) {
-	tg, err := s.Get(id)
+func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topicgroup, error) {
+	tg, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
