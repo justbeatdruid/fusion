@@ -225,8 +225,16 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 			Detail:    fmt.Sprintf("cannot read entity: %+v", err),
 		}
 	}
-
-	data, err := c.service.ModifyTopicgroup(id, policies)
+    authUser, err := auth.GetAuthUser(req)
+    if err!=nil{
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tgerror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+	data, err := c.service.ModifyTopicgroup(id, policies,util.WithNamespace(authUser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
@@ -246,7 +254,7 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 }
 
 //批量删除topicgroups
-func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse) {
+/*func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse) {
 	ids := req.QueryParameters("ids")
 	for _, id := range ids {
 		if _, err := c.service.DeleteTopicgroup(id); err != nil {
@@ -261,10 +269,19 @@ func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse
 		ErrorCode: tgerror.Success,
 		Message:   "delete success",
 	}
-}
+}*/
 func (c *controller) DeleteTopicgroup(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
-	if tp, err := c.service.DeleteTopicgroup(id); err != nil {
+	authUser, err := auth.GetAuthUser(req)
+	if err!=nil{
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tgerror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+	if tp, err := c.service.DeleteTopicgroup(id, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: tgerror.ErrorDelete,
