@@ -27,7 +27,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient(), cfg.TopicConfig, cfg.LocalConfig),
+		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TopicConfig, cfg.LocalConfig),
 		cfg.LocalConfig,
 	}
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/chinamobile/nlpt/apiserver/kubernetes"
 	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	clientauthv1 "github.com/chinamobile/nlpt/crds/clientauth/api/v1"
@@ -17,6 +18,7 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 	"strconv"
+	clientset "k8s.io/client-go/kubernetes"
 )
 
 var crdNamespace = "default"
@@ -28,6 +30,7 @@ var oofsGVR = schema.GroupVersionResource{
 }
 
 type Service struct {
+	kubeClient       *clientset.Clientset
 	client           dynamic.NamespaceableResourceInterface
 	clientAuthClient dynamic.NamespaceableResourceInterface
 	topicGroupClient dynamic.NamespaceableResourceInterface
@@ -38,7 +41,7 @@ type Service struct {
 	adminToken       string
 }
 
-func NewService(client dynamic.Interface, topConfig *config.TopicConfig, errMsg config.ErrorConfig) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset,topConfig *config.TopicConfig, errMsg config.ErrorConfig) *Service {
 	return &Service{client: client.Resource(oofsGVR),
 		clientAuthClient: client.Resource(clientauthv1.GetOOFSGVR()),
 		topicGroupClient: client.Resource(topicgroupv1.GetOOFSGVR()),
@@ -47,6 +50,7 @@ func NewService(client dynamic.Interface, topConfig *config.TopicConfig, errMsg 
 		host:             topConfig.Port,
 		authEnable:       topConfig.AuthEnable,
 		adminToken:       topConfig.AdminToken,
+		kubeClient:       kubeClient,
 	}
 }
 
@@ -168,6 +172,15 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
+
+	err = kubernetes.EnsureNamespace(s.kubeClient,tp.Namespace)
+	if err!=nil {
+		return nil, tperror.TopicError{
+			Err:       fmt.Errorf("cannot ensure k8s namespace: %+v", err),
+			ErrorCode: tperror.ErrorEnsureNamespace,
+			Message:   "",
+		}
+	}
 	crd, err = s.client.Namespace(tp.Namespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
 		return nil, tperror.TopicError{

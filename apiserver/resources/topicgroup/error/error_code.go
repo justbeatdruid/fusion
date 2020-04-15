@@ -14,6 +14,7 @@ const (
 	ErrorDelete               = "011000009" //删除Topic分组失败
 	ErrorDuplicatedTopicgroup = "011000010" //创建Topic分组失败，原因：Topic分组已存在
 	ErrorQueryTopicgroupInfo  = "011000011" //查询Topic分组失败
+	ErrorEnsureNamespace      = "011000012" //确认k8s命名空间失败
 
 )
 
