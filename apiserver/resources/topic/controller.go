@@ -163,14 +163,14 @@ func (c *controller) CreateTopic(req *restful.Request) (int, *CreateResponse) {
 func (c *controller) GetTopic(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
 	authUser, err := auth.GetAuthUser(req)
-	if err !=nil{
-			return http.StatusInternalServerError, &GetResponse{
-				Code:      fail,
-				ErrorCode: tperror.ErrorAuthError,
-				Message:   fmt.Sprintf("auth model error: %+v", err),
-				Data:      nil,
-				Detail:    "",
-			}
+	if err != nil {
+		return http.StatusInternalServerError, &GetResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Data:      nil,
+			Detail:    "",
+		}
 	}
 	if tp, err := c.service.GetTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
@@ -191,7 +191,7 @@ func (c *controller) GetTopic(req *restful.Request) (int, *GetResponse) {
 
 func (c *controller) DoStatisticsOnTopics(req *restful.Request) (int, *StatisticsResponse) {
 	authUser, err := auth.GetAuthUser(req)
-	if err !=nil{
+	if err != nil {
 		return http.StatusInternalServerError, &StatisticsResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
@@ -277,7 +277,7 @@ func (c *controller) formatSize(messageSize int64) (size string) {
 func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	authUser, err := auth.GetAuthUser(req)
-	if err!=nil {
+	if err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
@@ -306,8 +306,8 @@ func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-    authUser, err := auth.GetAuthUser(req)
-	if err!=nil {
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
@@ -466,14 +466,14 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 	endTime := req.QueryParameter("endTime")
 	topicGroup := req.QueryParameter("topicGroup")
 	authUser, err := auth.GetAuthUser(req)
-	if err!=nil {
-			return http.StatusInternalServerError, &MessageResponse{
-				Code:      fail,
-				ErrorCode: tperror.ErrorAuthError,
-				Message:   fmt.Sprintf("auth model error: %+v", err),
-				Messages:  nil,
-				Detail:    "",
-			}
+	if err != nil {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Messages:  nil,
+			Detail:    "",
+		}
 	}
 	//先查出所有topic的信息
 	tps, err := c.service.ListTopic(util.WithNamespace(authUser.Namespace))
@@ -681,14 +681,14 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 		}
 	}
 	authUser, err := auth.GetAuthUser(req)
-	if err!=nil {
-			return http.StatusInternalServerError, &GrantResponse{
-				Code:      fail,
-				ErrorCode: tperror.ErrorAuthError,
-				Message:   fmt.Sprintf("auth model error: %+v", err),
-				Data:      nil,
-				Detail:    "",
-			}
+	if err != nil {
+		return http.StatusInternalServerError, &GrantResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Data:      nil,
+			Detail:    "",
+		}
 	}
 	if tp, err := c.service.GrantPermissions(id, authUserId, actions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GrantResponse{
@@ -710,7 +710,7 @@ func (c *controller) DeletePermissions(req *restful.Request) (int, *DeleteRespon
 	id := req.PathParameter("id")
 	authUserId := req.PathParameter("auth-user-id")
 	authUser, err := auth.GetAuthUser(req)
-	if err!=nil {
+	if err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
