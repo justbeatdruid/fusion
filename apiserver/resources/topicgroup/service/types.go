@@ -90,9 +90,9 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 	crd.ObjectMeta.Namespace = app.Namespace
 
 	crd.Spec = v1.TopicgroupSpec{
-		Name:      app.Name,
-		Tenant:    app.Tenant,
-		Policies:  ToPolicesApi(&app.Policies),
+		Name:     app.Name,
+		Tenant:   app.Tenant,
+		Policies: ToPolicesApi(&app.Policies),
 	}
 
 	if len(crd.Spec.Tenant) == 0 {

@@ -68,7 +68,7 @@ func (s *Service) GetRestriction(id string, opts ...util.OpOption) (*Restriction
 }
 
 func (s *Service) DeleteRestriction(id string, opts ...util.OpOption) error {
-	err := s.Delete(id)
+	err := s.Delete(id, opts...)
 	if err != nil {
 		return fmt.Errorf("cannot delete traffic control: %+v", err)
 	}
@@ -143,7 +143,7 @@ func (s *Service) List(opts ...util.OpOption) (*v1.RestrictionList, error) {
 		crdNamespace = ns
 	} else {
 		if len(u) > 0 {
-			labels = append(labels,user.GetLabelSelector(u))
+			labels = append(labels, user.GetLabelSelector(u))
 		}
 	}
 	options.LabelSelector = strings.Join(labels, ",")
@@ -354,8 +354,8 @@ func (s *Service) BindApi(id string, apis []v1.Api, opts ...util.OpOption) (*Res
 			})
 		}
 
-		fmt.Printf("kongID:%s\n",apiSource.Spec.KongApi.KongID)
-		fmt.Printf("crdNamespace: %s\n",crdNamespace)
+		fmt.Printf("kongID:%s\n", apiSource.Spec.KongApi.KongID)
+		fmt.Printf("crdNamespace: %s\n", crdNamespace)
 
 		//update api 操作时会判断是绑定还是解绑所以先将状态设置成bind
 		if _, err = s.updateApi(api.ID, restriction, crdNamespace); err != nil {

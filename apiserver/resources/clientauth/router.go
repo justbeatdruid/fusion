@@ -40,7 +40,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Do(returns200, returns500))
 
 	//批量删除clientauths
-/*	ws.Route(ws.DELETE("/clientauths").
+	/*	ws.Route(ws.DELETE("/clientauths").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("batch delete clientauth").
@@ -84,6 +84,7 @@ func (r *router) listClientauths(request *restful.Request, response *restful.Res
 	code, result := r.controller.ListClientauths(request)
 	response.WriteHeaderAndEntity(code, result)
 }
+
 /*func (r *router) deleteClientauths(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DeleteClientauths(request)
 	response.WriteHeaderAndEntity(code, result)
