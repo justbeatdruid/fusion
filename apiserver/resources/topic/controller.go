@@ -84,6 +84,7 @@ type ImportResponse struct {
 
 type TopicSlice TopicList
 type MessageSlice MessageList
+
 const (
 	success = iota
 	fail
@@ -92,29 +93,31 @@ const (
 type GrantPermissionRequest struct {
 	Actions service.Actions `json:"actions"`
 }
+
 //重写Interface的len方法
-func (t TopicSlice) Len() int{
+func (t TopicSlice) Len() int {
 	return len(t)
 }
+
 //重写Interface的Swap方法
-func (t TopicSlice) Swap(i,j int) {
-	t[i],t[j] = t[j],t[i]
+func (t TopicSlice) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
 }
+
 //重写Interface的Less方法
-func (t TopicSlice) Less(i,j int) bool{
+func (t TopicSlice) Less(i, j int) bool {
 	return t[i].CreatedAt > t[j].CreatedAt
 }
 
-
-func (m MessageSlice) Len() int{
+func (m MessageSlice) Len() int {
 	return len(m)
 }
 
-func (m MessageSlice) Swap(i,j int) {
-	m[i],m[j] = m[j],m[i]
+func (m MessageSlice) Swap(i, j int) {
+	m[i], m[j] = m[j], m[i]
 }
 
-func (m MessageSlice) Less(i,j int) bool{
+func (m MessageSlice) Less(i, j int) bool {
 	return m[i].Time.Unix() > m[j].Time.Unix()
 }
 
@@ -283,8 +286,8 @@ func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 		}
 	} else {
 		var tps TopicList = c.ListTopicByField(req, tp)
-        //按照创建时间排序
-        sort.Sort(TopicSlice(tps))
+		//按照创建时间排序
+		sort.Sort(TopicSlice(tps))
 		data, err := util.PageWrap(tps, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{

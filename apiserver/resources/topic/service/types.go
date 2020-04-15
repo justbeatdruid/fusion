@@ -187,10 +187,14 @@ func ToModel(obj *v1.Topic) *Topic {
 }
 
 func ToSubscriptionStatModel(obj v1.SubscriptionStat) SubscriptionStat {
-	var consumers []ConsumerStat = make([]ConsumerStat, len(obj.Consumers))
-	for _, c := range obj.Consumers {
-		consumers = append(consumers, ToConsumersModel(c))
+	var consumers []ConsumerStat
+	if obj.Consumers != nil {
+		consumers = make([]ConsumerStat, len(obj.Consumers))
+		for _, c := range obj.Consumers {
+			consumers = append(consumers, ToConsumersModel(c))
+		}
 	}
+
 	return SubscriptionStat{
 		MsgRateOut:                       ParseFloat(obj.MsgRateOut),
 		MsgThroughputOut:                 ParseFloat(obj.MsgThroughputOut),
@@ -224,10 +228,14 @@ func ToConsumersModel(obj v1.ConsumerStat) ConsumerStat {
 }
 
 func ToStatsModel(obj v1.Stats) *Stats {
-	var subscriptions map[string]SubscriptionStat
-	for k, v := range obj.Subscriptions {
-		subscriptions[k] = ToSubscriptionStatModel(v)
+	var subscriptions = make(map[string]SubscriptionStat)
+
+	if obj.Subscriptions != nil {
+		for k, v := range obj.Subscriptions {
+			subscriptions[k] = ToSubscriptionStatModel(v)
+		}
 	}
+
 	return &Stats{
 		MsgRateIn:           ParseFloat(obj.MsgRateIn),
 		MsgRateOut:          ParseFloat(obj.MsgRateOut),

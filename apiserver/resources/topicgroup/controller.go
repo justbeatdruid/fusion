@@ -75,15 +75,17 @@ func (tps TopicList) GetItem(i int) (interface{}, error) {
 }
 
 //重写Interface的len方法
-func (t TopicgroupSlice) Len() int{
+func (t TopicgroupSlice) Len() int {
 	return len(t)
 }
+
 //重写Interface的Swap方法
-func (t TopicgroupSlice) Swap(i,j int) {
-	t[i],t[j] = t[j],t[i]
+func (t TopicgroupSlice) Swap(i, j int) {
+	t[i], t[j] = t[j], t[i]
 }
+
 //重写Interface的Less方法
-func (t TopicgroupSlice) Less(i,j int) bool{
+func (t TopicgroupSlice) Less(i, j int) bool {
 	return t[i].CreatedAt > t[j].CreatedAt
 }
 
@@ -173,8 +175,8 @@ func (c *controller) GetTopics(req *restful.Request) (int, *ListResponse) {
 			Message: fmt.Errorf("get database error: %+v", err).Error(),
 		}
 	} else {
-        var tl TopicList = tps
-        sort.Sort(topic.TopicSlice(tl))
+		var tl TopicList = tps
+		sort.Sort(topic.TopicSlice(tl))
 		data, err := util.PageWrap(tl, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
