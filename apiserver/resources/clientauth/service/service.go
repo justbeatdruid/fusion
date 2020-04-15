@@ -71,33 +71,33 @@ func (s *Service) CreateClientauth(model *Clientauth) (*Clientauth, error) {
 	return ToModel(ca), nil
 }
 
-func (s *Service) ListClientauth() ([]*Clientauth, error) {
-	cas, err := s.List()
+func (s *Service) ListClientauth(opts ...util.OpOption) ([]*Clientauth, error) {
+	cas, err := s.List(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
 	return ToListModel(cas), nil
 }
 
-func (s *Service) GetClientauth(id string) (*Clientauth, error) {
-	ca, err := s.Get(id)
+func (s *Service) GetClientauth(id string, opts ...util.OpOption) (*Clientauth, error) {
+	ca, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	return ToModel(ca), nil
 }
 
-func (s *Service) DeleteClientauth(id string) (*Clientauth, error) {
+func (s *Service) DeleteClientauth(id string, opts ...util.OpOption) (*Clientauth, error) {
 
-	tps, err := s.ListTopicsWithAuthId(id)
+	tps, err := s.ListTopicsWithAuthId(id, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
+		return nil, fmt.Errorf("cannot listTopicsWithAuthId: %+v", err)
 	}
 
 	if len(tps.Items) > 0 {
 		return nil, fmt.Errorf("cannot delete authorized client auth user")
 	}
-	ca, err := s.Delete(id)
+	ca, err := s.Delete(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
 	}
@@ -112,7 +112,7 @@ func (s *Service) Create(ca *v1.Clientauth) (*v1.Clientauth, error) {
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
 
-	crd, err = s.client.Namespace(crdNamespace).Create(crd, metav1.CreateOptions{})
+	crd, err = s.client.Namespace(ca.Namespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error creating crd: %+v", err)
 	}
@@ -124,8 +124,9 @@ func (s *Service) Create(ca *v1.Clientauth) (*v1.Clientauth, error) {
 	return ca, nil
 }
 
-func (s *Service) List() (*v1.ClientauthList, error) {
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
+func (s *Service) List(opts ...util.OpOption) (*v1.ClientauthList, error) {
+	op := util.OpList(opts...)
+	crd, err := s.client.Namespace(op.Namespace()).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
@@ -137,11 +138,11 @@ func (s *Service) List() (*v1.ClientauthList, error) {
 	return cas, nil
 }
 
-func (s *Service) ListTopicsWithAuthId(id string) (*topicv1.TopicList, error) {
-
+func (s *Service) ListTopicsWithAuthId(id string, ops ...util.OpOption) (*topicv1.TopicList, error) {
+    op := util.OpList(ops...)
 	var opts metav1.ListOptions
 	opts.LabelSelector = id
-	crd, err := s.topicClient.Namespace(crdNamespace).List(opts)
+	crd, err := s.topicClient.Namespace(op.Namespace()).List(opts)
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
@@ -155,8 +156,9 @@ func (s *Service) ListTopicsWithAuthId(id string) (*topicv1.TopicList, error) {
 	return tps, nil
 
 }
-func (s *Service) Get(id string) (*v1.Clientauth, error) {
-	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+func (s *Service) Get(id string, opts ...util.OpOption) (*v1.Clientauth, error) {
+	op := util.OpList(opts...)
+	crd, err := s.client.Namespace(op.Namespace()).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
@@ -168,8 +170,8 @@ func (s *Service) Get(id string) (*v1.Clientauth, error) {
 	return ca, nil
 }
 
-func (s *Service) Delete(id string) (*v1.Clientauth, error) {
-	ca, err := s.Get(id)
+func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Clientauth, error) {
+	ca, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
@@ -205,7 +207,7 @@ func (s *Service) UpdateStatus(ca *v1.Clientauth) (*v1.Clientauth, error) {
 }
 
 func (s *Service) RegenerateToken(ca *Clientauth) (*Clientauth, error) {
-	cad, err := s.Get(ca.ID)
+	cad, err := s.Get(ca.ID, util.WithNamespace(ca.Namespace))
 	if err != nil {
 		return nil, fmt.Errorf("clientauth id is not exist, id : %+v, error : %+v", ca.ID, err)
 	}
