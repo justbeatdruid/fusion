@@ -57,8 +57,8 @@ func (s *Service) CreateTopicgroup(model *Topicgroup) (*Topicgroup, tgerror.Topi
 	return ToModel(tg), tgerror.TopicgroupError{}
 }
 
-func (s *Service) ListTopicgroup() ([]*Topicgroup, error) {
-	tgs, err := s.List()
+func (s *Service) ListTopicgroup(opts ...util.OpOption) ([]*Topicgroup, error) {
+	tgs, err := s.List(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
@@ -114,8 +114,8 @@ func (s *Service) SearchTopicgroup(tgList []*Topicgroup, opts ...util.OpOption) 
 
 }
 
-func (s *Service) GetTopicgroup(id string) (*Topicgroup, error) {
-	tg, err := s.Get(id)
+func (s *Service) GetTopicgroup(id string, opt ...util.OpOption) (*Topicgroup, error) {
+	tg, err := s.Get(id, opt...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
@@ -123,8 +123,8 @@ func (s *Service) GetTopicgroup(id string) (*Topicgroup, error) {
 }
 
 //查询topicgroup下的所有topic
-func (s *Service) GetTopics(id string) ([]*service.Topic, error) {
-	tps, err := s.getTopicsCrd(id)
+func (s *Service) GetTopics(id string, opts ...util.OpOption) ([]*service.Topic, error) {
+	tps, err := s.getTopicsCrd(id, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -153,8 +153,9 @@ func (s *Service) listTopics(topicName string) ([]*service.Topic, error) {
 	}
 	return tpsResult, nil
 }
-func (s *Service) getTopicsCrd(id string) (*topicv1.TopicList, error) {
-	tg, err := s.GetTopicgroup(id)
+func (s *Service) getTopicsCrd(id string, opts ...util.OpOption) (*topicv1.TopicList, error) {
+	op := util.OpList(opts...)
+	tg, err := s.GetTopicgroup(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
@@ -164,7 +165,7 @@ func (s *Service) getTopicsCrd(id string) (*topicv1.TopicList, error) {
 	options := metav1.ListOptions{}
 	options.LabelSelector = fmt.Sprintf("topicgroup=%s", tg.Name)
 	//查询所有的topic
-	crd, err := s.topicClient.Namespace(crdNamespace).List(options)
+	crd, err := s.topicClient.Namespace(op.Namespace()).List(options)
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
@@ -243,7 +244,7 @@ func (s *Service) IsTopicgroupExist(tp *v1.Topicgroup) (bool, error) {
 	//判断是否已存在
 	var options metav1.ListOptions
 	options.LabelSelector = fmt.Sprintf("%s=%s", LabelTenant, tp.Spec.Tenant)
-	tpList, err := s.ListWithOptions(options)
+	tpList, err := s.ListWithOptions(options, util.WithNamespace(tp.Namespace))
 	if err != nil {
 		return false, err
 	}
@@ -258,8 +259,9 @@ func (s *Service) IsTopicgroupExist(tp *v1.Topicgroup) (bool, error) {
 	return false, nil
 
 }
-func (s *Service) ListWithOptions(options metav1.ListOptions) (*v1.TopicgroupList, error) {
-	crd, err := s.client.Namespace(crdNamespace).List(options)
+func (s *Service) ListWithOptions(options metav1.ListOptions, opts ...util.OpOption) (*v1.TopicgroupList, error) {
+	op := util.OpList(opts...)
+	crd, err := s.client.Namespace(op.Namespace()).List(options)
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
@@ -301,7 +303,7 @@ func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupE
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
 
-	crd, err = s.client.Namespace(crdNamespace).Create(crd, metav1.CreateOptions{})
+	crd, err = s.client.Namespace(tp.Namespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
 		return nil, tgerror.TopicgroupError{
 			Err:       fmt.Errorf("error creating crd: %+v", err),
@@ -319,8 +321,9 @@ func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupE
 	return tp, tgerror.TopicgroupError{}
 }
 
-func (s *Service) List() (*v1.TopicgroupList, error) {
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
+func (s *Service) List(opts ...util.OpOption) (*v1.TopicgroupList, error) {
+	op := util.OpList(opts...)
+	crd, err := s.client.Namespace(op.Namespace()).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
@@ -332,8 +335,9 @@ func (s *Service) List() (*v1.TopicgroupList, error) {
 	return tps, nil
 }
 
-func (s *Service) Get(id string) (*v1.Topicgroup, error) {
-	crd, err := s.client.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+func (s *Service) Get(id string, ops ...util.OpOption) (*v1.Topicgroup, error) {
+	op := util.OpList(ops...)
+	crd, err := s.client.Namespace(op.Namespace()).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
