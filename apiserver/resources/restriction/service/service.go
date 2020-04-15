@@ -68,7 +68,7 @@ func (s *Service) GetRestriction(id string, opts ...util.OpOption) (*Restriction
 }
 
 func (s *Service) DeleteRestriction(id string, opts ...util.OpOption) error {
-	err := s.Delete(id)
+	err := s.Delete(id, opts...)
 	if err != nil {
 		return fmt.Errorf("cannot delete traffic control: %+v", err)
 	}
