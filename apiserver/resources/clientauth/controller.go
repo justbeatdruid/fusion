@@ -135,7 +135,7 @@ func (c *controller) CreateClientauth(req *restful.Request) (int, *CreateRespons
 func (c *controller) GetClientauth(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
 	authUser, err := auth.GetAuthUser(req)
-	if err!=nil{
+	if err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      fail,
 			ErrorCode: "013000014",
@@ -177,7 +177,7 @@ func (c *controller) GetClientauth(req *restful.Request) (int, *GetResponse) {
 func (c *controller) DeleteClientauth(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	authUser, err := auth.GetAuthUser(req)
-	if err!=nil {
+	if err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: "013000014",
@@ -220,7 +220,7 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 	createUser := req.QueryParameter("createUser")
 	tenant := req.QueryParameter("tenant")
 	AuthUser, err := auth.GetAuthUser(req)
-	if err!=nil{
+	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      fail,
 			ErrorCode: "013000014",

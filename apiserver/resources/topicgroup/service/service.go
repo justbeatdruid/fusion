@@ -199,7 +199,7 @@ func (s *Service) DeleteTopicgroup(id string, opts ...util.OpOption) (*Topicgrou
 	return ToModel(tg), nil
 }
 
-func (s *Service) ModifyTopicgroup(id string, policies *Policies,opts ...util.OpOption) (*Topicgroup, error) {
+func (s *Service) ModifyTopicgroup(id string, policies *Policies, opts ...util.OpOption) (*Topicgroup, error) {
 	crd, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)

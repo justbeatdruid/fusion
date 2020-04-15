@@ -139,7 +139,7 @@ func (s *Service) List(opts ...util.OpOption) (*v1.ClientauthList, error) {
 }
 
 func (s *Service) ListTopicsWithAuthId(id string, ops ...util.OpOption) (*topicv1.TopicList, error) {
-    op := util.OpList(ops...)
+	op := util.OpList(ops...)
 	var opts metav1.ListOptions
 	opts.LabelSelector = id
 	crd, err := s.topicClient.Namespace(op.Namespace()).List(opts)
