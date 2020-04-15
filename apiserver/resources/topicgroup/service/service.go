@@ -89,7 +89,6 @@ func (s *Service) SearchTopicgroup(tgList []*Topicgroup, opts ...util.OpOption) 
 		}
 	}
 
-
 	var finalSearchResult []*Topicgroup
 	var finalIdList []string
 	if len(names) > 0 {
@@ -124,7 +123,7 @@ func (s *Service) SearchTopicgroup(tgList []*Topicgroup, opts ...util.OpOption) 
 
 }
 
-func isTopicgroupIdExist(idList []string, id string) bool{
+func isTopicgroupIdExist(idList []string, id string) bool {
 	for _, i := range idList {
 		if i == id {
 			return true
