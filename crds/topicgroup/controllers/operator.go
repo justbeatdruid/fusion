@@ -38,6 +38,8 @@ const (
 	backlogUrlSuffix = "/backlogQuota?backlogQuotaType=destination_storage"
 	messageTTLSuffix = "/messageTTL"
 	retentionSuffix  = "/retention"
+	clusters         = "/admin/v2/clusters"
+	tenants          = "/admin/v2/tenants"
 )
 
 type requestLogger struct {
@@ -180,4 +182,41 @@ func (r *Operator) GetHttpRequest() *gorequest.SuperAgent {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
 	return r.AddTokenToHeader(request)
 
+}
+
+//Get the list of all the Pulsar clusters
+func (r *Operator) GetAllClusters() (*[]string, error) {
+	request := r.GetHttpRequest()
+	url := fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, clusters)
+
+	var clusters = make([]string, 1)
+	response, _, errs := request.Get(url).EndStruct(&clusters)
+	if errs != nil {
+		klog.Errorf("get all clusters error: %+v", errs)
+		return nil, fmt.Errorf("get all clusters error: %+v", errs)
+	}
+	if response.StatusCode == http.StatusOK {
+		return &clusters, nil
+	}
+
+	return nil, fmt.Errorf("get all clusters error, response: %+v", response)
+}
+
+//Get the list of existing tenants
+func (r *Operator) GetAllTenants() (*[]string, error) {
+	request := r.GetHttpRequest()
+	url := fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, tenants)
+
+	var tenants = make([]string, 1)
+	response, _, errs := request.Get(url).EndStruct(&tenants)
+	if errs != nil {
+		klog.Errorf("get all tenants error: %+v", errs)
+		return nil, fmt.Errorf("get all tenants error: %+v", errs)
+	}
+
+	if response.StatusCode == http.StatusOK {
+		return &tenants, nil
+	}
+
+	return nil, fmt.Errorf("get all tenants error, response: %+v", response)
 }
