@@ -81,7 +81,6 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
-	body.Data.Namespace = authuser.Namespace
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
@@ -91,6 +90,7 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 		}
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
+	body.Data.Namespace = authuser.Namespace
 	if db, err := c.service.CreateRestriction(body.Data); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,

@@ -3,4 +3,4 @@ if ! test $1;then
   exit 1
 fi
 
-curl localhost:8001/api/v1/restrictions/$1 -v
+curl localhost:8001/api/v1/restrictions/$1 -v -H 'userId:6' -H'tenantId:3000' -d'
