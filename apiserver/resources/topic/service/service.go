@@ -125,7 +125,7 @@ func (s *Service) ListMessages(topicUrls []string) ([]Message, error) {
 }
 
 func (s *Service) IsTopicExist(tp *v1.Topic) bool {
-	return s.IsTopicUrlExist(tp.GetUrl(),util.WithNamespace(tp.Namespace))
+	return s.IsTopicUrlExist(tp.GetUrl(), util.WithNamespace(tp.Namespace))
 }
 
 func (s *Service) IsTopicUrlExist(url string, opts ...util.OpOption) bool {

@@ -75,21 +75,30 @@ func (s *Service) SearchTopicgroup(tgList []*Topicgroup, opts ...util.OpOption) 
 		names = append(names, nameLike)
 	}
 
-	tps, err := s.listTopics(topic)
-	if err != nil {
-		return nil, err
-	}
-	for _, tp := range tps {
-		names = append(names, tp.TopicGroup)
+	if len(topic) > 0 {
+		tps, err := s.listTopics(topic)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(tps) == 0 {
+			return nil, nil
+		}
+		for _, tp := range tps {
+			names = append(names, tp.TopicGroup)
+		}
 	}
 
 	var finalSearchResult []*Topicgroup
-
+	var finalIdList []string
 	if len(names) > 0 {
-		for _, tg := range tgList {
-			for _, name := range names {
+		for _, name := range names {
+			for _, tg := range tgList {
 				if strings.Contains(tg.Name, name) {
-					finalSearchResult = append(finalSearchResult, tg)
+					if !isTopicgroupIdExist(finalIdList, tg.Name) {
+						finalIdList = append(finalIdList, tg.Name)
+						finalSearchResult = append(finalSearchResult, tg)
+					}
 				}
 			}
 		}
@@ -114,6 +123,15 @@ func (s *Service) SearchTopicgroup(tgList []*Topicgroup, opts ...util.OpOption) 
 
 }
 
+func isTopicgroupIdExist(idList []string, id string) bool {
+	for _, i := range idList {
+		if i == id {
+			return true
+		}
+	}
+	return false
+}
+
 func (s *Service) GetTopicgroup(id string, opt ...util.OpOption) (*Topicgroup, error) {
 	tg, err := s.Get(id, opt...)
 	if err != nil {
@@ -132,9 +150,6 @@ func (s *Service) GetTopics(id string, opts ...util.OpOption) ([]*service.Topic,
 }
 
 func (s *Service) listTopics(topicName string) ([]*service.Topic, error) {
-	if len(topicName) == 0 {
-		return nil, nil
-	}
 	crd, err := s.topicClient.List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
