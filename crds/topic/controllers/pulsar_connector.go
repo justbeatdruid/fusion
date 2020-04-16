@@ -97,7 +97,7 @@ func (r *Connector) CreateTopic(topic *nlptv1.Topic) (err error) {
 	}
 
 	request := r.GetHttpRequest()
-	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
+	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl := r.getUrl(topic)
 	response, _, errs := request.Put(topicUrl).Send("").EndStruct("")
 	if response.StatusCode == 204 {

@@ -16,13 +16,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 	"strconv"
-	clientset "k8s.io/client-go/kubernetes"
 )
 
 var crdNamespace = "default"
-
+const Label = "nlpt.cmcc.com/topicgroup"
 var oofsGVR = schema.GroupVersionResource{
 	Group:    v1.GroupVersion.Group,
 	Version:  v1.GroupVersion.Version,
@@ -41,7 +41,7 @@ type Service struct {
 	adminToken       string
 }
 
-func NewService(client dynamic.Interface, kubeClient *clientset.Clientset,topConfig *config.TopicConfig, errMsg config.ErrorConfig) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topConfig *config.TopicConfig, errMsg config.ErrorConfig) *Service {
 	return &Service{client: client.Resource(oofsGVR),
 		clientAuthClient: client.Resource(clientauthv1.GetOOFSGVR()),
 		topicGroupClient: client.Resource(topicgroupv1.GetOOFSGVR()),
@@ -157,11 +157,23 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 		}
 	}
 
+	//get topicgroup name from id
+	tg, err := s.GetTopicgroup(tp.Spec.TopicGroup)
+	if err != nil {
+		return nil, tperror.TopicError{
+			Err:       fmt.Errorf("topic exists: %+v", tp.GetUrl()),
+			ErrorCode: tperror.ErrorCannotFindTopicgroup,
+			Message:   fmt.Sprintf(s.errMsg.Topic[tperror.ErrorCannotFindTopicgroup], tp.GetUrl()),
+		}
+	}
+	tp.Spec.TopicGroup = tg.Spec.Name
+
 	//添加标签
 	if tp.ObjectMeta.Labels == nil {
 		tp.ObjectMeta.Labels = make(map[string]string)
 	}
-	tp.ObjectMeta.Labels["topicgroup"] = tp.Spec.TopicGroup
+	tp.ObjectMeta.Labels[Label] = tp.Spec.TopicGroup
+
 
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
 	if err != nil {
@@ -173,8 +185,8 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
 
-	err = kubernetes.EnsureNamespace(s.kubeClient,tp.Namespace)
-	if err!=nil {
+	err = kubernetes.EnsureNamespace(s.kubeClient, tp.Namespace)
+	if err != nil {
 		return nil, tperror.TopicError{
 			Err:       fmt.Errorf("cannot ensure k8s namespace: %+v", err),
 			ErrorCode: tperror.ErrorEnsureNamespace,
@@ -480,5 +492,20 @@ func (s *Service) QueryAuthUserNameById(id string) (string, error) {
 
 	//klog.V(5).Infof("get auth user name: %+v", ca)
 	return ca.Spec.Name, nil
+
+}
+
+func (s *Service) GetTopicgroup(id string) (*topicgroupv1.Topicgroup, error) {
+	crd, err := s.topicGroupClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	tg := &topicgroupv1.Topicgroup{}
+
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tg); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+
+	return tg, nil
 
 }

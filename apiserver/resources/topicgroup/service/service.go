@@ -17,12 +17,13 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/klog"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/klog"
 )
 
 const (
 	LabelTenant = "nlpt.cmcc.com/pulsarTenant"
+	LabelTopicgroup = "nlpt.cmcc.com/topicgroup"
 )
 
 var crdNamespace = "default"
@@ -42,7 +43,7 @@ type Service struct {
 func NewService(client dynamic.Interface, kubeClient *clientset.Clientset) *Service {
 	return &Service{client: client.Resource(oofsGVR),
 		topicClient: client.Resource(topicv1.GetOOFSGVR()),
-	    kubeClient:  kubeClient}
+		kubeClient:  kubeClient}
 }
 
 func (s *Service) CreateTopicgroup(model *Topicgroup) (*Topicgroup, tgerror.TopicgroupError) {
@@ -182,7 +183,7 @@ func (s *Service) getTopicsCrd(id string, opts ...util.OpOption) (*topicv1.Topic
 		return nil, fmt.Errorf("topicgroup not exist: %+v", id)
 	}
 	options := metav1.ListOptions{}
-	options.LabelSelector = fmt.Sprintf("topicgroup=%s", tg.Name)
+	options.LabelSelector = fmt.Sprintf("%s=%s", LabelTopicgroup,tg.Name)
 	//查询所有的topic
 	crd, err := s.topicClient.Namespace(op.Namespace()).List(options)
 	if err != nil {
@@ -321,8 +322,8 @@ func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupE
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-	err = kubernetes.EnsureNamespace(s.kubeClient,tp.Namespace)
-	if err!=nil{
+	err = kubernetes.EnsureNamespace(s.kubeClient, tp.Namespace)
+	if err != nil {
 		return nil, tgerror.TopicgroupError{
 			Err:       fmt.Errorf("cannot ensure k8s namespace: %+v", err),
 			ErrorCode: tgerror.ErrorEnsureNamespace,

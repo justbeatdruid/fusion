@@ -15,8 +15,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/klog"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/klog"
 )
 
 var crdNamespace = "default"
@@ -115,8 +115,8 @@ func (s *Service) Create(ca *v1.Clientauth) (*v1.Clientauth, error) {
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-    err = kubernetes.EnsureNamespace(s.kubeClient, ca.Namespace)
-    if err!=nil{
+	err = kubernetes.EnsureNamespace(s.kubeClient, ca.Namespace)
+	if err != nil {
 		if err != nil {
 			return nil, fmt.Errorf("cannot ensure k8s namespace: %+v", err)
 		}
