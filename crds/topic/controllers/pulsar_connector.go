@@ -97,7 +97,7 @@ func (r *Connector) CreateTopic(topic *nlptv1.Topic) (err error) {
 	}
 
 	request := r.GetHttpRequest()
-	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
+	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl := r.getUrl(topic)
 	response, _, errs := request.Put(topicUrl).Send("").EndStruct("")
 	if response.StatusCode == 204 {
@@ -111,7 +111,7 @@ func (r *Connector) CreateTopic(topic *nlptv1.Topic) (err error) {
 
 func (r *Connector) CreatePartitionedTopic(topic *nlptv1.Topic) (err error) {
 	request := r.GetHttpRequest()
-	klog.Infof("CreatePartitionedTopic Param: tenant:%s, namespace:%s, topicName:%s", topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
+	klog.Infof("CreatePartitionedTopic Param: tenant:%s, namespace:%s, topicName:%s", topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl := r.getUrl(topic)
 
 	response, _, errs := request.Put(topicUrl).Send(topic.Spec.Partition - 1).EndStruct("")
@@ -151,7 +151,7 @@ func (r *Connector) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Perm
 		url = persistentPermissionUrl
 	}
 
-	url = fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name, permission.AuthUserName)
+	url = fmt.Sprintf(url, topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name, permission.AuthUserName)
 	url = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
 	response, body, errs := request.Post(url).Send(permission.Actions).End()
 
@@ -173,7 +173,7 @@ func (r *Connector) getUrl(topic *nlptv1.Topic) string {
 	if topic.Spec.Partition > 1 {
 		url += "/partitions"
 	}
-	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
+	topicUrl := fmt.Sprintf(url, topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 
 	return fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl)
 }
@@ -186,7 +186,7 @@ func (r *Connector) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err er
 		url = nonPersistentTopicUrl
 	}
 
-	topicUrl := fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
+	topicUrl := fmt.Sprintf(url, topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl = fmt.Sprintf("%s://%s:%d%s/%s/%s", protocol, r.Host, r.Port, topicUrl, "permissions", P.AuthUserName)
 	response, _, errs := request.Delete(topicUrl).Retry(3, 5*time.Second).Send("").EndStruct("")
 
@@ -218,7 +218,7 @@ func (r *Connector) GetStats(topic nlptv1.Topic) (*nlptv1.Stats, error) {
 		url = nonPersistentTopicUrl
 	}
 	url += statsUrl
-	url = fmt.Sprintf(url, topic.Spec.Tenant, topic.Spec.TopicGroup, topic.Spec.Name)
+	url = fmt.Sprintf(url, topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 	url = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
 	stats := &Stats{}
 	response, _, errs := request.Get(url).Retry(3, 5*time.Second, http.StatusNotFound, http.StatusBadGateway).EndStruct(stats)
