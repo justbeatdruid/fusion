@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 
@@ -16,7 +17,7 @@ import (
 	"k8s.io/klog"
 )
 
-const METRICS_NAME = "api_count_total"
+const METRICS_NAME = "fusion_api_count_total"
 
 type Manager struct {
 	client     dynamic.NamespaceableResourceInterface
@@ -43,14 +44,23 @@ func (c *Manager) GetCount() (namespacedApiCount map[string]int) {
 		klog.Errorf("cannot get namespaces: %+v", err)
 		return
 	}
-	for _, ns := range nss {
-		list, err := c.List(ns)
-		if err != nil {
-			klog.Errorf("list api error: %+v", err)
-			return
-		}
-		namespacedApiCount[ns] = len(list.Items)
+	wg := sync.WaitGroup{}
+	l := sync.Mutex{}
+	wg.Add(len(nss))
+	for _, n := range nss {
+		go func(ns string) {
+			defer wg.Done()
+			list, err := c.List(ns)
+			if err != nil {
+				klog.Errorf("list api error: %+v", err)
+				return
+			}
+			l.Lock()
+			defer l.Unlock()
+			namespacedApiCount[ns] = len(list.Items)
+		}(n)
 	}
+	wg.Wait()
 	return
 }
 
