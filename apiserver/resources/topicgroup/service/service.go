@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/apiserver/kubernetes"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
 	topicv1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
@@ -17,6 +18,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
+	clientset "k8s.io/client-go/kubernetes"
 )
 
 const (
@@ -32,13 +34,15 @@ var oofsGVR = schema.GroupVersionResource{
 }
 
 type Service struct {
+	kubeClient  *clientset.Clientset
 	client      dynamic.NamespaceableResourceInterface
 	topicClient dynamic.NamespaceableResourceInterface
 }
 
-func NewService(client dynamic.Interface) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset) *Service {
 	return &Service{client: client.Resource(oofsGVR),
-		topicClient: client.Resource(topicv1.GetOOFSGVR())}
+		topicClient: client.Resource(topicv1.GetOOFSGVR()),
+	    kubeClient:  kubeClient}
 }
 
 func (s *Service) CreateTopicgroup(model *Topicgroup) (*Topicgroup, tgerror.TopicgroupError) {
@@ -317,7 +321,13 @@ func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupE
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-
+	err = kubernetes.EnsureNamespace(s.kubeClient,tp.Namespace)
+	if err!=nil{
+		return nil, tgerror.TopicgroupError{
+			Err:       fmt.Errorf("cannot ensure k8s namespace: %+v", err),
+			ErrorCode: tgerror.ErrorEnsureNamespace,
+		}
+	}
 	crd, err = s.client.Namespace(tp.Namespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
 		return nil, tgerror.TopicgroupError{

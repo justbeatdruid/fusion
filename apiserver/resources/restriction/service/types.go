@@ -221,6 +221,13 @@ func (s *Service) assignment(target *v1.Restriction, reqData interface{}) error 
 		target.Spec.Config = source.Config
 	}
 
+	if len(target.Spec.Config.Ip) != 0 {
+		target.Spec.Config.Ip = target.Spec.Config.Ip[0:0]
+	}
+	for index, _ := range source.Config.Ip {
+		target.Spec.Config.Ip = append(target.Spec.Config.Ip, source.Config.Ip[index])
+	}
+
 	target.Status.UpdatedAt = metav1.Now()
 	return nil
 }

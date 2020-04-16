@@ -45,7 +45,8 @@ type BindRequest struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 	Data    struct {
-		Operation string `json:"operation"`
+		Operation string       `json:"operation"`
+		Apis      []v1.ApiBind `json:"apis"`
 	} `json:"data,omitempty"`
 }
 type BindResponse = Wrapped
@@ -380,6 +381,42 @@ func (c *controller) BindApi(req *restful.Request) (int, interface{}) {
 			Code:      0,
 			ErrorCode: "0",
 			Data:      api,
+		}
+	}
+}
+
+func (c *controller) BatchBindApi(req *restful.Request) (int, interface{}) {
+	body := &BindRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:      1,
+			ErrorCode: "001000001",
+			Message:   c.errMsg.Api["001000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "001000003",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
+		}
+	}
+	appID := req.PathParameter("appid")
+	if err := c.service.BatchBindOrRelease(appID, body.Data.Operation, body.Data.Apis, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:      2,
+			ErrorCode: "001000013",
+			Message:   c.errMsg.Api["001000013"],
+			Detail:    fmt.Errorf("bind api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &BindResponse{
+			Code:      0,
+			ErrorCode: "0",
+			//Data:      api,
 		}
 	}
 }

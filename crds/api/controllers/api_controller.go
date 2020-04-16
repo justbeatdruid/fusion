@@ -67,7 +67,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		api.Status.Status = nlptv1.Running
 		for index := 0; index < len(api.Spec.Applications); {
 			app := api.Spec.Applications[index]
-			if api.ObjectMeta.Labels[nlptv1.ApplicationLabel(app.ID)] == "false" {
+			if api.ObjectMeta.Labels[nlptv1.ApplicationLabel(app.ID)] == "false" && len(app.AclID) != 0 {
 				//consumer从acl中删除 TODO 失败后处理
 				if err := r.Operator.DeleteConsumerFromAcl(app.AclID, app.ID); err != nil {
 					api.Status.Status = nlptv1.Error
@@ -78,6 +78,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				}
 				//delete application, ApplicationLabel, Status.Applications
 				api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
+				api.Status.ApplicationCount = api.Status.ApplicationCount - 1
 				delete(api.ObjectMeta.Labels, nlptv1.ApplicationLabel(app.ID))
 				delete(api.Status.Applications, app.ID)
 				application := &appv1.Application{}
@@ -104,6 +105,57 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			}
 		}
 
+		api.Status.Status = nlptv1.Success
+		r.Update(ctx, api)
+		return ctrl.Result{}, nil
+	}
+	//遍历绑定api
+	if api.Status.Action == nlptv1.Bind {
+		api.Status.Status = nlptv1.Running
+		for index := 0; index < len(api.Spec.Applications); {
+			app := api.Spec.Applications[index]
+			if api.ObjectMeta.Labels[nlptv1.ApplicationLabel(app.ID)] == "true" && len(app.AclID) == 0 {
+				//consumer添加到白名单中
+				aclId, err := r.Operator.AddConsumerToAcl(app.ID, api)
+				if err != nil {
+					//delete application, ApplicationLabel, Status.Applications
+					r.UpdateBindFail(ctx, api, app.ID, index, err.Error())
+					//当前删除失败直接返回
+					return ctrl.Result{}, nil
+				}
+				application := &appv1.Application{}
+				appNamespacedName := types.NamespacedName{
+					Namespace: req.NamespacedName.Namespace,
+					Name:      app.ID,
+				}
+				if err := r.Get(ctx, appNamespacedName, application); err != nil {
+					klog.Errorf("cannot get application with name %s: %+v", appNamespacedName, err)
+					//delete application, ApplicationLabel, Status.Applications
+					r.UpdateBindFail(ctx, api, app.ID, index, err.Error())
+					return ctrl.Result{}, nil
+				}
+				// bind api to application
+				api.Spec.Applications[index].AclID = aclId
+				api.Status.ApplicationCount = api.Status.ApplicationCount + 1
+				if api.Status.Applications == nil {
+					api.Status.Applications = make(map[string]nlptv1.ApiApplicationStatus)
+				}
+				api.Status.Applications[app.ID] = nlptv1.ApiApplicationStatus{
+					AppID:            app.ID,
+					BindingSucceeded: true,
+					Message:          "success",
+				}
+				application.Spec.APIs = append(application.Spec.APIs, appv1.Api{api.ObjectMeta.Name, api.Spec.Name})
+				if err := r.Update(ctx, application); err != nil {
+					klog.Errorf("add api to app error: %+v", err)
+					//delete application, ApplicationLabel, Status.Applications
+					r.UpdateBindFail(ctx, api, app.ID, index, err.Error())
+					return ctrl.Result{}, nil
+				}
+			} else {
+				index++
+			}
+		}
 		api.Status.Status = nlptv1.Success
 		r.Update(ctx, api)
 		return ctrl.Result{}, nil
@@ -296,6 +348,27 @@ func (r *ApiReconciler) UpdateApp(ctx context.Context, app *appv1.Application, a
 		return err
 	}
 	klog.Infof("update app apis: %+v", *app)
+	return nil
+}
+
+func (r *ApiReconciler) UpdateBindFail(ctx context.Context, api *nlptv1.Api, appid string, index int, message string) error {
+	//delete application, ApplicationLabel, Status.Applications
+	api.Spec.Applications = append(api.Spec.Applications[:index], api.Spec.Applications[index+1:]...)
+	api.Status.ApplicationCount = api.Status.ApplicationCount - 1
+	api.Status.Status = nlptv1.Error
+	api.Status.Message = message
+	if api.Status.Applications == nil {
+		api.Status.Applications = make(map[string]nlptv1.ApiApplicationStatus)
+	}
+	api.Status.Applications[appid] = nlptv1.ApiApplicationStatus{
+		AppID:            appid,
+		BindingSucceeded: false,
+		Message:          message,
+	}
+	if err := r.Update(ctx, api); err != nil {
+		klog.Errorf("update api error: %+v", err)
+		return err
+	}
 	return nil
 }
 

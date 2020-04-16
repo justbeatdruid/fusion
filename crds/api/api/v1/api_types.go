@@ -225,6 +225,10 @@ type KongApiInfo struct {
 	PrometheusID  string   `json:"prometheus_id"`
 }
 
+type ApiBind struct {
+	ID string `json:"id"`
+}
+
 func ParameterFromDataWarehouseQuery(q dwv1.QueryProperty) ApiParameter {
 	ap := ApiParameter{
 		Name: fmt.Sprintf("%s.%s", q.TableName, q.PropertyName),
@@ -337,6 +341,7 @@ const (
 	Publish Action = "publish" //publish api
 	Offline Action = "offline" //offline api
 	UnBind  Action = "unbind"  //unbind api
+	Bind    Action = "bind"    //unbind api
 )
 
 type PublishStatus string
