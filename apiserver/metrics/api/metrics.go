@@ -6,13 +6,11 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/chinamobile/nlpt/apiserver/cache"
 	k8s "github.com/chinamobile/nlpt/apiserver/kubernetes"
-	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/dynamic"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 )
@@ -20,21 +18,17 @@ import (
 const METRICS_NAME = "fusion_api_count_total"
 
 type Manager struct {
-	client     dynamic.NamespaceableResourceInterface
+	lister     *cache.ApiLister
 	kubeClient *clientset.Clientset
 	CountDesc  *prometheus.Desc
 }
 
-func (c *Manager) List(namespace string) (*v1.ApiList, error) {
-	crd, err := c.client.Namespace(namespace).List(metav1.ListOptions{})
+func (c *Manager) List(namespace string) ([]*v1.Api, error) {
+	apis, err := c.lister.List(namespace, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
-	items := &v1.ApiList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), items); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	return items, nil
+	return apis, nil
 }
 
 func (c *Manager) GetCount() (namespacedApiCount map[string]int) {
@@ -57,7 +51,7 @@ func (c *Manager) GetCount() (namespacedApiCount map[string]int) {
 			}
 			l.Lock()
 			defer l.Unlock()
-			namespacedApiCount[ns] = len(list.Items)
+			namespacedApiCount[ns] = len(list)
 		}(n)
 	}
 	wg.Wait()
@@ -80,10 +74,10 @@ func (c *Manager) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func NewManager(instance string, client dynamic.Interface, kubeClient *clientset.Clientset) *Manager {
+func NewManager(instance string, listers *cache.Listers, kubeClient *clientset.Clientset) *Manager {
 	return &Manager{
 		kubeClient: kubeClient,
-		client:     client.Resource(v1.GetOOFSGVR()),
+		lister:     listers.ApiLister(),
 		CountDesc: prometheus.NewDesc(
 			METRICS_NAME,
 			"Number of APIs.",
@@ -93,6 +87,6 @@ func NewManager(instance string, client dynamic.Interface, kubeClient *clientset
 	}
 }
 
-func InitMetrics(cfg *config.Config) prometheus.Collector {
-	return NewManager("nlpt", cfg.GetDynamicClient(), cfg.GetKubeClient())
+func InitMetrics(listers *cache.Listers, kubeClient *clientset.Clientset) prometheus.Collector {
+	return NewManager("nlpt", listers, kubeClient)
 }

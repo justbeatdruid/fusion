@@ -6,13 +6,11 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus"
 
+	"github.com/chinamobile/nlpt/apiserver/cache"
 	k8s "github.com/chinamobile/nlpt/apiserver/kubernetes"
-	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/dynamic"
 	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 )
@@ -20,25 +18,21 @@ import (
 const METRICS_NAME = "fusion_datasource_count_total"
 
 type Manager struct {
-	client     dynamic.NamespaceableResourceInterface
+	lister     *cache.DatasourceLister
 	kubeClient *clientset.Clientset
 	CountDesc  *prometheus.Desc
 }
 
-func (c *Manager) List(namespace string) (*v1.DatasourceList, error) {
-	crd, err := c.client.Namespace(namespace).List(metav1.ListOptions{})
+func (c *Manager) List(namespace string) ([]*v1.Datasource, error) {
+	datasources, err := c.lister.List(namespace, metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
-	items := &v1.DatasourceList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), items); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	return items, nil
+	return datasources, nil
 }
 
-func (c *Manager) GetCount() (namespacedApiCount map[string]int) {
-	namespacedApiCount = make(map[string]int)
+func (c *Manager) GetCount() (namespacedDatasourceCount map[string]int) {
+	namespacedDatasourceCount = make(map[string]int)
 	nss, err := k8s.GetAllNamespaces(c.kubeClient)
 	if err != nil {
 		klog.Errorf("cannot get namespaces: %+v", err)
@@ -52,12 +46,12 @@ func (c *Manager) GetCount() (namespacedApiCount map[string]int) {
 			defer wg.Done()
 			list, err := c.List(ns)
 			if err != nil {
-				klog.Errorf("list api error: %+v", err)
+				klog.Errorf("list datasource error: %+v", err)
 				return
 			}
 			l.Lock()
 			defer l.Unlock()
-			namespacedApiCount[ns] = len(list.Items)
+			namespacedDatasourceCount[ns] = len(list)
 		}(n)
 	}
 	wg.Wait()
@@ -69,8 +63,8 @@ func (c *Manager) Describe(ch chan<- *prometheus.Desc) {
 }
 
 func (c *Manager) Collect(ch chan<- prometheus.Metric) {
-	namespacedApiCount := c.GetCount()
-	for namespace, count := range namespacedApiCount {
+	namespacedDatasourceCount := c.GetCount()
+	for namespace, count := range namespacedDatasourceCount {
 		ch <- prometheus.MustNewConstMetric(
 			c.CountDesc,
 			prometheus.CounterValue,
@@ -80,10 +74,10 @@ func (c *Manager) Collect(ch chan<- prometheus.Metric) {
 	}
 }
 
-func NewManager(instance string, client dynamic.Interface, kubeClient *clientset.Clientset) *Manager {
+func NewManager(instance string, listers *cache.Listers, kubeClient *clientset.Clientset) *Manager {
 	return &Manager{
 		kubeClient: kubeClient,
-		client:     client.Resource(v1.GetOOFSGVR()),
+		lister:     listers.DatasourceLister(),
 		CountDesc: prometheus.NewDesc(
 			METRICS_NAME,
 			"Number of datasources.",
@@ -93,6 +87,6 @@ func NewManager(instance string, client dynamic.Interface, kubeClient *clientset
 	}
 }
 
-func InitMetrics(cfg *config.Config) prometheus.Collector {
-	return NewManager("nlpt", cfg.GetDynamicClient(), cfg.GetKubeClient())
+func InitMetrics(listers *cache.Listers, kubeClient *clientset.Clientset) prometheus.Collector {
+	return NewManager("nlpt", listers, kubeClient)
 }
