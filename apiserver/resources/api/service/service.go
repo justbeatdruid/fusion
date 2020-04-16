@@ -82,7 +82,7 @@ func (s *Service) CreateApi(model *Api) (*Api, error, string) {
 	}
 
 	// refill datawarehouse query
-	if su.Spec.DatasourceID != nil {
+	if su.Spec.Type == "data" && su.Spec.DatasourceID != nil {
 		ds, err := s.getDatasource(su.Spec.DatasourceID.ID)
 		if err != nil {
 			return nil, fmt.Errorf("get datasource error: %+v", err), "001000019"
