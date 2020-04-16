@@ -58,7 +58,6 @@ spec:
       - command:
         - fusion-clientauth-controller-manager
         - -enable-leader-election
-        - --pulsar-auth-enable=true
         - --v=5
         env:
         - name: MY_POD_NAMESPACE
