@@ -117,7 +117,7 @@ func (r *DatasourceSynchronizer) SyncDatasources() error {
 					DataWarehouse: &db,
 				},
 				Status: nlptv1.DatasourceStatus{
-					Status:    nlptv1.Created,
+					Status:    nlptv1.Normal,
 					CreatedAt: metav1.Now(),
 					UpdatedAt: metav1.Unix(0, 0),
 				},

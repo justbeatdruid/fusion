@@ -168,10 +168,12 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	responseBody := &ResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
+		(*db).Spec.Result = nlptv1.CREATEFAILED
 		return fmt.Errorf("request for create service error: %+v", errs)
 	}
 	klog.V(5).Infof("create service response body: %s", string(body))
 	if response.StatusCode != 201 {
+		(*db).Spec.Result = nlptv1.CREATEFAILED
 		return fmt.Errorf("request for create service error: receive wrong status code: %s", string(body))
 	}
 	if db.Spec.Type == nlptv1.DataService {
@@ -180,6 +182,7 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		(*db).Spec.KongService.Port = responseBody.Port
 	}
 	(*db).Spec.KongService.ID = responseBody.ID
+	(*db).Spec.Result = nlptv1.SUCCESS
 	return nil
 }
 
@@ -196,13 +199,16 @@ func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 
 	if len(errs) > 0 {
+		(*db).Spec.Result = nlptv1.DELETEFAILED
 		return fmt.Errorf("request for delete service error: %+v", errs)
 	}
 
 	klog.V(5).Infof("delete service response code: %d%s", response.StatusCode, string(body))
 	if response.StatusCode != 204 {
+		(*db).Spec.Result = nlptv1.DELETEFAILED
 		return fmt.Errorf("request for delete service error: receive wrong status code: %d", response.StatusCode)
 	}
+	(*db).Spec.Result = nlptv1.SUCCESS
 	return nil
 }
 
@@ -254,11 +260,13 @@ func (r *Operator) UpdateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	responseBody := &ResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
+		(*db).Spec.Result = nlptv1.UPDATEFAILED
 		return fmt.Errorf("request for update service error: %+v", errs)
 	}
 	klog.V(5).Infof("update service response body: %s", string(body))
 	//patch接口返回200
 	if response.StatusCode != 200 {
+		(*db).Spec.Result = nlptv1.UPDATEFAILED
 		return fmt.Errorf("request for update service error: receive wrong status code: %s", string(body))
 	}
 	if db.Spec.Type == nlptv1.DataService {
@@ -266,5 +274,6 @@ func (r *Operator) UpdateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		(*db).Spec.KongService.Protocol = responseBody.Protocol
 		(*db).Spec.KongService.Port = responseBody.Port
 	}
+	(*db).Spec.Result = nlptv1.SUCCESS
 	return nil
 }

@@ -100,19 +100,40 @@ type DatasourceStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	Status    Status      `json:"status"`
+	Detail    string      `json:"detail"`
 	UpdatedAt metav1.Time `json:"updatedAt"`
 	CreatedAt metav1.Time `json:"createdAt"`
 }
+
 type Status string
 
 const (
-	Init     Status = "init"
-	Creating Status = "creating"
-	Created  Status = "created"
-	Delete   Status = "delete"
-	Deleting Status = "deleting"
-	Error    Status = "error"
+	Normal   Status = "normal"
+	Abnormal Status = "abnormal"
+	Unknown  Status = "unknown"
 )
+
+func ToString(s Status) string {
+	switch s {
+	case Normal:
+		return "正常"
+	case Abnormal:
+		return "异常"
+	default:
+		return "未知"
+	}
+}
+
+func FromString(s string) Status {
+	switch s {
+	case "正常":
+		return Normal
+	case "异常":
+		return Abnormal
+	default:
+		return Unknown
+	}
+}
 
 // +kubebuilder:object:root=true
 
