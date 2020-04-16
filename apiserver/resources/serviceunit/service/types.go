@@ -35,6 +35,9 @@ type Serviceunit struct {
 
 	Group     string `json:"group"`
 	GroupName string `json:"groupName"`
+	//sunyu+
+	Result	v1.Result `json:"result"`
+	DisplayStatus	v1.DisStatus `json:"disStatus"`
 }
 
 // only used in creation options
@@ -52,6 +55,8 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 		//Datasource:   app.Datasource,
 		KongService: app.KongSevice,
 		Description: app.Description,
+		Result: app.Result,
+		DisplayStatus: app.DisplayStatus,
 	}
 	status := app.Status
 	if len(status) == 0 {
@@ -87,6 +92,8 @@ func ToAPIUpdate(su *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 		//Datasource:   su.Datasource,
 		KongService: su.KongSevice,
 		Description: su.Description,
+		Result: su.Result,
+		DisplayStatus: su.DisplayStatus,
 	}
 	crd.Spec.KongService.ID = id
 	status := su.Status
@@ -106,6 +113,16 @@ func ToAPIUpdate(su *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 }
 
 func ToModel(obj *v1.Serviceunit, opts ...util.OpOption) *Serviceunit {
+	switch obj.Spec.Result {
+	case v1.CREATING:
+		(*obj).Spec.DisplayStatus = v1.SuCreating
+	case v1.DELETING, v1.UPDATING, v1.SUCCESS:
+		(*obj).Spec.DisplayStatus = v1.CreateSuccess
+	case v1.CREATEFAILED, v1.UPDATEFAILED:
+		(*obj).Spec.DisplayStatus = v1.CreateFailed
+	case v1.DELETEFAILED:
+		(*obj).Spec.DisplayStatus = v1.DeleteFailed
+	}
 	su := &Serviceunit{
 		ID:           obj.ObjectMeta.Name,
 		Name:         obj.Spec.Name,
@@ -120,6 +137,8 @@ func ToModel(obj *v1.Serviceunit, opts ...util.OpOption) *Serviceunit {
 		UpdatedAt: util.NewTime(obj.Status.UpdatedAt.Time),
 		APICount:  obj.Status.APICount,
 		Published: obj.Status.Published,
+		Result: obj.Spec.Result,
+		DisplayStatus: obj.Spec.DisplayStatus,
 	}
 	u := util.OpList(opts...).User()
 	if len(u) > 0 {

@@ -179,6 +179,7 @@ func (s *Service) Create(su *v1.Serviceunit) (*v1.Serviceunit, error) {
 	crd.SetUnstructuredContent(content)
 
 	crd, err = s.client.Namespace(crdNamespace).Create(crd, metav1.CreateOptions{})
+
 	if err != nil {
 		return nil, fmt.Errorf("error creating crd: %+v", err)
 	}
@@ -187,6 +188,7 @@ func (s *Service) Create(su *v1.Serviceunit) (*v1.Serviceunit, error) {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.serviceunit of creating: %+v", su)
+	(*su).Spec.Result = v1.CREATING
 	return su, nil
 }
 
@@ -208,6 +210,7 @@ func (s *Service) PatchServiceunit(id string, data interface{}, opts ...util.OpO
 	}
 
 	su.Status.Status = v1.Update
+	(*su).Spec.Result = v1.UPDATING
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(su)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -308,6 +311,7 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Serviceunit, err
 
 	//TODO need check status !!!
 	su.Status.Status = v1.Delete
+	(*su).Spec.Result = v1.DELETING
 	return s.UpdateStatus(su)
 }
 

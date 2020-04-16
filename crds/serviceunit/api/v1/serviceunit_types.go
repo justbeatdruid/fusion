@@ -39,6 +39,8 @@ type ServiceunitSpec struct {
 	Description  string      `json:"description"`
 	//KongInfo
 	KongService KongServiceInfo `json:"kongServiceInfo"`
+	Result	Result		`json:"result"`
+	DisplayStatus	DisStatus `json:"disStatus"`
 }
 
 type KongServiceInfo struct {
@@ -95,6 +97,25 @@ type ServiceunitStatus struct {
 	Published bool        `json:"published"`
 	Message   string      `json:"message"`
 }
+
+type Result string
+const (
+	CREATING      Result = "creating"      //绑定中
+	DELETING    Result = "deleting"    //解绑中
+	UPDATING	Result = "updating"//更新中
+	CREATEFAILED Result = "createFailed" //创建失败
+	UPDATEFAILED Result = "updateFailed" //更新失败
+	DELETEFAILED Result = "deleteFailed"
+	SUCCESS      Result = "success"  //创建成功
+)
+
+type DisStatus string
+const (
+	SuCreating	DisStatus = "创建中"
+	CreateSuccess DisStatus = "创建成功"
+	CreateFailed	DisStatus = "创建失败"
+	DeleteFailed	DisStatus = "删除失败"
+)
 
 type Status string
 
