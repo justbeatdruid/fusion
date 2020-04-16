@@ -130,14 +130,14 @@ func CanExeAction(api *v1.Api, action v1.Action) error {
 		return fmt.Errorf("api status is running and retry latter")
 	}
 	switch action {
-	//API发布后不允许更新 发布 删除 解绑 只能先下线再操作最后重新发布
+	//API发布后不允许更新 发布 删除 解绑 只能先下线再操作最后重新发布 解绑是单独操作 发布后可执行
 	case v1.Update, v1.Publish, v1.Delete:
 		if api.Status.PublishStatus == v1.Released {
 			klog.Infof("api status is not ok %s", api.Status.PublishStatus)
 			return fmt.Errorf("api has published and cannot exec")
 		}
-	//只有API发布后才允许执行API下线
-	case v1.Offline:
+	//只有API发布后才允许执行API下线 发布后才可以绑定
+	case v1.Offline, v1.Bind:
 		if api.Status.PublishStatus != v1.Released {
 			klog.Infof("api status is not ok %s", api.Status.PublishStatus)
 			return fmt.Errorf("api has not published and cannot exec")
@@ -523,6 +523,17 @@ func (s *Service) BindOrRelease(apiid, appid, operation string, opts ...util.OpO
 	}
 }
 
+func (s *Service) BatchBindOrRelease(appid, operation string, apis []v1.ApiBind, opts ...util.OpOption) error {
+	switch operation {
+	case "bind":
+		return s.BatchBindApi(appid, apis, opts...)
+	case "release":
+		return s.BatchReleaseApi(appid, apis, opts...)
+	default:
+		return fmt.Errorf("unknown operation %s, expect bind or release", operation)
+	}
+}
+
 func (s *Service) BindApi(apiid, appid string, opts ...util.OpOption) (*Api, error) {
 	if true {
 		return nil, fmt.Errorf("do not bind api directly. make an application.")
@@ -558,6 +569,52 @@ func (s *Service) BindApi(apiid, appid string, opts ...util.OpOption) (*Api, err
 	return ToModel(api), err
 }
 
+func (s *Service) BatchBindApi(appid string, apis []v1.ApiBind, opts ...util.OpOption) error {
+	//先校验是否所有API满足绑定条件，有一个不满足直接返回错误
+	for _, value := range apis {
+		api, err := s.Get(value.ID, opts...)
+		if err != nil {
+			return fmt.Errorf("cannot get api: %+v", err)
+		}
+		for _, existedapp := range api.Spec.Applications {
+			if existedapp.ID == appid {
+				return fmt.Errorf("application alrady bound to api")
+			}
+		}
+		app, err := s.getApplication(appid, api.ObjectMeta.Namespace)
+		if err != nil {
+			return fmt.Errorf("get application error: %+v", err)
+		}
+		if ok, err := s.bindPermitted(app, opts...); err != nil {
+			return err
+		} else if !ok {
+			return fmt.Errorf("user has no write permission for application")
+		}
+		err = CanExeAction(api, v1.Bind)
+		if err != nil {
+			return fmt.Errorf("cannot exec: %+v", err)
+		}
+	}
+	for _, value := range apis {
+		api, err := s.Get(value.ID, opts...)
+		if err != nil {
+			return fmt.Errorf("cannot get api: %+v", err)
+		}
+		//绑定API
+		api.Status.Status = v1.Init
+		api.Status.Action = v1.Bind
+		api.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "true"
+		api.Spec.Applications = append(api.Spec.Applications, v1.Application{
+			ID: appid,
+		})
+		api, err = s.UpdateSpec(api)
+		if err != nil {
+			return fmt.Errorf("cannot update api bind: %+v", err)
+		}
+	}
+	return nil
+}
+
 func (s *Service) ReleaseApi(apiid, appid string, opts ...util.OpOption) (*Api, error) {
 	api, err := s.Get(apiid, opts...)
 	if err != nil {
@@ -591,13 +648,59 @@ func (s *Service) ReleaseApi(apiid, appid string, opts ...util.OpOption) (*Api, 
 	api.Status.Action = v1.UnBind
 	//解绑的时候先设置false TODO 之后controller 里面删除
 	api.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "false"
-	api.Status.ApplicationCount = api.Status.ApplicationCount - 1
 	api, err = s.UpdateSpec(api)
 	//if _, err = s.updateApplicationApi(appid, api.ObjectMeta.Name, api.Spec.Name); err != nil {
 	//	return fmt.Errorf("cannot update")
 	//}
 
 	return ToModel(api), err
+}
+func (s *Service) BatchReleaseApi(appid string, apis []v1.ApiBind, opts ...util.OpOption) error {
+	for _, value := range apis {
+		api, err := s.Get(value.ID, opts...)
+		if err != nil {
+			return fmt.Errorf("cannot get api: %+v", err)
+		}
+		app, err := s.getApplication(appid, api.ObjectMeta.Namespace)
+		if err != nil {
+			return fmt.Errorf("get application error: %+v", err)
+		}
+		if ok, err := s.bindPermitted(app, opts...); err != nil {
+			return err
+		} else if !ok {
+			return fmt.Errorf("user has no write permission for application")
+		}
+		exist := false
+		for _, existedapp := range api.Spec.Applications {
+			if existedapp.ID == appid {
+				exist = true
+			}
+		}
+		if !exist {
+			return fmt.Errorf("application not bound to api")
+		}
+		err = CanExeAction(api, v1.UnBind)
+		if err != nil {
+			return fmt.Errorf("cannot exec: %+v", err)
+		}
+	}
+	for _, value := range apis {
+		api, err := s.Get(value.ID, opts...)
+		if err != nil {
+			return fmt.Errorf("cannot get api: %+v", err)
+		}
+		//解绑API
+		api.Status.Status = v1.Init
+		api.Status.Action = v1.UnBind
+		//解绑的时候先设置false TODO 之后controller 里面删除
+		api.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "false"
+		api.Status.ApplicationCount = api.Status.ApplicationCount - 1
+		api, err = s.UpdateSpec(api)
+		if err != nil {
+			return fmt.Errorf("cannot update api unbind: %+v", err)
+		}
+	}
+	return nil
 }
 
 func (s *Service) Query(apiid string, params map[string][]string, limitstr string, opts ...util.OpOption) (Data, error) {

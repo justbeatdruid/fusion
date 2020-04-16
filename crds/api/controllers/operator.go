@@ -234,6 +234,23 @@ type PrometheusResponse struct {
 	Data   PrometheusData `json:"data"`
 }
 
+type AddWhiteRequestBody struct {
+	Group string `json:"group"`
+}
+
+type AddWhiteResponseBody struct {
+	CreatedAt int `json:"created_at"`
+	Consumer  struct {
+		ID string `json:"id"`
+	} `json:"consumer"`
+	ID      string      `json:"id"`
+	Group   string      `json:"group"`
+	Tags    interface{} `json:"tags"`
+	Message string      `json:"message"`
+	Fields  interface{} `json:"fields"`
+	Code    int         `json:"code"`
+}
+
 /*
 {"host":"apps",
 "created_at":1578378841,
@@ -482,6 +499,38 @@ func (r *Operator) DeleteRouteByKong(db *nlptv1.Api) (err error) {
 	}
 
 	return nil
+}
+
+//绑定api
+func (r *Operator) AddConsumerToAcl(appId string, api *nlptv1.Api) (aclId string, err error) {
+	id := api.ObjectMeta.Name
+	klog.Infof("begin add consumer to acl %s", api.ObjectMeta.Name)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/consumers/", appId, "/acls"))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &AddWhiteRequestBody{
+		Group: id, //whilte list group name
+	}
+	responseBody := &AddWhiteResponseBody{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return "0", fmt.Errorf("request for add consumer to acl error: %+v", errs)
+	}
+	klog.V(5).Infof("add consumer to acl whitelist code: %d, body: %s ", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.V(5).Infof("add consumer to acl failed msg: %s\n", responseBody.Message)
+		return "0", fmt.Errorf("request for add consumer to acl error: receive wrong status code: %s", string(body))
+	}
+	klog.V(5).Infof("acl consumer id: %s\n", responseBody.ID)
+
+	if err != nil {
+		return "0", fmt.Errorf("create acl error %s", responseBody.Message)
+	}
+	return responseBody.ID, nil
 }
 
 //解绑API
