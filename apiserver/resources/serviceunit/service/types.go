@@ -36,8 +36,8 @@ type Serviceunit struct {
 	Group     string `json:"group"`
 	GroupName string `json:"groupName"`
 	//sunyu+
-	Result	v1.Result `json:"result"`
-	DisplayStatus	v1.DisStatus `json:"disStatus"`
+	Result        v1.Result    `json:"result"`
+	DisplayStatus v1.DisStatus `json:"disStatus"`
 }
 
 // only used in creation options
@@ -53,9 +53,9 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 		Type:         app.Type,
 		DatasourceID: app.DatasourceID,
 		//Datasource:   app.Datasource,
-		KongService: app.KongSevice,
-		Description: app.Description,
-		Result: app.Result,
+		KongService:   app.KongSevice,
+		Description:   app.Description,
+		Result:        app.Result,
 		DisplayStatus: app.DisplayStatus,
 	}
 	status := app.Status
@@ -90,9 +90,9 @@ func ToAPIUpdate(su *Serviceunit, crd *v1.Serviceunit) *v1.Serviceunit {
 		Type:         su.Type,
 		DatasourceID: su.DatasourceID,
 		//Datasource:   su.Datasource,
-		KongService: su.KongSevice,
-		Description: su.Description,
-		Result: su.Result,
+		KongService:   su.KongSevice,
+		Description:   su.Description,
+		Result:        su.Result,
 		DisplayStatus: su.DisplayStatus,
 	}
 	crd.Spec.KongService.ID = id
@@ -132,12 +132,12 @@ func ToModel(obj *v1.Serviceunit, opts ...util.OpOption) *Serviceunit {
 		KongSevice:   obj.Spec.KongService,
 		Description:  obj.Spec.Description,
 
-		Status:    obj.Status.Status,
-		CreatedAt: util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
-		UpdatedAt: util.NewTime(obj.Status.UpdatedAt.Time),
-		APICount:  obj.Status.APICount,
-		Published: obj.Status.Published,
-		Result: obj.Spec.Result,
+		Status:        obj.Status.Status,
+		CreatedAt:     util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
+		UpdatedAt:     util.NewTime(obj.Status.UpdatedAt.Time),
+		APICount:      obj.Status.APICount,
+		Published:     obj.Status.Published,
+		Result:        obj.Spec.Result,
 		DisplayStatus: obj.Spec.DisplayStatus,
 	}
 	u := util.OpList(opts...).User()

@@ -38,9 +38,9 @@ type ServiceunitSpec struct {
 	APIs         []Api       `json:"apis"`
 	Description  string      `json:"description"`
 	//KongInfo
-	KongService KongServiceInfo `json:"kongServiceInfo"`
-	Result	Result		`json:"result"`
-	DisplayStatus	DisStatus `json:"disStatus"`
+	KongService   KongServiceInfo `json:"kongServiceInfo"`
+	Result        Result          `json:"result"`
+	DisplayStatus DisStatus       `json:"disStatus"`
 }
 
 type KongServiceInfo struct {
@@ -99,22 +99,24 @@ type ServiceunitStatus struct {
 }
 
 type Result string
+
 const (
-	CREATING      Result = "creating"      //∞Û∂®÷–
-	DELETING    Result = "deleting"    //Ω‚∞Û÷–
-	UPDATING	Result = "updating"//∏¸–¬÷–
-	CREATEFAILED Result = "createFailed" //¥¥Ω® ß∞‹
-	UPDATEFAILED Result = "updateFailed" //∏¸–¬ ß∞‹
+	CREATING     Result = "creating"
+	DELETING     Result = "deleting"
+	UPDATING     Result = "updating"
+	CREATEFAILED Result = "createFailed"
+	UPDATEFAILED Result = "updateFailed"
 	DELETEFAILED Result = "deleteFailed"
-	SUCCESS      Result = "success"  //¥¥Ω®≥…π¶
+	SUCCESS      Result = "success"
 )
 
 type DisStatus string
+
 const (
-	SuCreating	DisStatus = "¥¥Ω®÷–"
-	CreateSuccess DisStatus = "¥¥Ω®≥…π¶"
-	CreateFailed	DisStatus = "¥¥Ω® ß∞‹"
-	DeleteFailed	DisStatus = "…æ≥˝ ß∞‹"
+	SuCreating    DisStatus = "ÂàõÂª∫‰∏≠"
+	CreateSuccess DisStatus = "ÂàõÂª∫ÊàêÂäü"
+	CreateFailed  DisStatus = "ÂàõÂª∫Â§±Ë¥•"
+	DeleteFailed  DisStatus = "Âà†Èô§Â§±Ë¥•"
 )
 
 type Status string

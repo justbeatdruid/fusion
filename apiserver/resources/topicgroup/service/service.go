@@ -17,8 +17,8 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
-	"k8s.io/klog"
 	clientset "k8s.io/client-go/kubernetes"
+	"k8s.io/klog"
 )
 
 const (
@@ -42,7 +42,7 @@ type Service struct {
 func NewService(client dynamic.Interface, kubeClient *clientset.Clientset) *Service {
 	return &Service{client: client.Resource(oofsGVR),
 		topicClient: client.Resource(topicv1.GetOOFSGVR()),
-	    kubeClient:  kubeClient}
+		kubeClient:  kubeClient}
 }
 
 func (s *Service) CreateTopicgroup(model *Topicgroup) (*Topicgroup, tgerror.TopicgroupError) {
@@ -321,8 +321,8 @@ func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupE
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-	err = kubernetes.EnsureNamespace(s.kubeClient,tp.Namespace)
-	if err!=nil{
+	err = kubernetes.EnsureNamespace(s.kubeClient, tp.Namespace)
+	if err != nil {
 		return nil, tgerror.TopicgroupError{
 			Err:       fmt.Errorf("cannot ensure k8s namespace: %+v", err),
 			ErrorCode: tgerror.ErrorEnsureNamespace,

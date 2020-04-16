@@ -16,9 +16,9 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/client-go/dynamic"
+	clientset "k8s.io/client-go/kubernetes"
 	"k8s.io/klog"
 	"strconv"
-	clientset "k8s.io/client-go/kubernetes"
 )
 
 var crdNamespace = "default"
@@ -41,7 +41,7 @@ type Service struct {
 	adminToken       string
 }
 
-func NewService(client dynamic.Interface, kubeClient *clientset.Clientset,topConfig *config.TopicConfig, errMsg config.ErrorConfig) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topConfig *config.TopicConfig, errMsg config.ErrorConfig) *Service {
 	return &Service{client: client.Resource(oofsGVR),
 		clientAuthClient: client.Resource(clientauthv1.GetOOFSGVR()),
 		topicGroupClient: client.Resource(topicgroupv1.GetOOFSGVR()),
@@ -173,8 +173,8 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
 
-	err = kubernetes.EnsureNamespace(s.kubeClient,tp.Namespace)
-	if err!=nil {
+	err = kubernetes.EnsureNamespace(s.kubeClient, tp.Namespace)
+	if err != nil {
 		return nil, tperror.TopicError{
 			Err:       fmt.Errorf("cannot ensure k8s namespace: %+v", err),
 			ErrorCode: tperror.ErrorEnsureNamespace,
