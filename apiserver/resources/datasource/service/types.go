@@ -27,7 +27,7 @@ type Datasource struct {
 
 	DataWarehouse *dw.Database `json:"datawarehouse,omitempty"`
 
-	Status    v1.Status `json:"status"`
+	Status    string    `json:"status"`
 	UpdatedAt util.Time `json:"updatedAt"`
 	CreatedAt util.Time `json:"createdAt"`
 }
@@ -75,11 +75,11 @@ func ToAPI(ds *Datasource, specOnly bool) *v1.Datasource {
 	}
 	status := ds.Status
 	if len(status) == 0 {
-		status = v1.Init
+		status = ""
 	}
 	if !specOnly {
 		crd.Status = v1.DatasourceStatus{
-			Status:    status,
+			Status:    v1.FromString(status),
 			CreatedAt: metav1.Now(),
 			UpdatedAt: metav1.Now(),
 		}
@@ -99,7 +99,7 @@ func ToModel(obj *v1.Datasource) *Datasource {
 
 		//RDB: obj.Spec.RDB,
 
-		Status:    obj.Status.Status,
+		Status:    v1.ToString(obj.Status.Status),
 		UpdatedAt: util.NewTime(obj.Status.UpdatedAt.Time),
 		CreatedAt: util.NewTime(obj.Status.CreatedAt.Time),
 	}
