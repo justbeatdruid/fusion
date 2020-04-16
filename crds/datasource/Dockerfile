@@ -4,6 +4,7 @@ FROM golang:1.13 as builder
 WORKDIR /go/src/github.com/chinamobile/nlpt/
 # Copy the Go Modules manifests
 COPY cmd/ cmd/
+COPY apiserver/resources/datasource/rdb/driver/ apiserver/resources/datasource/rdb/driver/
 COPY crds/datasource crds/datasource
 COPY pkg/ pkg/
 COPY vendor/ vendor/

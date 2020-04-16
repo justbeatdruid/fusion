@@ -18,6 +18,7 @@ package main
 import (
 	"flag"
 	"os"
+	"time"
 
 	nlptv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/datasource/controllers"
@@ -65,6 +66,7 @@ func main() {
 	if len(namespace) == 0 {
 		namespace = "default"
 	}
+	var syncPeriod = 30 * time.Second
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{
 		Scheme:                  scheme,
 		MetricsBindAddress:      metricsAddr,
@@ -72,6 +74,8 @@ func main() {
 		LeaderElectionNamespace: namespace,
 		LeaderElectionID:        "fusion-datasource-controller-manager",
 		Port:                    9443,
+
+		SyncPeriod: &syncPeriod,
 	})
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
