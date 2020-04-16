@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	LabelTenant = "nlpt.cmcc.com/pulsarTenant"
+	LabelTenant     = "nlpt.cmcc.com/pulsarTenant"
 	LabelTopicgroup = "nlpt.cmcc.com/topicgroup"
 )
 
@@ -183,7 +183,7 @@ func (s *Service) getTopicsCrd(id string, opts ...util.OpOption) (*topicv1.Topic
 		return nil, fmt.Errorf("topicgroup not exist: %+v", id)
 	}
 	options := metav1.ListOptions{}
-	options.LabelSelector = fmt.Sprintf("%s=%s", LabelTopicgroup,tg.Name)
+	options.LabelSelector = fmt.Sprintf("%s=%s", LabelTopicgroup, tg.Name)
 	//查询所有的topic
 	crd, err := s.topicClient.Namespace(op.Namespace()).List(options)
 	if err != nil {

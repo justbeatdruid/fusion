@@ -25,7 +25,7 @@ const (
 	ErrorRevokePermissions     = "010000017" //收回用户权限失败
 	ErrorImportTopics          = "010000018" //导入失败
 	ErrorEnsureNamespace       = "010000019" //确认k8s命名空间错误
-	ErrorCannotFindTopicgroup  =  "010000020" //创建Topic失败，原因：找不到Topic分组
+	ErrorCannotFindTopicgroup  = "010000020" //创建Topic失败，原因：找不到Topic分组
 )
 
 type TopicError struct {

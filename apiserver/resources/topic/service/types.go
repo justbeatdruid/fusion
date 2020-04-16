@@ -119,7 +119,6 @@ func ToAPI(app *Topic) *v1.Topic {
 
 	crd.Spec = v1.TopicSpec{
 		Name:            app.Name,
-		Tenant:          app.Tenant,
 		TopicGroup:      app.TopicGroup,
 		Partition:       app.Partition,
 		IsNonPersistent: app.IsNonPersistent,
@@ -128,12 +127,12 @@ func ToAPI(app *Topic) *v1.Topic {
 	if crd.Spec.Partition <= 0 {
 		crd.Spec.Partition = 1
 	}
-	if len(crd.Spec.Tenant) == 0 {
-		crd.Spec.Tenant = DefaultTenant
-	}
-	if len(crd.Spec.TopicGroup) == 0 {
-		crd.Spec.TopicGroup = DefaultNamespace
-	}
+	//if len(crd.Spec.Tenant) == 0 {
+	//	crd.Spec.Tenant = DefaultTenant
+	//}
+	//if len(crd.Spec.TopicGroup) == 0 {
+	//	crd.Spec.TopicGroup = DefaultNamespace
+	//}
 
 	status := app.Status
 	if len(status) == 0 {
@@ -170,7 +169,7 @@ func ToModel(obj *v1.Topic) *Topic {
 		ID:              obj.ObjectMeta.Name,
 		Name:            obj.Spec.Name,
 		Namespace:       obj.ObjectMeta.Namespace,
-		Tenant:          obj.Spec.Tenant,
+		//Tenant:          obj.Spec.Tenant,
 		TopicGroup:      obj.Spec.TopicGroup,
 		IsNonPersistent: obj.Spec.IsNonPersistent,
 		Partition:       obj.Spec.Partition,
