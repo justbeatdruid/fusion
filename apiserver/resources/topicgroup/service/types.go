@@ -9,20 +9,18 @@ import (
 )
 
 const (
-	producer_request_hold     = "producer_request_hold"
-	producer_exception        = "producer_exception"
-	consumer_backlog_eviction = "consumer_backlog_eviction"
-	NotSet                    = -12323344
-	NotSetString              = "NotSet"
-	DefaultTenant             = "public" //暂时默认为public租户
+	producerRequestHold     = "producer_request_hold"
+	producerException       = "producer_exception"
+	consumerBacklogEviction = "consumer_backlog_eviction"
+	NotSet                  = -12323344
+	NotSetString            = "NotSet"
 )
 
 type Topicgroup struct {
 	ID        string     `json:"id"`
-	Name      string     `json:"name"` //namespace名称
+	Name      string     `json:"name"` //Topic分组名称
 	Namespace string     `json:"namespace"`
-	Tenant    string     `json:"tenant"`             //namespace的所属租户名称
-	Policies  Policies   `json:"policies,omitempty"` //namespace的策略
+	Policies  Policies   `json:"policies,omitempty"` //Topic分组的策略
 	CreatedAt int64      `json:"createdAt"`          //创建时间
 	Users     user.Users `json:"users"`
 	Status    v1.Status  `json:"status"`
@@ -35,6 +33,25 @@ type Policies struct {
 	MessageTtlInSeconds int               `json:"messageTtlInSeconds"`         //未确认消息的最长保留时长
 	BacklogQuota        BacklogQuota      `json:"backlogQuota,omitempty"`
 	NumBundles          int               `json:"numBundles"`
+	AuthPolicies        AuthPolices       `json:"auth_policies"`
+}
+
+type AuthPolices struct {
+	NamespaceAuth         NamespaceAuth         `json:"namespace_auth"`
+	DestinationAuth       DestinationAuth       `json:"destination_auth"`
+	SubscriptionAuthRoles SubscriptionAuthRoles `json:"subscription_auth_roles"`
+}
+
+type NamespaceAuth struct {
+	//TODO 待补充
+}
+
+type DestinationAuth struct {
+	//TODO 待补充
+}
+
+type SubscriptionAuthRoles struct {
+	//TODO 待补充
 }
 
 type RetentionPolicies struct {
@@ -59,7 +76,7 @@ func NewPolicies(fillDefaultValue bool) *Policies {
 			MessageTtlInSeconds: pulsar.DefaultMessageTTlInSeconds,
 			BacklogQuota: BacklogQuota{
 				Limit:  -1,
-				Policy: producer_request_hold,
+				Policy: producerRequestHold,
 			},
 			NumBundles: pulsar.DefaultNumberOfNamespaceBundles,
 		}
@@ -90,14 +107,10 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 	crd.ObjectMeta.Namespace = app.Namespace
 
 	crd.Spec = v1.TopicgroupSpec{
-		Name:      app.Name,
-		Tenant:    app.Tenant,
-		Policies:  ToPolicesApi(&app.Policies),
+		Name:     app.Name,
+		Policies: ToPolicesApi(&app.Policies),
 	}
 
-	if len(crd.Spec.Tenant) == 0 {
-		crd.Spec.Tenant = DefaultTenant
-	}
 	status := app.Status
 	if len(status) == 0 {
 		status = v1.Init
@@ -116,7 +129,6 @@ func ToModel(obj *v1.Topicgroup) *Topicgroup {
 		ID:        obj.ObjectMeta.Name,
 		Name:      obj.Spec.Name,
 		Namespace: obj.ObjectMeta.Namespace,
-		Tenant:    obj.Spec.Tenant,
 		Status:    obj.Status.Status,
 		Message:   obj.Status.Message,
 		CreatedAt: obj.ObjectMeta.CreationTimestamp.Unix(),
@@ -208,9 +220,9 @@ func (p Policies) Validate() error {
 
 		if p.BacklogQuota != (BacklogQuota{}) {
 			switch p.BacklogQuota.Policy {
-			case producer_request_hold:
-			case consumer_backlog_eviction:
-			case producer_exception:
+			case producerRequestHold:
+			case consumerBacklogEviction:
+			case producerException:
 				break
 			default:
 				if p.BacklogQuota.Policy != NotSetString {

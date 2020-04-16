@@ -47,6 +47,52 @@ func TestAPIs(t *testing.T) {
 		[]Reporter{envtest.NewlineReporter{}})
 }
 
+func TestOperator_GetAllClusters(t *testing.T) {
+	op := Operator{
+		Host:           "10.160.32.24",
+		Port:           30002,
+		AuthEnable:     true,
+		SuperUserToken: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.eNEbqeuUXxM7bsnP8gnxYq7hRkP50Rqc0nsWFRp8z6A",
+	}
+
+	clusters, errs := op.GetAllClusters()
+	if errs != nil {
+		t.Error("")
+	}
+
+	t.Log(clusters)
+}
+
+func TestOperator_GetAllTenants(t *testing.T) {
+	op := Operator{
+		Host:           "10.160.32.24",
+		Port:           30002,
+		AuthEnable:     true,
+		SuperUserToken: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.eNEbqeuUXxM7bsnP8gnxYq7hRkP50Rqc0nsWFRp8z6A",
+	}
+
+	tenants, errs := op.GetAllTenants()
+	if errs != nil {
+		t.Error("")
+	}
+
+	t.Log(tenants)
+}
+
+func TestOperator_CreateTenantIfNotExist(t *testing.T) {
+	op := Operator{
+		Host:           "10.160.32.24",
+		Port:           30002,
+		AuthEnable:     true,
+		SuperUserToken: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.eNEbqeuUXxM7bsnP8gnxYq7hRkP50Rqc0nsWFRp8z6A",
+	}
+
+	err := op.CreateTenantIfNotExist("9999-asda-sadf-d9d2")
+	if err != nil {
+		t.Error()
+	}
+}
+
 var _ = BeforeSuite(func(done Done) {
 	logf.SetLogger(zap.LoggerTo(GinkgoWriter, true))
 

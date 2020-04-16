@@ -171,7 +171,7 @@ func (c *controller) GetTopics(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
 	authUser, err := auth.GetAuthUser(req)
-	if err!=nil {
+	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      fail,
 			ErrorCode: tgerror.ErrorAuthError,
@@ -225,8 +225,8 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 			Detail:    fmt.Sprintf("cannot read entity: %+v", err),
 		}
 	}
-    authUser, err := auth.GetAuthUser(req)
-    if err!=nil{
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      fail,
 			ErrorCode: tgerror.ErrorAuthError,
@@ -234,7 +234,7 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	data, err := c.service.ModifyTopicgroup(id, policies,util.WithNamespace(authUser.Namespace))
+	data, err := c.service.ModifyTopicgroup(id, policies, util.WithNamespace(authUser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
@@ -273,7 +273,7 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 func (c *controller) DeleteTopicgroup(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	authUser, err := auth.GetAuthUser(req)
-	if err!=nil{
+	if err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: tgerror.ErrorAuthError,
@@ -327,8 +327,8 @@ func (c *controller) ListTopicgroup(req *restful.Request) (int, *ListResponse) {
 		}
 
 	}
-    authUser, err := auth.GetAuthUser(req)
-    if err!=nil{
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      fail,
 			ErrorCode: tgerror.ErrorAuthError,

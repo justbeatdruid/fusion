@@ -52,6 +52,16 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 	if namespace.Status.Status == nlptv1.Init {
 		namespace.Status.Status = nlptv1.Creating
+		//create tenants if it is not exist on Pulsar
+		if err := r.Operator.CreateTenantIfNotExist(namespace.ObjectMeta.Namespace); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = err.Error()
+			if err := r.Update(ctx, namespace); err != nil {
+				klog.Errorf("unable to update namespace: %+v", namespace)
+			}
+			return ctrl.Result{}, nil
+		}
+
 		if err := r.Operator.CreateNamespace(namespace); err != nil {
 			namespace.Status.Status = nlptv1.Error
 			namespace.Status.Message = err.Error()
@@ -61,9 +71,9 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			namespace.Spec.Available = true
 		}
 
-		klog.Infof("Final Namespace: %+v", *namespace)
+		klog.V(1).Infof("Final Namespace: %+v", *namespace)
 		if err := r.Update(ctx, namespace); err != nil {
-			klog.Errorf("update namespace error: %+v", namespace)
+			klog.Errorf("unable to update namespace: %+v", namespace)
 		}
 	}
 

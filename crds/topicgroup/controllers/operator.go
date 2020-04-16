@@ -33,6 +33,10 @@ type Operator struct {
 	SuperUserToken string
 }
 
+type TenantCreateRequest struct {
+	AllowedClusters []string `json:"allowedClusters"`
+}
+
 const namespaceUrl, protocol = "/admin/v2/namespaces/%s/%s", "http"
 const (
 	backlogUrlSuffix = "/backlogQuota?backlogQuotaType=destination_storage"
@@ -40,6 +44,7 @@ const (
 	retentionSuffix  = "/retention"
 	clusters         = "/admin/v2/clusters"
 	tenants          = "/admin/v2/tenants"
+	singleTenant     = "/admin/v2/tenants/%s"
 )
 
 type requestLogger struct {
@@ -167,7 +172,7 @@ func (r *Operator) SetBacklogQuota(namespace *v1.Topicgroup) error {
 	return nil
 }
 func (r *Operator) getUrl(namespace *v1.Topicgroup) string {
-	url := fmt.Sprintf(namespaceUrl, namespace.Spec.Tenant, namespace.Spec.Name)
+	url := fmt.Sprintf(namespaceUrl, namespace.ObjectMeta.Namespace, namespace.Spec.Name)
 	return fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
 }
 
@@ -185,7 +190,7 @@ func (r *Operator) GetHttpRequest() *gorequest.SuperAgent {
 }
 
 //Get the list of all the Pulsar clusters
-func (r *Operator) GetAllClusters() (*[]string, error) {
+func (r *Operator) GetAllClusters() ([]string, error) {
 	request := r.GetHttpRequest()
 	url := fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, clusters)
 
@@ -196,14 +201,14 @@ func (r *Operator) GetAllClusters() (*[]string, error) {
 		return nil, fmt.Errorf("get all clusters error: %+v", errs)
 	}
 	if response.StatusCode == http.StatusOK {
-		return &clusters, nil
+		return clusters, nil
 	}
 
 	return nil, fmt.Errorf("get all clusters error, response: %+v", response)
 }
 
 //Get the list of existing tenants
-func (r *Operator) GetAllTenants() (*[]string, error) {
+func (r *Operator) GetAllTenants() ([]string, error) {
 	request := r.GetHttpRequest()
 	url := fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, tenants)
 
@@ -215,8 +220,54 @@ func (r *Operator) GetAllTenants() (*[]string, error) {
 	}
 
 	if response.StatusCode == http.StatusOK {
-		return &tenants, nil
+		return tenants, nil
 	}
 
 	return nil, fmt.Errorf("get all tenants error, response: %+v", response)
+}
+
+//Create tenant if not exist
+func (r *Operator) CreateTenantIfNotExist(tenant string) error {
+	tenants, err := r.GetAllTenants()
+	if err != nil {
+		return err
+	}
+
+	//先判断租户是否已存在
+	for _, t := range tenants {
+		if t == tenant {
+			//租户已存在，无需创建
+			return nil
+		}
+	}
+	//先查询集群信息
+	clusters, err := r.GetAllClusters()
+	if err != nil {
+		return fmt.Errorf("unable to create tenant, tenant: %+v, err: %+v", tenant, err)
+	}
+
+	//创建租户
+	if err = r.CreateTenant(tenant, clusters); err != nil {
+		klog.Error(err)
+		return err
+	}
+	return nil
+}
+
+//Create a new tenant
+func (r *Operator) CreateTenant(tenant string, clusters []string) error {
+	request := r.GetHttpRequest()
+	url := fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, fmt.Sprintf(singleTenant, tenant))
+
+	requestBody := TenantCreateRequest{AllowedClusters: clusters}
+	response, _, errs := request.Put(url).Send(requestBody).End()
+	if errs != nil {
+		return fmt.Errorf("unable to create tenant, url: %+v, error: %+v", url, errs)
+	}
+
+	if response.StatusCode == http.StatusNoContent || response.StatusCode == http.StatusConflict {
+		return nil
+	}
+
+	return fmt.Errorf("unable to create tenant, url: %+v, response: %+v", url, response)
 }
