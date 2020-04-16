@@ -380,6 +380,7 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topicgroup, erro
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
 	tg.Status.Status = v1.Delete
+	tg.Status.Message = "accepted delete request"
 	return s.UpdateStatus(tg)
 }
 
