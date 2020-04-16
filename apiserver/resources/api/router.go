@@ -84,6 +84,13 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.bindApi).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+	ws.Route(ws.POST("/apis/applications/{appid}").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("batch bind/release an api to/from application").
+		To(r.batchBindApi).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 
 	ws.Route(ws.GET(fmt.Sprintf("/apis/{%s}/data", apiidPath)).
 		Consumes(restful.MIME_JSON).
@@ -162,6 +169,9 @@ func (r *router) listApi(request *restful.Request, response *restful.Response) {
 
 func (r *router) bindApi(request *restful.Request, response *restful.Response) {
 	process(r.controller.BindApi, request, response)
+}
+func (r *router) batchBindApi(request *restful.Request, response *restful.Response) {
+	process(r.controller.BatchBindApi, request, response)
 }
 
 func (r *router) query(request *restful.Request, response *restful.Response) {
