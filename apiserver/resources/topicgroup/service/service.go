@@ -22,7 +22,7 @@ import (
 )
 
 const (
-	LabelTenant = "pulsarTenant"
+	LabelTenant = "nlpt.cmcc.com/pulsarTenant"
 )
 
 var crdNamespace = "default"
@@ -262,7 +262,7 @@ func (s *Service) MergePolicies(req *Policies, db v1.Policies) v1.Policies {
 func (s *Service) IsTopicgroupExist(tp *v1.Topicgroup) (bool, error) {
 	//判断是否已存在
 	var options metav1.ListOptions
-	options.LabelSelector = fmt.Sprintf("%s=%s", LabelTenant, tp.Spec.Tenant)
+	options.LabelSelector = fmt.Sprintf("%s=%s", LabelTenant, tp.ObjectMeta.Namespace)
 	tpList, err := s.ListWithOptions(options, util.WithNamespace(tp.Namespace))
 	if err != nil {
 		return false, err
@@ -302,7 +302,7 @@ func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupE
 	}
 	if isExist {
 		return nil, tgerror.TopicgroupError{
-			Err:       fmt.Errorf("topicgroup already exists in tenant: %v", tp.Spec.Tenant),
+			Err:       fmt.Errorf("topicgroup already exists in tenant: %v", tp.ObjectMeta.Namespace),
 			ErrorCode: tgerror.ErrorDuplicatedTopicgroup,
 		}
 	}
@@ -310,7 +310,7 @@ func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupE
 	if tp.ObjectMeta.Labels == nil {
 		tp.ObjectMeta.Labels = make(map[string]string)
 	}
-	tp.ObjectMeta.Labels[LabelTenant] = tp.Spec.Tenant
+	tp.ObjectMeta.Labels[LabelTenant] = tp.ObjectMeta.Namespace
 
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
 	if err != nil {
@@ -380,6 +380,7 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topicgroup, erro
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
 	tg.Status.Status = v1.Delete
+	tg.Status.Message = "accepted delete request"
 	return s.UpdateStatus(tg)
 }
 
