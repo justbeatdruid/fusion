@@ -80,5 +80,14 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 	applicationgroupHandler := applicationgroup.NewRouter(h.config)
 	applicationgroupHandler.Install(apiV1Ws)
 
+	metricsWs := new(restful.WebService)
+	metricsWs.Path("/metrics")
+	metricsWs.Route(metricsWs.GET("/").
+		Consumes("*/*").
+		Produces("*/*").
+		To(NewMetricsHandler(h.config)))
+
+	wsContainer.Add(metricsWs)
+
 	return wsContainer, nil
 }
