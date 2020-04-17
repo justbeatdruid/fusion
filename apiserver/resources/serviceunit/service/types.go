@@ -116,10 +116,16 @@ func ToModel(obj *v1.Serviceunit, opts ...util.OpOption) *Serviceunit {
 	switch obj.Spec.Result {
 	case v1.CREATING:
 		(*obj).Spec.DisplayStatus = v1.SuCreating
-	case v1.DELETING, v1.UPDATING, v1.SUCCESS:
+	case v1.CREATESUCCESS:
 		(*obj).Spec.DisplayStatus = v1.CreateSuccess
-	case v1.CREATEFAILED, v1.UPDATEFAILED:
+	case v1.CREATEFAILED:
 		(*obj).Spec.DisplayStatus = v1.CreateFailed
+	case v1.UPDATING:
+		(*obj).Spec.DisplayStatus = v1.SuUpdating
+	case v1.UPDATESUCCESS:
+		(*obj).Spec.DisplayStatus = v1.UpdateSuccess
+	case v1.UPDATEFAILED:
+		(*obj).Spec.DisplayStatus = v1.UpdateFailed
 	case v1.DELETEFAILED:
 		(*obj).Spec.DisplayStatus = v1.DeleteFailed
 	}

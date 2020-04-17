@@ -182,7 +182,7 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		(*db).Spec.KongService.Port = responseBody.Port
 	}
 	(*db).Spec.KongService.ID = responseBody.ID
-	(*db).Spec.Result = nlptv1.SUCCESS
+	(*db).Spec.Result = nlptv1.CREATESUCCESS
 	return nil
 }
 
@@ -208,7 +208,6 @@ func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		(*db).Spec.Result = nlptv1.DELETEFAILED
 		return fmt.Errorf("request for delete service error: receive wrong status code: %d", response.StatusCode)
 	}
-	(*db).Spec.Result = nlptv1.SUCCESS
 	return nil
 }
 
@@ -274,6 +273,6 @@ func (r *Operator) UpdateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		(*db).Spec.KongService.Protocol = responseBody.Protocol
 		(*db).Spec.KongService.Port = responseBody.Port
 	}
-	(*db).Spec.Result = nlptv1.SUCCESS
+	(*db).Spec.Result = nlptv1.UPDATESUCCESS
 	return nil
 }
