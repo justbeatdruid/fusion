@@ -1,12 +1,9 @@
 package handler
 
 import (
-	"github.com/chinamobile/nlpt/apiserver/resources/restriction"
-	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol"
 	"net/http"
 
-	"github.com/chinamobile/nlpt/pkg/go-restful"
-
+	"github.com/chinamobile/nlpt/apiserver/cache"
 	"github.com/chinamobile/nlpt/apiserver/handler/callback"
 	"github.com/chinamobile/nlpt/apiserver/handler/filter"
 	"github.com/chinamobile/nlpt/apiserver/resources/api"
@@ -16,11 +13,14 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/clientauth"
 	"github.com/chinamobile/nlpt/apiserver/resources/dataservice"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource"
+	"github.com/chinamobile/nlpt/apiserver/resources/restriction"
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit"
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunitgroup"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic"
 	"github.com/chinamobile/nlpt/apiserver/resources/topicgroup"
+	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/chinamobile/nlpt/pkg/go-restful"
 
 	"k8s.io/apiserver/pkg/server/healthz"
 )
@@ -34,6 +34,9 @@ func NewHandler(cfg *config.Config) *Handler {
 }
 
 func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Handler, error) {
+	lister := cache.StartCache(h.config.GetDynamicClient())
+	//TODO cache will be used in service
+
 	wsContainer := restful.NewContainer()
 	wsContainer.EnableContentEncoding(true)
 
@@ -85,7 +88,7 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 	metricsWs.Route(metricsWs.GET("/").
 		Consumes("*/*").
 		Produces("*/*").
-		To(NewMetricsHandler(h.config)))
+		To(NewMetricsHandler(h.config, lister)))
 
 	wsContainer.Add(metricsWs)
 
