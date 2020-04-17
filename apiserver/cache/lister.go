@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime"
 
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	applicationv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
@@ -19,6 +20,22 @@ import (
 	topicgroupv1 "github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
 	trafficcontrolv1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 )
+
+var gvs = []gv{
+	{"apis", apiv1.GroupVersion, func() runtime.Object { return &apiv1.Api{} }},
+	{"applications", applicationv1.GroupVersion, func() runtime.Object { return &applicationv1.Application{} }},
+	{"applicationgroups", applicationgroupv1.GroupVersion, func() runtime.Object { return &applicationgroupv1.ApplicationGroup{} }},
+	{"applies", applyv1.GroupVersion, func() runtime.Object { return &applyv1.Apply{} }},
+	{"clientauths", clientauthv1.GroupVersion, func() runtime.Object { return &clientauthv1.Clientauth{} }},
+	{"dataservices", dataservicev1.GroupVersion, func() runtime.Object { return &dataservicev1.Dataservice{} }},
+	{"datasources", datasourcev1.GroupVersion, func() runtime.Object { return &datasourcev1.Datasource{} }},
+	{"restrictions", restrictionv1.GroupVersion, func() runtime.Object { return &restrictionv1.Restriction{} }},
+	{"serviceunits", serviceunitv1.GroupVersion, func() runtime.Object { return &serviceunitv1.Serviceunit{} }},
+	{"serviceunitgroups", serviceunitgroupv1.GroupVersion, func() runtime.Object { return &serviceunitgroupv1.ServiceunitGroup{} }},
+	{"topics", topicv1.GroupVersion, func() runtime.Object { return &topicv1.Topic{} }},
+	{"topicgroups", topicgroupv1.GroupVersion, func() runtime.Object { return &topicgroupv1.Topicgroup{} }},
+	{"trafficcontrols", trafficcontrolv1.GroupVersion, func() runtime.Object { return &trafficcontrolv1.Trafficcontrol{} }},
+}
 
 type ApiLister struct {
 	l *typedLister
