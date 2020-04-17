@@ -101,14 +101,14 @@ type ServiceunitStatus struct {
 type Result string
 
 const (
-	CREATING     Result = "creating"
+	CREATING      Result = "creating"
 	CREATESUCCESS Result = "createSuccess"
-	CREATEFAILED Result = "createFailed"
-	UPDATING     Result = "updating"
+	CREATEFAILED  Result = "createFailed"
+	UPDATING      Result = "updating"
 	UPDATESUCCESS Result = "updateSuccess"
-	UPDATEFAILED Result = "updateFailed"
-	DELETING	Result = "deleting"
-	DELETEFAILED Result = "deleteFailed"
+	UPDATEFAILED  Result = "updateFailed"
+	DELETING      Result = "deleting"
+	DELETEFAILED  Result = "deleteFailed"
 )
 
 type DisStatus string
@@ -117,7 +117,7 @@ const (
 	SuCreating    DisStatus = "创建中"
 	CreateSuccess DisStatus = "创建成功"
 	CreateFailed  DisStatus = "创建失败"
-	SuUpdating	  DisStatus = "跟新中"
+	SuUpdating    DisStatus = "更新中"
 	UpdateSuccess DisStatus = "跟新成功"
 	UpdateFailed  DisStatus = "跟新失败"
 	DeleteFailed  DisStatus = "删除失败"

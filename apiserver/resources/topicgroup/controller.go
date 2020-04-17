@@ -151,7 +151,7 @@ func (c *controller) CreateTopicgroup(req *restful.Request) (int, *CreateRespons
 func (c *controller) GetTopicgroup(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
 	authUser, err := auth.GetAuthUser(req)
-	if err!=nil {
+	if err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      fail,
 			ErrorCode: tgerror.ErrorAuthError,
@@ -159,7 +159,7 @@ func (c *controller) GetTopicgroup(req *restful.Request) (int, *GetResponse) {
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	if tp, err := c.service.GetTopicgroup(id,util.WithNamespace(authUser.Namespace)); err != nil {
+	if tp, err := c.service.GetTopicgroup(id, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      fail,
 			ErrorCode: tgerror.ErrorQueryTopicgroupInfo,

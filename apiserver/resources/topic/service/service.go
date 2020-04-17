@@ -170,8 +170,6 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 		}
 	}
 
-
-
 	//添加标签
 	if tp.ObjectMeta.Labels == nil {
 		tp.ObjectMeta.Labels = make(map[string]string)

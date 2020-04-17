@@ -166,9 +166,9 @@ func ToModel(obj *v1.Topic) *Topic {
 	}
 
 	return &Topic{
-		ID:              obj.ObjectMeta.Name,
-		Name:            obj.Spec.Name,
-		Namespace:       obj.ObjectMeta.Namespace,
+		ID:        obj.ObjectMeta.Name,
+		Name:      obj.Spec.Name,
+		Namespace: obj.ObjectMeta.Namespace,
 		//Tenant:          obj.Spec.Tenant,
 		TopicGroup:      obj.Spec.TopicGroup,
 		IsNonPersistent: obj.Spec.IsNonPersistent,

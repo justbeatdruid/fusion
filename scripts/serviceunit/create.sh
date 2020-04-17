@@ -9,7 +9,6 @@ curl localhost:8001/api/v1/serviceunits -H 'content-type:application/json' \
     "datasources":
       {
 	"id": "4f1d1b902c1e663a"
-      },
-    "group": ""
+      }
   }
 }'
