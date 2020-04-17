@@ -12,42 +12,12 @@ import (
 	dynamicclient "k8s.io/client-go/dynamic"
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/klog"
-
-	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
-	applicationv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
-	applicationgroupv1 "github.com/chinamobile/nlpt/crds/applicationgroup/api/v1"
-	applyv1 "github.com/chinamobile/nlpt/crds/apply/api/v1"
-	clientauthv1 "github.com/chinamobile/nlpt/crds/clientauth/api/v1"
-	dataservicev1 "github.com/chinamobile/nlpt/crds/dataservice/api/v1"
-	datasourcev1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
-	restrictionv1 "github.com/chinamobile/nlpt/crds/restriction/api/v1"
-	serviceunitv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
-	serviceunitgroupv1 "github.com/chinamobile/nlpt/crds/serviceunitgroup/api/v1"
-	topicv1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
-	topicgroupv1 "github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
-	trafficcontrolv1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 )
 
 type gv struct {
 	resource string
 	gv       schema.GroupVersion
 	obj      func() runtime.Object
-}
-
-var gvs = []gv{
-	{"apis", apiv1.GroupVersion, func() runtime.Object { return &apiv1.Api{} }},
-	{"applications", applicationv1.GroupVersion, func() runtime.Object { return &applicationv1.Application{} }},
-	{"applicationgroups", applicationgroupv1.GroupVersion, func() runtime.Object { return &applicationgroupv1.ApplicationGroup{} }},
-	{"applies", applyv1.GroupVersion, func() runtime.Object { return &applyv1.Apply{} }},
-	{"clientauths", clientauthv1.GroupVersion, func() runtime.Object { return &clientauthv1.Clientauth{} }},
-	{"dataservices", dataservicev1.GroupVersion, func() runtime.Object { return &dataservicev1.Dataservice{} }},
-	{"datasources", datasourcev1.GroupVersion, func() runtime.Object { return &datasourcev1.Datasource{} }},
-	{"restrictions", restrictionv1.GroupVersion, func() runtime.Object { return &restrictionv1.Restriction{} }},
-	{"serviceunits", serviceunitv1.GroupVersion, func() runtime.Object { return &serviceunitv1.Serviceunit{} }},
-	{"serviceunitgroups", serviceunitgroupv1.GroupVersion, func() runtime.Object { return &serviceunitgroupv1.ServiceunitGroup{} }},
-	{"topics", topicv1.GroupVersion, func() runtime.Object { return &topicv1.Topic{} }},
-	{"topicgroups", topicgroupv1.GroupVersion, func() runtime.Object { return &topicgroupv1.Topicgroup{} }},
-	{"trafficcontrols", trafficcontrolv1.GroupVersion, func() runtime.Object { return &trafficcontrolv1.Trafficcontrol{} }},
 }
 
 type Store interface {
