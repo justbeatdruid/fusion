@@ -33,8 +33,9 @@ func NewMetricsHandler(cfg *config.Config, lister *cache.Listers) restful.RouteF
 		}
 		handler := promhttp.HandlerFor(gatherers,
 			promhttp.HandlerOpts{
-				ErrorLog:      &promLogger{},
-				ErrorHandling: promhttp.ContinueOnError,
+				ErrorLog:           &promLogger{},
+				ErrorHandling:      promhttp.ContinueOnError,
+				DisableCompression: true,
 			})
 		handler.ServeHTTP(
 			resp.ResponseWriter,
