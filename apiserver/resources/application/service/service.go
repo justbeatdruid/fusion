@@ -150,7 +150,7 @@ func (s *Service) PatchApplication(id string, data interface{}, opts ...util.OpO
 	if err != nil {
 		return nil, fmt.Errorf("error update crd: %+v", err)
 	}
-	(*app).Spec.Result = v1.UPDATING
+	(*app).Spec.Result = v1.UPDATESUCCESS
 	return ToModel(app), err
 }
 
