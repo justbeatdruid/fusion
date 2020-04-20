@@ -210,7 +210,7 @@ func (s *Service) PatchServiceunit(id string, data interface{}, opts ...util.OpO
 	}
 
 	su.Status.Status = v1.Update
-	(*su).Spec.Result = v1.UPDATING
+	(*su).Spec.Result = v1.UPDATESUCCESS
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(su)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)

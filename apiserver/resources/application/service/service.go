@@ -119,6 +119,7 @@ func (s *Service) Create(app *v1.Application) (*v1.Application, error) {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.application of creating: %+v", app)
+	(*app).Spec.Result = v1.CREATING
 	return app, nil
 }
 
@@ -149,6 +150,7 @@ func (s *Service) PatchApplication(id string, data interface{}, opts ...util.OpO
 	if err != nil {
 		return nil, fmt.Errorf("error update crd: %+v", err)
 	}
+	(*app).Spec.Result = v1.UPDATING
 	return ToModel(app), err
 }
 
@@ -238,6 +240,7 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Application, err
 	}
 	//TODO need check status !!!
 	app.Status.Status = v1.Delete
+	(*app).Spec.Result = v1.DELETING
 	return s.UpdateStatus(app)
 }
 

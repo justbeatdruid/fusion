@@ -34,6 +34,9 @@ type Application struct {
 
 	Group     string `json:"group"`
 	GroupName string `json:"groupName"`
+	//sunyu+
+	Result        v1.Result    `json:"result"`
+	DisplayStatus v1.DisStatus `json:"disStatus"`
 }
 
 type Statistics struct {
@@ -57,6 +60,8 @@ func ToAPI(app *Application) *v1.Application {
 		AccessSecretKey: app.AccessSecretKey,
 		APIs:            []v1.Api{},
 		ConsumerInfo:    app.ConsumerInfo,
+		Result:			 app.Result,
+		DisplayStatus:	 app.DisplayStatus,
 	}
 	crd.Status = v1.ApplicationStatus{
 		Status: v1.Init,
@@ -73,6 +78,22 @@ func ToAPI(app *Application) *v1.Application {
 }
 
 func ToModel(obj *v1.Application, opts ...util.OpOption) *Application {
+	switch obj.Spec.Result {
+	case v1.CREATING:
+		(*obj).Spec.DisplayStatus = v1.SuCreating
+	case v1.CREATESUCCESS:
+		(*obj).Spec.DisplayStatus = v1.CreateSuccess
+	case v1.CREATEFAILED:
+		(*obj).Spec.DisplayStatus = v1.CreateFailed
+	case v1.UPDATING:
+		(*obj).Spec.DisplayStatus = v1.SuUpdating
+	case v1.UPDATESUCCESS:
+		(*obj).Spec.DisplayStatus = v1.UpdateSuccess
+	case v1.UPDATEFAILED:
+		(*obj).Spec.DisplayStatus = v1.UpdateFailed
+	case v1.DELETEFAILED:
+		(*obj).Spec.DisplayStatus = v1.DeleteFailed
+	}
 	app := &Application{
 		ID:        obj.ObjectMeta.Name,
 		Name:      obj.Spec.Name,
@@ -88,6 +109,8 @@ func ToModel(obj *v1.Application, opts ...util.OpOption) *Application {
 		APICount: len(obj.Spec.APIs),
 
 		CreatedAt: util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
+		Result:		obj.Spec.Result,
+		DisplayStatus:	obj.Spec.DisplayStatus,
 	}
 	app.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
 	app.UserCount = user.GetUserCountFromLabels(obj.ObjectMeta.Labels)
