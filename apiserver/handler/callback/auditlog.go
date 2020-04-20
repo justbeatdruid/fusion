@@ -26,6 +26,8 @@ type selector struct {
 	method string
 }
 
+var resourceCategory string = "unset"
+
 var accepted = []selector{
 	{"/api/v1/apis", POST},
 	{"/api/v1/applications", POST},
@@ -178,7 +180,7 @@ func getResourceFromEntity(entity interface{}) (*Resource, error) {
 	return r, nil
 }
 
-func NewAuditCaller(c *restful.Container, a *audit.Auditor) func(*restful.Request, *restful.Response) {
+func NewAuditCaller(c *restful.Container, a *audit.Auditor, tenantEnabled bool) func(*restful.Request, *restful.Response) {
 	return func(req *restful.Request, resp *restful.Response) {
 		eventName, resourceType, body, ok := filter(req)
 		if !ok {
@@ -255,6 +257,11 @@ func NewAuditCaller(c *restful.Container, a *audit.Auditor) func(*restful.Reques
 		}()
 		wg.Wait()
 
-		a.NewEvent(tenantID, userID, eventName, eventResult, resourceType, resourceID, resourceName, body)
+		if !tenantEnabled {
+			resourceCategory = "数据服务"
+		} else {
+			//TODO
+		}
+		a.NewEvent(tenantID, userID, eventName, eventResult, resourceCategory, resourceType, resourceID, resourceName, body)
 	}
 }
