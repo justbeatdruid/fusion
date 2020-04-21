@@ -87,6 +87,8 @@ func ToModel(obj *v1.Application, opts ...util.OpOption) *Application {
 		(*obj).Spec.DisplayStatus = v1.CreateFailed
 	case v1.UPDATESUCCESS:
 		(*obj).Spec.DisplayStatus = v1.UpdateSuccess
+	case v1.UPDATEFAILED:
+		(*obj).Spec.DisplayStatus = v1.UpdateFailed
 	case v1.DELETEFAILED:
 		(*obj).Spec.DisplayStatus = v1.DeleteFailed
 	}

@@ -55,23 +55,27 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	if application.Status.Status == nlptv1.Init {
 		// call kong api create
 		if err := r.Operator.CreateConsumerByKong(application); err != nil {
+			application.Spec.Result = nlptv1.CREATEFAILED
 			application.Status.Status = nlptv1.Error
 			application.Status.Message = err.Error()
 			r.Update(ctx, application)
 			return ctrl.Result{}, nil
 		}
 		if err := r.Operator.CreateConsumerCredentials(application); err != nil {
+			application.Spec.Result = nlptv1.CREATEFAILED
 			application.Status.Status = nlptv1.Error
 			application.Status.Message = err.Error()
 			r.Update(ctx, application)
 			return ctrl.Result{}, nil
 		}
 		if err := CreateToken(application); err != nil {
+			application.Spec.Result = nlptv1.CREATEFAILED
 			application.Status.Status = nlptv1.Error
 			application.Status.Message = err.Error()
 			r.Update(ctx, application)
 			return ctrl.Result{}, nil
 		}
+		application.Spec.Result = nlptv1.CREATESUCCESS
 		application.Status.Status = nlptv1.Created
 		application.Status.Message = "success"
 		r.Update(ctx, application)
@@ -81,6 +85,7 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	if application.Status.Status == nlptv1.Delete {
 		// call kong api delete
 		if err := r.Operator.DeleteConsumerByKong(application); err != nil {
+			application.Spec.Result = nlptv1.DELETEFAILED
 			application.Status.Status = nlptv1.Error
 			application.Status.Message = err.Error()
 			r.Update(ctx, application)

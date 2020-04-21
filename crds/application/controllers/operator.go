@@ -123,12 +123,10 @@ func (r *Operator) CreateConsumerByKong(db *nlptv1.Application) (err error) {
 	responseBody := &ConsumerResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
-		(*db).Spec.Result = nlptv1.CREATEFAILED
 		return fmt.Errorf("request for create consumer error: %+v", errs)
 	}
 	klog.V(5).Infof("creation response body: %s", string(body))
 	if response.StatusCode != 201 {
-		(*db).Spec.Result = nlptv1.CREATEFAILED
 		klog.V(5).Infof("create operation failed: %d %s", response.StatusCode, responseBody.Message)
 		return fmt.Errorf("request for create consumer error: receive wrong status code: %s", string(body))
 	}
@@ -138,7 +136,6 @@ func (r *Operator) CreateConsumerByKong(db *nlptv1.Application) (err error) {
 	if err != nil {
 		return fmt.Errorf("create consumer error %s", responseBody.Message)
 	}
-	(*db).Spec.Result = nlptv1.CREATESUCCESS
 	return nil
 }
 
@@ -206,13 +203,11 @@ func (r *Operator) DeleteConsumerByKong(db *nlptv1.Application) (err error) {
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 
 	if len(errs) > 0 {
-		(*db).Spec.Result = nlptv1.DELETEFAILED
 		return fmt.Errorf("request for delete consumer error: %+v", errs)
 	}
 
 	klog.V(5).Infof("delete consumer response code: %d%s", response.StatusCode, string(body))
 	if response.StatusCode != 204 {
-		(*db).Spec.Result = nlptv1.DELETEFAILED
 		return fmt.Errorf("request for delete consumer error: receive wrong status code: %d", response.StatusCode)
 	}
 

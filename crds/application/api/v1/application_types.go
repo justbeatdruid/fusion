@@ -83,6 +83,7 @@ const (
 	CREATESUCCESS Result = "createSuccess"
 	CREATEFAILED  Result = "createFailed"
 	UPDATESUCCESS Result = "updateSuccess"
+	UPDATEFAILED  Result = "updateFailed"
 	DELETING      Result = "deleting"
 	DELETEFAILED  Result = "deleteFailed"
 )
@@ -94,6 +95,7 @@ const (
 	CreateSuccess DisStatus = "创建成功"
 	CreateFailed  DisStatus = "创建失败"
 	UpdateSuccess DisStatus = "更新成功"
+	UpdateFailed  DisStatus = "更新失败"
 	DeleteFailed  DisStatus = "删除失败"
 )
 

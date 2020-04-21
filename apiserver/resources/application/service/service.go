@@ -148,6 +148,7 @@ func (s *Service) PatchApplication(id string, data interface{}, opts ...util.OpO
 	crd.SetUnstructuredContent(content)
 	crd, err = s.client.Namespace(crdNamespace).Update(crd, metav1.UpdateOptions{})
 	if err != nil {
+		(*app).Spec.Result = v1.UPDATEFAILED
 		return nil, fmt.Errorf("error update crd: %+v", err)
 	}
 	(*app).Spec.Result = v1.UPDATESUCCESS
