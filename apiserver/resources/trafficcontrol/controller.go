@@ -113,7 +113,7 @@ func (c *controller) GetTrafficcontrol(req *restful.Request) (int, *GetResponse)
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: "012000003",
-			Message:   c.errMsg.Api["012000003"],
+			Message:   c.errMsg.Trafficcontrol["012000003"],
 			Detail:    "auth model error",
 		}
 	}
