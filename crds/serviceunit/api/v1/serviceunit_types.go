@@ -117,9 +117,9 @@ const (
 	SuCreating    DisStatus = "创建中"
 	CreateSuccess DisStatus = "创建成功"
 	CreateFailed  DisStatus = "创建失败"
-	SuUpdating	  DisStatus = "跟新中"
-	UpdateSuccess DisStatus = "跟新成功"
-	UpdateFailed  DisStatus = "跟新失败"
+	SuUpdating	  DisStatus = "更新中"
+	UpdateSuccess DisStatus = "更新成功"
+	UpdateFailed  DisStatus = "更新失败"
 	DeleteFailed  DisStatus = "删除失败"
 )
 
