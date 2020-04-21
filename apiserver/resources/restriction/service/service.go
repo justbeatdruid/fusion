@@ -88,12 +88,12 @@ func (s *Service) GetRestriction(id string, opts ...util.OpOption) (*Restriction
 	if err != nil {
 		return nil, fmt.Errorf("cannot list api object: %+v", err)
 	}
-	nameIDs := make(map[string]string)
+	nameIds := make(map[string]string)
 	for _, value := range apiList.Items {
-		nameIDs[value.ObjectMeta.Namespace] = value.Spec.Name
+		nameIds[value.ObjectMeta.Name] = value.Spec.Name
 	}
 	for index, value := range su.Spec.Apis {
-		(*su).Spec.Apis[index].Name = nameIDs[value.ID]
+		(*su).Spec.Apis[index].Name = nameIds[value.ID]
 		klog.V(5).Infof("get api id and name : %s, %s", value.ID, su.Spec.Apis[index].Name)
 	}
 	return ToModel(su), nil
