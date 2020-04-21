@@ -60,8 +60,8 @@ func ToAPI(app *Application) *v1.Application {
 		AccessSecretKey: app.AccessSecretKey,
 		APIs:            []v1.Api{},
 		ConsumerInfo:    app.ConsumerInfo,
-		Result:			 app.Result,
-		DisplayStatus:	 app.DisplayStatus,
+		Result:          app.Result,
+		DisplayStatus:   app.DisplayStatus,
 	}
 	crd.Status = v1.ApplicationStatus{
 		Status: v1.Init,
@@ -106,9 +106,9 @@ func ToModel(obj *v1.Application, opts ...util.OpOption) *Application {
 		Status:   obj.Status.Status,
 		APICount: len(obj.Spec.APIs),
 
-		CreatedAt: util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
-		Result:		obj.Spec.Result,
-		DisplayStatus:	obj.Spec.DisplayStatus,
+		CreatedAt:     util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
+		Result:        obj.Spec.Result,
+		DisplayStatus: obj.Spec.DisplayStatus,
 	}
 	app.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
 	app.UserCount = user.GetUserCountFromLabels(obj.ObjectMeta.Labels)

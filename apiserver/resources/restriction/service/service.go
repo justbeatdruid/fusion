@@ -59,7 +59,7 @@ func (s *Service) ListRestriction(opts ...util.OpOption) ([]*Restriction, error)
 	return ToListModel(apps, opts...), nil
 }
 
-func(s *Service) ListApis(crdNamespace string) (*apiv1.ApiList, error) {
+func (s *Service) ListApis(crdNamespace string) (*apiv1.ApiList, error) {
 	crd, err := s.apiClient.Namespace(crdNamespace).List(metav1.ListOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)

@@ -38,8 +38,8 @@ type ApplicationSpec struct {
 	AccessSecretKey string       `json:"accessSecretKey"`
 	APIs            []Api        `json:"apis"`
 	ConsumerInfo    ConsumerInfo `json:"comsumer"`
-	Result        Result          `json:"result"`
-	DisplayStatus DisStatus       `json:"disStatus"`
+	Result          Result       `json:"result"`
+	DisplayStatus   DisStatus    `json:"disStatus"`
 }
 
 type Api struct {
