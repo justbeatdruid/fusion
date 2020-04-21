@@ -59,10 +59,42 @@ func (s *Service) ListRestriction(opts ...util.OpOption) ([]*Restriction, error)
 	return ToListModel(apps, opts...), nil
 }
 
+func(s *Service) ListApis(crdNamespace string) (*apiv1.ApiList, error) {
+	crd, err := s.apiClient.Namespace(crdNamespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	apis := &apiv1.ApiList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apis); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("====test get v1.ApiList: %+v", apis)
+	return apis, nil
+}
+
 func (s *Service) GetRestriction(id string, opts ...util.OpOption) (*Restriction, error) {
 	su, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	var crdNamespace = defaultNamespace
+	if s.tenantEnabled {
+		crdNamespace = util.OpList(opts...).Namespace()
+		if len(crdNamespace) == 0 {
+			return nil, fmt.Errorf("namespace not set")
+		}
+	}
+	apiList, err := s.ListApis(crdNamespace)
+	if err != nil {
+		return nil, fmt.Errorf("cannot list api object: %+v", err)
+	}
+	nameIDs := make(map[string]string)
+	for _, value := range apiList.Items {
+		nameIDs[value.ObjectMeta.Namespace] = value.Spec.Name
+	}
+	for index, value := range su.Spec.Apis {
+		(*su).Spec.Apis[index].Name = nameIDs[value.ID]
+		klog.V(5).Infof("get api id and name : %s, %s", value.ID, su.Spec.Apis[index].Name)
 	}
 	return ToModel(su), nil
 }
