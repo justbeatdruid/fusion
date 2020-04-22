@@ -328,20 +328,19 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 	var messageStructs []Message
 	var messageStruct Message
 	var timeStamp int64
-	for _, topicUrl := range topicUrls {
+	//for _, topicUrl := range topicUrls {
 		reader, err := client.CreateReader(pulsar.ReaderOptions{
-			Topic:          topicUrl,
+			Topic:          "persistent://default/0417/test2",
 			StartMessageID: pulsar.EarliestMessageID(),
 		})
 		if err != nil {
-			fmt.Println("create reader error")
-			continue
+			return nil,fmt.Errorf("create reader error: %+v",err)
 		}
 		ctx := context.Background()
 		for reader.HasNext() {
 			msg, err := reader.Next(ctx)
 			if err != nil {
-				fmt.Printf("Error reading from topic: %v", err)
+				return nil, fmt.Errorf("Error reading from topic: %+v", err)
 			}
 			// Process the message
 			messageStruct.TopicName = msg.Topic()
@@ -354,7 +353,7 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 			}
 		}
 		reader.Close()
-	}
+	//}
 	return messageStructs, err
 }
 
