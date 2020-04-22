@@ -44,7 +44,7 @@ func (o *TopicOptions) ParsePulsarSecret() error {
 	b := make([]byte, 5)
 	b, err := ioutil.ReadFile(o.TokenSecret)
 	if err != nil {
-		return fmt.Errorf("cannot read token secret")
+		return fmt.Errorf("cannot read token secret: %+v", err)
 	}
 	o.TokenSecret = string(b)
 
@@ -58,7 +58,7 @@ func (o *TopicOptions) ParsePulsarSecret() error {
 	b2 := make([]byte, 5)
 	b2, err = ioutil.ReadFile(o.SuperUserToken)
 	if err != nil {
-		return fmt.Errorf("cannot read superuser token")
+		return fmt.Errorf("cannot read superuser token: %+v", err)
 	}
 	o.SuperUserToken = string(b2)
 	klog.Infof("ParsePulsarSecret: token: %+v, secret key: %+v", o.SuperUserToken, o.TokenSecret)
