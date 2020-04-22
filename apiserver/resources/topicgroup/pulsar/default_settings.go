@@ -8,4 +8,5 @@ const (
 	DefaultRetentionSizeInMB        = 0
 	MinRetentionTimeInMinutes       = -1 //-1代表unlimited
 	MinRetentionSizeInMB            = -1 //-1代表unlimited
+	DefaultBacklogLimit             = -1073741824
 )
