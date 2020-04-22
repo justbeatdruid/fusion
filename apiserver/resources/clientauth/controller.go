@@ -23,7 +23,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient(), cfg.Client),
+		service.NewService(cfg.GetDynamicClient(), cfg.TopicConfig, cfg.Client),
 		cfg.LocalConfig,
 	}
 }
@@ -382,7 +382,17 @@ func (c *controller) ListTopicBycreateTime(createTimeSta int64, createTimeEnd in
 }
 func (c *controller) RegenerateToken(req *restful.Request) (int, *CreateResponse) {
 	id := req.PathParameter("id")
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			Detail:    "auth model error",
+			ErrorCode: "002000003",
+			Message:   c.errMsg.Application["002000003"],
+		}
+	}
 	body := &service.Clientauth{}
+	body.Namespace = authuser.Namespace
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      fail,

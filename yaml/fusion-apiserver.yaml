@@ -19,6 +19,15 @@ spec:
     app: fusion-apiserver
     version: v0.1-alpha
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pulsar-secret
+type: Opaque
+data:
+  tokenSecret: bnBqaC9NM0lKN2FLU09RMTkyOFVUL0xNT3I3VnNCdHkrdGFEMk5TeVZ6Zz0=
+  superUserToken: ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKemRXSWlPaUpoWkcxcGJpSjkuZU5FYnFldVVYeE03YnNuUDhnbnhZcTdoUmtQNTBScWMwbnNXRlJwOHo2QQo=
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -89,6 +98,9 @@ spec:
         - mountPath: /data/err.json
           subPath: err.json
           name: config-volume
+        - name: pulsar-secret-volume
+          mountPath: /data/pulsar-secret
+          readOnly: true
       restartPolicy: Always
       securityContext:
         fsGroup: 0
@@ -102,6 +114,9 @@ spec:
       - name: config-volume
         configMap:
              name: err-config
+      - name: pulsar-secret-volume
+        secret:
+          secretName: pulsar-secret
 
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1

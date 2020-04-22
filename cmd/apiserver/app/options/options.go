@@ -118,6 +118,9 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		return nil, fmt.Errorf("parse error config error: %+v", err)
 	}
 
+	if err = s.Topic.ParsePulsarSecret(); err != nil {
+		return nil, fmt.Errorf("parse pulsar secret error: %+v", err)
+	}
 	c := &appconfig.Config{
 		Client:     client,
 		Dynamic:    dynClient,
@@ -126,7 +129,7 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		DatasourceConfig:     appconfig.NewDatasourceConfig(s.Datasource.Supported),
 		DataserviceConnector: dw.NewConnector(s.Dataservice.MetadataHost, s.Dataservice.MetadataPort, s.Dataservice.DataHost, s.Dataservice.DataPort),
 
-		TopicConfig:   appconfig.NewTopicConfig(s.Topic.Host, s.Topic.Port, s.Topic.AuthEnable, s.Topic.AdminToken),
+		TopicConfig:   appconfig.NewTopicConfig(s.Topic.Host, s.Topic.Port, s.Topic.AuthEnable, s.Topic.SuperUserToken, s.Topic.TokenSecret),
 		Auditor:       audit.NewAuditor(s.Audit.Host, s.Audit.Port),
 		TenantEnabled: s.TenantEnabled,
 		LocalConfig:   *errConfig,
