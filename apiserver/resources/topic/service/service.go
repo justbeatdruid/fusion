@@ -124,7 +124,7 @@ func (s *Service) ListMessagesTime(topicUrls []string, start int64, end int64) (
 //不带时间查询
 func (s *Service) ListMessages(topicUrls []string) ([]Message, error) {
 	topicUrls = make([]string, 1)
-	topicUrls = append(topicUrls, "persistent://public/default/111")
+	topicUrls = append(topicUrls, "persistent://public/default/topic")
 	messages, err := s.ListTopicMessages(topicUrls)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
@@ -386,6 +386,7 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 			if err != nil {
 				fmt.Printf("Error reading from topic: %v", err)
 			}
+
 			// Process the message
 			messageStruct.TopicName = msg.Topic()
 			messageStruct.Time = util.NewTime(msg.PublishTime())
