@@ -20,8 +20,8 @@ func DefaultTopicOptions() *TopicOptions {
 		Host:           "10.160.32.24",
 		Port:           30003,
 		AuthEnable:     true,
-		SuperUserToken: "/data/superUserToken",
-		TokenSecret:    "/data/tokenSecret",
+		SuperUserToken: "/data/pulsar-secret/superUserToken",
+		TokenSecret:    "/data/pulsar-secret/tokenSecret",
 	}
 }
 
