@@ -75,7 +75,6 @@ spec:
         - --pulsar-host=10.160.32.24
         - --pulsar-port=30003
         - --pulsar-auth-enable=true
-        - --pulsar-admin-token=eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJhZG1pbiJ9.eNEbqeuUXxM7bsnP8gnxYq7hRkP50Rqc0nsWFRp8z6A
         env:
         - name: MY_POD_NAMESPACE
           valueFrom:
