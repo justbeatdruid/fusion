@@ -11,7 +11,6 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/go-restful"
-	"github.com/chinamobile/nlpt/pkg/go-restful/log"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
 	"sort"
@@ -44,6 +43,7 @@ type CreateResponse = Wrapped
 type CreateRequest = Wrapped
 type DeleteResponse = Wrapped
 type GrantResponse = Wrapped
+type ExportResponse = Wrapped
 
 /*type DeleteResponse struct {
 	Code    int    `json:"code"`
@@ -635,7 +635,7 @@ func (ms MessageList) GetItem(i int) (interface{}, error) {
 }
 
 //导出topics的信息
-func (c *controller) ExportTopics(req *restful.Request) {
+func (c *controller) ExportTopics(req *restful.Request) (int, *ExportResponse){
 	topicIds := req.QueryParameters("topicIds")
 	file := excelize.NewFile()
 	index := file.NewSheet("topics")
@@ -646,11 +646,27 @@ func (c *controller) ExportTopics(req *restful.Request) {
 		j++
 	}
 	row := 1
+	authUser, err := auth.GetAuthUser(req)
+	if err!=nil{
+		return http.StatusInternalServerError, &ExportResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Data:      nil,
+			Detail:    "",
+		}
+	}
 	for _, topicId := range topicIds {
 		row++
 		cell := 65
-		if topic, err := c.service.GetTopic(topicId); err != nil {
-			log.Printf("list database error: %+v", err)
+		if topic, err := c.service.GetTopic(topicId,util.WithNamespace(authUser.Namespace)); err != nil {
+			return http.StatusInternalServerError, &ExportResponse{
+				Code:      fail,
+				ErrorCode: tperror.ErrorAuthError,
+				Message:   fmt.Sprintf("list database error: %+v", err),
+				Data:      nil,
+				Detail:    "",
+			}
 		} else {
 			//以坐标位置写入
 			file.SetCellValue("topics", string(cell)+strconv.Itoa(row), topic.Tenant)
@@ -661,9 +677,20 @@ func (c *controller) ExportTopics(req *restful.Request) {
 		}
 	}
 	file.SetActiveSheet(index)
-	err := file.SaveAs("/tmp/topics.xlsx")
+	err = file.SaveAs("/tmp/topics.xlsx")
 	if err != nil {
-		log.Printf("save file error: %+v", err)
+		return http.StatusInternalServerError, &ExportResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("save file error: %+v", err),
+			Data:      nil,
+			Detail:    "",
+		}
+	}
+	return http.StatusOK, &ExportResponse{
+		Code:    success,
+		Message: tperror.Success,
+		Data:    nil,
 	}
 }
 
@@ -753,7 +780,17 @@ func (c *controller) ListUsers(req *restful.Request) (int, *ListResponse) {
 	size := req.QueryParameter("size")
 	topicId := req.PathParameter("id")
 	AuthUserName := req.QueryParameter("name")
-	tp, err := c.service.GetTopic(topicId)
+	authUser,err:= auth.GetAuthUser(req)
+	if err!=nil{
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Data:      nil,
+			Detail:    "",
+		}
+	}
+	tp, err := c.service.GetTopic(topicId,util.WithNamespace(authUser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
