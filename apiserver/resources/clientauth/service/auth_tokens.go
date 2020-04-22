@@ -6,35 +6,16 @@ import (
 
 //Token的结构体
 type Token struct {
-	Sub string `json:"sub"` //token的主题
-	Alg string `json:"alg"` //token签名算法
-	Iat int64  `json:"iat"` //token签发时间
-	Exp int64  `json:"exp"` //token过期时间
+	Sub    string `json:"sub"`    //token的主题
+	Alg    string `json:"alg"`    //token签名算法
+	Iat    int64  `json:"iat"`    //token签发时间
+	Exp    int64  `json:"exp"`    //token过期时间
+	Secret string `json:"secret"` //token secret key
 }
 
 //创建token
 func (t *Token) Create() (string, error) {
-	//获取当前路径
-	//path, err := os.Getwd()
-	//fmt.Println(path)
-	//if err != nil {
-	//	return "", err
-	//}
-	//
-	//var sp string
-	//if path == "/" {
-	//	sp = "/key/my-secret.key"
-	//} else {
-	//	sp = path + "/key/my-secret.key"
-	//}
-	//
-	//content, err := ioutil.ReadFile(sp)
-	//if err != nil {
-	//	return "", err
-	//}
-
-	//TODO 密钥如何导入
-	var content []byte = []byte("npjh/M3IJ7aKSOQ1928UT/LMOr7VsBty+taD2NSyVzg=")
+	var content []byte = []byte(t.Secret)
 	jwtToken := jwt.New(jwt.SigningMethodHS256)
 
 	header := make(map[string]interface{})

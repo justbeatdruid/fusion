@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"github.com/chinamobile/nlpt/apiserver/kubernetes"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"time"
 
@@ -31,13 +32,15 @@ type Service struct {
 	kubeClient  *clientset.Clientset
 	client      dynamic.NamespaceableResourceInterface
 	topicClient dynamic.NamespaceableResourceInterface
+	tokenSecret string
 }
 
-func NewService(client dynamic.Interface, kubeClient *clientset.Clientset) *Service {
+func NewService(client dynamic.Interface, topicConfig *config.TopicConfig, kubeClient *clientset.Clientset) *Service {
 	return &Service{
 		client:      client.Resource(oofsGVR),
 		topicClient: client.Resource(topicv1.GetOOFSGVR()),
 		kubeClient:  kubeClient,
+		tokenSecret: topicConfig.TokenSecret,
 	}
 }
 
@@ -60,9 +63,10 @@ func (s *Service) CreateClientauth(model *Clientauth) (*Clientauth, error) {
 	model.IssuedAt = nowTime
 	//创建token
 	t := &Token{
-		Sub: model.Name,
-		Iat: model.IssuedAt,
-		Exp: model.ExpireAt,
+		Sub:    model.Name,
+		Iat:    model.IssuedAt,
+		Exp:    model.ExpireAt,
+		Secret: s.tokenSecret,
 	}
 	model.Token, err = t.Create()
 	if err != nil {
@@ -227,9 +231,10 @@ func (s *Service) RegenerateToken(ca *Clientauth) (*Clientauth, error) {
 	cad.Spec.ExipreAt = ca.ExpireAt
 	now := time.Now().Unix()
 	t := &Token{
-		Sub: cad.Spec.Name,
-		Iat: now,
-		Exp: cad.Spec.ExipreAt,
+		Sub:    cad.Spec.Name,
+		Iat:    now,
+		Exp:    cad.Spec.ExipreAt,
+		Secret: s.tokenSecret,
 	}
 
 	token, err := t.Create()
