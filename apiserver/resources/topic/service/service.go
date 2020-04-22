@@ -330,9 +330,9 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 	var messageStructs []Message
 	var messageStruct Message
 	var timeStamp int64
-	//for _, topicUrl := range topicUrls {
+	for _, topicUrl := range topicUrls {
 		reader, err := client.CreateReader(pulsar.ReaderOptions{
-			Topic:          "persistent://default/0417/test2",
+			Topic:          topicUrl,
 			StartMessageID: pulsar.EarliestMessageID(),
 		})
 		if err != nil {
@@ -355,7 +355,7 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 			}
 		}
 		reader.Close()
-	//}
+	}
 	return messageStructs, err
 }
 
