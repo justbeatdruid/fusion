@@ -426,7 +426,7 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 			}
 		}
 		//TODO 数据重复判断
-		if c.service.IsTopicUrlExist(topic.GetUrl()) {
+		if c.service.IsTopicUrlExist(topic.GetUrl(),util.WithNamespace(authuser.Namespace)) {
 			return http.StatusInternalServerError, &ImportResponse{
 				Code:      1,
 				ErrorCode: tperror.ErrorTopicExists,
