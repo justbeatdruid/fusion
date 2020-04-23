@@ -3,8 +3,6 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.2.2
   creationTimestamp: null
   name: restrictions.nlpt.cmcc.com
 spec:
@@ -14,7 +12,7 @@ spec:
     listKind: RestrictionList
     plural: restrictions
     singular: restriction
-  scope: Namespaced
+  scope: ""
   validation:
     openAPIV3Schema:
       description: Restriction is the Schema for the restrictions API
@@ -34,13 +32,94 @@ spec:
         spec:
           description: RestrictionSpec defines the desired state of Restriction
           properties:
-            foo:
-              description: Foo is an example field of Restriction. Edit Restriction_types.go
-                to remove/update
+            ID:
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "make" to regenerate code after modifying this file'
               type: string
+            action:
+              type: string
+            apis:
+              items:
+                properties:
+                  detail:
+                    type: string
+                  disStatus:
+                    type: string
+                  id:
+                    type: string
+                  kongID:
+                    type: string
+                  name:
+                    type: string
+                  pluginID:
+                    description: ip 限制 kong插件id
+                    type: string
+                  result:
+                    description: 特殊应用 记录的kong插件id列表
+                    type: string
+                required:
+                - detail
+                - disStatus
+                - id
+                - kongID
+                - name
+                - pluginID
+                - result
+                type: object
+              type: array
+            config:
+              properties:
+                ip:
+                  items:
+                    type: string
+                  type: array
+                user:
+                  type: string
+              required:
+              - ip
+              - user
+              type: object
+            description:
+              type: string
+            name:
+              type: string
+            type:
+              type: string
+            user:
+              type: string
+          required:
+          - ID
+          - action
+          - apis
+          - config
+          - description
+          - name
+          - type
+          - user
           type: object
         status:
-          description: RestrictionStatus defines the observed state of Restriction
+          description: TrafficcontrolStatus defines the observed state of Trafficcontrol
+          properties:
+            apiCount:
+              type: integer
+            message:
+              type: string
+            published:
+              type: boolean
+            status:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "make" to regenerate code after modifying
+                this file'
+              type: string
+            time.Time:
+              format: date-time
+              type: string
+          required:
+          - apiCount
+          - message
+          - published
+          - status
+          - time.Time
           type: object
       type: object
   version: v1

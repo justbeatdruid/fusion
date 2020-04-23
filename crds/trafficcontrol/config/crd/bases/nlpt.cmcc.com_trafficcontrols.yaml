@@ -32,13 +32,122 @@ spec:
         spec:
           description: TrafficcontrolSpec defines the desired state of Trafficcontrol
           properties:
-            name:
-              description: Foo is an example field of Trafficcontrol. Edit Trafficcontrol_types.go
-                to remove/update
+            ID:
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "make" to regenerate code after modifying this file'
               type: string
+            apis:
+              items:
+                description: 'EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+                  NOTE: json tags are required.  Any new fields you add must have
+                  json tags for the fields to be serialized.'
+                properties:
+                  detail:
+                    type: string
+                  disStatus:
+                    type: string
+                  id:
+                    type: string
+                  kongID:
+                    type: string
+                  name:
+                    type: string
+                  result:
+                    type: string
+                  specialID:
+                    description: 特殊应用 记录的kong插件id列表
+                    items:
+                      type: string
+                    type: array
+                  trafficID:
+                    description: app api ip user 类型记录的kong插件id
+                    type: string
+                required:
+                - detail
+                - disStatus
+                - id
+                - kongID
+                - name
+                - result
+                - specialID
+                - trafficID
+                type: object
+              type: array
+            config:
+              properties:
+                day:
+                  type: integer
+                hour:
+                  type: integer
+                minute:
+                  type: integer
+                month:
+                  type: integer
+                second:
+                  type: integer
+                special:
+                  items:
+                    properties:
+                      id:
+                        type: string
+                      minute:
+                        type: integer
+                    required:
+                    - id
+                    - minute
+                    type: object
+                  type: array
+                year:
+                  type: integer
+              required:
+              - day
+              - hour
+              - minute
+              - month
+              - second
+              - special
+              - year
+              type: object
+            description:
+              type: string
+            name:
+              type: string
+            type:
+              type: string
+            user:
+              type: string
+          required:
+          - ID
+          - apis
+          - config
+          - description
+          - name
+          - type
+          - user
           type: object
         status:
           description: TrafficcontrolStatus defines the observed state of Trafficcontrol
+          properties:
+            apiCount:
+              type: integer
+            message:
+              type: string
+            published:
+              type: boolean
+            status:
+              description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
+                of cluster Important: Run "make" to regenerate code after modifying
+                this file'
+              type: string
+            time.Time:
+              format: date-time
+              type: string
+          required:
+          - apiCount
+          - message
+          - published
+          - status
+          - time.Time
           type: object
       type: object
   version: v1

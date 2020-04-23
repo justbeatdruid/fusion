@@ -9,7 +9,7 @@ rules:
 - apiGroups:
   - nlpt.cmcc.com
   resources:
-  - trafficcontrols
+  - clientauths
   verbs:
   - create
   - delete
@@ -21,7 +21,7 @@ rules:
 - apiGroups:
   - nlpt.cmcc.com
   resources:
-  - trafficcontrols/status
+  - clientauths/status
   verbs:
   - get
   - patch
