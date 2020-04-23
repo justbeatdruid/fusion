@@ -20,34 +20,98 @@ spec:
         apiVersion:
           description: 'APIVersion defines the versioned schema of this representation
             of an object. Servers should convert recognized schemas to the latest
-            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#resources'
+            internal value, and may reject unrecognized values. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources'
           type: string
         kind:
           description: 'Kind is a string value representing the REST resource this
             object represents. Servers may infer this from the endpoint the client
-            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/api-conventions.md#types-kinds'
+            submits requests to. Cannot be updated. In CamelCase. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
           type: string
         metadata:
           type: object
         spec:
           description: ClientauthSpec defines the desired state of Clientauth
           properties:
+            Name:
+              type: string
+            authorizedMap:
+              additionalProperties:
+                type: integer
+              type: object
+            createUser:
+              properties:
+                managers:
+                  items:
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                    required:
+                    - id
+                    - name
+                    type: object
+                  type: array
+                members:
+                  items:
+                    properties:
+                      id:
+                        type: string
+                      name:
+                        type: string
+                    required:
+                    - id
+                    - name
+                    type: object
+                  type: array
+                owner:
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+                  required:
+                  - id
+                  - name
+                  type: object
+              required:
+              - managers
+              - members
+              - owner
+              type: object
+            expireAt:
+              format: int64
+              type: integer
+            issuedAt:
+              format: int64
+              type: integer
             name:
-              description: Foo is an example field of Clientauth. Edit Clientauth_types.go to
-                remove/update
+              description: 'INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+                Important: Run "make" to regenerate code after modifying this file'
+              type: string
+            token:
               type: string
           required:
+          - Name
+          - authorizedMap
+          - createUser
+          - expireAt
+          - issuedAt
           - name
+          - token
           type: object
         status:
           description: ClientauthStatus defines the observed state of Clientauth
           properties:
+            message:
+              type: string
             status:
               description: 'INSERT ADDITIONAL STATUS FIELD - define observed state
                 of cluster Important: Run "make" to regenerate code after modifying
                 this file'
               type: string
           required:
+          - message
           - status
           type: object
       type: object

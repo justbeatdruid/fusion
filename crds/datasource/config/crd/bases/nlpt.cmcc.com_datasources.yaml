@@ -265,6 +265,7 @@ spec:
               type: string
           required:
           - createdAt
+          - detail
           - status
           - updatedAt
           type: object
