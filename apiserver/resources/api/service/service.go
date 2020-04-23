@@ -216,7 +216,8 @@ func (s *Service) ListApi(suid, appid string, opts ...util.OpOption) ([]*Api, er
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
 	publishedOnly := false
-	if len(suid) == 0 && len(appid) == 0 {
+	//大数据默认查询发布的api，汇聚平台查询所有api
+	if len(suid) == 0 && len(appid) == 0 && !s.tenantEnabled {
 		publishedOnly = true
 	}
 	result := ToListModel(apis, publishedOnly, opts...)
