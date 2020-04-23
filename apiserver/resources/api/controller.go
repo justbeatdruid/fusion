@@ -436,6 +436,7 @@ func (c *controller) Query(req *restful.Request) (int, interface{}) {
 		}
 	}
 	limit := req.QueryParameter("limit")
+	// Always return 200
 	if data, err := c.service.Query(apiid, req.Request.Form, limit, util.WithNamespace(authuser.Namespace)); err == nil {
 		return http.StatusOK, struct {
 			Code      int          `json:"code"`
@@ -448,16 +449,17 @@ func (c *controller) Query(req *restful.Request) (int, interface{}) {
 			Data:      data,
 		}
 	} else {
-		return http.StatusInternalServerError, struct {
-			Code      int    `json:"code"`
-			ErrorCode string `json:"errorCode"`
-			Message   string `json:"message"`
-			Detail    string `json:"detail"`
+		//return http.StatusInternalServerError, struct {
+		return http.StatusOK, struct {
+			Code      int          `json:"code"`
+			ErrorCode string       `json:"errorCode"`
+			Data      service.Data `json:"data"`
 		}{
-			Code:      1,
-			ErrorCode: "001000014",
-			Message:   c.errMsg.Api["001000014"],
-			Detail:    fmt.Sprintf("query data error:%+v", err),
+			Code:      0,
+			ErrorCode: "0",
+			Data: service.Data{
+				Data: []map[string]string{{"调试结果": "查询异常"}},
+			},
 		}
 	}
 }

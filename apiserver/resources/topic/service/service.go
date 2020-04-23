@@ -116,7 +116,7 @@ func (s *Service) DeletePermissions(id string, authUserId string, opts ...util.O
 func (s *Service) ListMessagesTime(topicUrls []string, start int64, end int64) ([]Message, error) {
 	messages, err := s.ListTopicMessagesTime(topicUrls, start, end)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get object: %+v", err)
+		return nil, fmt.Errorf("cannot get TopicMessages: %+v", err)
 	}
 	return messages, nil
 }
@@ -127,7 +127,7 @@ func (s *Service) ListMessages(topicUrls []string) ([]Message, error) {
 	topicUrls = append(topicUrls, "persistent://public/default/topic")
 	messages, err := s.ListTopicMessages(topicUrls)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get object: %+v", err)
+		return nil, fmt.Errorf("cannot get TopicMessages: %+v", err)
 	}
 	return messages, nil
 }
@@ -336,14 +336,13 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 			StartMessageID: pulsar.EarliestMessageID(),
 		})
 		if err != nil {
-			fmt.Println("create reader error")
-			continue
+			return nil,fmt.Errorf("create reader error: %+v",err)
 		}
 		ctx := context.Background()
 		for reader.HasNext() {
 			msg, err := reader.Next(ctx)
 			if err != nil {
-				fmt.Printf("Error reading from topic: %v", err)
+				return nil, fmt.Errorf("Error reading from topic: %+v", err)
 			}
 			// Process the message
 			messageStruct.TopicName = msg.Topic()
