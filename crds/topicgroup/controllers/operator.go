@@ -39,12 +39,29 @@ type TenantCreateRequest struct {
 
 const namespaceUrl, protocol = "/admin/v2/namespaces/%s/%s", "http"
 const (
-	backlogUrlSuffix = "/backlogQuota?backlogQuotaType=destination_storage"
-	messageTTLSuffix = "/messageTTL"
-	retentionSuffix  = "/retention"
-	clusters         = "/admin/v2/clusters"
-	tenants          = "/admin/v2/tenants"
-	singleTenant     = "/admin/v2/tenants/%s"
+	backlogUrlSuffix                  = "/backlogQuota?backlogQuotaType=destination_storage"
+	messageTTLSuffix                  = "/messageTTL"
+	retentionSuffix                   = "/retention"
+	deduplicationSuffix               = "/deduplication"           //Enable or disable broker side deduplication for all topics in a namespace
+	isAllowAutoUpdateSchemaSuffix     = "/isAllowAutoUpdateSchema" //Update flag of whether allow auto update schema
+	schemaValidationEnforcedSuffix    = "/schemaValidationEnforced"
+	maxConsumersPerSubscriptionSuffix = "/maxConsumersPerSubscription"
+	maxConsumersPerTopicSuffix        = "/maxConsumersPerTopic"
+	maxProducersPerTopicSuffix        = "/maxProducersPerTopic"
+	offloadDeletionLagMsSuffix        = "/offloadDeletionLagMs" //Set number of milliseconds to wait before deleting a ledger segment which has been offloaded from the Pulsar cluster's local storage (i.e. BookKeeper)
+	offloadThresholdSuffix            = "/offloadThreshold"     //Set maximum number of bytes stored on the pulsar cluster for a topic, before the broker will start offloading to longterm storage
+	compactionThresholdSuffix         = "/compactionThreshold"  //Set maximum number of uncompacted bytes in a topic before compaction is triggered.
+	persistenceSuffix                 = "/persistence"
+	dispatchRateSuffix                = "/dispatchRate"       //Set dispatch-rate throttling for all topics of the namespace
+	encryptionRequiredSuffix          = "/encryptionRequired" //Message encryption is required or not for all topics in a namespace
+	schemaCompatibilityStrategySuffix = "/schemaCompatibilityStrategy"
+	subscribeRateSuffix               = "/subscribeRate"
+	subscriptionAuthModeSuffix        = "/subscriptionAuthMode"
+	subscriptionDispatchRateSuffix    = "/subscriptionDispatchRate"
+
+	clusters     = "/admin/v2/clusters"
+	tenants      = "/admin/v2/tenants"
+	singleTenant = "/admin/v2/tenants/%s"
 )
 
 type requestLogger struct {

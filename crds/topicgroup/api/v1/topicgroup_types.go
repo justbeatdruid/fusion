@@ -35,12 +35,20 @@ type TopicgroupSpec struct {
 	Available bool     `json:"available"` //资源是否可用
 }
 type Policies struct {
-	RetentionPolicies   RetentionPolicies `json:"retentionPolicies,omitempty"` //消息保留策略
-	MessageTtlInSeconds int               `json:"messageTtlInSeconds"`         //未确认消息的最长保留时长
-	BacklogQuota        BacklogQuota      `json:"backlogQuota"`
-	NumBundles          int               `json:"numBundles"`
+	RetentionPolicies   RetentionPolicies       `json:"retentionPolicies,omitempty"` //消息保留策略
+	MessageTtlInSeconds int                     `json:"messageTtlInSeconds"`         //未确认消息的最长保留时长
+	BacklogQuota        BacklogQuota            `json:"backlogQuota"`
+	NumBundles          int                     `json:"numBundles"`
+	TopicDispatchRate   map[string]DispatchRate `json:"topicDispatchRate"`
 }
 
+type DispatchRate struct {
+	DispatchThrottlingRateInMsg  int   `json:"dispatchThrottlingRateInMsg"`  //默认：-1
+	DispatchThrottlingRateInByte int64 `json:"dispatchThrottlingRateInByte"` //默认：-1
+	RelativeToPublishRate        bool  `json:"relativeToPublishRate"`        /* throttles dispatch relatively publish-rate */
+	RatePeriodInSecond           int   `json:"ratePeriodInSecond"`           /* by default dispatch-rate will be calculate per 1 second */
+
+}
 type RetentionPolicies struct {
 	RetentionTimeInMinutes int   `json:"retentionTimeInMinutes"`
 	RetentionSizeInMB      int64 `json:"retentionSizeInMB"`
