@@ -9,7 +9,7 @@ rules:
 - apiGroups:
   - nlpt.cmcc.com
   resources:
-  - trafficcontrols
+  - topicgroups
   verbs:
   - create
   - delete
@@ -21,7 +21,7 @@ rules:
 - apiGroups:
   - nlpt.cmcc.com
   resources:
-  - trafficcontrols/status
+  - topicgroups/status
   verbs:
   - get
   - patch

@@ -3,8 +3,6 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
-  annotations:
-    controller-gen.kubebuilder.io/version: v0.2.2
   creationTimestamp: null
   name: serviceunits.nlpt.cmcc.com
 spec:
@@ -77,6 +75,8 @@ spec:
               type: object
             description:
               type: string
+            disStatus:
+              type: string
             group:
               properties:
                 id:
@@ -118,14 +118,18 @@ spec:
               type: object
             name:
               type: string
+            result:
+              type: string
             type:
               type: string
           required:
           - apis
           - description
+          - disStatus
           - group
           - kongServiceInfo
           - name
+          - result
           - type
           type: object
         status:
