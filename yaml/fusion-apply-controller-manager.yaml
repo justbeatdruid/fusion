@@ -58,8 +58,8 @@ spec:
       - command:
         - fusion-apply-controller-manager
         - --v=5
-        - --operator-host=kong-kong-admin
-        - --operator-port=8001
+        #- --operator-host=kong-kong-admin
+        #- --operator-port=8001
         - -enable-leader-election
         env:
         - name: MY_POD_NAMESPACE
