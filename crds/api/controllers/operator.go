@@ -322,8 +322,8 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	requestBody.StripPath = false
 	if db.Spec.Serviceunit.Type == "data" {
 		//data 类型使用 Spec.Method Spec.Protocol
-		methods = append(methods, strings.ToUpper(string(db.Spec.Method)))
-		protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
+		methods = append(methods, strings.ToUpper(string(db.Spec.ApiDefineInfo.Method)))
+		protocols = append(protocols, strings.ToLower(string(db.Spec.ApiDefineInfo.Protocol)))
 		requestBody.Protocols = protocols
 		requestBody.Methods = methods
 		queryPath := fmt.Sprintf("%s%s%s%s%s", "/api/v1/apis/", db.ObjectMeta.Namespace, "/", db.ObjectMeta.Name, "/data")
@@ -568,10 +568,10 @@ func (r *Operator) AddRouteCorsByKong(db *nlptv1.Api) (err error) {
 		request = request.Set(k, v)
 	}
 	request = request.Retry(3, 5*time.Second, retryStatus...)
-	requestBody := &AclRequestBody{
+	requestBody := &CorsRequestBody{
 		Name: "cors", //插件名称
 	}
-	responseBody := &AclResponseBody{}
+	responseBody := &CorsResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
 		return fmt.Errorf("request for create cors error: %+v", errs)
@@ -651,8 +651,8 @@ func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api, isOffline bool) (err 
 	//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
 	requestBody.StripPath = isOffline
 	if db.Spec.Serviceunit.Type == "data" {
-		methods = append(methods, strings.ToUpper(string(db.Spec.Method)))
-		protocols = append(protocols, strings.ToLower(string(db.Spec.Protocol)))
+		methods = append(methods, strings.ToUpper(string(db.Spec.ApiDefineInfo.Method)))
+		protocols = append(protocols, strings.ToLower(string(db.Spec.ApiDefineInfo.Protocol)))
 		requestBody.Protocols = protocols
 		requestBody.Methods = methods
 		queryPath := fmt.Sprintf("%s%s%s%s%s", "/api/v1/apis/", db.ObjectMeta.Namespace, "/", db.ObjectMeta.Name, "/data")
