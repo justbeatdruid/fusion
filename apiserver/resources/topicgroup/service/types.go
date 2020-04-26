@@ -181,6 +181,10 @@ func ToPolicesApi(policies *Policies) v1.Policies {
 		crd.BacklogQuota.Policy = pulsar.DefaultBacklogPolicy
 	}
 
+	if policies.BacklogQuota.Limit == 0 {
+		crd.BacklogQuota.Limit = pulsar.DefaultBacklogLimit
+	}
+
 	if policies.RetentionPolicies.RetentionTimeInMinutes < 0 {
 		crd.RetentionPolicies.RetentionTimeInMinutes = pulsar.DefaultRetentionTimeInMinutes
 	}
