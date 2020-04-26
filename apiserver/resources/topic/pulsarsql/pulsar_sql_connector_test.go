@@ -13,7 +13,7 @@ func TestConnector_CreateQueryRequest(t *testing.T) {
 	}
 
 	r, err := c.CreateQueryRequest("show Catalogs")
-	fmt.Print(r)
+	fmt.Printf("result: %+v", r)
 	if err != nil {
 		t.Error("failed")
 	}
@@ -23,5 +23,13 @@ func TestConnector_CreateQueryRequest(t *testing.T) {
 		return
 	}
 
-}
+	for r.Stats.State != Failed && r.Stats.State != Finished {
+		r, err = c.QueryMessage(r.NextUrl)
+		fmt.Printf("result: %+v", r)
+		if err != nil {
+			t.Error(fmt.Errorf("failed: %+v", err))
+			return
+		}
+	}
 
+}
