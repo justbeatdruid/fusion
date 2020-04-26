@@ -126,7 +126,7 @@ apply-binary:
 	go build -o bin/fusion-apply-controller-manager cmd/apply-controller-manager/apply-controller-manager.go
 
 apiserver-run:
-	$(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5 --dataservice-data-host=10.160.32.24 --audit-host=10.160.32.24 --audit-port=30068 --cas-host=10.160.32.30 --cas-port=8000 --tenant-enabled=true --local-config=$(shell pwd)/config/err.json --tenant-enabled=true
+	$(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5 --dataservice-data-host=10.160.32.24 --audit-host=10.160.32.24 --audit-port=30068 --cas-host=10.160.32.30 --cas-port=8000 --tenant-enabled=true --local-config=$(shell pwd)/config/err.json --tenant-enabled=true --pulsar-admin-token=$(shell pwd)/config/superUserToken --pulsar-token-secret=$(shell pwd)/config/tokenSecret
 
 datasource-run:
 	$(shell pwd)/bin/fusion-datasource-controller-manager --kubeconfig=/root/.kube/config --v=5 --dataservice-host=10.160.32.24

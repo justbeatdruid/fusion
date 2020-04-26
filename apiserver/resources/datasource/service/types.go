@@ -85,6 +85,7 @@ func ToAPI(ds *Datasource, specOnly bool) *v1.Datasource {
 		}
 	}
 	crd.ObjectMeta.Labels = user.AddUsersLabels(ds.Users, crd.ObjectMeta.Labels)
+	crd.ObjectMeta.Labels[v1.TypeLabel] = string(crd.Spec.Type)
 	return crd
 }
 

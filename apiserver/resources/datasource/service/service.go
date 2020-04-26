@@ -130,8 +130,16 @@ func (s *Service) Update(ds *v1.Datasource, opts ...util.OpOption) (*v1.Datasour
 }
 
 func (s *Service) List(opts ...util.OpOption) (*v1.DatasourceList, error) {
-	crdNamespace := util.OpList(opts...).Namespace()
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
+	ops := util.OpList(opts...)
+	crdNamespace := ops.Namespace()
+	typpe := ops.Type()
+	listOptions := metav1.ListOptions{}
+	if len(typpe) > 0 {
+		listOptions = metav1.ListOptions{
+			LabelSelector: fmt.Sprintf("%s=%s", v1.TypeLabel, typpe),
+		}
+	}
+	crd, err := s.client.Namespace(crdNamespace).List(listOptions)
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
