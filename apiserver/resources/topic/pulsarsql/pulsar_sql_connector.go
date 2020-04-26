@@ -20,6 +20,7 @@ type ResponseBody struct {
 	Stats   Stats           `json:"stats"`
 	Columns []Column        `json:"columns"`
 	Data    [][]interface{} `json:"data"`
+	Error   Error           `json:"error"`
 }
 
 type Response struct {
@@ -28,6 +29,7 @@ type Response struct {
 	NextUrl string `json:"nextUri"`
 	Stats   Stats  `json:"stats"`
 	Data    []Data `json:"data"`
+	Error   Error  `json:"error"`
 }
 
 type Data map[string]interface{}
@@ -41,7 +43,33 @@ type Stats struct {
 	State  string `json:"state"` //FINISHED/PLANNING/QUEUED/FAILED
 	Queued bool   `json:"queued"`
 }
+type Error struct {
+	Message       string        `json:"message"`
+	ErrorCode     int           `json:"errorCode"`
+	ErrorName     string        `json:"errorName"`
+	ErrorType     string        `json:"errorType"`
+	ErrorLocation ErrorLocation `json:"errorLocation"`
+	FailureInfo   FailureInfo   `json:"failureInfo"`
+}
 
+type ErrorLocation struct {
+	LineNumber   int `json:"lineNumber"`
+	ColumnNumber int `json:"columnNumber"`
+}
+type FailureInfo struct {
+	Type          string        `json:"type"`
+	Message       string        `json:"message"`
+	Cause         Cause         `json:"cause"`
+	Suppressed    interface{}   `json:"suppressed"`
+	Stack         []string      `json:"stack"`
+	ErrorLocation ErrorLocation `json:"errorLocation"`
+}
+
+type Cause struct {
+	Type       string      `json:"type"`
+	Suppressed interface{} `json:"suppressed"`
+	Stack      []string    `json:"stack"`
+}
 type requestLogger struct {
 	prefix string
 }
@@ -77,7 +105,7 @@ func (c *Connector) CreateQueryRequest(sql string) (*Response, error) {
 	url := fmt.Sprintf("%s://%s:%d%s", protocol, c.Host, c.Port, statementUrl)
 
 	responseBody := &ResponseBody{}
-	response, _, errs := request.Post(url).Send(sql).EndStruct(responseBody)
+	response, _, errs := request.Post(url).Type(gorequest.TypeText).Send(sql).EndStruct(responseBody)
 	if errs != nil {
 		return nil, fmt.Errorf("create pulsar sql request error: %+v", errs)
 	}
@@ -105,10 +133,10 @@ func (c *Connector) QueryMessage(url string) (*Response, error) {
 }
 
 func (c *Connector) ToResponse(resBody *ResponseBody) *Response {
-	var datas = make([]Data, 1)
+	var datas = make([]Data, 0)
 	if resBody.Data != nil {
 		for _, d := range resBody.Data {
-			var data map[string]interface{}
+			var data  = make(map[string]interface{})
 			for index, column := range resBody.Columns {
 				key := column.Name
 				value := d[index]
@@ -124,6 +152,7 @@ func (c *Connector) ToResponse(resBody *ResponseBody) *Response {
 		NextUrl: resBody.NextUrl,
 		Stats:   resBody.Stats,
 		Data:    datas,
+		Error:   resBody.Error,
 	}
 
 }
