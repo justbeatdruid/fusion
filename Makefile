@@ -126,7 +126,7 @@ apply-binary:
 	go build -o bin/fusion-apply-controller-manager cmd/apply-controller-manager/apply-controller-manager.go
 
 apiserver-run:
-	$(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5 --dataservice-data-host=10.160.32.24 --audit-host=10.160.32.24 --audit-port=30068 --cas-host=10.160.32.30 --cas-port=8000 --tenant-enabled=true --local-config=$(shell pwd)/config/err.json
+	$(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5 --dataservice-data-host=10.160.32.24 --audit-host=10.160.32.24 --audit-port=30068 --cas-host=10.160.32.30 --cas-port=8000 --tenant-enabled=true --local-config=$(shell pwd)/config/err.json --tenant-enabled=true
 
 datasource-run:
 	$(shell pwd)/bin/fusion-datasource-controller-manager --kubeconfig=/root/.kube/config --v=5 --dataservice-host=10.160.32.24
@@ -141,4 +141,4 @@ api-run:
 	$(shell pwd)/bin/fusion-api-controller-manager --kubeconfig=/root/.kube/config --operator-host=119.3.248.187 --operator-port=30081 --portal-port=30080
 
 apply-run:
-	$(shell pwd)/bin/fusion-apply-controller-manager --kubeconfig=/root/.kube/config --operator-host=119.3.248.187 --operator-port=30081
+	$(shell pwd)/bin/fusion-apply-controller-manager --kubeconfig=/root/.kube/config
