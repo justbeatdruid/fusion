@@ -18,7 +18,7 @@ type ResponseBody struct {
 	InfoUri string          `json:"infoUri"`
 	NextUrl string          `json:"nextUri"`
 	Stats   Stats           `json:"stats"`
-	Columns Column          `json:"columns"`
+	Columns []Column        `json:"columns"`
 	Data    [][]interface{} `json:"data"`
 }
 
@@ -38,7 +38,7 @@ type Column struct {
 }
 
 type Stats struct {
-	State  string `json:"state"` //FINISHED/PLANNING/QUEUED
+	State  string `json:"state"` //FINISHED/PLANNING/QUEUED/FAILED
 	Queued bool   `json:"queued"`
 }
 
@@ -63,11 +63,17 @@ func (r *requestLogger) Println(v ...interface{}) {
 const (
 	statementUrl = "/v1/statement"
 	protocol     = "http"
+	headerKey    = "X-Presto-User"
+	Finished     = "FINISHED"
+	Planning     = "PLANNING"
+	Queued       = "QUEUED"
+	Failed       = "FAILED"
 )
 
 //提交Pulsar SQL查询请求
 func (c *Connector) CreateQueryRequest(sql string) (*Response, error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
+	request.Header.Set(headerKey, c.PrestoUser)
 	url := fmt.Sprintf("%s://%s:%d%s", protocol, c.Host, c.Port, statementUrl)
 
 	responseBody := &ResponseBody{}
@@ -83,11 +89,41 @@ func (c *Connector) CreateQueryRequest(sql string) (*Response, error) {
 
 //查询任务状态
 func (c *Connector) QueryMessage(url string) (*Response, error) {
-	return nil, nil
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
+	request.Header.Set(headerKey, c.PrestoUser)
+	responseBody := &ResponseBody{}
+	response, _, errs := request.Get(url).EndStruct(responseBody)
+	if errs != nil {
+		return nil, fmt.Errorf("query pulsar sql query result error: %+v", errs)
+	}
+	if response.StatusCode == http.StatusOK {
+
+		return c.ToResponse(responseBody), nil
+	}
+
+	return nil, fmt.Errorf("query pulsar sql query result error, status code is: %+v", response.StatusCode)
 }
 
-func (c *Connector) ToResponse(resBody *ResponseBody) *Response{
-	response := Response{}
+func (c *Connector) ToResponse(resBody *ResponseBody) *Response {
+	var datas = make([]Data, 1)
+	if resBody.Data != nil {
+		for _, d := range resBody.Data {
+			var data map[string]interface{}
+			for index, column := range resBody.Columns {
+				key := column.Name
+				value := d[index]
+				data[key] = value
+			}
+			datas = append(datas, data)
+		}
+	}
 
-	return &response
+	return &Response{
+		ID:      resBody.ID,
+		InfoUri: resBody.InfoUri,
+		NextUrl: resBody.NextUrl,
+		Stats:   resBody.Stats,
+		Data:    datas,
+	}
+
 }
