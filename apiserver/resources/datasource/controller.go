@@ -225,6 +225,7 @@ func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
 	name := req.QueryParameter("name")
+	typpe := req.QueryParameter("type")
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		code := "006000005"
@@ -236,7 +237,7 @@ func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 		}
 	}
 	if db, err := c.service.ListDatasource(util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace),
-		util.WithNameLike(name)); err != nil {
+		util.WithNameLike(name), util.WithType(typpe)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:   1,
 			Detail: fmt.Errorf("list database error: %+v", err).Error(),
