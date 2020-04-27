@@ -27,6 +27,8 @@ type Datasource struct {
 
 	DataWarehouse *dw.Database `json:"datawarehouse,omitempty"`
 
+	Topic *string `json:"topic,omitempty"`
+
 	Status    string    `json:"status"`
 	UpdatedAt util.Time `json:"updatedAt"`
 	CreatedAt util.Time `json:"createdAt"`
@@ -72,6 +74,8 @@ func ToAPI(ds *Datasource, specOnly bool) *v1.Datasource {
 	}
 	if ds.Type == v1.RDBType {
 		crd.Spec.RDB = ds.RDB
+	} else if ds.Type == v1.TopicType {
+		crd.Spec.Topic = ds.Topic
 	}
 	status := ds.Status
 	if len(status) == 0 {
@@ -130,6 +134,8 @@ func ToModel(obj *v1.Datasource) *Datasource {
 		} else {
 			klog.Errorf("datasource %s in type datawarehouse has no datawarehouse instance", obj.ObjectMeta.Name)
 		}
+	case v1.TopicType:
+		ds.Topic = obj.Spec.Topic
 	}
 	ds.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
 	return ds
@@ -157,7 +163,7 @@ func ToListModel(items *v1.DatasourceList, opts ...util.OpOption) []*Datasource 
 	return ds
 }
 
-func (a *Datasource) Validate() error {
+func (s *Service) Validate(a *Datasource) error {
 	for k, v := range map[string]string{
 		"name": a.Name,
 		"type": a.Type.String(),
@@ -173,6 +179,10 @@ func (a *Datasource) Validate() error {
 		}
 	case v1.DataWarehouseType:
 		return fmt.Errorf("cannot create or update datawarehouse datasource")
+	case v1.TopicType:
+		if err := s.CheckTopic(a.Namespace, a.Topic); err != nil {
+			return fmt.Errorf("topic validate error: %+v", err)
+		}
 	default:
 		return fmt.Errorf("unknown datasource type: %s", a.Type)
 	}
