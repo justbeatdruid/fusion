@@ -522,7 +522,6 @@ func QueryTopicMessages(sql string) ([]Message, error) {
 	}
 	var (
 		M     []Message
-		m     Message
 		ok    bool
 		state string
 	)
@@ -538,6 +537,7 @@ func QueryTopicMessages(sql string) ([]Message, error) {
 		} else if state == pulsarsql.Finished {
 			if response.Data != nil {
 				for _, data := range response.Data {
+					var m Message
 					for k, v := range data {
 						switch k {
 						case "__message_id__":
