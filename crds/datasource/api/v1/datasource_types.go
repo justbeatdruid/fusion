@@ -38,6 +38,7 @@ type DatasourceSpec struct {
 
 	RDB           *RDB           `json:"rdb,omitempty"`
 	DataWarehouse *dwv1.Database `json:"datawarehouse,omitempty"`
+	Topic         *string        `json:"topic,omitempty"`
 
 	Location string `json:"localtion"`
 	AuthType string `json:"authType"`
@@ -52,6 +53,7 @@ func (t Type) String() string {
 const (
 	RDBType           Type = "rdb"
 	DataWarehouseType Type = "datawarehouse"
+	TopicType         Type = "topic"
 )
 
 type RDB struct {
