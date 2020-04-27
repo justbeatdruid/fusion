@@ -426,7 +426,7 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 			}
 		}
 		//TODO 数据重复判断
-		if c.service.IsTopicUrlExist(topic.GetUrl(),util.WithNamespace(authuser.Namespace)) {
+		if c.service.IsTopicUrlExist(topic.GetUrl(), util.WithNamespace(authuser.Namespace)) {
 			return http.StatusInternalServerError, &ImportResponse{
 				Code:      1,
 				ErrorCode: tperror.ErrorTopicExists,
@@ -639,7 +639,7 @@ func (ms MessageList) GetItem(i int) (interface{}, error) {
 }
 
 //导出topics的信息
-func (c *controller) ExportTopics(req *restful.Request) (int, *ExportResponse){
+func (c *controller) ExportTopics(req *restful.Request) (int, *ExportResponse) {
 	topicIds := req.QueryParameters("topicIds")
 	file := excelize.NewFile()
 	index := file.NewSheet("topics")
@@ -651,7 +651,7 @@ func (c *controller) ExportTopics(req *restful.Request) (int, *ExportResponse){
 	}
 	row := 1
 	authUser, err := auth.GetAuthUser(req)
-	if err!=nil{
+	if err != nil {
 		return http.StatusInternalServerError, &ExportResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
@@ -663,7 +663,7 @@ func (c *controller) ExportTopics(req *restful.Request) (int, *ExportResponse){
 	for _, topicId := range topicIds {
 		row++
 		cell := 65
-		if topic, err := c.service.GetTopic(topicId,util.WithNamespace(authUser.Namespace)); err != nil {
+		if topic, err := c.service.GetTopic(topicId, util.WithNamespace(authUser.Namespace)); err != nil {
 			return http.StatusInternalServerError, &ExportResponse{
 				Code:      fail,
 				ErrorCode: tperror.ErrorAuthError,
@@ -784,8 +784,8 @@ func (c *controller) ListUsers(req *restful.Request) (int, *ListResponse) {
 	size := req.QueryParameter("size")
 	topicId := req.PathParameter("id")
 	AuthUserName := req.QueryParameter("name")
-	authUser,err:= auth.GetAuthUser(req)
-	if err!=nil{
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
@@ -794,7 +794,7 @@ func (c *controller) ListUsers(req *restful.Request) (int, *ListResponse) {
 			Detail:    "",
 		}
 	}
-	tp, err := c.service.GetTopic(topicId,util.WithNamespace(authUser.Namespace))
+	tp, err := c.service.GetTopic(topicId, util.WithNamespace(authUser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
