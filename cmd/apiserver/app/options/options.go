@@ -134,6 +134,10 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		TenantEnabled: s.TenantEnabled,
 		LocalConfig:   *errConfig,
 	}
-	cas.SetConnectionInfo(s.Cas.Host, s.Cas.Port)
+	casType := "cas"
+	if s.TenantEnabled {
+		casType = "tenant"
+	}
+	cas.SetConnectionInfo(casType, s.Cas.Host, s.Cas.Port)
 	return c, nil
 }
