@@ -26,6 +26,10 @@ const (
 	ErrorImportTopics          = "010000018" //导入失败
 	ErrorEnsureNamespace       = "010000019" //确认k8s命名空间错误
 	ErrorCannotFindTopicgroup  = "010000020" //创建Topic失败，原因：找不到Topic分组
+	ErrorCannotFindTopic       = "010000021" //查询信息失败，原因：找不到Topic
+	ErrorTopicIdError          = "010000022" //查询消息失败：原因：topic字段不能为空
+	ErrorTopicGroupIdError     = "010000023" //查询消息失败：原因：topicGroup字段不能为空
+	ErrorGetTopicGroupInfo     = "010000024" //查询TopicGroup详情失败
 )
 
 type TopicError struct {
