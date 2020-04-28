@@ -2,10 +2,12 @@ package service
 
 import (
 	"fmt"
+	"github.com/apache/pulsar-client-go/pulsar"
 	topicerr "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"github.com/chinamobile/nlpt/pkg/util"
 	"strconv"
 	"strings"
 )
@@ -78,7 +80,7 @@ type ConsumerStat struct {
 	MsgRateOut float64 `json:"msgRateOut"`
 }
 
-type Message struct {
+type Messages struct {
 	ProduceName string        `json:"topicName"`
 	ID          string        `json:"id"`
 	Time        string        `json:"time"`
@@ -86,6 +88,13 @@ type Message struct {
 	Size        int           `json:"size"`
 	Partition   float64       `json:"partition"`
 	Key         interface{}   `json:"key"`
+}
+type Message struct {
+	TopicName string           `json:"topicName"`
+	ID        pulsar.MessageID `json:"id"`
+	Time      util.Time        `json:"time"`
+	Messages  string           `json:"messages"`
+	Size      int              `json:"size"`
 }
 
 type Actions []string
