@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"sort"
 	"strings"
 
 	v1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
