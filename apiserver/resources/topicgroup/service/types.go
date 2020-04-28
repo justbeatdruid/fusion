@@ -20,7 +20,7 @@ type Topicgroup struct {
 	ID        string     `json:"id"`
 	Name      string     `json:"name"` //Topic分组名称
 	Namespace string     `json:"namespace"`
-	Policies  Policies   `json:"policies,omitempty"` //Topic分组的策略
+	Policies  *Policies  `json:"policies,omitempty"` //Topic分组的策略
 	CreatedAt int64      `json:"createdAt"`          //创建时间
 	Users     user.Users `json:"users"`
 	Status    v1.Status  `json:"status"`
@@ -29,11 +29,47 @@ type Topicgroup struct {
 }
 
 type Policies struct {
-	RetentionPolicies   RetentionPolicies `json:"retentionPolicies,omitempty"` //消息保留策略
-	MessageTtlInSeconds int               `json:"messageTtlInSeconds"`         //未确认消息的最长保留时长
-	BacklogQuota        BacklogQuota      `json:"backlogQuota,omitempty"`
-	NumBundles          int               `json:"numBundles"`
-	AuthPolicies        AuthPolices       `json:"auth_policies"`
+	RetentionPolicies           *RetentionPolicies        `json:"retentionPolicies,omitempty"` //消息保留策略
+	MessageTtlInSeconds         *int                      `json:"messageTtlInSeconds"`         //未确认消息的最长保留时长
+	BacklogQuota                *map[string]BacklogQuota  `json:"backlog_quota_map"`
+	Bundles                     *Bundles                  `json:"bundles"` //key:destination_storage
+	TopicDispatchRate           *map[string]DispatchRate  `json:"topicDispatchRate"`
+	SubscriptionDispatchRate    *map[string]DispatchRate  `json:"subscriptionDispatchRate"`
+	ClusterSubscribeRate        *map[string]SubscribeRate `json:"clusterSubscribeRate"`
+	Persistence                 *PersistencePolicies      `json:"persistence"` //Configuration of bookkeeper persistence policies.
+	DeduplicationEnabled        *bool                     `json:"deduplicationEnabled"`
+	EncryptionRequired          *bool                     `json:"encryption_required"`
+	SubscriptionAuthMode        *string                   `json:"subscription_auth_mode"` //None/Prefix
+	MaxProducersPerTopic        *int                      `json:"max_producers_per_topic"`
+	MaxConsumersPerTopic        *int                      `json:"max_consumers_per_topic"`
+	MaxConsumersPerSubscription *int                      `json:"max_consumers_per_subscription"`
+	CompactionThreshold         *int64                    `json:"compaction_threshold"`
+	OffloadThreshold            *int64                    `json:"offload_threshold"`
+	OffloadDeletionLagMs        *int64                    `json:"offload_deletion_lag_ms"`
+	IsAllowAutoUpdateSchema     *bool                     `json:"is_allow_auto_update_schema"`
+	SchemaValidationEnforced    *bool                     `json:"schema_validation_enforced"`
+	SchemaCompatibilityStrategy *string                   `json:"schema_compatibility_strategy"`
+}
+type Bundles struct {
+	Boundaries []string `json:"boundaries"`
+	NumBundles int      `json:"numBundles"`
+}
+type SubscribeRate struct {
+	SubscribeThrottlingRatePerConsumer int `json:"subscribeThrottlingRatePerConsumer"` //默认-1
+	RatePeriodInSecond                 int `json:"ratePeriodInSecond"`                 //默认30
+}
+type PersistencePolicies struct {
+	BookkeeperEnsemble             int     `json:"bookkeeperEnsemble"`
+	BookkeeperWriteQuorum          int     `json:"bookkeeperWriteQuorum"`
+	BookkeeperAckQuorum            int     `json:"bookkeeperAckQuorum"`
+	ManagedLedgerMaxMarkDeleteRate float64 `json:"managedLedgerMaxMarkDeleteRate"`
+}
+type DispatchRate struct {
+	DispatchThrottlingRateInMsg  int   `json:"dispatchThrottlingRateInMsg"`  //默认：-1
+	DispatchThrottlingRateInByte int64 `json:"dispatchThrottlingRateInByte"` //默认：-1
+	RelativeToPublishRate        bool  `json:"relativeToPublishRate"`        /* throttles dispatch relatively publish-rate */
+	RatePeriodInSecond           int   `json:"ratePeriodInSecond"`           /* by default dispatch-rate will be calculate per 1 second */
+
 }
 
 type AuthPolices struct {
@@ -66,33 +102,23 @@ type BacklogQuota struct {
 }
 
 func NewPolicies(fillDefaultValue bool) *Policies {
-	if fillDefaultValue {
-		//如果此参数未填，则返回默认值
-		return &Policies{
-			RetentionPolicies: RetentionPolicies{
-				RetentionTimeInMinutes: pulsar.DefaultRetentionTimeInMinutes,
-				RetentionSizeInMB:      pulsar.DefaultRetentionSizeInMB,
-			},
-			MessageTtlInSeconds: pulsar.DefaultMessageTTlInSeconds,
-			BacklogQuota: BacklogQuota{
-				Limit:  -1,
-				Policy: producerRequestHold,
-			},
-			NumBundles: pulsar.DefaultNumberOfNamespaceBundles,
-		}
-	} else {
-		return &Policies{
-			RetentionPolicies: RetentionPolicies{
-				RetentionSizeInMB:      NotSet,
-				RetentionTimeInMinutes: NotSet,
-			},
-			MessageTtlInSeconds: NotSet,
-			BacklogQuota: BacklogQuota{
-				Limit:  NotSet,
-				Policy: NotSetString,
-			},
+	bMap := make(map[string]BacklogQuota)
+	var bQuota BacklogQuota
+	bQuota.Policy = NotSetString
+	bQuota.Limit = NotSet
+	bMap["destination_storage"] = bQuota
+	return &Policies{
+		RetentionPolicies: &RetentionPolicies{
+			RetentionSizeInMB:      NotSet,
+			RetentionTimeInMinutes: NotSet,
+		},
+		//MessageTtlInSeconds: nil,
+
+		BacklogQuota: &bMap,
+		Bundles: &Bundles{
+			Boundaries: nil,
 			NumBundles: NotSet,
-		}
+		},
 	}
 
 }
@@ -108,7 +134,7 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 
 	crd.Spec = v1.TopicgroupSpec{
 		Name:     app.Name,
-		Policies: ToPolicesApi(&app.Policies),
+		Policies: ToPolicesApi(app.Policies),
 	}
 
 	status := app.Status
@@ -132,81 +158,171 @@ func ToModel(obj *v1.Topicgroup) *Topicgroup {
 		Status:    obj.Status.Status,
 		Message:   obj.Status.Message,
 		CreatedAt: obj.ObjectMeta.CreationTimestamp.Unix(),
-		Policies:  ToPolicesModel(&obj.Spec.Policies),
+		Policies:  ToPolicesModel(obj.Spec.Policies),
 		Users:     user.GetUsersFromLabels(obj.ObjectMeta.Labels),
 		Available: obj.Spec.Available,
 	}
 }
 
-func ToPolicesModel(obj *v1.Policies) Policies {
-	return Policies{
-		RetentionPolicies: RetentionPolicies{
+func ToPolicesModel(obj *v1.Policies) *Policies {
+	cRate := make(map[string]SubscribeRate)
+	for k, v := range *obj.ClusterSubscribeRate {
+		cRate[k] = SubscribeRate{
+			SubscribeThrottlingRatePerConsumer: v.SubscribeThrottlingRatePerConsumer,
+			RatePeriodInSecond:                 v.RatePeriodInSecond,
+		}
+	}
+
+	sRate := make(map[string]DispatchRate)
+	for k, v := range *obj.SubscriptionDispatchRate {
+		sRate[k] = DispatchRate{
+			DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
+			DispatchThrottlingRateInByte: v.DispatchThrottlingRateInByte,
+			RelativeToPublishRate:        v.RelativeToPublishRate,
+			RatePeriodInSecond:           v.RatePeriodInSecond,
+		}
+	}
+
+	tRate := make(map[string]DispatchRate)
+	for k, v := range *obj.TopicDispatchRate {
+		sRate[k] = DispatchRate{
+			DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
+			DispatchThrottlingRateInByte: v.DispatchThrottlingRateInByte,
+			RelativeToPublishRate:        v.RelativeToPublishRate,
+			RatePeriodInSecond:           v.RatePeriodInSecond,
+		}
+	}
+
+	bMap := make(map[string]BacklogQuota)
+	var backlogQuota BacklogQuota
+
+	var objBacklogQuota = *obj.BacklogQuota
+	backlogQuota.Limit = objBacklogQuota["destination_storage"].Limit
+	backlogQuota.Policy = objBacklogQuota["destination_storage"].Policy
+
+	return &Policies{
+		RetentionPolicies: &RetentionPolicies{
 			RetentionSizeInMB:      obj.RetentionPolicies.RetentionSizeInMB,
 			RetentionTimeInMinutes: obj.RetentionPolicies.RetentionTimeInMinutes,
 		},
 		MessageTtlInSeconds: obj.MessageTtlInSeconds,
-		BacklogQuota: BacklogQuota{
-			Limit:  obj.BacklogQuota.Limit,
-			Policy: obj.BacklogQuota.Policy,
+		BacklogQuota:        &bMap,
+		Bundles: &Bundles{
+			Boundaries: obj.Bundles.Boundaries,
+			NumBundles: obj.Bundles.NumBundles,
 		},
-		NumBundles: obj.NumBundles,
+		SchemaCompatibilityStrategy: obj.SchemaCompatibilityStrategy,
+		IsAllowAutoUpdateSchema:     obj.IsAllowAutoUpdateSchema,
+		SchemaValidationEnforced:    obj.SchemaValidationEnforced,
+		MaxConsumersPerSubscription: obj.MaxConsumersPerSubscription,
+		MaxConsumersPerTopic:        obj.MaxConsumersPerTopic,
+		MaxProducersPerTopic:        obj.MaxProducersPerTopic,
+		CompactionThreshold:         obj.CompactionThreshold,
+		OffloadDeletionLagMs:        obj.OffloadDeletionLagMs,
+		OffloadThreshold:            obj.OffloadThreshold,
+		SubscriptionAuthMode:        obj.SubscriptionAuthMode,
+		EncryptionRequired:          obj.EncryptionRequired,
+		Persistence: &PersistencePolicies{
+			BookkeeperEnsemble:             obj.Persistence.BookkeeperEnsemble,
+			BookkeeperWriteQuorum:          obj.Persistence.BookkeeperWriteQuorum,
+			BookkeeperAckQuorum:            obj.Persistence.BookkeeperAckQuorum,
+			ManagedLedgerMaxMarkDeleteRate: obj.Persistence.ManagedLedgerMaxMarkDeleteRate,
+		},
+
+		SubscriptionDispatchRate: &sRate,
+		ClusterSubscribeRate:     &cRate,
+		TopicDispatchRate:        &tRate,
+		DeduplicationEnabled:     obj.DeduplicationEnabled,
 	}
 }
-func ToPolicesApi(policies *Policies) v1.Policies {
+func ToPolicesApi(policies *Policies) *v1.Policies {
 	if policies == nil {
-		return v1.Policies{}
+		return nil
+	}
+
+	cRate := make(map[string]v1.SubscribeRate)
+	for k, v := range *policies.ClusterSubscribeRate {
+		cRate[k] = v1.SubscribeRate{
+			SubscribeThrottlingRatePerConsumer: v.SubscribeThrottlingRatePerConsumer,
+			RatePeriodInSecond:                 v.RatePeriodInSecond,
+		}
+	}
+
+	sRate := make(map[string]v1.DispatchRate)
+	for k, v := range *policies.SubscriptionDispatchRate {
+		sRate[k] = v1.DispatchRate{
+			DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
+			DispatchThrottlingRateInByte: v.DispatchThrottlingRateInByte,
+			RelativeToPublishRate:        v.RelativeToPublishRate,
+			RatePeriodInSecond:           v.RatePeriodInSecond,
+		}
+	}
+
+	tRate := make(map[string]v1.DispatchRate)
+
+	bMap := make(map[string]v1.BacklogQuota)
+	var backlopQuota v1.BacklogQuota
+
+	modelBmap := *policies.BacklogQuota
+	backlopQuota.Limit = modelBmap["destination_storage"].Limit
+	backlopQuota.Policy = modelBmap["destination_storage"].Policy
+
+	for k, v := range *policies.TopicDispatchRate {
+		sRate[k] = v1.DispatchRate{
+			DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
+			DispatchThrottlingRateInByte: v.DispatchThrottlingRateInByte,
+			RelativeToPublishRate:        v.RelativeToPublishRate,
+			RatePeriodInSecond:           v.RatePeriodInSecond,
+		}
 	}
 	crd := v1.Policies{
-		NumBundles:          policies.NumBundles,
+		Bundles: &v1.Bundles{
+			Boundaries: policies.Bundles.Boundaries,
+			NumBundles: policies.Bundles.NumBundles,
+		},
 		MessageTtlInSeconds: policies.MessageTtlInSeconds,
-		RetentionPolicies: v1.RetentionPolicies{
+		RetentionPolicies: &v1.RetentionPolicies{
 			RetentionTimeInMinutes: policies.RetentionPolicies.RetentionTimeInMinutes,
 			RetentionSizeInMB:      policies.RetentionPolicies.RetentionSizeInMB,
 		},
-		BacklogQuota: v1.BacklogQuota{
-			Limit:  policies.BacklogQuota.Limit,
-			Policy: policies.BacklogQuota.Policy,
-		},
+		BacklogQuota:                &bMap,
+		SchemaCompatibilityStrategy: policies.SchemaCompatibilityStrategy,
+		IsAllowAutoUpdateSchema:     policies.IsAllowAutoUpdateSchema,
+		SchemaValidationEnforced:    policies.SchemaValidationEnforced,
+		MaxConsumersPerSubscription: policies.MaxConsumersPerSubscription,
+		MaxConsumersPerTopic:        policies.MaxConsumersPerTopic,
+		MaxProducersPerTopic:        policies.MaxProducersPerTopic,
+		CompactionThreshold:         policies.CompactionThreshold,
+		OffloadDeletionLagMs:        policies.OffloadDeletionLagMs,
+		OffloadThreshold:            policies.OffloadThreshold,
+		SubscriptionAuthMode:        policies.SubscriptionAuthMode,
+		EncryptionRequired:          policies.EncryptionRequired,
+		Persistence: &v1.PersistencePolicies{
+			BookkeeperEnsemble:             policies.Persistence.BookkeeperEnsemble,
+			BookkeeperWriteQuorum:          policies.Persistence.BookkeeperWriteQuorum,
+			BookkeeperAckQuorum:            policies.Persistence.BookkeeperAckQuorum,
+			ManagedLedgerMaxMarkDeleteRate: policies.Persistence.ManagedLedgerMaxMarkDeleteRate},
+		SubscriptionDispatchRate: &sRate,
+		ClusterSubscribeRate:     &cRate,
+		TopicDispatchRate:        &tRate,
+		DeduplicationEnabled:     policies.DeduplicationEnabled,
 	}
 
-	if policies.NumBundles <= 0 {
-		crd.NumBundles = pulsar.DefaultNumberOfNamespaceBundles
-	}
-
-	if policies.MessageTtlInSeconds < 0 {
-		crd.MessageTtlInSeconds = pulsar.DefaultMessageTTlInSeconds
-	}
-
-	if len(policies.BacklogQuota.Policy) == 0 {
-		crd.BacklogQuota.Policy = pulsar.DefaultBacklogPolicy
-	}
-
-	if policies.BacklogQuota.Limit == 0 {
-		crd.BacklogQuota.Limit = pulsar.DefaultBacklogLimit
-	}
-
-	if policies.RetentionPolicies.RetentionTimeInMinutes < 0 {
-		crd.RetentionPolicies.RetentionTimeInMinutes = pulsar.DefaultRetentionTimeInMinutes
-	}
-
-	if policies.RetentionPolicies.RetentionSizeInMB < 0 {
-		crd.RetentionPolicies.RetentionSizeInMB = pulsar.DefaultRetentionSizeInMB
-	}
-	return crd
+	return &crd
 }
 
 func ToListModel(items *v1.TopicgroupList) []*Topicgroup {
-	var app []*Topicgroup = make([]*Topicgroup, len(items.Items))
+	var app = make([]*Topicgroup, len(items.Items))
 	for i := range items.Items {
 		app[i] = ToModel(&items.Items[i])
 	}
 	return app
 }
 
-func (p Policies) Validate() error {
+func (p *Policies) Validate() error {
 	//TODO 参数校验待验证
-	if p != (Policies{}) {
-		if p.MessageTtlInSeconds < pulsar.DefaultMessageTTlInSeconds && p.MessageTtlInSeconds != NotSet {
+	if p != nil {
+		if *p.MessageTtlInSeconds < pulsar.DefaultMessageTTlInSeconds && *p.MessageTtlInSeconds != NotSet {
 			return fmt.Errorf("messageTtlInSeconds is invalid: %d", p.MessageTtlInSeconds)
 		}
 
@@ -218,19 +334,20 @@ func (p Policies) Validate() error {
 			return fmt.Errorf("retentionTimeInMinutes is invalid: %d", p.RetentionPolicies.RetentionSizeInMB)
 		}
 
-		if p.NumBundles <= 0 && p.NumBundles != NotSet {
-			return fmt.Errorf("numBundles is invalid: %d", p.NumBundles)
+		if p.Bundles.NumBundles <= 0 && p.Bundles.NumBundles != NotSet {
+			return fmt.Errorf("numBundles is invalid: %d", p.Bundles.NumBundles)
 		}
 
-		if p.BacklogQuota != (BacklogQuota{}) {
-			switch p.BacklogQuota.Policy {
+		if p.BacklogQuota != nil {
+			var backlogQuota = *p.BacklogQuota
+			switch backlogQuota["destination_storage"].Policy {
 			case producerRequestHold:
 			case consumerBacklogEviction:
 			case producerException:
 				break
 			default:
-				if p.BacklogQuota.Policy != NotSetString {
-					return fmt.Errorf("backlogQuota policy is invalid: %s", p.BacklogQuota.Policy)
+				if backlogQuota["destination_storage"].Policy != NotSetString {
+					return fmt.Errorf("backlogQuota policy is invalid: %s", backlogQuota["destination_storage"].Policy)
 				}
 			}
 		}

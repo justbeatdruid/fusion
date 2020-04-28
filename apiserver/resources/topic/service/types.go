@@ -95,6 +95,7 @@ type Permission struct {
 	AuthUserName string  `json:"authUserName"` //对应clientauth的NAME
 	Actions      Actions `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
 	Status       string  `json:"status"`       //用户的授权状态，已授权、待删除、待授权
+	Token        string  `json:"token"`        //Token
 }
 
 type Statistics struct {

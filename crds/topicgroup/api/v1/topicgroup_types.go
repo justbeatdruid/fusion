@@ -27,21 +27,46 @@ type TopicgroupSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	// Foo is an example field of Topicgroup. Edit Topicgroup_types.go to remove/update
-	ID        string   `json:"id"`
-	Name      string   `json:"name"` //namespace名称
-	Url       string   `json:"url"`
-	Policies  Policies `json:"policies,omitempty"`
-	Available bool     `json:"available"` //资源是否可用
+	Name      string    `json:"name"` //namespace名称
+	Policies  *Policies `json:"policies,omitempty"`
+	Available bool      `json:"available"` //资源是否可用
 }
 type Policies struct {
-	RetentionPolicies   RetentionPolicies       `json:"retentionPolicies,omitempty"` //消息保留策略
-	MessageTtlInSeconds int                     `json:"messageTtlInSeconds"`         //未确认消息的最长保留时长
-	BacklogQuota        BacklogQuota            `json:"backlogQuota"`
-	NumBundles          int                     `json:"numBundles"`
-	TopicDispatchRate   map[string]DispatchRate `json:"topicDispatchRate"`
+	RetentionPolicies           *RetentionPolicies        `json:"retention_policies,omitempty"` //消息保留策略
+	MessageTtlInSeconds         *int                      `json:"message_ttl_in_seconds"`       //未确认消息的最长保留时长
+	BacklogQuota                *map[string]BacklogQuota  `json:"backlog_quota_map"`
+	Bundles                     *Bundles                  `json:"bundles"` //key:destination_storage
+	TopicDispatchRate           *map[string]DispatchRate  `json:"topicDispatchRate"`
+	SubscriptionDispatchRate    *map[string]DispatchRate  `json:"subscriptionDispatchRate"`
+	ClusterSubscribeRate        *map[string]SubscribeRate `json:"clusterSubscribeRate"`
+	Persistence                 *PersistencePolicies      `json:"persistence"` //Configuration of bookkeeper persistence policies.
+	DeduplicationEnabled        *bool                     `json:"deduplicationEnabled"`
+	EncryptionRequired          *bool                     `json:"encryption_required"`
+	SubscriptionAuthMode        *string                   `json:"subscription_auth_mode"` //None/Prefix
+	MaxProducersPerTopic        *int                      `json:"max_producers_per_topic"`
+	MaxConsumersPerTopic        *int                      `json:"max_consumers_per_topic"`
+	MaxConsumersPerSubscription *int                      `json:"max_consumers_per_subscription"`
+	CompactionThreshold         *int64                    `json:"compaction_threshold"`
+	OffloadThreshold            *int64                    `json:"offload_threshold"`
+	OffloadDeletionLagMs        *int64                    `json:"offload_deletion_lag_ms"`
+	IsAllowAutoUpdateSchema     *bool                     `json:"is_allow_auto_update_schema"`
+	SchemaValidationEnforced    *bool                     `json:"schema_validation_enforced"`
+	SchemaCompatibilityStrategy *string                   `json:"schema_compatibility_strategy"`
 }
-
+type Bundles struct {
+	Boundaries []string `json:"boundaries"`
+	NumBundles int      `json:"numBundles"`
+}
+type SubscribeRate struct {
+	SubscribeThrottlingRatePerConsumer int `json:"subscribeThrottlingRatePerConsumer"` //默认-1
+	RatePeriodInSecond                 int `json:"ratePeriodInSecond"`                 //默认30
+}
+type PersistencePolicies struct {
+	BookkeeperEnsemble             int     `json:"bookkeeperEnsemble"`
+	BookkeeperWriteQuorum          int     `json:"bookkeeperWriteQuorum"`
+	BookkeeperAckQuorum            int     `json:"bookkeeperAckQuorum"`
+	ManagedLedgerMaxMarkDeleteRate float64 `json:"managedLedgerMaxMarkDeleteRate"`
+}
 type DispatchRate struct {
 	DispatchThrottlingRateInMsg  int   `json:"dispatchThrottlingRateInMsg"`  //默认：-1
 	DispatchThrottlingRateInByte int64 `json:"dispatchThrottlingRateInByte"` //默认：-1

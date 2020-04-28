@@ -10,23 +10,6 @@ import (
 	"strings"
 )
 
-type CreateRequest struct {
-	MessageTtlInSeconds int                     `json:"message_ttl_in_seconds"`
-	RetentionPolicies   RetentionPolicies       `json:"retention_policies"`
-	Bundles             BundlesData             `json:"bundles"`
-	BacklogQuotaMap     map[string]BacklogQuota `json:"backlog_quota_map"` //示例：{"destination_storage":{"limit":-1073741824,"policy":"producer_request_hold"}}
-}
-type RetentionPolicies struct {
-	RetentionTimeInMinutes int   `json:"retentionTimeInMinutes"`
-	RetentionSizeInMB      int64 `json:"retentionSizeInMB"`
-}
-type BundlesData struct {
-	NumBundles int `json:"numBundles"`
-}
-type BacklogQuota struct {
-	Limit  int64  `json:"limit"`
-	Policy string `json:"policy"` //producer_request_hold, producer_exception,consumer_backlog_eviction
-}
 type Operator struct {
 	Host           string
 	Port           int
@@ -89,27 +72,7 @@ func (r *Operator) CreateNamespace(namespace *v1.Topicgroup) error {
 	request := r.GetHttpRequest()
 	url := r.getUrl(namespace)
 
-	ps := namespace.Spec.Policies
-
-	bq := &BacklogQuota{
-		Limit:  ps.BacklogQuota.Limit,
-		Policy: ps.BacklogQuota.Policy,
-	}
-	bmap := make(map[string]BacklogQuota)
-	bmap["destination_storage"] = *bq
-	createRequest := &CreateRequest{
-		MessageTtlInSeconds: ps.MessageTtlInSeconds,
-		RetentionPolicies: RetentionPolicies{
-			RetentionSizeInMB:      ps.RetentionPolicies.RetentionSizeInMB,
-			RetentionTimeInMinutes: ps.RetentionPolicies.RetentionTimeInMinutes,
-		},
-		Bundles: BundlesData{
-			NumBundles: ps.NumBundles,
-		},
-		BacklogQuotaMap: bmap,
-	}
-
-	response, _, err := request.Put(url).Send(createRequest).End()
+	response, _, err := request.Put(url).Send(namespace.Spec.Policies).End()
 	if response.StatusCode == http.StatusNoContent {
 		return nil
 	} else {
@@ -124,20 +87,20 @@ func (r *Operator) DeleteNamespace(namespace *v1.Topicgroup) error {
 	response, body, err := request.Delete(url).Send("").End()
 	if response.StatusCode == http.StatusNoContent {
 		return nil
-	}else if strings.Contains(body,"does not exist") {
+	} else if strings.Contains(body, "does not exist") {
 		return nil
 	} else {
 		//TODO 报错404：{"reason":"Namespace public/test1 does not exist."}的时候应该如何处理
 		klog.Errorf("Delete Topicgroup error, error: %+v, response code: %+v", err, response.StatusCode)
-		return errors.New(fmt.Sprintf("%s:%d%s", "Delete Topicgroup error, response code", response.StatusCode,body))
+		return errors.New(fmt.Sprintf("%s:%d%s", "Delete Topicgroup error, response code", response.StatusCode, body))
 	}
 }
 
-func (r *Operator) GetNamespacePolicies(namespace *v1.Topicgroup) (*CreateRequest, error) {
+func (r *Operator) GetNamespacePolicies(namespace *v1.Topicgroup) (*v1.Policies, error) {
 	request := r.GetHttpRequest()
 	url := r.getUrl(namespace)
 
-	polices := &CreateRequest{}
+	polices := &v1.Policies{}
 	response, _, errs := request.Get(url).Send("").EndStruct(polices)
 	if response.StatusCode != http.StatusOK || errs != nil {
 		klog.Errorf("get namespace policy finished, url: %+v, response: %+v, errs: %+v", url, response, errs)
@@ -163,11 +126,7 @@ func (r *Operator) SetMessageTTL(namespace *v1.Topicgroup) error {
 func (r *Operator) SetRetention(namespace *v1.Topicgroup) error {
 	request := r.GetHttpRequest()
 	url := r.getUrl(namespace) + retentionSuffix
-	requestBody := &RetentionPolicies{
-		RetentionTimeInMinutes: namespace.Spec.Policies.RetentionPolicies.RetentionTimeInMinutes,
-		RetentionSizeInMB:      namespace.Spec.Policies.RetentionPolicies.RetentionSizeInMB,
-	}
-	response, body, errs := request.Post(url).Send(requestBody).End()
+	response, body, errs := request.Post(url).Send(&namespace.Spec.Policies.RetentionPolicies).End()
 
 	klog.Infof("set retention finished, url: %+v, response: %+v, body: %+v, errs: %+v", url, response, body, errs)
 	if response.StatusCode != http.StatusNoContent || errs != nil {
@@ -179,11 +138,7 @@ func (r *Operator) SetBacklogQuota(namespace *v1.Topicgroup) error {
 	request := r.GetHttpRequest()
 	url := r.getUrl(namespace) + backlogUrlSuffix
 
-	requestBody := BacklogQuota{
-		Limit:  namespace.Spec.Policies.BacklogQuota.Limit,
-		Policy: namespace.Spec.Policies.BacklogQuota.Policy,
-	}
-	response, body, errs := request.Post(url).Send(requestBody).End()
+	response, body, errs := request.Post(url).Send(&namespace.Spec.Policies.BacklogQuota).End()
 	klog.Infof("set backlog quota finished, url: %+v, response: %+v, body: %+v, errs: %+v", url, response, body, errs)
 	if response.StatusCode != http.StatusNoContent || errs != nil {
 		return fmt.Errorf("set backlog quota error: %+v or http code is not success: %+v", errs, response.StatusCode)

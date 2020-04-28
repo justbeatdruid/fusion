@@ -93,8 +93,6 @@ spec:
               type: string
           required:
           - Name
-          - authorizedMap
-          - createUser
           - expireAt
           - issuedAt
           - name

@@ -99,7 +99,7 @@ func (c *controller) CreateClientauth(req *restful.Request) (int, *CreateRespons
 		}
 	}
 	body.CreateUser = user.InitWithOwner(authUser.Name)
-	body.Tenant = authUser.Namespace
+	//body.Tenant = authUser.Namespace
 	body.Namespace = authUser.Namespace
 	if ca, err := c.service.CreateClientauth(body); err != nil {
 		if strings.Contains(err.Error(), "username already exists") {
@@ -352,7 +352,7 @@ func (c *controller) ListTopicByTenant(tenant string, cas []*service.Clientauth)
 	var casResult []*service.Clientauth
 	tenant = strings.ToLower(tenant)
 	for _, ca := range cas {
-		if strings.Contains(strings.ToLower(ca.Tenant), tenant) {
+		if strings.Contains(strings.ToLower(ca.Namespace), tenant) {
 			casResult = append(casResult, ca)
 		}
 	}

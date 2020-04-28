@@ -56,19 +56,6 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topCo
 	}
 }
 
-func (s *Service) ListTopicgroups() (*topicgroupv1.TopicgroupList, error) {
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("error list crd: %+v", err)
-	}
-	tps := &topicgroupv1.TopicgroupList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	klog.V(5).Infof("get v1.topicgroupList: %+v", tps)
-	return tps, nil
-}
-
 func (s *Service) CreateTopic(model *Topic) (*Topic, tperror.TopicError) {
 	if tpErr := model.Validate(); tpErr.Err != nil {
 		return nil, tpErr
@@ -336,7 +323,7 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 			StartMessageID: pulsar.EarliestMessageID(),
 		})
 		if err != nil {
-			return nil,fmt.Errorf("create reader error: %+v",err)
+			return nil, fmt.Errorf("create reader error: %+v", err)
 		}
 		ctx := context.Background()
 		for reader.HasNext() {

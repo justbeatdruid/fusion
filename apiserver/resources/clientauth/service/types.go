@@ -17,7 +17,6 @@ type Clientauth struct {
 	ID            string         `json:"id"`
 	Name          string         `json:"name"`
 	Namespace     string         `json:"namespace"`
-	Tenant        string         `json:"tenant"`     //租户名称
 	CreateUser    user.Users     `json:"createUser"` //创建用户
 	CreatedAt     int64          `json:"createdAt"`
 	IssuedAt      int64          `json:"issuedAt"`
@@ -40,8 +39,7 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 
 	crd.Spec = v1.ClientauthSpec{
 		Name:       app.Name,
-		Tenant:     app.Tenant,
-		CreateUser: app.CreateUser,
+		CreateUser: &app.CreateUser,
 		Token:      app.Token,
 		ExipreAt:   app.ExpireAt,
 		IssuedAt:   app.IssuedAt,
@@ -64,8 +62,7 @@ func ToModel(obj *v1.Clientauth) *Clientauth {
 	return &Clientauth{
 		ID:            obj.ObjectMeta.Name,
 		Name:          obj.Spec.Name,
-		CreateUser:    obj.Spec.CreateUser,
-		Tenant:        obj.Spec.Tenant,
+		CreateUser:    *obj.Spec.CreateUser,
 		Namespace:     obj.Namespace,
 		CreatedAt:     util.NewTime(obj.ObjectMeta.CreationTimestamp.Time).Unix(),
 		IssuedAt:      obj.Spec.IssuedAt,
@@ -73,7 +70,7 @@ func ToModel(obj *v1.Clientauth) *Clientauth {
 		Token:         obj.Spec.Token,
 		Status:        obj.Status.Status,
 		Message:       obj.Status.Message,
-		AuthorizedMap: obj.Spec.AuthorizedMap,
+		AuthorizedMap: *obj.Spec.AuthorizedMap,
 	}
 }
 
