@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb/driver"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
+	topicv1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -22,22 +23,20 @@ var defaultNamespace = "default"
 var Supported = []string{}
 
 type Service struct {
-	client dynamic.NamespaceableResourceInterface
-	//apiService *api.Service
-	//suService *serviceunit.Service
+	client      dynamic.NamespaceableResourceInterface
+	topicClient dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface, supported []string) *Service {
 	Supported = supported
 	return &Service{
-		client: client.Resource(v1.GetOOFSGVR()),
-		//apiService: api.NewService(client),
-		//suService: serviceunit.NewService(client),
+		client:      client.Resource(v1.GetOOFSGVR()),
+		topicClient: client.Resource(topicv1.GetOOFSGVR()),
 	}
 }
 
 func (s *Service) CreateDatasource(model *Datasource) (*Datasource, error) {
-	if err := model.Validate(); err != nil {
+	if err := s.Validate(model); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
 	ds, err := s.Create(ToAPI(model, false))
@@ -47,7 +46,7 @@ func (s *Service) CreateDatasource(model *Datasource) (*Datasource, error) {
 	return ToModel(ds), nil
 }
 func (s *Service) UpdateDatasource(model *Datasource, opts ...util.OpOption) (*Datasource, error) {
-	if err := model.Validate(); err != nil {
+	if err := s.Validate(model); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
 	ds, err := s.Get(model.ID, opts...)
@@ -446,3 +445,18 @@ func (s *Service) GetDataSourceByApiId(apiId string, parames string) (map[string
 	return result, nil
 }
 */
+
+func (s *Service) CheckTopic(crdNamespace string, tid *string) error {
+	if tid == nil {
+		return fmt.Errorf("topic id is null")
+	}
+	crd, err := s.topicClient.Namespace(crdNamespace).Get(*tid, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("error get crd: %+v", err)
+	}
+	t := &topicv1.Topic{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), t); err != nil {
+		return fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	return nil
+}
