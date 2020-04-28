@@ -287,7 +287,7 @@ func (s *Service) DeletePer(id string, authUserId string, opts ...util.OpOption)
 		delete(tp.ObjectMeta.Labels, authUserId)
 	}
 
-	for index, _ := range tp.Spec.Permissions {
+	for index := range tp.Spec.Permissions {
 		if tp.Spec.Permissions[index].AuthUserID == authUserId {
 			tp.Spec.Permissions[index].Status.Status = "delete"
 			break
@@ -336,13 +336,13 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 			StartMessageID: pulsar.EarliestMessageID(),
 		})
 		if err != nil {
-			return nil,fmt.Errorf("create reader error: %+v",err)
+			return nil, fmt.Errorf("create reader error: %+v", err)
 		}
 		ctx := context.Background()
 		for reader.HasNext() {
 			msg, err := reader.Next(ctx)
 			if err != nil {
-				return nil, fmt.Errorf("Error reading from topic: %+v", err)
+				return nil, fmt.Errorf("Error reading from topic: %+v ", err)
 			}
 			// Process the message
 			messageStruct.TopicName = msg.Topic()

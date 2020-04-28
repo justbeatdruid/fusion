@@ -124,12 +124,12 @@ func (r *Operator) DeleteNamespace(namespace *v1.Topicgroup) error {
 	response, body, err := request.Delete(url).Send("").End()
 	if response.StatusCode == http.StatusNoContent {
 		return nil
-	}else if strings.Contains(body,"does not exist") {
+	} else if strings.Contains(body, "does not exist") {
 		return nil
 	} else {
 		//TODO 报错404：{"reason":"Namespace public/test1 does not exist."}的时候应该如何处理
 		klog.Errorf("Delete Topicgroup error, error: %+v, response code: %+v", err, response.StatusCode)
-		return errors.New(fmt.Sprintf("%s:%d%s", "Delete Topicgroup error, response code", response.StatusCode,body))
+		return errors.New(fmt.Sprintf("%s:%d%s", "Delete Topicgroup error, response code", response.StatusCode, body))
 	}
 }
 

@@ -80,6 +80,15 @@ type ConsumerStat struct {
 	MsgRateOut float64 `json:"msgRateOut"`
 }
 
+type Messages struct {
+	ProduceName string        `json:"topicName"`
+	ID          string        `json:"id"`
+	Time        string        `json:"time"`
+	Messages    []interface{} `json:"messages"`
+	Size        int           `json:"size"`
+	Partition   float64       `json:"partition"`
+	Key         interface{}   `json:"key"`
+}
 type Message struct {
 	TopicName string           `json:"topicName"`
 	ID        pulsar.MessageID `json:"id"`

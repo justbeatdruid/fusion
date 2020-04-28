@@ -136,7 +136,7 @@ func (c *Connector) ToResponse(resBody *ResponseBody) *Response {
 	var datas = make([]Data, 0)
 	if resBody.Data != nil {
 		for _, d := range resBody.Data {
-			var data  = make(map[string]interface{})
+			var data = make(map[string]interface{})
 			for index, column := range resBody.Columns {
 				key := column.Name
 				value := d[index]
