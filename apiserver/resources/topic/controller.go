@@ -5,6 +5,7 @@ import (
 	"github.com/360EntSecGroup-Skylar/excelize"
 	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/parser"
+	"github.com/chinamobile/nlpt/apiserver/resources/topic/pulsarsql"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
@@ -61,7 +62,7 @@ type MessageResponse = struct {
 	Code      int         `json:"code"`
 	ErrorCode string      `json:"errorCode"`
 	Message   string      `json:"message"`
-	Messages  interface{} `json:"messages"`
+	Data      interface{} `json:"data"`
 	Detail    string      `json:"detail"`
 }
 
@@ -474,7 +475,7 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
 			Message:   fmt.Sprintf("auth model error: %+v", err),
-			Messages:  nil,
+			Data:      nil,
 			Detail:    "",
 		}
 	}
@@ -553,8 +554,8 @@ func (c *controller) ListMessagesByTopicUrl(topicUrls []string, req *restful.Req
 			}
 		}
 		return http.StatusOK, &MessageResponse{
-			Code:     success,
-			Messages: data,
+			Code: success,
+			Data: data,
 		}
 	}
 }
@@ -585,7 +586,7 @@ func (c *controller) ListMessagesByTopicUrlTime(topicUrls []string, start int64,
 		return http.StatusOK, &MessageResponse{
 			Code:      success,
 			ErrorCode: tperror.Success,
-			Messages:  data,
+			Data:      data,
 		}
 	}
 }
@@ -626,6 +627,7 @@ func (c *controller) ListTopicByTopicGroupAndName(topicGroup string, topicName s
 }*/
 
 type MessageList []service.Message
+type MessagesList []service.Messages
 
 func (ms MessageList) Len() int {
 	return len(ms)
@@ -636,6 +638,17 @@ func (ms MessageList) GetItem(i int) (interface{}, error) {
 		return struct{}{}, fmt.Errorf("index overflow")
 	}
 	return ms[i], nil
+}
+
+func (msl MessagesList) Len() int {
+	return len(msl)
+}
+
+func (msl MessagesList) GetItem(i int) (interface{}, error) {
+	if i >= len(msl) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return msl[i], nil
 }
 
 //导出topics的信息
@@ -837,4 +850,115 @@ func returns200(b *restful.RouteBuilder) {
 
 func returns500(b *restful.RouteBuilder) {
 	b.Returns(http.StatusInternalServerError, "internal server error", nil)
+}
+
+func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) {
+	messageId := req.QueryParameter("messageId")
+	topic := req.QueryParameter("topic")
+	topicGroup := req.QueryParameter("topicGroup")
+	key := req.QueryParameter("key")
+	startTime := req.QueryParameter("startTime")
+	endTime := req.QueryParameter("endTime")
+
+	var (
+		order        = "order by '__publishTime__' desc Limit 10"
+		messageIdSql = `select * from pulsar."%s/%s"."%s" WHERE "__message_id__" = '%s' %s`
+		keySql       = `select * from pulsar."%s/%s"."%s" WHERE "__key__" = '%s' %s`
+		timeSql      = `select * from pulsar."%s/%s"."%s" WHERE "__publishTime__" BETWEEN %s AND %s %s`
+		sql          string
+	)
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Data:      nil,
+			Detail:    "",
+		}
+	}
+	tenate := authUser.Namespace
+	//判断topic是否存在
+	if len(topic) > 0 {
+		t, err := c.service.GetTopic(topic, util.WithNamespace(authUser.Namespace))
+		if err != nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorGetTopicInfo]),
+				Detail:    fmt.Errorf("list database error: %+v", err).Error(),
+			}
+		}
+		if t == nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorCannotFindTopic]),
+				Detail:    fmt.Errorf("list database error: %+v", err).Error(),
+			}
+		}
+		topic = t.Name
+	} else {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      1,
+			ErrorCode: tperror.ErrorQueryMessage,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorTopicIdError]),
+			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
+		}
+	}
+	if len(topicGroup) > 0 {
+		tg, err := c.service.GetTopicgroup(topicGroup, authUser.Namespace)
+		if err != nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorGetTopicGroupInfo]),
+				Detail:    fmt.Errorf("list database error: %+v", err).Error(),
+			}
+		}
+		if tg == nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorCannotFindTopicgroup]),
+				Detail:    fmt.Errorf("list database error: %+v", err).Error(),
+			}
+		}
+		topicGroup = tg.Spec.Name
+	} else {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      1,
+			ErrorCode: tperror.ErrorQueryMessage,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorTopicGroupIdError]),
+			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
+		}
+	}
+	//根据MessageID查询topic信息
+	if len(messageId) > 0 {
+		sql = fmt.Sprintf(messageIdSql, tenate, topicGroup, topic, messageId, order)
+
+	}
+	if len(key) > 0 {
+		sql = fmt.Sprintf(keySql, tenate, topicGroup, topic, key, order)
+	}
+	if len(startTime) > 0 && len(endTime) > 0 {
+		sql = fmt.Sprintf(timeSql, tenate, topicGroup, topic, startTime, endTime, order,)
+	}
+	httpStatus, messageResponse := c.QueryTopicMessage(sql)
+	return httpStatus, messageResponse
+}
+func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
+	messages, err := pulsarsql.QueryTopicMessages(sql)
+	if err != nil {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      1,
+			ErrorCode: tperror.ErrorQueryMessage,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
+		}
+	}
+	return http.StatusOK, &MessageResponse{
+		Code: success,
+		Data: messages,
+	}
 }

@@ -54,7 +54,7 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.deleteTopics).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))*/
-	//根据时间和id查询topic信息
+	//查询topic信息
 	ws.Route(ws.GET("/topics/data").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
