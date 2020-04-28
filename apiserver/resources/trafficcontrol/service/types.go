@@ -147,7 +147,37 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 	case v1.APIC, v1.APPC, v1.IPC, v1.USERC:
 		if (a.Config.Year + a.Config.Month + a.Config.Day + a.Config.Hour + a.Config.Minute + a.Config.Second) == 0 {
 			return fmt.Errorf("at least one limit config must exist.")
+		} else {
+		var list []int
+		if a.Config.Second > 0 {
+			list = append(list, a.Config.Second)
 		}
+		if a.Config.Minute > 0 {
+			list = append(list, a.Config.Minute)
+		}
+		if a.Config.Hour > 0 {
+			list = append(list, a.Config.Hour)
+		}
+		if a.Config.Day > 0 {
+			list = append(list, a.Config.Day)
+		}
+		if a.Config.Month > 0 {
+			list = append(list, a.Config.Month)
+		}
+		if a.Config.Year > 0 {
+			list = append(list, a.Config.Year)
+		}
+
+		var list2 =make([]int,len(list[:len(list):len(list)]))
+		copy(list2,list[:len(list):len(list)])
+		sort.Ints(list)
+		for index,_ := range list {
+			if list[index] != list2[index] {
+				return fmt.Errorf("the number per minute must be greater than the number per second...")
+			}
+		}
+	}
+
 	case v1.SPECAPPC:
 		if len(a.Config.Special) == 0 {
 			return fmt.Errorf("at least one special config must exist.")
