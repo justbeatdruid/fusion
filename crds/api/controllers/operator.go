@@ -355,10 +355,7 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	(*db).Spec.KongApi.Paths = responseBody.Paths
 	(*db).Spec.KongApi.Methods = responseBody.Methods
 	(*db).Spec.KongApi.KongID = responseBody.ID
-	//添加监控插件失败不退出打印日志
-	if err := r.AddRoutePrometheusByKong(db, responseBody.ID); err != nil {
-		klog.Errorf("request for add route prometheus error: %+v", err)
-	}
+
 	if (*db).Spec.AuthType == nlptv1.APPAUTH {
 		//在route上创建jwt及acl插件
 		if err := r.AddRouteJwtByKong(db); err != nil {
@@ -373,34 +370,6 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 			return fmt.Errorf("request for add route acl error: %+v", err)
 		}
 	}
-	return nil
-}
-
-func (r *Operator) AddRoutePrometheusByKong(db *nlptv1.Api, id string) error {
-	klog.Infof("begin create prometheus for route %s", id)
-	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
-	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
-	for k, v := range headers {
-		request = request.Set(k, v)
-	}
-	request = request.Retry(3, 5*time.Second, retryStatus...)
-	requestBody := &PrometheusRequestBody{
-		Name: "prometheus", //插件名称
-	}
-	responseBody := &PrometheusResponseBody{}
-	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
-	if len(errs) > 0 {
-		klog.Infof("add prometheus err: %+v", errs)
-		return fmt.Errorf("request for create prometheus error: %+v", errs)
-	}
-	klog.Infof("creation prometheus code: %d, body: %s ", response.StatusCode, string(body))
-	if response.StatusCode != 201 {
-		klog.V(5).Infof("create prometheus failed msg: %s\n", responseBody.Message)
-		return fmt.Errorf("request for create prometheus error: receive wrong status code: %s", string(body))
-	}
-	(*db).Spec.KongApi.PrometheusID = responseBody.ID
-	klog.Infof("prometheus plugins id is %s", responseBody.ID)
 	return nil
 }
 

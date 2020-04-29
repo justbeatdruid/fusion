@@ -18,6 +18,7 @@ package controllers
 import (
 	"context"
 	"fmt"
+	"github.com/parnurzeal/gorequest"
 	"k8s.io/apimachinery/pkg/util/wait"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"time"
@@ -43,6 +44,33 @@ func (r *ApiSynchronizer) Start(stop <-chan struct{}) error {
 	}, time.Second*60, stop)
 	return nil
 }
+func (r *Operator) AddRoutePrometheusByKong(db *nlptv1.Api, id string) error {
+	klog.Infof("begin create prometheus for route %s", id)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &PrometheusRequestBody{
+		Name: "prometheus", //插件名称
+	}
+	responseBody := &PrometheusResponseBody{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Infof("add prometheus err: %+v", errs)
+		return fmt.Errorf("request for create prometheus error: %+v", errs)
+	}
+	klog.Infof("creation prometheus code: %d, body: %s ", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.V(5).Infof("create prometheus failed msg: %s\n", responseBody.Message)
+		return fmt.Errorf("request for create prometheus error: receive wrong status code: %s", string(body))
+	}
+	(*db).Spec.KongApi.PrometheusID = responseBody.ID
+	klog.Infof("prometheus plugins id is %s", responseBody.ID)
+	return nil
+}
 
 func (r *ApiSynchronizer) SyncApiCountFromKong() error {
 	klog.Infof("begin sync api count from kong")
@@ -51,12 +79,23 @@ func (r *ApiSynchronizer) SyncApiCountFromKong() error {
 	if err := r.List(ctx, apiList); err != nil {
 		return fmt.Errorf("cannot list datasources: %+v", err)
 	}
+	for index, value := range apiList.Items {
+		//判断api是否配置监控插件，未配置时先添加监控插件
+		if len(value.Spec.KongApi.PrometheusID) == 0 {
+			klog.Infof("api prometheus id %s", value.Spec.KongApi.PrometheusID)
+			apiInfo := &apiList.Items[index]
+			//添加监控插件失败不退出打印日志
+			if err := r.Operator.AddRoutePrometheusByKong(apiInfo, value.Spec.KongApi.KongID); err != nil {
+				klog.Errorf("request for add route prometheus error: %+v", err)
+			}
+			klog.Infof("api prometheus id %s", value.Spec.KongApi.PrometheusID)
+		}
+	}
 	countMap := make(map[string]int)
 	if err := r.Operator.SyncApiCountFromPrometheus(countMap); err != nil {
 		return fmt.Errorf("sync api count from kong failed: %+v", err)
 	}
 	klog.Infof("sync api count map list : %+v", countMap)
-
 	for _, value := range apiList.Items {
 		apiID := value.ObjectMeta.Name
 		if _, ok := countMap[apiID]; ok {
