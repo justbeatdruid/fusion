@@ -106,7 +106,7 @@ type Permission struct {
 	Status       string  `json:"status"`       //用户的授权状态，已授权、待删除、待授权
 	Token        string  `json:"token"`        //Token
 	Effective    bool    `json:"effective"`
-	IssuedAt     int64    `json:"issuedAt"`
+	IssuedAt     int64   `json:"issuedAt"`
 	ExpireAt     int64   `json:"expireAt"`
 }
 
