@@ -69,6 +69,13 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			namespace.Status.Status = nlptv1.Created
 			namespace.Status.Message = "success"
 			namespace.Spec.Available = true
+			r, err := r.Operator.GetNamespacePolicies(namespace)
+			if err == nil {
+				namespace.Spec.Policies = r
+			} else {
+
+			}
+
 		}
 
 		klog.V(1).Infof("Final Namespace: %+v", *namespace)
@@ -113,14 +120,17 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			}
 		}
 
-		if ns.BacklogQuotaMap["destination_storage"].Limit != dstPolicies.BacklogQuota.Limit || ns.BacklogQuotaMap["destination_storage"].Policy != dstPolicies.BacklogQuota.Policy {
+		if (*ns.BacklogQuota)["destination_storage"].Limit != (*dstPolicies.BacklogQuota)["destination_storage"].Limit || (*ns.BacklogQuota)["destination_storage"].Policy != (*dstPolicies.BacklogQuota)["destination_storage"].Policy {
 			if err := r.Operator.SetBacklogQuota(namespace); err != nil {
 				namespace.Status.Status = nlptv1.Error
 				namespace.Status.Message = fmt.Sprintf("set backlog quota: %+v", err)
 
+				backlogQuotaMap := make(map[string]nlptv1.BacklogQuota)
+				var backlogQuota nlptv1.BacklogQuota
 				//设置backlogQuota失败，数据回滚
-				namespace.Spec.Policies.BacklogQuota.Policy = ns.BacklogQuotaMap["destination_storage"].Policy
-				namespace.Spec.Policies.BacklogQuota.Limit = ns.BacklogQuotaMap["destination_storage"].Limit
+				backlogQuota.Policy = (*ns.BacklogQuota)["destination_storage"].Policy
+				backlogQuota.Limit = (*ns.BacklogQuota)["destination_storage"].Limit
+				backlogQuotaMap["destination_storage"] = backlogQuota
 
 			}
 		}

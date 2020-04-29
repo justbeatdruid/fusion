@@ -233,9 +233,9 @@ func (s *Service) ModifyTopicgroup(id string, policies *Policies, opts ...util.O
 
 }
 
-func (s *Service) MergePolicies(req *Policies, db v1.Policies) v1.Policies {
-	if req.NumBundles != NotSet {
-		db.NumBundles = req.NumBundles
+func (s *Service) MergePolicies(req *Policies, db *v1.Policies) *v1.Policies {
+	if req.Bundles.NumBundles != NotSet {
+		db.Bundles.NumBundles = req.Bundles.NumBundles
 	}
 
 	if req.RetentionPolicies.RetentionTimeInMinutes != NotSet {
@@ -246,16 +246,21 @@ func (s *Service) MergePolicies(req *Policies, db v1.Policies) v1.Policies {
 		db.RetentionPolicies.RetentionSizeInMB = req.RetentionPolicies.RetentionSizeInMB
 	}
 
-	if req.MessageTtlInSeconds != NotSet {
+	if *req.MessageTtlInSeconds != NotSet {
 		db.MessageTtlInSeconds = req.MessageTtlInSeconds
 	}
 
-	if req.BacklogQuota.Limit != NotSet {
-		db.BacklogQuota.Limit = req.BacklogQuota.Limit
+	bMap := *db.BacklogQuota
+	destinationBackLog := bMap["destination_storage"]
+
+	reqBmap := *req.BacklogQuota
+	reqDestinationBackLog := reqBmap["destination_storage"]
+	if reqDestinationBackLog.Limit != NotSet {
+		destinationBackLog.Limit = reqDestinationBackLog.Limit
 	}
 
-	if req.BacklogQuota.Policy != NotSetString {
-		db.BacklogQuota.Policy = req.BacklogQuota.Policy
+	if reqDestinationBackLog.Policy != NotSetString {
+		destinationBackLog.Policy = reqDestinationBackLog.Policy
 	}
 	return db
 }

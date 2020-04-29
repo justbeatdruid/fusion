@@ -116,7 +116,7 @@ func (c *controller) newCreateResponse(code int, errorCode string, detail string
 
 func (c *controller) CreateTopicgroup(req *restful.Request) (int, *CreateResponse) {
 	body := &service.Topicgroup{}
-	body.Policies = *service.NewPolicies(true)
+	//body.Policies = &service.Policies{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      fail,
@@ -144,6 +144,7 @@ func (c *controller) CreateTopicgroup(req *restful.Request) (int, *CreateRespons
 			Code:      success,
 			ErrorCode: tgerror.Success,
 			Data:      tg,
+			Message:   "success",
 		}
 	}
 }

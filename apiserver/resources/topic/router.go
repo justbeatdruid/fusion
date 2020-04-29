@@ -8,7 +8,7 @@ import (
 )
 
 type router struct {
-	controller *controller "github.com/chinamobile/nlpt/pkg/go-restful"
+	controller *controller
 }
 
 func NewRouter(cfg *config.Config) *router {
