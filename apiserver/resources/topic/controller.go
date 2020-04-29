@@ -26,6 +26,13 @@ type controller struct {
 	errMsg  config.ErrorConfig
 }
 
+const (
+	order        = `select * from (select row_number() over(order by __publish_time__ desc) row, * from pulsar."%s/%s"."%s" %s) as t where row between %d and %d`
+	messageIdSql = `WHERE "__message_id__" = '%s'`
+	keySql       = `WHERE "__key__" = '%s'`
+	timeSql      = `WHERE "__publish_time__" BETWEEN %s AND %s`
+)
+
 func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TopicConfig, cfg.LocalConfig),
@@ -885,21 +892,11 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	endTime := req.QueryParameter("endTime")
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
-
-	if !(len(messageId)>0&&len(key)==0&&len(startTime)==0&&len(endTime)==0)||(len(messageId)==0&&len(key)>0&&len(startTime)==0&&len(endTime)==0)||(len(messageId)==0&&len(key)==0&&len(startTime)>0&&len(endTime)>0){
-		return http.StatusInternalServerError, &MessageResponse{
-			Code:      1,
-			ErrorCode: tperror.ErrorQueryMessage,
-			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorQueryParameterError]),
-			Detail:    fmt.Errorf("query parameter error: ").Error(),
-		}
+    //参数判断,三个有且只有一个有值
+	httpStatus, messageResponse := c.QueryParamterCheck(messageId, key, startTime, endTime)
+	if messageResponse!=nil {
+        return httpStatus, messageResponse
 	}
-	const (
-		order        = `select * from (select row_number() over(order by __publish_time__ desc) row, * from pulsar."%s/%s"."%s" %s) as t where row between %d and %d`
-		messageIdSql = `WHERE "__message_id__" = '%s'`
-		keySql       = `WHERE "__key__" = '%s'`
-		timeSql      = `WHERE "__publishTime__" BETWEEN %s AND %s`
-	)
 	var sql string
 	authUser, err := auth.GetAuthUser(req)
 	if err != nil {
@@ -911,63 +908,16 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 			Detail:    "",
 		}
 	}
+    //判断topic和topicGroup是否存在
+	h, m, topic := c.TopicCheck(topic, authUser)
+	if m!=nil {
+		return h, m
+	}
+	h, m, topicGroup = c.TopicGroupCheck(topicGroup, authUser)
+	if m!=nil {
+		return h, m
+	}
 	tenate := authUser.Namespace
-	//判断topic是否存在
-	if len(topic) > 0 {
-		t, err := c.service.GetTopic(topic, util.WithNamespace(authUser.Namespace))
-		if err != nil {
-			return http.StatusInternalServerError, &MessageResponse{
-				Code:      1,
-				ErrorCode: tperror.ErrorQueryMessage,
-				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorGetTopicInfo]),
-				Detail:    fmt.Errorf("list database error: %+v", err).Error(),
-			}
-		}
-		if t == nil {
-			return http.StatusInternalServerError, &MessageResponse{
-				Code:      1,
-				ErrorCode: tperror.ErrorQueryMessage,
-				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorCannotFindTopic]),
-				Detail:    fmt.Errorf("list database error: %+v", err).Error(),
-			}
-		}
-		topic = t.Name
-	} else {
-		return http.StatusInternalServerError, &MessageResponse{
-			Code:      1,
-			ErrorCode: tperror.ErrorQueryMessage,
-			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorTopicIdError]),
-			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
-		}
-	}
-	//判断topicGroup是否存在
-	if len(topicGroup) > 0 {
-		tg, err := c.service.GetTopicgroup(topicGroup, authUser.Namespace)
-		if err != nil {
-			return http.StatusInternalServerError, &MessageResponse{
-				Code:      1,
-				ErrorCode: tperror.ErrorQueryMessage,
-				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorGetTopicGroupInfo]),
-				Detail:    fmt.Errorf("list database error: %+v", err).Error(),
-			}
-		}
-		if tg == nil {
-			return http.StatusInternalServerError, &MessageResponse{
-				Code:      1,
-				ErrorCode: tperror.ErrorQueryMessage,
-				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorCannotFindTopicgroup]),
-				Detail:    fmt.Errorf("list database error: %+v", err).Error(),
-			}
-		}
-		topicGroup = tg.Spec.Name
-	} else {
-		return http.StatusInternalServerError, &MessageResponse{
-			Code:      1,
-			ErrorCode: tperror.ErrorQueryMessage,
-			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorTopicGroupIdError]),
-			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
-		}
-	}
 	//分页
 	p,err := strconv.ParseInt(page, 10,64)
 	if err!=nil {
@@ -993,24 +943,10 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	if len(messageId) > 0 {
 		//校验messageId的合法性
 		reg := `^\([1-9]\d+\,[1-9]\d+\,[1-9]\d+\)$`
-        r, err:= regexp.Compile(reg)
-		if err!=nil {
-			return http.StatusInternalServerError, &MessageResponse{
-				Code:      1,
-				ErrorCode: tperror.ErrorQueryMessage,
-				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
-				Detail:    fmt.Errorf("regexp error: %+v", err).Error(),
-			}
-		}
-        ok := r.MatchString(messageId)
+		h, m, ok := c.QueryParamterValidate(reg,messageId)
 		if !ok {
-				return http.StatusInternalServerError, &MessageResponse{
-					Code:      1,
-					ErrorCode: tperror.ErrorQueryMessage,
-					Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], tperror.ErrorQueryParameterError),
-					Detail:    fmt.Errorf("messageId is not legal: %+v", err).Error(),
-				}
-			}
+			return h, m
+		}
 		sql = fmt.Sprintf(messageIdSql, messageId)
 		sql = fmt.Sprintf(order,tenate,topicGroup,topic,sql,start,end)
 	}
@@ -1023,28 +959,18 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	if len(startTime) > 0 && len(endTime) > 0 {
 		//校验时间的合法性
 		reg := `/^[1-9]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\s+(20|21|22|23|[0-1]\d):[0-5]\d:[0-5]\d$/`
-		r, err := regexp.Compile(reg)
-		if err!=nil {
-			return http.StatusInternalServerError, &MessageResponse{
-				Code:      1,
-				ErrorCode: tperror.ErrorQueryMessage,
-				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
-				Detail:    fmt.Errorf("regexp error: %+v", err).Error(),
-			}
-		}
-		ok := r.MatchString(reg)
+		h, m, ok := c.QueryParamterValidate(reg, startTime)
 		if !ok {
-			return http.StatusInternalServerError, &MessageResponse{
-				Code:      1,
-				ErrorCode: tperror.ErrorQueryMessage,
-				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], tperror.ErrorQueryParameterError),
-				Detail:    fmt.Errorf("messageId is not legal: %+v", err).Error(),
-			}
+			return h, m
+		}
+		h, m, ok = c.QueryParamterValidate(reg, endTime)
+		if !ok {
+			return h, m
 		}
 		sql = fmt.Sprintf(timeSql,startTime,endTime)
 		sql = fmt.Sprintf(order, tenate, topicGroup, topic, sql,start, end)
 	}
-	httpStatus, messageResponse := c.QueryTopicMessage(sql)
+	httpStatus, messageResponse = c.QueryTopicMessage(sql)
 	return httpStatus, messageResponse
 }
 func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
@@ -1060,5 +986,107 @@ func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
 	return http.StatusOK, &MessageResponse{
 		Code: success,
 		Data: messages,
+	}
+}
+//查询参数是否有值判断
+func (c *controller)QueryParamterCheck(messageId string, key string, startTime string, endTime string) (int,*MessageResponse){
+	if !((len(messageId)>0&&len(key)==0&&len(startTime)==0&&len(endTime)==0)||(len(messageId)==0&&len(key)>0&&len(startTime)==0&&len(endTime)==0)||(len(messageId)==0&&len(key)==0&&len(startTime)>0&&len(endTime)>0)){
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      1,
+			ErrorCode: tperror.ErrorQueryMessage,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorQueryParameterError]),
+			Detail:    fmt.Errorf("query parameter error: ").Error(),
+		}
+	}else {
+		return http.StatusOK,nil
+	}
+}
+
+//判断查询参数topic和topicGroup是否存在
+func (c *controller)TopicCheck(topic string, authUser auth.AuthUser) (int, *MessageResponse,string) {
+	//判断topic是否存在
+	if len(topic) > 0 {
+		t, err := c.service.GetTopic(topic, util.WithNamespace(authUser.Namespace))
+		if err != nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorGetTopicInfo]),
+				Detail:    fmt.Errorf("list database error: %+v", err).Error(),
+			},""
+		}
+		if t == nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorCannotFindTopic]),
+				Detail:    fmt.Errorf("topic is not exist: %+v", err).Error(),
+			},""
+		}
+		topic = t.Name
+		return http.StatusOK,nil,topic
+	} else {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      1,
+			ErrorCode: tperror.ErrorQueryMessage,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorTopicIdError]),
+			Detail:    fmt.Errorf("topic paramter error ").Error(),
+		},""
+	}
+}
+
+//判断topicGroup是否存在
+func (c *controller)TopicGroupCheck(topicGroup string, authUser auth.AuthUser) (int, *MessageResponse, string) {
+	if len(topicGroup) > 0 {
+		tg, err := c.service.GetTopicgroup(topicGroup, authUser.Namespace)
+		if err != nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorGetTopicGroupInfo]),
+				Detail:    fmt.Errorf("list database error: %+v", err).Error(),
+			},""
+		}
+		if tg == nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorCannotFindTopicgroup]),
+				Detail:    fmt.Errorf("list database error: %+v", err).Error(),
+			},""
+		}
+		topicGroup = tg.Spec.Name
+		return http.StatusOK,nil,topicGroup
+	} else {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      1,
+			ErrorCode: tperror.ErrorQueryMessage,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorTopicGroupIdError]),
+			Detail:    fmt.Errorf("list database error ").Error(),
+		},""
+	}
+}
+
+//校验参数的合法性
+func (c *controller)QueryParamterValidate(reg string, param string) (int,*MessageResponse,bool) {
+	r, err:= regexp.Compile(reg)
+	if err!=nil {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      1,
+			ErrorCode: tperror.ErrorQueryMessage,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+			Detail:    fmt.Errorf("regexp error: %+v", err).Error(),
+		},false
+	}
+	ok := r.MatchString(param)
+	if !ok {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      1,
+			ErrorCode: tperror.ErrorQueryMessage,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], tperror.ErrorQueryParameterError),
+			Detail:    fmt.Errorf("messageId is not legal: %+v", err).Error(),
+		},false
+	}else {
+		return http.StatusOK,nil,true
 	}
 }
