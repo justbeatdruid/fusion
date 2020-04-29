@@ -200,6 +200,7 @@ func ToPolicesModel(obj *v1.Policies) *Policies {
 	var objBacklogQuota = *obj.BacklogQuota
 	backlogQuota.Limit = objBacklogQuota["destination_storage"].Limit
 	backlogQuota.Policy = objBacklogQuota["destination_storage"].Policy
+	bMap["destination_storage"] = backlogQuota
 
 	//kubernetes不支持float64类型，因此存储的时候转成string，展示的时候再转成float64
 	managedLedgerMaxMarkDeleteRate, _ := strconv.ParseFloat(obj.Persistence.ManagedLedgerMaxMarkDeleteRate, 64)
