@@ -20,7 +20,7 @@ const (
 	ErrorQueryMessage          = "010000012" //查询消息失败
 	ErrorQueryMessageStartTime = "010000013" //查询消息失败，原因：起始时间错误
 	ErrorQueryMessageEndTime   = "010000014" //查询消息失败，原因：结束时间错误
-	ErrorQueryMessagePageParam = "010000015" // 查询消息失败，原因：分页参数错误
+	ErrorQueryMessagePageParam = "010000015" //查询消息失败，原因：分页参数错误
 	ErrorGrantPermissions      = "010000016" //用户授权失败
 	ErrorRevokePermissions     = "010000017" //收回用户权限失败
 	ErrorImportTopics          = "010000018" //导入失败
@@ -30,6 +30,7 @@ const (
 	ErrorTopicIdError          = "010000022" //查询消息失败：原因：topic字段不能为空
 	ErrorTopicGroupIdError     = "010000023" //查询消息失败：原因：topicGroup字段不能为空
 	ErrorGetTopicGroupInfo     = "010000024" //查询TopicGroup详情失败
+	ErrorQueryParameterError   = "010000025" //查询信息失败，原因：查询参数不正确
 )
 
 type TopicError struct {
