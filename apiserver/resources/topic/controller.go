@@ -478,7 +478,6 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 			Detail:    "",
 		}
 	}
-	authUser.Namespace = "public"
 	//先查出所有topic的信息
 	tps, err := c.service.ListTopic(util.WithNamespace(authUser.Namespace))
 	if err != nil {
