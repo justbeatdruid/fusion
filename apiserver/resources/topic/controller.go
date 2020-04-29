@@ -467,8 +467,6 @@ func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) 
 	endTime := req.QueryParameter("endTime")
 	topicGroup := req.QueryParameter("topicGroup")
 
-	topicName = "testTopic"
-	topicGroup = "default"
 	authUser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
