@@ -59,17 +59,17 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 }
 
 func ToModel(obj *v1.Clientauth) *Clientauth {
-	ca :=  &Clientauth{
-		ID:            obj.ObjectMeta.Name,
-		Name:          obj.Spec.Name,
-		CreateUser:    *obj.Spec.CreateUser,
-		Namespace:     obj.Namespace,
-		CreatedAt:     util.NewTime(obj.ObjectMeta.CreationTimestamp.Time).Unix(),
-		IssuedAt:      obj.Spec.IssuedAt,
-		ExpireAt:      obj.Spec.ExipreAt,
-		Token:         obj.Spec.Token,
-		Status:        obj.Status.Status,
-		Message:       obj.Status.Message,
+	ca := &Clientauth{
+		ID:         obj.ObjectMeta.Name,
+		Name:       obj.Spec.Name,
+		CreateUser: *obj.Spec.CreateUser,
+		Namespace:  obj.Namespace,
+		CreatedAt:  util.NewTime(obj.ObjectMeta.CreationTimestamp.Time).Unix(),
+		IssuedAt:   obj.Spec.IssuedAt,
+		ExpireAt:   obj.Spec.ExipreAt,
+		Token:      obj.Spec.Token,
+		Status:     obj.Status.Status,
+		Message:    obj.Status.Message,
 	}
 
 	if obj.Spec.AuthorizedMap != nil {
