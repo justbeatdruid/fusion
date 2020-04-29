@@ -56,19 +56,6 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topCo
 	}
 }
 
-func (s *Service) ListTopicgroups() (*topicgroupv1.TopicgroupList, error) {
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{})
-	if err != nil {
-		return nil, fmt.Errorf("error list crd: %+v", err)
-	}
-	tps := &topicgroupv1.TopicgroupList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	klog.V(5).Infof("get v1.topicgroupList: %+v", tps)
-	return tps, nil
-}
-
 func (s *Service) CreateTopic(model *Topic) (*Topic, tperror.TopicError) {
 	if tpErr := model.Validate(); tpErr.Err != nil {
 		return nil, tpErr
@@ -93,6 +80,7 @@ func (s *Service) GetTopic(id string, opts ...util.OpOption) (*Topic, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
+
 	return ToModel(tp), nil
 }
 
@@ -483,21 +471,29 @@ func (s *Service) GrantPermissions(topicId string, authUserId string, actions Ac
 }
 
 func (s *Service) QueryAuthUserNameById(id string) (string, error) {
-	crd, err := s.clientAuthClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	ca, err := s.QueryAuthUserById(id)
 	if err != nil {
-		return "", fmt.Errorf("error get crd: %+v", err)
+		return "", err
 	}
-	ca := &clientauthv1.Clientauth{}
-
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), ca); err != nil {
-		return "", fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-
-	//klog.V(5).Infof("get auth user name: %+v", ca)
 	return ca.Spec.Name, nil
 
 }
 
+func (s *Service) QueryAuthUserById(id string) (*clientauthv1.Clientauth, error) {
+	crd, err := s.clientAuthClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	ca := &clientauthv1.Clientauth{}
+
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), ca); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+
+	//klog.V(5).Infof("get auth user name: %+v", ca)
+	return ca, nil
+
+}
 func (s *Service) GetTopicgroup(id string, namespace string) (*topicgroupv1.Topicgroup, error) {
 	crd, err := s.topicGroupClient.Namespace(namespace).Get(id, metav1.GetOptions{})
 	if err != nil {

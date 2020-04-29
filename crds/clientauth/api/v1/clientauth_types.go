@@ -29,13 +29,12 @@ type Status string
 type ClientauthSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Name          string         `json:"name"`
-	Tenant        string         `json:"Name"`       //租户名称
-	CreateUser    user.Users     `json:"createUser"` //创建用户
-	IssuedAt      int64          `json:"issuedAt"`
-	ExipreAt      int64          `json:"expireAt"`
-	Token         string         `json:"token"`
-	AuthorizedMap map[string]int `json:"authorizedMap"` //已授权topic id列表
+	Name          string          `json:"name"`
+	CreateUser    *user.Users     `json:"createUser"` //创建用户
+	IssuedAt      int64           `json:"issuedAt"`
+	ExipreAt      int64           `json:"expireAt"`
+	Token         string          `json:"token"`
+	AuthorizedMap *map[string]int `json:"authorizedMap"` //已授权topic id列表
 }
 
 // ClientauthStatus defines the observed state of Clientauth
