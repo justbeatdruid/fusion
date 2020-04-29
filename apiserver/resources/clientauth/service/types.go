@@ -59,7 +59,7 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 }
 
 func ToModel(obj *v1.Clientauth) *Clientauth {
-	return &Clientauth{
+	ca :=  &Clientauth{
 		ID:            obj.ObjectMeta.Name,
 		Name:          obj.Spec.Name,
 		CreateUser:    *obj.Spec.CreateUser,
@@ -70,8 +70,12 @@ func ToModel(obj *v1.Clientauth) *Clientauth {
 		Token:         obj.Spec.Token,
 		Status:        obj.Status.Status,
 		Message:       obj.Status.Message,
-		AuthorizedMap: *obj.Spec.AuthorizedMap,
 	}
+
+	if obj.Spec.AuthorizedMap != nil {
+		ca.AuthorizedMap = *obj.Spec.AuthorizedMap
+	}
+	return ca
 }
 
 func ToListModel(items *v1.ClientauthList) []*Clientauth {
