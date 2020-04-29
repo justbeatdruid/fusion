@@ -14,6 +14,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"net/http"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -859,14 +860,24 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	key := req.QueryParameter("key")
 	startTime := req.QueryParameter("startTime")
 	endTime := req.QueryParameter("endTime")
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
 
-	var (
-		order        = "order by '__publishTime__' desc Limit 10"
-		messageIdSql = `select * from pulsar."%s/%s"."%s" WHERE "__message_id__" = '%s' %s`
-		keySql       = `select * from pulsar."%s/%s"."%s" WHERE "__key__" = '%s' %s`
-		timeSql      = `select * from pulsar."%s/%s"."%s" WHERE "__publishTime__" BETWEEN %s AND %s %s`
-		sql          string
+	if !(len(messageId)>0&&len(key)==0&&len(startTime)==0&&len(endTime)==0)||(len(messageId)==0&&len(key)>0&&len(startTime)==0&&len(endTime)==0)||(len(messageId)==0&&len(key)==0&&len(startTime)>0&&len(endTime)>0){
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      1,
+			ErrorCode: tperror.ErrorQueryMessage,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorQueryParameterError]),
+			Detail:    fmt.Errorf("query parameter error: ").Error(),
+		}
+	}
+	const (
+		order        = `select * from (select row_number() over(order by __publish_time__ desc) row, * from pulsar."%s/%s"."%s" %s) as t where row between %d and %d`
+		messageIdSql = `WHERE "__message_id__" = '%s'`
+		keySql       = `WHERE "__key__" = '%s'`
+		timeSql      = `WHERE "__publishTime__" BETWEEN %s AND %s`
 	)
+	var sql string
 	authUser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
@@ -906,6 +917,7 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	}
+	//判断topicGroup是否存在
 	if len(topicGroup) > 0 {
 		tg, err := c.service.GetTopicgroup(topicGroup, authUser.Namespace)
 		if err != nil {
@@ -933,16 +945,81 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	}
+	//分页
+	p,err := strconv.ParseInt(page, 10,64)
+	if err!=nil {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      1,
+			ErrorCode: tperror.ErrorQueryMessage,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+			Detail:    fmt.Errorf("page error: %+v", err).Error(),
+		}
+	}
+	s,err := strconv.ParseInt(size,10,64)
+	if err!=nil {
+		return http.StatusInternalServerError, &MessageResponse{
+			Code:      1,
+			ErrorCode: tperror.ErrorQueryMessage,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+			Detail:    fmt.Errorf("size error: %+v", err).Error(),
+		}
+	}
+	start := (p-1)*s + 1
+	end := p*s
 	//根据MessageID查询topic信息
 	if len(messageId) > 0 {
-		sql = fmt.Sprintf(messageIdSql, tenate, topicGroup, topic, messageId, order)
-
+		//校验messageId的合法性
+		reg := `^\([1-9]\d+\,[1-9]\d+\,[1-9]\d+\)$`
+        r, err:= regexp.Compile(reg)
+		if err!=nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+				Detail:    fmt.Errorf("regexp error: %+v", err).Error(),
+			}
+		}
+        ok := r.MatchString(messageId)
+		if !ok {
+				return http.StatusInternalServerError, &MessageResponse{
+					Code:      1,
+					ErrorCode: tperror.ErrorQueryMessage,
+					Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], tperror.ErrorQueryParameterError),
+					Detail:    fmt.Errorf("messageId is not legal: %+v", err).Error(),
+				}
+			}
+		sql = fmt.Sprintf(messageIdSql, messageId)
+		sql = fmt.Sprintf(order,tenate,topicGroup,topic,sql,start,end)
 	}
+	//根据key查询topic信息
 	if len(key) > 0 {
-		sql = fmt.Sprintf(keySql, tenate, topicGroup, topic, key, order)
+		sql = fmt.Sprintf(keySql, key)
+		sql = fmt.Sprintf(order,tenate,topicGroup,topic,sql,start,end)
 	}
+	//根据time查询topic信息
 	if len(startTime) > 0 && len(endTime) > 0 {
-		sql = fmt.Sprintf(timeSql, tenate, topicGroup, topic, startTime, endTime, order,)
+		//校验时间的合法性
+		reg := `/^[1-9]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\s+(20|21|22|23|[0-1]\d):[0-5]\d:[0-5]\d$/`
+		r, err := regexp.Compile(reg)
+		if err!=nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+				Detail:    fmt.Errorf("regexp error: %+v", err).Error(),
+			}
+		}
+		ok := r.MatchString(reg)
+		if !ok {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], tperror.ErrorQueryParameterError),
+				Detail:    fmt.Errorf("messageId is not legal: %+v", err).Error(),
+			}
+		}
+		sql = fmt.Sprintf(timeSql,startTime,endTime)
+		sql = fmt.Sprintf(order, tenate, topicGroup, topic, sql,start, end)
 	}
 	httpStatus, messageResponse := c.QueryTopicMessage(sql)
 	return httpStatus, messageResponse
