@@ -6,6 +6,7 @@ import (
 	"github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"strconv"
 )
 
 const (
@@ -200,6 +201,9 @@ func ToPolicesModel(obj *v1.Policies) *Policies {
 	backlogQuota.Limit = objBacklogQuota["destination_storage"].Limit
 	backlogQuota.Policy = objBacklogQuota["destination_storage"].Policy
 
+	//kubernetes不支持float64类型，因此存储的时候转成string，展示的时候再转成float64
+	managedLedgerMaxMarkDeleteRate, _ := strconv.ParseFloat(obj.Persistence.ManagedLedgerMaxMarkDeleteRate, 64)
+
 	return &Policies{
 		RetentionPolicies: &RetentionPolicies{
 			RetentionSizeInMB:      obj.RetentionPolicies.RetentionSizeInMB,
@@ -226,7 +230,7 @@ func ToPolicesModel(obj *v1.Policies) *Policies {
 			BookkeeperEnsemble:             obj.Persistence.BookkeeperEnsemble,
 			BookkeeperWriteQuorum:          obj.Persistence.BookkeeperWriteQuorum,
 			BookkeeperAckQuorum:            obj.Persistence.BookkeeperAckQuorum,
-			ManagedLedgerMaxMarkDeleteRate: obj.Persistence.ManagedLedgerMaxMarkDeleteRate,
+			ManagedLedgerMaxMarkDeleteRate: managedLedgerMaxMarkDeleteRate,
 		},
 
 		SubscriptionDispatchRate: &sRate,
@@ -259,13 +263,24 @@ func ToPolicesApi(policies *Policies) *v1.Policies {
 	}
 
 	tRate := make(map[string]v1.DispatchRate)
+	for k, v := range *policies.TopicDispatchRate {
+		sRate[k] = v1.DispatchRate{
+			DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
+			DispatchThrottlingRateInByte: v.DispatchThrottlingRateInByte,
+			RelativeToPublishRate:        v.RelativeToPublishRate,
+			RatePeriodInSecond:           v.RatePeriodInSecond,
+		}
+	}
 
 	bMap := make(map[string]v1.BacklogQuota)
-	var backlopQuota v1.BacklogQuota
 
-	modelBmap := *policies.BacklogQuota
-	backlopQuota.Limit = modelBmap["destination_storage"].Limit
-	backlopQuota.Policy = modelBmap["destination_storage"].Policy
+	if policies.BacklogQuota != nil {
+		var backlopQuota v1.BacklogQuota
+		backlopQuota.Limit = (*policies.BacklogQuota)["destination_storage"].Limit
+		backlopQuota.Policy = (*policies.BacklogQuota)["destination_storage"].Policy
+		bMap["destination_storage"] = backlopQuota
+	}
+
 
 	for k, v := range *policies.TopicDispatchRate {
 		sRate[k] = v1.DispatchRate{
@@ -301,7 +316,7 @@ func ToPolicesApi(policies *Policies) *v1.Policies {
 			BookkeeperEnsemble:             policies.Persistence.BookkeeperEnsemble,
 			BookkeeperWriteQuorum:          policies.Persistence.BookkeeperWriteQuorum,
 			BookkeeperAckQuorum:            policies.Persistence.BookkeeperAckQuorum,
-			ManagedLedgerMaxMarkDeleteRate: policies.Persistence.ManagedLedgerMaxMarkDeleteRate},
+			ManagedLedgerMaxMarkDeleteRate: strconv.FormatFloat(policies.Persistence.ManagedLedgerMaxMarkDeleteRate, 'f', -1, 64)},
 		SubscriptionDispatchRate: &sRate,
 		ClusterSubscribeRate:     &cRate,
 		TopicDispatchRate:        &tRate,

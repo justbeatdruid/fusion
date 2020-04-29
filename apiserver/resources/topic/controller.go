@@ -814,7 +814,30 @@ func (c *controller) ListUsers(req *restful.Request) (int, *ListResponse) {
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	}
+
 	var permissionList PermissionList = tp.Permissions
+
+	var permissions = make([]service.Permission, 0)
+	for _, p := range permissionList {
+		ca, err  := c.service.QueryAuthUserById(p.AuthUserID)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:    1,
+				Message: fmt.Errorf("list database error: %+v", err).Error(),
+			}
+		}
+		p.Token = ca.Spec.Token
+		p.IssuedAt = ca.Spec.IssuedAt
+		p.ExpireAt = ca.Spec.ExipreAt
+		if ca.Spec.ExipreAt > util.Now().Unix() {
+			p.Effective = true
+		} else {
+			p.Effective = false
+		}
+
+		permissions = append(permissions, p)
+	}
+	permissionList = permissions
 	if len(AuthUserName) > 0 {
 		permissionList = c.ListUsersByName(AuthUserName, permissionList)
 	}
