@@ -25,9 +25,10 @@ func QueryTopicMessages(sql string) ([]service.Messages, error) {
 		state = response.Stats.State
 		if state == Failed {
 			return nil, fmt.Errorf("query failed: %v ", response.Error.Message)
-		} else if state == Finished {
+		} else if state == Finished || len(response.Data) > 0 {
 			if response.Data != nil {
-				for _, data := range response.Data {
+				for _, data := range response.Data{
+					var msg = make(map[string]interface{})
 					var m service.Messages
 					for k, v := range data {
 						switch k {
@@ -41,7 +42,7 @@ func QueryTopicMessages(sql string) ([]service.Messages, error) {
 								return nil, fmt.Errorf("__publish_time__ type error")
 							}
 						case "__producer_name__":
-							if m.ProduceName, ok = v.(string); !ok {
+							if m.ProducerName, ok = v.(string); !ok {
 								return nil, fmt.Errorf("__producer_name__ type error")
 							}
 						case "__partition__":
@@ -50,13 +51,17 @@ func QueryTopicMessages(sql string) ([]service.Messages, error) {
 							}
 						case "__key__":
 							m.Key = v
+						case "__row__":
+						case "__value__":
+							//TODO
 						case "__event_time__":
 						case "__sequence_id__":
 						case "__properties__":
 						default:
-							m.Messages = append(m.Messages, v)
+							msg[k] = v
 						}
 					}
+					m.Message = msg
 					M = append(M, m)
 				}
 				return M, nil
