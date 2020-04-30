@@ -81,13 +81,13 @@ type ConsumerStat struct {
 }
 
 type Messages struct {
-	ProduceName string        `json:"topicName"`
-	ID          string        `json:"id"`
-	Time        string        `json:"time"`
-	Messages    []interface{} `json:"messages"`
-	Size        int           `json:"size"`
-	Partition   float64       `json:"partition"`
-	Key         interface{}   `json:"key"`
+	ProducerName string      `json:"producerName"`
+	ID           string      `json:"id"`
+	Time         string      `json:"time"`
+	Message      interface{} `json:"message"`
+	Size         int         `json:"size"`
+	Partition    float64     `json:"partition"`
+	Key          interface{} `json:"key"`
 }
 type Message struct {
 	TopicName string           `json:"topicName"`

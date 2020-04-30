@@ -27,7 +27,7 @@ type controller struct {
 }
 
 const (
-	order        = `select * from (select row_number() over(order by __publish_time__ desc) row, * from pulsar."%s/%s"."%s" %s) as t where row between %d and %d`
+	order        = `select * from (select row_number() over(order by __publish_time__ desc) __row__, * from pulsar."%s/%s"."%s" %s) as t where __row__ between %d and %d`
 	messageIdSql = `WHERE "__message_id__" = '%s'`
 	keySql       = `WHERE "__key__" = '%s'`
 	timeSql      = `WHERE "__publish_time__" BETWEEN %s AND %s`
@@ -914,8 +914,14 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	if m != nil {
 		return h, m
 	}
-	tenate := authUser.Namespace
+	tenant := authUser.Namespace
 	//分页
+	if len(page) == 0 {
+		page = "1"
+	}
+	if len(size) == 0 {
+		size = "10"
+	}
 	p, err := strconv.ParseInt(page, 10, 64)
 	if err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
@@ -939,18 +945,18 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	//根据MessageID查询topic信息
 	if len(messageId) > 0 {
 		//校验messageId的合法性
-		reg := `^\([1-9]\d+\,[1-9]\d+\,[1-9]\d+\)$`
+		reg := `^\([1-9]{1,}\,[0-9]{1,}\,[0-9]{1,}\)$`
 		h, m, ok := c.QueryParamterValidate(reg, messageId)
 		if !ok {
 			return h, m
 		}
 		sql = fmt.Sprintf(messageIdSql, messageId)
-		sql = fmt.Sprintf(order, tenate, topicGroup, topic, sql, start, end)
+		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, start, end)
 	}
 	//根据key查询topic信息
 	if len(key) > 0 {
 		sql = fmt.Sprintf(keySql, key)
-		sql = fmt.Sprintf(order, tenate, topicGroup, topic, sql, start, end)
+		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, start, end)
 	}
 	//根据time查询topic信息
 	if len(startTime) > 0 && len(endTime) > 0 {
@@ -965,7 +971,7 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 			return h, m
 		}
 		sql = fmt.Sprintf(timeSql, startTime, endTime)
-		sql = fmt.Sprintf(order, tenate, topicGroup, topic, sql, start, end)
+		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, start, end)
 	}
 	httpStatus, messageResponse = c.QueryTopicMessage(sql)
 	return httpStatus, messageResponse
