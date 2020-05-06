@@ -30,15 +30,16 @@ const (
 )
 
 type Topicgroup struct {
-	ID        string     `json:"id"`
-	Name      string     `json:"name"` //Topic分组名称
-	Namespace string     `json:"namespace"`
-	Policies  *Policies  `json:"policies,omitempty"` //Topic分组的策略
-	CreatedAt int64      `json:"createdAt"`          //创建时间
-	Users     user.Users `json:"users"`
-	Status    v1.Status  `json:"status"`
-	Message   string     `json:"message"`
-	Available bool       `json:"available"` //是否可用
+	ID          string     `json:"id"`
+	Name        string     `json:"name"` //Topic分组名称
+	Namespace   string     `json:"namespace"`
+	Description string     `json:"description"`        //描述
+	Policies    *Policies  `json:"policies,omitempty"` //Topic分组的策略
+	CreatedAt   int64      `json:"createdAt"`          //创建时间
+	Users       user.Users `json:"users"`
+	Status      v1.Status  `json:"status"`
+	Message     string     `json:"message"`
+	Available   bool       `json:"available"` //是否可用
 }
 
 type Policies struct {
@@ -146,8 +147,9 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 	crd.ObjectMeta.Namespace = app.Namespace
 
 	crd.Spec = v1.TopicgroupSpec{
-		Name:     app.Name,
-		Policies: ToPolicesApi(app.Policies),
+		Name:        app.Name,
+		Policies:    ToPolicesApi(app.Policies),
+		Descirption: app.Description,
 	}
 
 	status := app.Status
@@ -165,15 +167,16 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 
 func ToModel(obj *v1.Topicgroup) *Topicgroup {
 	return &Topicgroup{
-		ID:        obj.ObjectMeta.Name,
-		Name:      obj.Spec.Name,
-		Namespace: obj.ObjectMeta.Namespace,
-		Status:    obj.Status.Status,
-		Message:   obj.Status.Message,
-		CreatedAt: obj.ObjectMeta.CreationTimestamp.Unix(),
-		Policies:  ToPolicesModel(obj.Spec.Policies),
-		Users:     user.GetUsersFromLabels(obj.ObjectMeta.Labels),
-		Available: obj.Spec.Available,
+		ID:          obj.ObjectMeta.Name,
+		Name:        obj.Spec.Name,
+		Namespace:   obj.ObjectMeta.Namespace,
+		Status:      obj.Status.Status,
+		Message:     obj.Status.Message,
+		CreatedAt:   obj.ObjectMeta.CreationTimestamp.Unix(),
+		Policies:    ToPolicesModel(obj.Spec.Policies),
+		Users:       user.GetUsersFromLabels(obj.ObjectMeta.Labels),
+		Available:   obj.Spec.Available,
+		Description: obj.Spec.Descirption,
 	}
 }
 
@@ -209,11 +212,11 @@ func ToPolicesModel(obj *v1.Policies) *Policies {
 		OffloadThreshold:            obj.OffloadThreshold,
 		SubscriptionAuthMode:        obj.SubscriptionAuthMode,
 		EncryptionRequired:          obj.EncryptionRequired,
-		Persistence: persistent,
-		SubscriptionDispatchRate: &sRate,
-		ClusterSubscribeRate:     &cRate,
-		TopicDispatchRate:        &tRate,
-		DeduplicationEnabled:     obj.DeduplicationEnabled,
+		Persistence:                 persistent,
+		SubscriptionDispatchRate:    &sRate,
+		ClusterSubscribeRate:        &cRate,
+		TopicDispatchRate:           &tRate,
+		DeduplicationEnabled:        obj.DeduplicationEnabled,
 	}
 }
 
@@ -317,7 +320,6 @@ func ToPolicesApi(policies *Policies) *v1.Policies {
 			NumBundles: policies.Bundles.NumBundles,
 		},
 		MessageTtlInSeconds: policies.MessageTtlInSeconds,
-
 		BacklogQuota:                &bMap,
 		SchemaCompatibilityStrategy: policies.SchemaCompatibilityStrategy,
 		IsAllowAutoUpdateSchema:     policies.IsAllowAutoUpdateSchema,
@@ -588,7 +590,6 @@ func (a *Topicgroup) Validate() error {
 	}
 
 	p := a.Policies
-	//TODO 参数校验待验证
 	if err := p.Validate(); err != nil {
 		return err
 	}

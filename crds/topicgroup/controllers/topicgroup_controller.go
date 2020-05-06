@@ -72,6 +72,11 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			r, err := r.Operator.GetNamespacePolicies(namespace)
 			if err == nil {
 				namespace.Spec.Policies = r
+				if namespace.Spec.Policies != nil {
+					if namespace.Spec.Policies.DeduplicationEnabled == nil {
+						*namespace.Spec.Policies.DeduplicationEnabled = false
+					}
+				}
 			} else {
 
 			}
