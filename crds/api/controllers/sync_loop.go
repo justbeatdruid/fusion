@@ -82,7 +82,7 @@ func (r *ApiSynchronizer) SyncApiCountFromKong() error {
 	for index, value := range apiList.Items {
 		//判断api是否配置监控插件，未配置时先添加监控插件
 		if len(value.Spec.KongApi.PrometheusID) == 0 && len(value.Spec.KongApi.KongID) != 0 {
-			klog.Infof("api prometheus id %s", value.Spec.KongApi.PrometheusID)
+			klog.Infof("api id %s and prometheus id %s", value.ObjectMeta.Name, value.Spec.KongApi.PrometheusID)
 			apiInfo := &apiList.Items[index]
 			//添加监控插件失败不退出打印日志
 			if err := r.Operator.AddRoutePrometheusByKong(apiInfo, value.Spec.KongApi.KongID); err != nil {

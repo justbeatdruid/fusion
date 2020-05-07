@@ -302,6 +302,9 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Serviceunit, err
 	if err != nil {
 		return nil, fmt.Errorf("get crd by id error: %+v", err)
 	}
+	if su.Status.APICount != 0 {
+		return nil, fmt.Errorf("existing apis references this serviceunit")
+	}
 	if !s.tenantEnabled {
 		u := util.OpList(opts...).User()
 		if !user.WritePermitted(u, su.ObjectMeta.Labels) {
