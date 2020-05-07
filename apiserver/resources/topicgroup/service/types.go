@@ -319,7 +319,7 @@ func ToPolicesApi(policies *Policies) *v1.Policies {
 			Boundaries: policies.Bundles.Boundaries,
 			NumBundles: policies.Bundles.NumBundles,
 		},
-		MessageTtlInSeconds: policies.MessageTtlInSeconds,
+		MessageTtlInSeconds:         policies.MessageTtlInSeconds,
 		BacklogQuota:                &bMap,
 		SchemaCompatibilityStrategy: policies.SchemaCompatibilityStrategy,
 		IsAllowAutoUpdateSchema:     policies.IsAllowAutoUpdateSchema,
@@ -589,6 +589,15 @@ func (a *Topicgroup) Validate() error {
 		}
 	}
 
+	p := a.Policies
+	if err := p.Validate(); err != nil {
+		return err
+	}
+	a.ID = names.NewID()
+	return nil
+}
+
+func (a *Topicgroup) ValidateModifyBody() error {
 	p := a.Policies
 	if err := p.Validate(); err != nil {
 		return err

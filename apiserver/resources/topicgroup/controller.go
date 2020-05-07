@@ -62,7 +62,6 @@ type PingResponse = DeleteResponse
 type TopicgroupList []*service.Topicgroup
 type TopicgroupSlice TopicgroupList
 type TopicList []*topicservice.Topic
-
 func (tps TopicList) Len() int {
 	return len(tps)
 }
@@ -226,8 +225,9 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 		}
 	}
 
-	policies := service.NewPolicies(false)
-	if err := req.ReadEntity(policies); err != nil {
+	body := &service.Topicgroup{}
+
+	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      fail,
 			ErrorCode: tgerror.ErrorReadEntity,
@@ -244,7 +244,7 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	data, err := c.service.ModifyTopicgroup(id, policies, util.WithNamespace(authUser.Namespace))
+	data, err := c.service.ModifyTopicgroup(id, body, util.WithNamespace(authUser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
