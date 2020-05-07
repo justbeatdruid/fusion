@@ -140,6 +140,88 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			}
 		}
 
+		//更新Persistence
+		if err = r.Operator.SetPolicy(PersistenceSuffix, namespace, namespace.Spec.Policies.Persistence, post); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = fmt.Sprintf("set persistence: %+v", err)
+		}
+
+		//更新CompactionThreshold
+		if err = r.Operator.SetPolicy(CompactionThresholdSuffix, namespace, namespace.Spec.Policies.CompactionThreshold, put); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = fmt.Sprintf("set compaction threshold: %+v", err)
+		}
+
+		//更新DeduplicationEnable
+		if err = r.Operator.SetPolicy(deduplicationSuffix, namespace, namespace.Spec.Policies.DeduplicationEnabled, post); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = fmt.Sprintf("set deduplication enable: %+v", err)
+		}
+
+		//更新maxConsumersPerSubscription
+		if err = r.Operator.SetPolicy(maxConsumersPerSubscriptionSuffix, namespace, namespace.Spec.Policies.MaxConsumersPerSubscription, post); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = fmt.Sprintf("set maxConsumersPerSubscription: %+v", err)
+		}
+
+		//更新maxConsumersPerTopic
+		if err = r.Operator.SetPolicy(maxConsumersPerTopicSuffix, namespace, namespace.Spec.Policies.MaxConsumersPerTopic, post); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = fmt.Sprintf("set maxConsumersPerTopicSuffix: %+v", err)
+		}
+
+		//更新maxProducersPerTopic
+		if err = r.Operator.SetPolicy(maxProducersPerTopicSuffix, namespace, namespace.Spec.Policies.MaxProducersPerTopic, post); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = fmt.Sprintf("set maxProducersPerTopic: %+v", err)
+		}
+
+		//更新offloadThreshold
+		if err = r.Operator.SetPolicy(offloadThresholdSuffix, namespace, namespace.Spec.Policies.OffloadThreshold, put); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = fmt.Sprintf("set offloadThreshold: %+v", err)
+		}
+
+		//更新IsAllowAutoUpdateSchema
+		if err = r.Operator.SetPolicy(isAllowAutoUpdateSchemaSuffix, namespace, namespace.Spec.Policies.IsAllowAutoUpdateSchema, post); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = fmt.Sprintf("set IsAllowAutoUpdateSchema: %+v", err)
+		}
+
+		//更新SchemaCompatibilityStrategy
+		//TODO 报错：415
+		if err = r.Operator.SetPolicy(schemaCompatibilityStrategySuffix, namespace, namespace.Spec.Policies.SchemaCompatibilityStrategy, put); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = fmt.Sprintf("set SchemaCompatibilityStrategy: %+v", err)
+		}
+
+		//更新SchemaValidationEnforced
+		if err = r.Operator.SetPolicy(schemaValidationEnforcedSuffix, namespace, namespace.Spec.Policies.SchemaValidationEnforced, post); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = fmt.Sprintf("set SchemaValidationEnforced: %+v", err)
+		}
+
+		if namespace.Spec.Policies.OffloadDeletionLagMs != nil {
+			//更新OffloadDeletionLagMs
+			if err = r.Operator.SetPolicy(offloadDeletionLagMsSuffix, namespace, namespace.Spec.Policies.OffloadDeletionLagMs, put); err != nil {
+				namespace.Status.Status = nlptv1.Error
+				namespace.Status.Message = fmt.Sprintf("set OffloadDeletionLagMs: %+v", err)
+			}
+		}
+
+		//更新SchemaCompatibilityStrategy
+		if err = r.Operator.SetPolicy(encryptionRequiredSuffix, namespace, namespace.Spec.Policies.EncryptionRequired, post); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = fmt.Sprintf("set EncryptionRequired: %+v", err)
+		}
+
+		//更新SubscriptionAuthMode
+		//TODO 报错：415
+		if err = r.Operator.SetPolicy(subscriptionAuthModeSuffix, namespace, namespace.Spec.Policies.SubscriptionAuthMode, post); err != nil {
+			namespace.Status.Status = nlptv1.Error
+			namespace.Status.Message = fmt.Sprintf("set SubscriptionAuthMode: %+v", err)
+		}
+
 		if namespace.Status.Status == nlptv1.Updating {
 			namespace.Status.Status = nlptv1.Updated
 			namespace.Status.Message = "modify topic group polices successfully"
