@@ -185,6 +185,9 @@ func (s *Service) Validate(a *Datasource) error {
 		if !s.tenantEnabled {
 			return fmt.Errorf("cannot create or update datawarehouse datasource")
 		} else {
+			if a.DataWarehouse == nil {
+				return fmt.Errorf("cannot find datawarehouse in request body")
+			}
 			if a.DataWarehouse.Name == "" || a.DataWarehouse.SubjectName == "" {
 				return fmt.Errorf("name or subject name is null")
 			}

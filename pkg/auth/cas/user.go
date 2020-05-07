@@ -85,7 +85,7 @@ func GetUserNameByID(id string) (string, error) {
 		user, err := op.GetUserByID(id)
 		return user.Username, err
 	}
-	return "", fmt.Errorf("user id not found")
+	return "", fmt.Errorf("user id %s not found", id)
 }
 
 func syncUsers() (int, error) {
