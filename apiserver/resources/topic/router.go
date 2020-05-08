@@ -47,13 +47,13 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 	//批量删除topic
-	/*	ws.Route(ws.DELETE("/topics").
+		ws.Route(ws.DELETE("/topics").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("delete all topics ").
 		To(r.deleteTopics).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
-		Do(returns200, returns500))*/
+		Do(returns200, returns500))
 	//查询topic信息
 	ws.Route(ws.GET("/topics/data").
 		Consumes(restful.MIME_JSON).
@@ -143,10 +143,10 @@ func (r *router) listTopic(request *restful.Request, response *restful.Response)
 }
 
 //批量删除topics
-/*func (r *router) deleteTopics(request *restful.Request, response *restful.Response) {
+func (r *router) deleteTopics(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DeleteTopics(request)
 	response.WriteHeaderAndEntity(code, result)
-}*/
+}
 
 func (r *router) doStatisticsOnTopics(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DoStatisticsOnTopics(request)

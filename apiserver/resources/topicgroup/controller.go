@@ -264,10 +264,19 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 }
 
 //批量删除topicgroups
-/*func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse) {
+func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse) {
 	ids := req.QueryParameters("ids")
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tgerror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
 	for _, id := range ids {
-		if _, err := c.service.DeleteTopicgroup(id); err != nil {
+		if _, err := c.service.DeleteTopicgroup(id,util.WithNamespace(authUser.Namespace)); err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    1,
 				Message: fmt.Errorf("delete topicgroup error: %+v", err).Error(),
@@ -279,7 +288,7 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 		ErrorCode: tgerror.Success,
 		Message:   "delete success",
 	}
-}*/
+}
 func (c *controller) DeleteTopicgroup(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	authUser, err := auth.GetAuthUser(req)
