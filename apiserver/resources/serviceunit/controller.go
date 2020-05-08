@@ -52,6 +52,8 @@ type UpdateRequest = Wrapped
 type UpdateResponse = Wrapped
 
 func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateResponse) {
+	util.ServiceunitRLock()
+	defer util.ServiceunitRUnlock()
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{

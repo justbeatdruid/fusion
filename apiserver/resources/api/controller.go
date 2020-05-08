@@ -81,6 +81,8 @@ type StatisticsResponse = struct {
 }
 
 func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
+	util.ApiRLock()
+	defer util.ApiRUnlock()
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{

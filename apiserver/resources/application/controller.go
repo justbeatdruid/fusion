@@ -58,6 +58,8 @@ type StatisticsResponse = struct {
 }
 
 func (c *controller) CreateApplication(req *restful.Request) (int, *CreateResponse) {
+	util.ApplicationRLock()
+	defer util.ApplicationRUnlock()
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{

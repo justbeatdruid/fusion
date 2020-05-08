@@ -482,15 +482,21 @@ func (s *Service) GetField(id, table, field string, opts ...util.OpOption) (*Fie
 }
 
 func (s *Service) Ping(ds *Datasource) error {
-	if err := ds.ValidateConnection(); err != nil {
-		return fmt.Errorf("database connection validate error: %+v", err)
-	}
 	if ds == nil {
 		return fmt.Errorf("datasource is null")
+	}
+	if err := ds.ValidateConnection(); err != nil {
+		return fmt.Errorf("database connection validate error: %+v", err)
 	}
 	switch ds.Type {
 	case v1.RDBType:
 		return driver.PingRDB(ToAPI(ds, true))
+	case v1.DataWarehouseType:
+		_, err := s.GetDataWareshouse(ToAPI(ds, true).ObjectMeta.Annotations)
+		if err != nil {
+			return fmt.Errorf("cannot get datawarehouse: %+v", err)
+		}
+		return err
 	default:
 		return fmt.Errorf("not supported for %s", ds.Type)
 	}
