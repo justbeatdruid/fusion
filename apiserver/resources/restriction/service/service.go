@@ -40,15 +40,15 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenan
 	}
 }
 
-func (s *Service) CreateRestriction(model *Restriction) (*Restriction, error) {
+func (s *Service) CreateRestriction(model *Restriction) (*Restriction, error, string) {
 	if err := s.Validate(model); err != nil {
-		return nil, fmt.Errorf("bad request: %+v", err)
+		return nil, fmt.Errorf("bad request: %+v", err), "007000011"
 	}
 	su, err := s.Create(ToAPI(model))
 	if err != nil {
-		return nil, fmt.Errorf("cannot create object: %+v", err)
+		return nil, fmt.Errorf("cannot create object: %+v", err), "007000012"
 	}
-	return ToModel(su), nil
+	return ToModel(su), nil, "0"
 }
 
 func (s *Service) ListRestriction(opts ...util.OpOption) ([]*Restriction, error) {

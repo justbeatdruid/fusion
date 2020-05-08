@@ -5,6 +5,7 @@ import (
 	v1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"net/http"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol/service"
@@ -90,11 +91,14 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
 	body.Data.Namespace = authuser.Namespace
-	if db, err := c.service.CreateTrafficcontrol(body.Data); err != nil {
+	if db, err, code := c.service.CreateTrafficcontrol(body.Data); err != nil {
+		if errors.IsNameDuplicated(err) {
+			code = "012000011"
+		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
-			ErrorCode: "012000004",
-			Message:   c.errMsg.Trafficcontrol["012000004"],
+			ErrorCode: code,
+			Message:   c.errMsg.Trafficcontrol[code],
 			Detail:    fmt.Errorf("create trafficcontrol error: %+v", err).Error(),
 		}
 	} else {
@@ -244,10 +248,14 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 
 	if db, err := c.service.UpdateTrafficcontrol(req.PathParameter("id"), data,
 		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+			code := "012000009"
+			if errors.IsNameDuplicated(err) {
+				code = "012000011"
+			}
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:      2,
-			ErrorCode: "012000009",
-			Message:   c.errMsg.Trafficcontrol["012000009"],
+			ErrorCode: code,
+			Message:   c.errMsg.Trafficcontrol[code],
 			Detail:    fmt.Errorf("update trafficcontrol error: %+v", err).Error(),
 		}
 	} else {

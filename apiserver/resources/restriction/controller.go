@@ -5,6 +5,7 @@ import (
 	v1 "github.com/chinamobile/nlpt/crds/restriction/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"k8s.io/klog"
 	"net/http"
 
@@ -91,11 +92,14 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
 	body.Data.Namespace = authuser.Namespace
-	if db, err := c.service.CreateRestriction(body.Data); err != nil {
+	if db, err, code := c.service.CreateRestriction(body.Data); err != nil {
+		if errors.IsNameDuplicated(err) {
+			code = "008000021"
+		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
-			ErrorCode: "007000003",
-			Message:   c.errMsg.Restriction["007000003"],
+			ErrorCode: code,
+			Message:   c.errMsg.Restriction[code],
 			Detail:    fmt.Errorf("create restriction error: %+v", err).Error(),
 		}
 	} else {
@@ -249,10 +253,14 @@ func (c *controller) UpdateRestriction(req *restful.Request) (int, *UpdateRespon
 
 	if db, err := c.service.UpdateRestriction(req.PathParameter("id"), data,
 		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		code := "007000009"
+		if errors.IsNameDuplicated(err) {
+			code = "007000013"
+		}
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:      2,
-			ErrorCode: "007000008",
-			Message:   c.errMsg.Restriction["007000008"],
+			ErrorCode: code,
+			Message:   c.errMsg.Restriction[code],
 			Detail:    fmt.Errorf("update restriction error: %+v", err).Error(),
 		}
 	} else {

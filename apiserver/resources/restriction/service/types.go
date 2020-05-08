@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/chinamobile/nlpt/crds/restriction/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -180,6 +181,15 @@ func (s *Service) Validate(a *Restriction) error {
 		}
 	default:
 		return fmt.Errorf("wrong config type: %s", a.Type)
+	}
+	resList, errs := s.List(util.WithNamespace(a.Namespace))
+	if errs != nil {
+		return fmt.Errorf("cannot list restriction object: %+v", errs)
+	}
+	for _, r := range resList.Items {
+		if r.Spec.Name == a.Name {
+			return errors.NameDuplicatedError("restriction name duplicated: %+v", errs)
+		}
 	}
 	if len(a.Users.Owner.ID) == 0 {
 		return fmt.Errorf("owner not set")

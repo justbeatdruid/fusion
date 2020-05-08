@@ -55,15 +55,15 @@ func (s *Service) getApplication(id string, crdNamespace string) (*appv1.Applica
 	return app, nil
 }
 
-func (s *Service) CreateTrafficcontrol(model *Trafficcontrol) (*Trafficcontrol, error) {
+func (s *Service) CreateTrafficcontrol(model *Trafficcontrol) (*Trafficcontrol, error, string) {
 	if err := s.Validate(model); err != nil {
-		return nil, fmt.Errorf("bad request: %+v", err)
+		return nil, fmt.Errorf("bad request: %+v", err), "012000012"
 	}
 	su, err := s.Create(ToAPI(model))
 	if err != nil {
-		return nil, fmt.Errorf("cannot create object: %+v", err)
+		return nil, fmt.Errorf("cannot create object: %+v", err), "012000013"
 	}
-	return ToModel(su), nil
+	return ToModel(su), nil, "0"
 }
 
 func (s *Service) ListTrafficcontrol(opts ...util.OpOption) ([]*Trafficcontrol, error) {

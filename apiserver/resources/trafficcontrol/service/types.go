@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"sort"
 	"strings"
 
@@ -129,7 +130,15 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
-
+	trafficList, errs := s.List(util.WithNamespace(a.Namespace))
+	if errs != nil {
+		return fmt.Errorf("cannot list trafficcontrol object: %+v", errs)
+	}
+	for _, t := range trafficList.Items {
+		if t.Spec.Name == a.Name {
+			return errors.NameDuplicatedError("trafficcontrol name duplicated: %+v", errs)
+		}
+	}
 	if len(a.Type) == 0 {
 		return fmt.Errorf("type is null")
 	}
