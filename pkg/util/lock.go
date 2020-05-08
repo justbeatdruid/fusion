@@ -4,30 +4,30 @@ import (
 	"sync"
 )
 
-var applock *sync.RWMutex = new(sync.RWMutex)
-var apilock *sync.RWMutex = new(sync.RWMutex)
-var sulock *sync.RWMutex = new(sync.RWMutex)
+var applock *sync.Mutex = new(sync.Mutex)
+var apilock *sync.Mutex = new(sync.Mutex)
+var sulock *sync.Mutex = new(sync.Mutex)
 
-func ApplicationRLock() {
-	applock.RLock()
+func ApplicationLock() {
+	applock.Lock()
 }
 
-func ApplicationRUnlock() {
-	applock.RUnlock()
+func ApplicationUnlock() {
+	applock.Unlock()
 }
 
-func ApiRLock() {
-	apilock.RLock()
+func ApiLock() {
+	apilock.Lock()
 }
 
-func ApiRUnlock() {
-	apilock.RUnlock()
+func ApiUnlock() {
+	apilock.Unlock()
 }
 
-func ServiceunitRLock() {
-	sulock.RLock()
+func ServiceunitLock() {
+	sulock.Lock()
 }
 
-func ServiceunitRUnlock() {
-	sulock.RUnlock()
+func ServiceunitUnlock() {
+	sulock.Unlock()
 }
