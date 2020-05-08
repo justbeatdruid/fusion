@@ -145,7 +145,6 @@ func (c *Connector) ToResponse(resBody *ResponseBody) *Response {
 			datas = append(datas, data)
 		}
 	}
-
 	return &Response{
 		ID:      resBody.ID,
 		InfoUri: resBody.InfoUri,

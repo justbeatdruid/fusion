@@ -6,6 +6,7 @@ import (
 	"github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"regexp"
 	"strconv"
 )
 
@@ -27,6 +28,7 @@ const (
 	FULL_TRANSITIVE         = "FULL_TRANSITIVE"
 	None                    = "None"
 	Prefix                  = "Prefix"
+	NameReg                 = "^[-=:.\\w]{100}$"
 )
 
 type Topicgroup struct {
@@ -319,7 +321,7 @@ func ToPolicesApi(policies *Policies) *v1.Policies {
 			Boundaries: policies.Bundles.Boundaries,
 			NumBundles: policies.Bundles.NumBundles,
 		},
-		MessageTtlInSeconds: policies.MessageTtlInSeconds,
+		MessageTtlInSeconds:         policies.MessageTtlInSeconds,
 		BacklogQuota:                &bMap,
 		SchemaCompatibilityStrategy: policies.SchemaCompatibilityStrategy,
 		IsAllowAutoUpdateSchema:     policies.IsAllowAutoUpdateSchema,
@@ -586,9 +588,22 @@ func (a *Topicgroup) Validate() error {
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
-		}
+		}else {
+			if ok, err := regexp.MatchString(NameReg,v);!ok{
+				return  fmt.Errorf("name is illegal: %v ", err)
+				}
+			}
 	}
 
+	p := a.Policies
+	if err := p.Validate(); err != nil {
+		return err
+	}
+	a.ID = names.NewID()
+	return nil
+}
+
+func (a *Topicgroup) ValidateModifyBody() error {
 	p := a.Policies
 	if err := p.Validate(); err != nil {
 		return err

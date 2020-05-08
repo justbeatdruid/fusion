@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -16,6 +17,7 @@ const (
 	DefaultTenant    = "public"
 	DefaultNamespace = "default"
 	Separator        = "/"
+    NameReg          = "^[-=:.\\w]{100}$"
 )
 
 type Topic struct {
@@ -277,7 +279,16 @@ func (a *Topic) Validate() topicerr.TopicError {
 				Err:       fmt.Errorf("%s is null", k),
 				ErrorCode: topicerr.ErrorBadRequest,
 			}
+		}else {
+			if ok, err := regexp.MatchString(NameReg,v);!ok{
+				return topicerr.TopicError{
+					Err:       fmt.Errorf("name is illegal: %v ", err),
+					ErrorCode: topicerr.ErrorCreateTopic,
+				}
+			}
 		}
+
+
 	}
 	a.ID = names.NewID()
 	return topicerr.TopicError{

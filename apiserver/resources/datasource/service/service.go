@@ -100,8 +100,10 @@ func (s *Service) DeleteDatasource(id string, opts ...util.OpOption) error {
 	if err != nil {
 		return fmt.Errorf("get datasource error: %+v", err)
 	}
-	if ds.Spec.Type == v1.DataWarehouseType {
-		return fmt.Errorf("cannot delete datawarehouse datasource")
+	if !s.tenantEnabled {
+		if ds.Spec.Type == v1.DataWarehouseType {
+			return fmt.Errorf("cannot delete datawarehouse datasource")
+		}
 	}
 	return s.Delete(id, opts...)
 }
@@ -131,6 +133,15 @@ func (s *Service) CreateDatawarehouse(ds *v1.Datasource) (*v1.Datasource, error)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get datawarehouse: %+v", err)
 	}
+	if ds.Spec.DataWarehouse.Tables == nil {
+		ds.Spec.DataWarehouse.Tables = make([]dwv1.Table, 0)
+	}
+	for i := range ds.Spec.DataWarehouse.Tables {
+		if ds.Spec.DataWarehouse.Tables[i].Properties == nil {
+			ds.Spec.DataWarehouse.Tables[i].Properties = make([]dwv1.Property, 0)
+		}
+	}
+	ds.Status.Status = v1.Normal
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ds)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
@@ -173,7 +184,7 @@ func (s *Service) GetDataWareshouse(annotations map[string]string) (*dwv1.Databa
 			return &db, nil
 		}
 	}
-	return nil, fmt.Errorf("name [%s] and subject [%s] not found")
+	return nil, fmt.Errorf("name [%s] and subject [%s] not found", name, subject)
 }
 
 func (s *Service) Update(ds *v1.Datasource, opts ...util.OpOption) (*v1.Datasource, error) {

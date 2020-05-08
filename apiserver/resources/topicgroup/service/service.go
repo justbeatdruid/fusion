@@ -204,7 +204,7 @@ func (s *Service) DeleteTopicgroup(id string, opts ...util.OpOption) (*Topicgrou
 	return ToModel(tg), nil
 }
 
-func (s *Service) ModifyTopicgroup(id string, policies *Policies, opts ...util.OpOption) (*Topicgroup, error) {
+func (s *Service) ModifyTopicgroup(id string, topicgroup *Topicgroup, opts ...util.OpOption) (*Topicgroup, error) {
 	crd, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
@@ -214,14 +214,15 @@ func (s *Service) ModifyTopicgroup(id string, policies *Policies, opts ...util.O
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 
-	if policies == nil {
+	if topicgroup == nil {
 		return nil, fmt.Errorf("bad request:policies is required")
 	}
 
-	if err = policies.Validate(); err != nil {
+	if err = topicgroup.ValidateModifyBody(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
-	crd.Spec.Policies = s.MergePolicies(policies, crd.Spec.Policies)
+	crd.Spec.Descirption = topicgroup.Description
+	crd.Spec.Policies = s.MergePolicies(topicgroup.Policies, crd.Spec.Policies)
 	crd.Status.Status = v1.Update
 	crd.Status.Message = "accepted update topic group policies"
 	crd, err = s.UpdateStatus(crd)
@@ -234,34 +235,77 @@ func (s *Service) ModifyTopicgroup(id string, policies *Policies, opts ...util.O
 }
 
 func (s *Service) MergePolicies(req *Policies, db *v1.Policies) *v1.Policies {
-	if req.Bundles.NumBundles != NotSet {
-		db.Bundles.NumBundles = req.Bundles.NumBundles
+	p := ToPolicesApi(req)
+	if p.SubscriptionAuthMode != nil {
+		db.SubscriptionAuthMode = p.SubscriptionAuthMode
+	}
+	if p.EncryptionRequired != nil {
+		db.EncryptionRequired = p.EncryptionRequired
+	}
+	if p.OffloadDeletionLagMs != nil {
+		db.OffloadDeletionLagMs = p.OffloadDeletionLagMs
+	}
+	if p.SchemaValidationEnforced != nil {
+		db.SchemaValidationEnforced = p.SchemaValidationEnforced
+	}
+	if p.SchemaCompatibilityStrategy != nil {
+		db.SchemaCompatibilityStrategy = p.SchemaCompatibilityStrategy
+	}
+	if p.IsAllowAutoUpdateSchema != nil {
+		db.IsAllowAutoUpdateSchema = p.IsAllowAutoUpdateSchema
+	}
+	if p.MaxProducersPerTopic != nil {
+		db.MaxProducersPerTopic = p.MaxProducersPerTopic
 	}
 
-	if req.RetentionPolicies.RetentionTimeInMinutes != NotSet {
-		db.RetentionPolicies.RetentionTimeInMinutes = req.RetentionPolicies.RetentionTimeInMinutes
+	if p.MaxConsumersPerTopic != nil {
+		db.MaxConsumersPerTopic = p.MaxConsumersPerTopic
 	}
 
-	if req.RetentionPolicies.RetentionSizeInMB != NotSet {
-		db.RetentionPolicies.RetentionSizeInMB = req.RetentionPolicies.RetentionSizeInMB
+	if p.MaxConsumersPerSubscription != nil {
+		db.MaxConsumersPerSubscription = p.MaxConsumersPerSubscription
 	}
 
-	if *req.MessageTtlInSeconds != NotSet {
-		db.MessageTtlInSeconds = req.MessageTtlInSeconds
+	if p.DeduplicationEnabled != nil {
+		db.DeduplicationEnabled = p.DeduplicationEnabled
+	}
+	if p.SubscriptionAuthMode != nil {
+		db.SubscriptionAuthMode = p.SubscriptionAuthMode
+	}
+	if p.OffloadThreshold != nil {
+		db.OffloadThreshold = p.OffloadThreshold
 	}
 
-	bMap := *db.BacklogQuota
-	destinationBackLog := bMap["destination_storage"]
-
-	reqBmap := *req.BacklogQuota
-	reqDestinationBackLog := reqBmap["destination_storage"]
-	if reqDestinationBackLog.Limit != NotSet {
-		destinationBackLog.Limit = reqDestinationBackLog.Limit
+	if p.CompactionThreshold != nil {
+		db.CompactionThreshold = p.CompactionThreshold
 	}
 
-	if reqDestinationBackLog.Policy != NotSetString {
-		destinationBackLog.Policy = reqDestinationBackLog.Policy
+	if p.Persistence != nil {
+		db.Persistence = p.Persistence
 	}
+
+	if p.RetentionPolicies != nil {
+		db.RetentionPolicies = p.RetentionPolicies
+	}
+	if p.ClusterSubscribeRate != nil {
+		db.ClusterSubscribeRate = p.ClusterSubscribeRate
+	}
+	if p.SubscriptionDispatchRate != nil {
+		db.SubscriptionDispatchRate = p.SubscriptionDispatchRate
+	}
+	if p.TopicDispatchRate != nil {
+		db.TopicDispatchRate = p.TopicDispatchRate
+	}
+	if p.BacklogQuota != nil {
+		db.BacklogQuota = p.BacklogQuota
+	}
+	if p.Bundles != nil {
+		db.Bundles = p.Bundles
+	}
+	if p.MessageTtlInSeconds != nil {
+		db.MessageTtlInSeconds = p.MessageTtlInSeconds
+	}
+
 	return db
 }
 
