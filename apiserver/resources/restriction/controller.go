@@ -94,7 +94,7 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 	body.Data.Namespace = authuser.Namespace
 	if db, err, code := c.service.CreateRestriction(body.Data); err != nil {
 		if errors.IsNameDuplicated(err) {
-			code = "008000021"
+			code = "007000011"
 		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
@@ -255,7 +255,7 @@ func (c *controller) UpdateRestriction(req *restful.Request) (int, *UpdateRespon
 		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		code := "007000009"
 		if errors.IsNameDuplicated(err) {
-			code = "007000013"
+			code = "007000011"
 		}
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:      2,
