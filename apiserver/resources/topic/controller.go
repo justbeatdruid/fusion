@@ -268,10 +268,20 @@ func (c *controller) formatSize(messageSize int64) (size string) {
 }
 
 //批量删除topics
-/*func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
+func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
 	ids := req.QueryParameters("ids")
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Data:      nil,
+			Detail:    "",
+		}
+	}
 	for _, id := range ids {
-		if _, err := c.service.DeleteTopic(id); err != nil {
+		if _, err := c.service.DeleteTopic(id,util.WithNamespace(authUser.Namespace)); err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    fail,
 				Message: fmt.Errorf("delete topic error: %+v", err).Error(),
@@ -282,7 +292,7 @@ func (c *controller) formatSize(messageSize int64) (size string) {
 		Code:    success,
 		Message: "delete topic success",
 	}
-}*/
+}
 func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	authUser, err := auth.GetAuthUser(req)
