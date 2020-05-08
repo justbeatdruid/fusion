@@ -29,7 +29,7 @@ func QueryTopicMessages(sql string) ([]service.Messages, error) {
 			return nil, fmt.Errorf("query failed: %v ", response.Error.Message)
 		} else if state == Finished || len(response.Data) > 0 {
 			if response.Data != nil {
-				for _, data := range response.Data{
+				for _, data := range response.Data {
 					var msg = make(map[string]interface{})
 					var m service.Messages
 					var size int
@@ -60,12 +60,12 @@ func QueryTopicMessages(sql string) ([]service.Messages, error) {
 							value, ok := v.(string)
 							if ok {
 								decoded, err := base64.StdEncoding.DecodeString(value)
-								if err!=nil {
+								if err != nil {
 									return nil, fmt.Errorf("base64 decode error: %s ", err)
 								}
 								m.Message = string(decoded)
 								size = size + binary.Size(decoded)
-							}else {
+							} else {
 								m.Message = v
 								size = size + binary.Size(v)
 							}
@@ -74,9 +74,9 @@ func QueryTopicMessages(sql string) ([]service.Messages, error) {
 						case "__properties__":
 						default:
 							msg[k] = v
-							if str, ok := v.(string);ok {
+							if str, ok := v.(string); ok {
 								size = size + binary.Size([]byte(str))
-							}else {
+							} else {
 								size = size + binary.Size(v)
 							}
 						}

@@ -62,6 +62,7 @@ type PingResponse = DeleteResponse
 type TopicgroupList []*service.Topicgroup
 type TopicgroupSlice TopicgroupList
 type TopicList []*topicservice.Topic
+
 func (tps TopicList) Len() int {
 	return len(tps)
 }
@@ -276,7 +277,7 @@ func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse
 		}
 	}
 	for _, id := range ids {
-		if _, err := c.service.DeleteTopicgroup(id,util.WithNamespace(authUser.Namespace)); err != nil {
+		if _, err := c.service.DeleteTopicgroup(id, util.WithNamespace(authUser.Namespace)); err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    1,
 				Message: fmt.Errorf("delete topicgroup error: %+v", err).Error(),

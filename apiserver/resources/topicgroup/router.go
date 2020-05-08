@@ -60,7 +60,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Do(returns200, returns500))
 
 	//批量删除topicgroup
-		ws.Route(ws.DELETE("/topicgroups").
+	ws.Route(ws.DELETE("/topicgroups").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("delete all topicgroup and all topics under topicgroup").

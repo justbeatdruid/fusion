@@ -588,11 +588,11 @@ func (a *Topicgroup) Validate() error {
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
-		}else {
-			if ok, err := regexp.MatchString(NameReg,v);!ok{
-				return  fmt.Errorf("name is illegal: %v ", err)
-				}
+		} else {
+			if ok, err := regexp.MatchString(NameReg, v); !ok {
+				return fmt.Errorf("name is illegal: %v ", err)
 			}
+		}
 	}
 
 	p := a.Policies

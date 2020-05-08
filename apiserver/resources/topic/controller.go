@@ -281,7 +281,7 @@ func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
 		}
 	}
 	for _, id := range ids {
-		if _, err := c.service.DeleteTopic(id,util.WithNamespace(authUser.Namespace)); err != nil {
+		if _, err := c.service.DeleteTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    fail,
 				Message: fmt.Errorf("delete topic error: %+v", err).Error(),
@@ -987,7 +987,7 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	return httpStatus, messageResponse
 }
 func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
-  	messages, err := pulsarsql.QueryTopicMessages(sql)
+	messages, err := pulsarsql.QueryTopicMessages(sql)
 	if err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:      1,

@@ -248,10 +248,10 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 
 	if db, err := c.service.UpdateTrafficcontrol(req.PathParameter("id"), data,
 		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
-			code := "012000009"
-			if errors.IsNameDuplicated(err) {
-				code = "012000011"
-			}
+		code := "012000009"
+		if errors.IsNameDuplicated(err) {
+			code = "012000011"
+		}
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:      2,
 			ErrorCode: code,

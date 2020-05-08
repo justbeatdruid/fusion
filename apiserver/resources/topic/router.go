@@ -47,7 +47,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 	//批量删除topic
-		ws.Route(ws.DELETE("/topics").
+	ws.Route(ws.DELETE("/topics").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("delete all topics ").

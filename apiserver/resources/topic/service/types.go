@@ -17,7 +17,7 @@ const (
 	DefaultTenant    = "public"
 	DefaultNamespace = "default"
 	Separator        = "/"
-    NameReg          = "^[-=:.\\w]{100}$"
+	NameReg          = "^[-=:.\\w]{100}$"
 )
 
 type Topic struct {
@@ -279,15 +279,14 @@ func (a *Topic) Validate() topicerr.TopicError {
 				Err:       fmt.Errorf("%s is null", k),
 				ErrorCode: topicerr.ErrorBadRequest,
 			}
-		}else {
-			if ok, err := regexp.MatchString(NameReg,v);!ok{
+		} else {
+			if ok, err := regexp.MatchString(NameReg, v); !ok {
 				return topicerr.TopicError{
 					Err:       fmt.Errorf("name is illegal: %v ", err),
 					ErrorCode: topicerr.ErrorCreateTopic,
 				}
 			}
 		}
-
 
 	}
 	a.ID = names.NewID()
