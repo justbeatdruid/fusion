@@ -977,7 +977,7 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	return httpStatus, messageResponse
 }
 func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
-	messages, err := pulsarsql.QueryTopicMessages(sql)
+  	messages, err := pulsarsql.QueryTopicMessages(sql)
 	if err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:      1,

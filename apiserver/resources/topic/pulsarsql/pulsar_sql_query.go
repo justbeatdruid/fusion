@@ -1,6 +1,8 @@
 package pulsarsql
 
 import (
+	"encoding/base64"
+	"encoding/binary"
 	"fmt"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 )
@@ -30,6 +32,7 @@ func QueryTopicMessages(sql string) ([]service.Messages, error) {
 				for _, data := range response.Data{
 					var msg = make(map[string]interface{})
 					var m service.Messages
+					var size int
 					for k, v := range data {
 						switch k {
 						case "__message_id__":
@@ -53,15 +56,35 @@ func QueryTopicMessages(sql string) ([]service.Messages, error) {
 							m.Key = v
 						case "__row__":
 						case "__value__":
-							//TODO
+							//如果是字节数组，需要解码
+							value, ok := v.(string)
+							if ok {
+								decoded, err := base64.StdEncoding.DecodeString(value)
+								if err!=nil {
+									return nil, fmt.Errorf("base64 decode error: %s ", err)
+								}
+								m.Message = string(decoded)
+								size = size + binary.Size(decoded)
+							}else {
+								m.Message = v
+								size = size + binary.Size(v)
+							}
 						case "__event_time__":
 						case "__sequence_id__":
 						case "__properties__":
 						default:
 							msg[k] = v
+							if str, ok := v.(string);ok {
+								size = size + binary.Size([]byte(str))
+							}else {
+								size = size + binary.Size(v)
+							}
 						}
 					}
-					m.Message = msg
+					if m.Message == nil {
+						m.Message = msg
+					}
+					m.Size = size
 					M = append(M, m)
 				}
 				return M, nil
