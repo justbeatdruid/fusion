@@ -264,6 +264,37 @@ func (s *Service) DeleteApi(id string, opts ...util.OpOption) (*Api, error) {
 	return ToModel(api), nil
 }
 
+func (s *Service) BatchDeleteApi(apis []v1.ApiBind, opts ...util.OpOption) error {
+	//先校验是否所有API满足删除条件，有一个不满足直接返回错误
+	for _, value := range apis {
+		api, err := s.Get(value.ID, opts...)
+		if err != nil {
+			return fmt.Errorf("cannot get api: %+v", err)
+		}
+		err = CanExeAction(api, v1.Delete)
+		if err != nil {
+			return fmt.Errorf("cannot exec: %+v", err)
+		}
+		if ok, err := s.writable(api, opts...); err != nil {
+			return err
+		} else if !ok {
+			return fmt.Errorf("user has no write permission for api")
+		}
+	}
+	for _, value := range apis {
+		api, err := s.Get(value.ID, opts...)
+		if err != nil {
+			return fmt.Errorf("cannot get api: %+v", err)
+		}
+
+		api, err = s.Delete(api)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (s *Service) PublishApi(id string, opts ...util.OpOption) (*Api, error) {
 	api, err := s.Get(id, opts...)
 	if err != nil {

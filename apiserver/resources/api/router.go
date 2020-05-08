@@ -54,6 +54,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.PUT("/apis").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("batch delete api").
+		To(r.batchDeleteApi).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.POST("/apis/{id}/release").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -153,6 +161,10 @@ func (r *router) getApi(request *restful.Request, response *restful.Response) {
 
 func (r *router) deleteApi(request *restful.Request, response *restful.Response) {
 	process(r.controller.DeleteApi, request, response)
+}
+
+func (r *router) batchDeleteApi(request *restful.Request, response *restful.Response) {
+	process(r.controller.BatchDeleteApi, request, response)
 }
 
 func (r *router) publishApi(request *restful.Request, response *restful.Response) {

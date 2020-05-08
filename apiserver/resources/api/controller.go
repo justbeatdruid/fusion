@@ -49,6 +49,7 @@ type BindRequest struct {
 		Apis      []v1.ApiBind `json:"apis"`
 	} `json:"data,omitempty"`
 }
+
 type BindResponse = Wrapped
 type CreateResponse = Wrapped
 type CreateRequest = Wrapped
@@ -228,6 +229,49 @@ func (c *controller) DeleteApi(req *restful.Request) (int, interface{}) {
 			Code:      0,
 			ErrorCode: "0",
 			Data:      data,
+		}
+	}
+}
+
+func (c *controller) BatchDeleteApi(req *restful.Request) (int, interface{}) {
+	body := &BindRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &BindResponse{
+			Code:      1,
+			ErrorCode: "001000001",
+			Message:   c.errMsg.Api["001000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data.Operation != "delete" {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "001000016",
+			Message:   c.errMsg.Api["001000016"],
+			Detail:    "operation params error",
+		}
+	}
+
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "001000003",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
+		}
+	}
+	if err := c.service.BatchDeleteApi(body.Data.Apis, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:      2,
+			ErrorCode: "001000007",
+			Message:   c.errMsg.Api["001000007"],
+			Detail:    fmt.Errorf("delete api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &DeleteResponse{
+			Code:      0,
+			ErrorCode: "0",
 		}
 	}
 }
