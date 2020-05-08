@@ -22,7 +22,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient(), cfg.DatasourceConfig.Supported),
+		service.NewService(cfg.GetDynamicClient(), cfg.DatasourceConfig.Supported, cfg.DataserviceConnector, cfg.TenantEnabled),
 		cfg.LocalConfig.DataSource,
 	}
 }

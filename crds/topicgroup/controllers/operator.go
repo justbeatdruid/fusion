@@ -7,6 +7,7 @@ import (
 	"github.com/parnurzeal/gorequest"
 	"k8s.io/klog"
 	"net/http"
+	"strconv"
 	"strings"
 )
 
@@ -23,6 +24,8 @@ type TenantCreateRequest struct {
 
 const namespaceUrl, protocol = "/admin/v2/namespaces/%s/%s", "http"
 const (
+	post                              = "post"
+	put                               = "put"
 	backlogUrlSuffix                  = "/backlogQuota?backlogQuotaType=destination_storage"
 	messageTTLSuffix                  = "/messageTTL"
 	retentionSuffix                   = "/retention"
@@ -34,8 +37,8 @@ const (
 	maxProducersPerTopicSuffix        = "/maxProducersPerTopic"
 	offloadDeletionLagMsSuffix        = "/offloadDeletionLagMs" //Set number of milliseconds to wait before deleting a ledger segment which has been offloaded from the Pulsar cluster's local storage (i.e. BookKeeper)
 	offloadThresholdSuffix            = "/offloadThreshold"     //Set maximum number of bytes stored on the pulsar cluster for a topic, before the broker will start offloading to longterm storage
-	compactionThresholdSuffix         = "/compactionThreshold"  //Set maximum number of uncompacted bytes in a topic before compaction is triggered.
-	persistenceSuffix                 = "/persistence"
+	CompactionThresholdSuffix         = "/compactionThreshold"  //Set maximum number of uncompacted bytes in a topic before compaction is triggered.
+	PersistenceSuffix                 = "/persistence"
 	dispatchRateSuffix                = "/dispatchRate"       //Set dispatch-rate throttling for all topics of the namespace
 	encryptionRequiredSuffix          = "/encryptionRequired" //Message encryption is required or not for all topics in a namespace
 	schemaCompatibilityStrategySuffix = "/schemaCompatibilityStrategy"
@@ -48,6 +51,34 @@ const (
 	singleTenant = "/admin/v2/tenants/%s"
 )
 
+type Policies struct {
+	RetentionPolicies           *v1.RetentionPolicies        `json:"retention_policies,omitempty"` //消息保留策略
+	MessageTtlInSeconds         *int                         `json:"message_ttl_in_seconds"`       //未确认消息的最长保留时长
+	BacklogQuota                *map[string]v1.BacklogQuota  `json:"backlog_quota_map"`
+	Bundles                     *v1.Bundles                  `json:"bundles"` //key:destination_storage
+	TopicDispatchRate           *map[string]v1.DispatchRate  `json:"topicDispatchRate"`
+	SubscriptionDispatchRate    *map[string]v1.DispatchRate  `json:"subscriptionDispatchRate"`
+	ClusterSubscribeRate        *map[string]v1.SubscribeRate `json:"clusterSubscribeRate"`
+	Persistence                 *PersistencePolicies         `json:"persistence"` //Configuration of bookkeeper persistence policies.
+	DeduplicationEnabled        *bool                        `json:"deduplicationEnabled"`
+	EncryptionRequired          *bool                        `json:"encryption_required"`
+	SubscriptionAuthMode        *string                      `json:"subscription_auth_mode"` //None/Prefix
+	MaxProducersPerTopic        *int                         `json:"max_producers_per_topic"`
+	MaxConsumersPerTopic        *int                         `json:"max_consumers_per_topic"`
+	MaxConsumersPerSubscription *int                         `json:"max_consumers_per_subscription"`
+	CompactionThreshold         *int64                       `json:"compaction_threshold"`
+	OffloadThreshold            *int64                       `json:"offload_threshold"`
+	OffloadDeletionLagMs        *int64                       `json:"offload_deletion_lag_ms"`
+	IsAllowAutoUpdateSchema     *bool                        `json:"is_allow_auto_update_schema"`
+	SchemaValidationEnforced    *bool                        `json:"schema_validation_enforced"`
+	SchemaCompatibilityStrategy *string                      `json:"schema_compatibility_strategy"`
+}
+type PersistencePolicies struct {
+	BookkeeperEnsemble             int     `json:"bookkeeperEnsemble,omitempty"`
+	BookkeeperWriteQuorum          int     `json:"bookkeeperWriteQuorum,omitempty"`
+	BookkeeperAckQuorum            int     `json:"bookkeeperAckQuorum,omitempty"`
+	ManagedLedgerMaxMarkDeleteRate float64 `json:"managedLedgerMaxMarkDeleteRate,omitempty"`
+}
 type requestLogger struct {
 	prefix string
 }
@@ -100,15 +131,34 @@ func (r *Operator) GetNamespacePolicies(namespace *v1.Topicgroup) (*v1.Policies,
 	request := r.GetHttpRequest()
 	url := r.getUrl(namespace)
 
-	polices := &v1.Policies{}
+	polices := &Policies{}
 	response, _, errs := request.Get(url).Send("").EndStruct(polices)
 	if response.StatusCode != http.StatusOK || errs != nil {
 		klog.Errorf("get namespace policy finished, url: %+v, response: %+v, errs: %+v", url, response, errs)
 		return nil, fmt.Errorf("get namespace policy error: %+v or http code is not success: %+v", errs, response.StatusCode)
 	}
 
-	return polices, nil
+	persistence, err := r.GetPersistence(namespace)
+	if err != nil {
+		return nil, fmt.Errorf("get namespace policy error: %+v or http code is not success: %+v", errs, response.StatusCode)
+	}
 
+	polices.Persistence = persistence
+	return toCrdModel(polices), nil
+
+}
+
+func (r *Operator) GetPersistence(namespace *v1.Topicgroup) (*PersistencePolicies, error) {
+	request := r.GetHttpRequest()
+	url := r.getUrl(namespace) + PersistenceSuffix
+	polices := &PersistencePolicies{}
+	response, _, errs := request.Get(url).Send("").EndStruct(polices)
+	if response.StatusCode != http.StatusOK || errs != nil {
+		klog.Errorf("get namespace persistence policy finished, url: %+v, response: %+v, errs: %+v", url, response, errs)
+		return nil, fmt.Errorf("get namespace persistence policy error: %+v or http code is not success: %+v", errs, response.StatusCode)
+	}
+
+	return polices, nil
 }
 
 func (r *Operator) SetMessageTTL(namespace *v1.Topicgroup) error {
@@ -121,6 +171,38 @@ func (r *Operator) SetMessageTTL(namespace *v1.Topicgroup) error {
 		return fmt.Errorf("set messageTTLInSeconds error: %+v or http code is not success: %+v", errs, response.StatusCode)
 	}
 	return nil
+}
+
+func (r *Operator) SetDeduplication(namespace *v1.Topicgroup) error {
+	request := r.GetHttpRequest()
+	url := r.getUrl(namespace) + deduplicationSuffix
+	response, body, errs := request.Post(url).Send(namespace.Spec.Policies.DeduplicationEnabled).End()
+
+	klog.Infof("set deduplication finished, url: %+v, response: %+v, body: %+v, errs: %+v", url, response, body, errs)
+	if response.StatusCode != http.StatusNoContent || errs != nil {
+		return fmt.Errorf("set deduplication error: %+v or http code is not success: %+v", errs, response.StatusCode)
+	}
+	return nil
+}
+
+func (r *Operator) SetPolicy(suffix string, namespace *v1.Topicgroup, content interface{}, method string) error {
+	request := r.GetHttpRequest()
+	url := r.getUrl(namespace) + suffix
+	var response gorequest.Response
+	var body string
+	var errs = make([]error, 0)
+	if method == "post" {
+		response, body, errs = request.Post(url).Send(content).End()
+	} else {
+		response, body, errs = request.Put(url).Send(content).End()
+	}
+
+	klog.Infof("set compactionThreshold finished, url: %+v, response: %+v, body: %+v, errs: %+v", url, response, body, errs)
+	if response.StatusCode != http.StatusNoContent || errs != nil {
+		return fmt.Errorf("set compactionThreshold error: %+v or http code is not success: %+v", errs, response.StatusCode)
+	}
+	return nil
+
 }
 
 func (r *Operator) SetRetention(namespace *v1.Topicgroup) error {
@@ -245,4 +327,43 @@ func (r *Operator) CreateTenant(tenant string, clusters []string) error {
 	}
 
 	return fmt.Errorf("unable to create tenant, url: %+v, response: %+v", url, response)
+}
+
+func toCrdModel(policies *Policies) *v1.Policies {
+	crd := &v1.Policies{
+		DeduplicationEnabled:        policies.DeduplicationEnabled,
+		IsAllowAutoUpdateSchema:     policies.IsAllowAutoUpdateSchema,
+		SubscriptionAuthMode:        policies.SubscriptionAuthMode,
+		SchemaCompatibilityStrategy: policies.SchemaCompatibilityStrategy,
+		SchemaValidationEnforced:    policies.SchemaValidationEnforced,
+		MessageTtlInSeconds:         policies.MessageTtlInSeconds,
+		MaxProducersPerTopic:        policies.MaxProducersPerTopic,
+		MaxConsumersPerTopic:        policies.MaxConsumersPerTopic,
+		MaxConsumersPerSubscription: policies.MaxConsumersPerSubscription,
+		CompactionThreshold:         policies.CompactionThreshold,
+		OffloadThreshold:            policies.OffloadThreshold,
+		EncryptionRequired:          policies.EncryptionRequired,
+		RetentionPolicies:           policies.RetentionPolicies,
+		Bundles:                     policies.Bundles,
+		BacklogQuota:                policies.BacklogQuota,
+		TopicDispatchRate:           policies.TopicDispatchRate,
+		SubscriptionDispatchRate:    policies.SubscriptionDispatchRate,
+		ClusterSubscribeRate:        policies.ClusterSubscribeRate,
+	}
+	if crd.DeduplicationEnabled == nil {
+		var deduplication = false
+		crd.DeduplicationEnabled = &deduplication
+	}
+
+	if policies.Persistence != nil {
+		persistence := &v1.PersistencePolicies{
+			BookkeeperEnsemble:             policies.Persistence.BookkeeperEnsemble,
+			BookkeeperWriteQuorum:          policies.Persistence.BookkeeperWriteQuorum,
+			BookkeeperAckQuorum:            policies.Persistence.BookkeeperAckQuorum,
+			ManagedLedgerMaxMarkDeleteRate: strconv.FormatFloat(policies.Persistence.ManagedLedgerMaxMarkDeleteRate, 'f', -1, 64),
+		}
+		crd.Persistence = persistence
+	}
+
+	return crd
 }

@@ -4,11 +4,13 @@ import (
 	"fmt"
 	"strings"
 
-	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
+	dwtype "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb/driver"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
+	dwv1 "github.com/chinamobile/nlpt/crds/datasource/datawarehouse/api/v1"
 	topicv1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
+	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -25,13 +27,19 @@ var Supported = []string{}
 type Service struct {
 	client      dynamic.NamespaceableResourceInterface
 	topicClient dynamic.NamespaceableResourceInterface
+
+	tenantEnabled bool
+	dataService   dw.Connector
 }
 
-func NewService(client dynamic.Interface, supported []string) *Service {
+func NewService(client dynamic.Interface, supported []string, dsConnector dw.Connector, tenantEnabled bool) *Service {
 	Supported = supported
 	return &Service{
 		client:      client.Resource(v1.GetOOFSGVR()),
 		topicClient: client.Resource(topicv1.GetOOFSGVR()),
+
+		tenantEnabled: tenantEnabled,
+		dataService:   dsConnector,
 	}
 }
 
@@ -39,7 +47,16 @@ func (s *Service) CreateDatasource(model *Datasource) (*Datasource, error) {
 	if err := s.Validate(model); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
-	ds, err := s.Create(ToAPI(model, false))
+	var ds *v1.Datasource
+	var err error
+	var create func(*v1.Datasource) (*v1.Datasource, error)
+	switch model.Type {
+	case v1.DataWarehouseType:
+		create = s.CreateDatawarehouse
+	default:
+		create = s.Create
+	}
+	ds, err = create(ToAPI(model, false))
 	if err != nil {
 		return nil, fmt.Errorf("cannot create object: %+v", err)
 	}
@@ -106,6 +123,57 @@ func (s *Service) Create(ds *v1.Datasource) (*v1.Datasource, error) {
 	}
 	klog.V(5).Infof("get v1.datasource of creating: %+v", ds)
 	return ds, nil
+}
+
+func (s *Service) CreateDatawarehouse(ds *v1.Datasource) (*v1.Datasource, error) {
+	var err error
+	ds.Spec.DataWarehouse, err = s.GetDataWareshouse(ds.ObjectMeta.Annotations)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get datawarehouse: %+v", err)
+	}
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ds)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	crd, err = s.client.Namespace(ds.ObjectMeta.Namespace).Create(crd, metav1.CreateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error creating crd: %+v", err)
+	}
+
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), ds); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.datasource of creating: %+v", ds)
+	return ds, nil
+}
+
+func (s *Service) GetDataWareshouse(annotations map[string]string) (*dwv1.Database, error) {
+	if annotations == nil {
+		return nil, fmt.Errorf("annotation not set")
+	}
+	var name, subject string
+	var ok bool
+	name, ok = annotations["name"]
+	if !ok {
+		return nil, fmt.Errorf("name not set in annotation")
+	}
+	subject, ok = annotations["subject"]
+	if !ok {
+		return nil, fmt.Errorf("subject not set in annotation")
+	}
+	datawarehouse, err := s.dataService.GetExampleDatawarehouse() //查询新的数据
+	if err != nil {
+		return nil, fmt.Errorf("cannot get datawarehouse: %+v", err)
+	}
+	for _, d := range datawarehouse.Databases {
+		db := dwv1.FromApiDatabase(d)
+		if db.Name == name && db.SubjectName == subject {
+			return &db, nil
+		}
+	}
+	return nil, fmt.Errorf("name [%s] and subject [%s] not found")
 }
 
 func (s *Service) Update(ds *v1.Datasource, opts ...util.OpOption) (*v1.Datasource, error) {
@@ -229,9 +297,9 @@ func (s *Service) GetTables(id, associationID string, opts ...util.OpOption) (*T
 		}
 		ts := ds.Spec.DataWarehouse.GetTables(associationID)
 		klog.V(5).Infof("get tables: %+v", ts)
-		result.DataWarehouseTables = make([]dw.Table, 0)
+		result.DataWarehouseTables = make([]dwtype.Table, 0)
 		for _, t := range ts {
-			result.DataWarehouseTables = append(result.DataWarehouseTables, dw.FromApiTable(t))
+			result.DataWarehouseTables = append(result.DataWarehouseTables, dwtype.FromApiTable(t))
 		}
 	default:
 		return nil, fmt.Errorf("wrong datasource type: %s", ds.Spec.Type)
@@ -253,7 +321,7 @@ func (s *Service) GetTable(id, table string, opts ...util.OpOption) (*Table, err
 		}
 		for _, t := range ds.Spec.DataWarehouse.Tables {
 			if t.Info.ID == table {
-				info := dw.FromApiTable(t).Info
+				info := dwtype.FromApiTable(t).Info
 				return &Table{DataWarehouseTable: &info}, nil
 			}
 		}
@@ -356,11 +424,11 @@ WHERE
 		if ds.Spec.DataWarehouse == nil {
 			return nil, fmt.Errorf("datasource %s in type datawarehouse has no datawarehouse instance", ds.ObjectMeta.Name)
 		}
-		result.DataWarehouseFields = make([]dw.Property, 0)
+		result.DataWarehouseFields = make([]dwtype.Property, 0)
 		for _, apiTable := range ds.Spec.DataWarehouse.Tables {
 			if apiTable.Info.ID == table {
 				for _, p := range apiTable.Properties {
-					result.DataWarehouseFields = append(result.DataWarehouseFields, dw.FromApiProperty(p))
+					result.DataWarehouseFields = append(result.DataWarehouseFields, dwtype.FromApiProperty(p))
 				}
 				goto rt
 			}
@@ -389,7 +457,7 @@ func (s *Service) GetField(id, table, field string, opts ...util.OpOption) (*Fie
 			if apiTable.Info.ID == table {
 				for _, p := range apiTable.Properties {
 					if p.ID == field {
-						dwp := dw.FromApiProperty(p)
+						dwp := dwtype.FromApiProperty(p)
 						return &Field{DataWarehouseField: &dwp}, nil
 					}
 				}

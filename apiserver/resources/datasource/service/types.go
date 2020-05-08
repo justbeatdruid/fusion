@@ -76,6 +76,10 @@ func ToAPI(ds *Datasource, specOnly bool) *v1.Datasource {
 		crd.Spec.RDB = ds.RDB
 	} else if ds.Type == v1.TopicType {
 		crd.Spec.Topic = ds.Topic
+	} else if ds.Type == v1.DataWarehouseType {
+		crd.ObjectMeta.Annotations = make(map[string]string)
+		crd.ObjectMeta.Annotations["name"] = ds.DataWarehouse.Name
+		crd.ObjectMeta.Annotations["subject"] = ds.DataWarehouse.SubjectName
 	}
 	status := ds.Status
 	if len(status) == 0 {
@@ -178,7 +182,13 @@ func (s *Service) Validate(a *Datasource) error {
 			return err
 		}
 	case v1.DataWarehouseType:
-		return fmt.Errorf("cannot create or update datawarehouse datasource")
+		if !s.tenantEnabled {
+			return fmt.Errorf("cannot create or update datawarehouse datasource")
+		} else {
+			if a.DataWarehouse.Name == "" || a.DataWarehouse.SubjectName == "" {
+				return fmt.Errorf("name or subject name is null")
+			}
+		}
 	case v1.TopicType:
 		if err := s.CheckTopic(a.Namespace, a.Topic); err != nil {
 			return fmt.Errorf("topic validate error: %+v", err)

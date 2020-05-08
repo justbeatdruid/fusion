@@ -84,7 +84,7 @@ func PrintAndExitIfRequested() {
 		fmt.Printf("%#v\n", Get())
 		os.Exit(0)
 	} else if *versionFlag == VersionTrue {
-		fmt.Printf("App Manager %s\n", Get())
+		fmt.Printf("Fusion Apiserver %s\n", Get())
 		os.Exit(0)
 	}
 }
