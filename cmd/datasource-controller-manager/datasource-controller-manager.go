@@ -51,11 +51,13 @@ func main() {
 	var enableLeaderElection bool
 	var dataserviceHost string
 	var dataservicePort int
+	var syncLoopEnabled bool
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&dataserviceHost, "dataservice-host", "127.0.0.1", "The address the metric endpoint binds to.")
 	flag.IntVar(&dataservicePort, "dataservice-port", 27778, "The address the metric endpoint binds to.")
+	flag.BoolVar(&syncLoopEnabled, "sync-loop-enabled", true, "set false for fusion platform and set true for data service")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(func(o *zap.Options) {
@@ -92,14 +94,16 @@ func main() {
 		os.Exit(1)
 	}
 
-	setupLog.Info("add backend loop")
-	if err = mgr.Add(&controllers.DatasourceSynchronizer{
-		// func (*DatasourceSynchronizer) NeedLeaderElection() bool { return true } is required
-		Client:        mgr.GetClient(),
-		DataConnector: dw.NewConnector(dataserviceHost, dataservicePort, "", 0),
-	}); err != nil {
-		setupLog.Error(err, "problem add runnable to manager")
-		os.Exit(1)
+	if syncLoopEnabled {
+		setupLog.Info("add backend loop")
+		if err = mgr.Add(&controllers.DatasourceSynchronizer{
+			// func (*DatasourceSynchronizer) NeedLeaderElection() bool { return true } is required
+			Client:        mgr.GetClient(),
+			DataConnector: dw.NewConnector(dataserviceHost, dataservicePort, "", 0),
+		}); err != nil {
+			setupLog.Error(err, "problem add runnable to manager")
+			os.Exit(1)
+		}
 	}
 
 	// +kubebuilder:scaffold:builder
