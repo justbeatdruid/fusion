@@ -223,7 +223,18 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 	}
 	klog.V(5).Infof("get update data : %+v", data)
 	if _, ok = data["name"]; ok {
-		target.Spec.Name = source.Name
+		if target.Spec.Name != source.Name {
+			trafficList, errs := s.List(util.WithNamespace(target.ObjectMeta.Namespace))
+			if errs != nil {
+				return fmt.Errorf("cannot list trafficcontrol object: %+v", errs)
+			}
+			for _, t := range trafficList.Items {
+				if t.Spec.Name == source.Name {
+					return errors.NameDuplicatedError("trafficcontrol name duplicated: %+v", errs)
+				}
+			}
+		}
+		target.ObjectMeta.Name = source.Name
 	}
 	if _, ok = data["namespace"]; ok {
 		target.ObjectMeta.Namespace = source.Namespace

@@ -213,6 +213,17 @@ func (s *Service) assignment(target *v1.Restriction, reqData interface{}) error 
 		return fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
 	if _, ok = data["name"]; ok {
+		if target.Spec.Name != source.Name {
+			resList, errs := s.List(util.WithNamespace(target.ObjectMeta.Namespace))
+			if errs != nil {
+				return fmt.Errorf("cannot list restriction object: %+v", errs)
+			}
+			for _, r := range resList.Items {
+				if r.Spec.Name == source.Name {
+					return errors.NameDuplicatedError("restriction name duplicated: %+v", errs)
+				}
+			}
+		}
 		target.Spec.Name = source.Name
 	}
 	if _, ok = data["namespace"]; ok {
