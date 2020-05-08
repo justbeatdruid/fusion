@@ -100,8 +100,10 @@ func (s *Service) DeleteDatasource(id string, opts ...util.OpOption) error {
 	if err != nil {
 		return fmt.Errorf("get datasource error: %+v", err)
 	}
-	if ds.Spec.Type == v1.DataWarehouseType {
-		return fmt.Errorf("cannot delete datawarehouse datasource")
+	if !s.tenantEnabled {
+		if ds.Spec.Type == v1.DataWarehouseType {
+			return fmt.Errorf("cannot delete datawarehouse datasource")
+		}
 	}
 	return s.Delete(id, opts...)
 }
@@ -139,6 +141,7 @@ func (s *Service) CreateDatawarehouse(ds *v1.Datasource) (*v1.Datasource, error)
 			ds.Spec.DataWarehouse.Tables[i].Properties = make([]dwv1.Property, 0)
 		}
 	}
+	ds.Status.Status = v1.Normal
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(ds)
 	if err != nil {
 		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
