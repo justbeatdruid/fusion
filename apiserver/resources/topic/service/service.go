@@ -446,7 +446,7 @@ func (s *Service) GrantPermissions(topicId string, authUserId string, actions Ac
 	tp.ObjectMeta.Labels[authUserId] = "true"
 
 	//4.根据auth id查询name
-	authUserName, err := s.QueryAuthUserNameById(authUserId)
+	authUserName, err := s.QueryAuthUserNameById(authUserId,opts...)
 	if err != nil {
 		return nil, fmt.Errorf("grant permission error:%+v", err)
 	}
@@ -470,8 +470,8 @@ func (s *Service) GrantPermissions(topicId string, authUserId string, actions Ac
 	return ToModel(v1Tp), nil
 }
 
-func (s *Service) QueryAuthUserNameById(id string) (string, error) {
-	ca, err := s.QueryAuthUserById(id)
+func (s *Service) QueryAuthUserNameById(id string,opts ...util.OpOption) (string, error) {
+	ca, err := s.QueryAuthUserById(id, opts...)
 	if err != nil {
 		return "", err
 	}
@@ -479,8 +479,9 @@ func (s *Service) QueryAuthUserNameById(id string) (string, error) {
 
 }
 
-func (s *Service) QueryAuthUserById(id string) (*clientauthv1.Clientauth, error) {
-	crd, err := s.clientAuthClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+func (s *Service) QueryAuthUserById(id string, opts ...util.OpOption) (*clientauthv1.Clientauth, error) {
+	op := util.OpList(opts...)
+	crd, err := s.clientAuthClient.Namespace(op.Namespace()).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
