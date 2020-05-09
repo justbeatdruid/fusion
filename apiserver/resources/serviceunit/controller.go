@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/chinamobile/nlpt/apiserver/mutex"
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/auth"
@@ -17,12 +18,14 @@ import (
 type controller struct {
 	service *service.Service
 	errMsg  config.ErrorConfig
+	lock    mutex.Mutex
 }
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TenantEnabled, cfg.LocalConfig),
 		cfg.LocalConfig,
+		cfg.Mutex,
 	}
 }
 
@@ -52,8 +55,16 @@ type UpdateRequest = Wrapped
 type UpdateResponse = Wrapped
 
 func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateResponse) {
-	util.ServiceunitLock()
-	defer util.ServiceunitUnlock()
+	unlock, err := c.lock.Lock("serviceunit")
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   2,
+			Detail: fmt.Sprintf("lock error: %+v", err),
+		}
+	}
+	defer func() {
+		_ = unlock()
+	}()
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
@@ -129,6 +140,16 @@ func (c *controller) GetServiceunit(req *restful.Request) (int, *GetResponse) {
 }
 
 func (c *controller) PatchServiceunit(req *restful.Request) (int, *DeleteResponse) {
+	unlock, err := c.lock.Lock("serviceunit")
+	if err != nil {
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:   2,
+			Detail: fmt.Sprintf("lock error: %+v", err),
+		}
+	}
+	defer func() {
+		_ = unlock()
+	}()
 	reqBody := make(map[string]interface{})
 	if err := req.ReadEntity(&reqBody); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{

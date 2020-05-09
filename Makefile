@@ -126,7 +126,7 @@ apply-binary:
 	go build -o bin/fusion-apply-controller-manager cmd/apply-controller-manager/apply-controller-manager.go
 
 apiserver-run:
-	$(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5 --dataservice-data-host=10.160.32.24 --audit-host=10.160.32.24 --audit-port=30068 --cas-host=10.160.32.24 --cas-port=30090 --tenant-enabled=true --local-config=$(shell pwd)/config/err.json --tenant-enabled=true --pulsar-admin-token=$(shell pwd)/config/superUserToken --pulsar-token-secret=$(shell pwd)/config/tokenSecret --dataservice-data-host=10.160.32.5 --dataservice-metadata-host=10.160.32.5
+	$(shell pwd)/bin/fusion-apiserver --kubeconfig=/root/.kube/config --v=5 --dataservice-data-host=10.160.32.24 --audit-host=10.160.32.24 --audit-port=30068 --cas-host=10.160.32.24 --cas-port=30090 --tenant-enabled=true --local-config=$(shell pwd)/config/err.json --tenant-enabled=true --pulsar-admin-token=$(shell pwd)/config/superUserToken --pulsar-token-secret=$(shell pwd)/config/tokenSecret --dataservice-data-host=10.160.32.5 --dataservice-metadata-host=10.160.32.5 --etcd-endpoints=http://10.160.32.24:12379
 
 datasource-run:
 	$(shell pwd)/bin/fusion-datasource-controller-manager --kubeconfig=/root/.kube/config --v=5 --dataservice-host=10.160.32.24 --sync-loop-enabled=false

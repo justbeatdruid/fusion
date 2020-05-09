@@ -209,11 +209,11 @@ func ToPolicesModel(obj *v1.Policies) *Policies {
 		OffloadThreshold:            obj.OffloadThreshold,
 		SubscriptionAuthMode:        obj.SubscriptionAuthMode,
 		EncryptionRequired:          obj.EncryptionRequired,
-		Persistence: persistent,
-		SubscriptionDispatchRate: &sRate,
-		ClusterSubscribeRate:     &cRate,
-		TopicDispatchRate:        &tRate,
-		DeduplicationEnabled:     obj.DeduplicationEnabled,
+		Persistence:                 persistent,
+		SubscriptionDispatchRate:    &sRate,
+		ClusterSubscribeRate:        &cRate,
+		TopicDispatchRate:           &tRate,
+		DeduplicationEnabled:        obj.DeduplicationEnabled,
 	}
 }
 

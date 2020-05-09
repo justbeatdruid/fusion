@@ -27,7 +27,7 @@ func QueryTopicMessages(sql string) ([]service.Messages, error) {
 			return nil, fmt.Errorf("query failed: %v ", response.Error.Message)
 		} else if state == Finished || len(response.Data) > 0 {
 			if response.Data != nil {
-				for _, data := range response.Data{
+				for _, data := range response.Data {
 					var msg = make(map[string]interface{})
 					var m service.Messages
 					for k, v := range data {

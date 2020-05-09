@@ -37,6 +37,24 @@ var gvs = []gv{
 	{"trafficcontrols", trafficcontrolv1.GroupVersion, func() runtime.Object { return &trafficcontrolv1.Trafficcontrol{} }},
 }
 
+func SetGVs(rss []string) {
+	contains := func(s string, ss []string) bool {
+		for _, sl := range ss {
+			if s == sl {
+				return true
+			}
+		}
+		return false
+	}
+	temp := make([]gv, 0)
+	for _, g := range gvs {
+		if contains(g.resource, rss) {
+			temp = append(temp, g)
+		}
+	}
+	gvs = temp
+}
+
 type ApiLister struct {
 	l *typedLister
 }

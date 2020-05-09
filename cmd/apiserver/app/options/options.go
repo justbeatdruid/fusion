@@ -13,6 +13,8 @@ import (
 	cliflag "k8s.io/component-base/cli/flag"
 	"k8s.io/klog"
 
+	"github.com/chinamobile/nlpt/apiserver/cache"
+	"github.com/chinamobile/nlpt/apiserver/mutex"
 	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/audit"
 	"github.com/chinamobile/nlpt/pkg/auth/cas"
@@ -35,6 +37,7 @@ type ServerRunOptions struct {
 	Topic       *TopicOptions
 	Cas         *CasOptions
 	Audit       *AuditOptions
+	Etcd        *EtcdOptions
 }
 
 func NewServerRunOptions() *ServerRunOptions {
@@ -48,6 +51,7 @@ func NewServerRunOptions() *ServerRunOptions {
 		Topic:         DefaultTopicOptions(),
 		Cas:           DefaultCasOptions(),
 		Audit:         DefaultAuditOptions(),
+		Etcd:          DefaultEtcdOptions(),
 	}
 
 	if len(s.CrdNamespace) == 0 {
@@ -66,6 +70,7 @@ func (s *ServerRunOptions) Flags() cliflag.NamedFlagSets {
 	s.Topic.AddFlags(fss.FlagSet("topic"))
 	s.Cas.AddFlags(fss.FlagSet("cas"))
 	s.Audit.AddFlags(fss.FlagSet("audit"))
+	s.Etcd.AddFlags(fss.FlagSet("etcd"))
 	kfset := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(kfset)
 	fss.FlagSet("klog").AddGoFlagSet(kfset)
@@ -121,6 +126,10 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 	if err = s.Topic.ParsePulsarSecret(); err != nil {
 		return nil, fmt.Errorf("parse pulsar secret error: %+v", err)
 	}
+	mtx, err := mutex.NewEtcdMutex(s.Etcd.Endpoints, s.Etcd.CertFile, s.Etcd.KeyFile, s.Etcd.CAFile, s.Etcd.Timeout)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create etcd client: %+v", err)
+	}
 	c := &appconfig.Config{
 		Client:     client,
 		Dynamic:    dynClient,
@@ -133,10 +142,14 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		Auditor:       audit.NewAuditor(s.Audit.Host, s.Audit.Port),
 		TenantEnabled: s.TenantEnabled,
 		LocalConfig:   *errConfig,
+
+		Mutex: mtx,
 	}
 	casType := "cas"
 	if s.TenantEnabled {
 		casType = "tenant"
+	} else {
+		cache.SetGVs([]string{"apis", "applications", "applicationgroups", "applies", "datasources", "serviceunits", "serviceunitgroups"})
 	}
 	cas.SetConnectionInfo(casType, s.Cas.Host, s.Cas.Port)
 	return c, nil
