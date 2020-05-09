@@ -159,10 +159,19 @@ func (c *controller) GetClientauth(req *restful.Request) (int, *GetResponse) {
 }
 
 //批量删除clientauths
-/*func (c *controller) DeleteClientauths(req *restful.Request) (int, *ListResponse) {
+func (c *controller) DeleteClientauths(req *restful.Request) (int, *ListResponse) {
 	ids := req.QueryParameters("ids")
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      fail,
+			ErrorCode: "013000014",
+			Message:   c.errMsg.ClientAuth["013000014"],
+			Detail:    fmt.Errorf("auth model error: %+v", err).Error(),
+		}
+	}
 	for _, id := range ids {
-		if _, err := c.service.Delete(id); err != nil {
+		if _, err := c.service.DeleteClientauth(id,util.WithNamespace(authUser.Namespace)); err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    fail,
 				Message: fmt.Errorf("delete clientauth error: %+v", err).Error(),
@@ -173,7 +182,7 @@ func (c *controller) GetClientauth(req *restful.Request) (int, *GetResponse) {
 		Code:    success,
 		Message: "delete clientauth success",
 	}
-}*/
+}
 func (c *controller) DeleteClientauth(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	authUser, err := auth.GetAuthUser(req)
