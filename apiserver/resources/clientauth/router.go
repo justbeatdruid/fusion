@@ -40,13 +40,13 @@ func (r *router) Install(ws *restful.WebService) {
 		Do(returns200, returns500))
 
 	//批量删除clientauths
-	/*	ws.Route(ws.DELETE("/clientauths").
+	ws.Route(ws.DELETE("/clientauths").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("batch delete clientauth").
 		To(r.deleteClientauths).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
-		Do(returns200, returns500))*/
+		Do(returns200, returns500))
 	ws.Route(ws.POST("/clientauths/{id}/token").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -85,10 +85,10 @@ func (r *router) listClientauths(request *restful.Request, response *restful.Res
 	response.WriteHeaderAndEntity(code, result)
 }
 
-/*func (r *router) deleteClientauths(request *restful.Request, response *restful.Response) {
+func (r *router) deleteClientauths(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DeleteClientauths(request)
 	response.WriteHeaderAndEntity(code, result)
-}*/
+}
 
 //重新生成token
 func (r *router) regenerateToken(request *restful.Request, response *restful.Response) {
