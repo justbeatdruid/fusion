@@ -963,7 +963,7 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 		}else if ok==2 {
 			messageId = "("+messageId+")"
 		}
-		reg := `^\([1-9]{1,}\,[0-9]{1,}\,[0-9]{1,}\)$`
+		reg := `^\([0-9]{1,}\,[0-9]{1,}\,[0-9]{1,}\)$`
 		h, m, ok = c.QueryParamterValidate(reg, messageId)
 		if ok!=0 {
 			return h, m
