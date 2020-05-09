@@ -735,6 +735,10 @@ func (r *Operator) SyncApiCountFromPrometheus(m map[string]int) error {
 		return fmt.Errorf("request for get api count error: wrong status code: %d", response.StatusCode)
 	}
 	result := responseBody.Data.Result
+	if result == nil || len(result) == 0 {
+		klog.Warning("sync api count from prometheus null.")
+		return nil
+	}
 	for index := range result {
 		route := responseBody.Data.Result[index].Metric.Route
 		num := responseBody.Data.Result[index].Value[1].(string)
