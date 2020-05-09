@@ -114,6 +114,13 @@ func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 	if api, err, code := c.service.CreateApi(body.Data); err != nil {
 		if errors.IsNameDuplicated(err) {
 			code = "001000022"
+		} else if errors.IsUnpublished(err) {
+			return http.StatusInternalServerError, &CreateResponse{
+				Code:      2,
+				ErrorCode: code,
+				Message:   "服务单元未发布",
+				Detail:    fmt.Errorf("create api error: %+v", err).Error(),
+			}
 		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,

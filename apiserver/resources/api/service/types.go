@@ -398,7 +398,7 @@ func (s *Service) Validate(a *Api) error {
 
 	//data api need service unit publish
 	if su.Spec.Type == "data" && !su.Status.Published && !s.tenantEnabled {
-		return fmt.Errorf("serviceunit %s is unpublished", a.Serviceunit.ID)
+		return errors.UnpublishedError("serviceunit %s is unpublished", a.Serviceunit.ID)
 	}
 	a.Serviceunit = v1.Serviceunit{
 		ID:    su.ObjectMeta.Name,
