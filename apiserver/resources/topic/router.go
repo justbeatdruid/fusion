@@ -154,7 +154,8 @@ func (r *router) doStatisticsOnTopics(request *restful.Request, response *restfu
 }
 
 func (r *router) listMessages(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.ListMessages(request)
+	//code, result := r.controller.ListMessages(request)
+	code, result := r.controller.QueryMessage(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 

@@ -834,7 +834,7 @@ func (c *controller) ListUsers(req *restful.Request) (int, *ListResponse) {
 
 	var permissions = make([]service.Permission, 0)
 	for _, p := range permissionList {
-		ca, err := c.service.QueryAuthUserById(p.AuthUserID)
+		ca, err := c.service.QueryAuthUserById(p.AuthUserID,util.WithNamespace(authUser.Namespace))
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    1,
