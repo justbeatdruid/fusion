@@ -955,9 +955,17 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	//根据MessageID查询topic信息
 	if len(messageId) > 0 {
 		//校验messageId的合法性
+		strings.ReplaceAll(messageId,";",",")
+		//两边没有括号就加上括号
+        h, m, ok := c.QueryParamterValidate(`^\(`,messageId)
+		if ok==1 {
+			return h, m
+		}else if ok==2 {
+			messageId = "("+messageId+")"
+		}
 		reg := `^\([1-9]{1,}\,[0-9]{1,}\,[0-9]{1,}\)$`
-		h, m, ok := c.QueryParamterValidate(reg, messageId)
-		if !ok {
+		h, m, ok = c.QueryParamterValidate(reg, messageId)
+		if ok!=0 {
 			return h, m
 		}
 		sql = fmt.Sprintf(messageIdSql, messageId)
@@ -973,11 +981,11 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 		//校验时间的合法性
 		reg := `/^[1-9]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\s+(20|21|22|23|[0-1]\d):[0-5]\d:[0-5]\d$/`
 		h, m, ok := c.QueryParamterValidate(reg, startTime)
-		if !ok {
+		if ok!=0 {
 			return h, m
 		}
 		h, m, ok = c.QueryParamterValidate(reg, endTime)
-		if !ok {
+		if ok!=0 {
 			return h, m
 		}
 		sql = fmt.Sprintf(timeSql, startTime, endTime)
@@ -1082,7 +1090,7 @@ func (c *controller) TopicGroupCheck(topicGroup string, authUser auth.AuthUser) 
 }
 
 //校验参数的合法性
-func (c *controller) QueryParamterValidate(reg string, param string) (int, *MessageResponse, bool) {
+func (c *controller) QueryParamterValidate(reg string, param string) (int, *MessageResponse, int) {
 	r, err := regexp.Compile(reg)
 	if err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
@@ -1090,7 +1098,7 @@ func (c *controller) QueryParamterValidate(reg string, param string) (int, *Mess
 			ErrorCode: tperror.ErrorQueryMessage,
 			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
 			Detail:    fmt.Errorf("regexp error: %+v", err).Error(),
-		}, false
+		}, 1
 	}
 	ok := r.MatchString(param)
 	if !ok {
@@ -1099,8 +1107,8 @@ func (c *controller) QueryParamterValidate(reg string, param string) (int, *Mess
 			ErrorCode: tperror.ErrorQueryMessage,
 			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], tperror.ErrorQueryParameterError),
 			Detail:    fmt.Errorf("messageId is not legal: %+v", err).Error(),
-		}, false
+		}, 2
 	} else {
-		return http.StatusOK, nil, true
+		return http.StatusOK, nil, 0
 	}
 }
