@@ -22,6 +22,7 @@ const (
 	contentNotVoid
 	alreadyBound
 	permissionDenied
+	unpublished
 )
 
 func NotFoundError(format string, a ...interface{}) error {
@@ -59,6 +60,13 @@ func PermissionDeniedError(format string, a ...interface{}) error {
 	}
 }
 
+func UnpublishedError(format string, a ...interface{}) error {
+	return &Error{
+		t:       unpublished,
+		message: fmt.Sprintf(format, a...),
+	}
+}
+
 func IsNotFound(err error) bool {
 	if e, ok := err.(*Error); ok {
 		return e.t == notFound
@@ -92,4 +100,11 @@ func IsPermissionDenied(err error) bool {
 		return e.t == permissionDenied
 	}
 	return strings.Contains(err.Error(), "permission denied")
+}
+
+func IsUnpublished(err error) bool {
+	if e, ok := err.(*Error); ok {
+		return e.t == unpublished
+	}
+	return strings.Contains(err.Error(), "unpublished")
 }

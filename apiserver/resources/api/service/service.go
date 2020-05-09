@@ -64,7 +64,7 @@ func (s *Service) GetClient() dynamic.NamespaceableResourceInterface {
 
 func (s *Service) CreateApi(model *Api) (*Api, error, string) {
 	if err := s.Validate(model); err != nil {
-		return nil, fmt.Errorf("bad request: %+v", err), "001000016"
+		return nil, err, "001000016"
 	}
 	var crdNamespace = model.Namespace
 	// check serviceunit
