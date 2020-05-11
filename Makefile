@@ -14,7 +14,7 @@ endif
 
 all: build uninstall install
 
-build: clean apiserver-image datasource-image application-image trafficcontrol-image restriction-image topic-image api-image serviceunit-image apply-image
+build: clean apiserver-image datasource-image application-image trafficcontrol-image restriction-image topic-image api-image serviceunit-image apply-image topicgroup-image clientauth-image
 
 install:
 	kubectl create configmap err-config --from-file=config/err.json && kubectl create -f yaml
