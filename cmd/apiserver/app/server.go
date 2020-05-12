@@ -18,9 +18,9 @@ import (
 func NewServerCommand() *cobra.Command {
 	serverRunOptions := options.NewServerRunOptions()
 	command := &cobra.Command{
-		Use: "database",
-		Long: `The database middleware receives requests from console,
-then creates services to backend`,
+		Use: "fusion-apiserver",
+		Long: `The fusion apiserver provides fusion apis for creating, quering, updating and deleting resources,
+apiserver does not operate backend resources`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			version.PrintAndExitIfRequested()
 			func(flags *pflag.FlagSet) {

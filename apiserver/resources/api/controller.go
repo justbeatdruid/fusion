@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/chinamobile/nlpt/apiserver/mutex"
 	"github.com/chinamobile/nlpt/apiserver/resources/api/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/auth"
@@ -19,12 +20,14 @@ import (
 type controller struct {
 	service *service.Service
 	errMsg  config.ErrorConfig
+	lock    mutex.Mutex
 }
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient(), cfg.DataserviceConnector, cfg.GetKubeClient(), cfg.TenantEnabled, cfg.LocalConfig),
 		cfg.LocalConfig,
+		cfg.Mutex,
 	}
 }
 
@@ -81,8 +84,16 @@ type StatisticsResponse = struct {
 }
 
 func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
-	util.ApiLock()
-	defer util.ApiUnlock()
+	unlock, err := c.lock.Lock("api")
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   2,
+			Detail: fmt.Sprintf("lock error: %+v", err),
+		}
+	}
+	defer func() {
+		_ = unlock()
+	}()
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
@@ -138,6 +149,16 @@ func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 }
 
 func (c *controller) PatchApi(req *restful.Request) (int, interface{}) {
+	unlock, err := c.lock.Lock("api")
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   2,
+			Detail: fmt.Sprintf("lock error: %+v", err),
+		}
+	}
+	defer func() {
+		_ = unlock()
+	}()
 	reqBody := make(map[string]interface{})
 	if err := req.ReadEntity(&reqBody); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{

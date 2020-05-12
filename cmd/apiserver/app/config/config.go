@@ -6,6 +6,7 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
+	"github.com/chinamobile/nlpt/apiserver/mutex"
 	"github.com/chinamobile/nlpt/pkg/audit"
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 )
@@ -48,6 +49,8 @@ type Config struct {
 	TenantEnabled bool
 
 	LocalConfig ErrorConfig
+
+	Mutex mutex.Mutex
 }
 
 func (c *Config) GetKubeClient() *clientset.Clientset {

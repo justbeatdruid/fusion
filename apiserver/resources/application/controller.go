@@ -6,25 +6,27 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/chinamobile/nlpt/apiserver/mutex"
 	"github.com/chinamobile/nlpt/apiserver/resources/application/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
-	"github.com/chinamobile/nlpt/pkg/util"
-
 	"github.com/chinamobile/nlpt/pkg/go-restful"
+	"github.com/chinamobile/nlpt/pkg/util"
 )
 
 type controller struct {
 	service *service.Service
 	errMsg  config.ErrorConfig
+	lock    mutex.Mutex
 }
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TenantEnabled),
 		cfg.LocalConfig,
+		cfg.Mutex,
 	}
 }
 
@@ -58,8 +60,16 @@ type StatisticsResponse = struct {
 }
 
 func (c *controller) CreateApplication(req *restful.Request) (int, *CreateResponse) {
-	util.ApplicationLock()
-	defer util.ApplicationUnlock()
+	unlock, err := c.lock.Lock("application")
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   2,
+			Detail: fmt.Sprintf("lock error: %+v", err),
+		}
+	}
+	defer func() {
+		_ = unlock()
+	}()
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
@@ -135,6 +145,16 @@ func (c *controller) GetApplication(req *restful.Request) (int, *GetResponse) {
 }
 
 func (c *controller) PatchApplication(req *restful.Request) (int, *DeleteResponse) {
+	unlock, err := c.lock.Lock("application")
+	if err != nil {
+		return http.StatusInternalServerError, &DeleteResponse{
+			Code:   2,
+			Detail: fmt.Sprintf("lock error: %+v", err),
+		}
+	}
+	defer func() {
+		_ = unlock()
+	}()
 	reqBody := make(map[string]interface{})
 	if err := req.ReadEntity(&reqBody); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{

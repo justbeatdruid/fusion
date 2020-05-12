@@ -3,11 +3,11 @@ curl localhost:8001/api/v1/datasources -H'content-type:application/json' \
   -d'
 {
   "data":{
-    "name": "test123",
+    "name": "test-datawarehouse-datasource",
     "type": "datawarehouse",
     "datawarehouse": {
-      "databaseName": "aaa",
-      "subjectName": "bbb"
+      "databaseName": "BS_health_medical",
+      "subjectName": "卫生健康服务"
     }
   }
 }'
