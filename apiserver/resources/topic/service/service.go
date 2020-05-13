@@ -446,7 +446,7 @@ func (s *Service) GrantPermissions(topicId string, authUserId string, actions Ac
 	tp.ObjectMeta.Labels[authUserId] = "true"
 
 	//4.根据auth id查询name
-	authUserName, err := s.QueryAuthUserNameById(authUserId,opts...)
+	authUserName, err := s.QueryAuthUserNameById(authUserId, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("grant permission error:%+v", err)
 	}
@@ -470,7 +470,7 @@ func (s *Service) GrantPermissions(topicId string, authUserId string, actions Ac
 	return ToModel(v1Tp), nil
 }
 
-func (s *Service) QueryAuthUserNameById(id string,opts ...util.OpOption) (string, error) {
+func (s *Service) QueryAuthUserNameById(id string, opts ...util.OpOption) (string, error) {
 	ca, err := s.QueryAuthUserById(id, opts...)
 	if err != nil {
 		return "", err

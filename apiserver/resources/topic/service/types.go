@@ -8,7 +8,6 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
-	"regexp"
 	"strconv"
 	"strings"
 )
@@ -21,20 +20,21 @@ const (
 )
 
 type Topic struct {
-	ID              string       `json:"id"`
-	Name            string       `json:"name"` //topic名称
-	Namespace       string       `json:"namespace"`
-	Tenant          string       `json:"tenant"`          //topic的所属租户名称
-	TopicGroup      string       `json:"topicGroup"`      //topic所属分组ID
-	Partition       int          `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
-	IsNonPersistent bool         `json:"isNonPersistent"` //非持久化，默认为false，非必填topic
-	URL             string       `json:"url"`             //URL
-	CreatedAt       int64        `json:"createdAt"`       //创建Topic的时间戳
-	Status          v1.Status    `json:"status"`
-	Message         string       `json:"message"`
-	Permissions     []Permission `json:"permissions"`
-	Users           user.Users   `json:"users"`
-	Stats           *Stats       `json:"stats"` //Topic的统计数据
+	ID           string       `json:"id"`
+	Name         string       `json:"name"` //topic名称
+	Namespace    string       `json:"namespace"`
+	Tenant       string       `json:"tenant"`       //topic的所属租户名称
+	TopicGroup   string       `json:"topicGroup"`   //topic所属分组ID
+	PartitionNum int          `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
+	Partitioned  *bool        `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
+	Persistent   *bool        `json:"persistent"`   //是否持久化，默认为true，非必填
+	URL          string       `json:"url"`          //URL
+	CreatedAt    int64        `json:"createdAt"`    //创建Topic的时间戳
+	Status       v1.Status    `json:"status"`
+	Message      string       `json:"message"`
+	Permissions  []Permission `json:"permissions"`
+	Users        user.Users   `json:"users"`
+	Stats        *Stats       `json:"stats"` //Topic的统计数据
 }
 
 type Stats struct {
@@ -133,21 +133,18 @@ func ToAPI(app *Topic) *v1.Topic {
 	crd.ObjectMeta.Namespace = app.Namespace
 
 	crd.Spec = v1.TopicSpec{
-		Name:            app.Name,
-		TopicGroup:      app.TopicGroup,
-		Partition:       app.Partition,
-		IsNonPersistent: app.IsNonPersistent,
+		Name:         app.Name,
+		TopicGroup:   app.TopicGroup,
+		PartitionNum: app.PartitionNum,
 	}
 
-	if crd.Spec.Partition <= 0 {
-		crd.Spec.Partition = 1
+	if app.Persistent != nil {
+		crd.Spec.Persistent = *app.Persistent
 	}
-	//if len(crd.Spec.Tenant) == 0 {
-	//	crd.Spec.Tenant = DefaultTenant
-	//}
-	//if len(crd.Spec.TopicGroup) == 0 {
-	//	crd.Spec.TopicGroup = DefaultNamespace
-	//}
+
+	if app.Partitioned != nil {
+		crd.Spec.Partitioned = *app.Partitioned
+	}
 
 	status := app.Status
 	if len(status) == 0 {
@@ -181,20 +178,20 @@ func ToModel(obj *v1.Topic) *Topic {
 	}
 
 	return &Topic{
-		ID:        obj.ObjectMeta.Name,
-		Name:      obj.Spec.Name,
-		Namespace: obj.ObjectMeta.Namespace,
-		//Tenant:          obj.Spec.Tenant,
-		TopicGroup:      obj.Spec.TopicGroup,
-		IsNonPersistent: obj.Spec.IsNonPersistent,
-		Partition:       obj.Spec.Partition,
-		Status:          obj.Status.Status,
-		Message:         obj.Status.Message,
-		URL:             obj.Spec.Url,
-		CreatedAt:       obj.CreationTimestamp.Unix(),
-		Permissions:     ps,
-		Users:           user.GetUsersFromLabels(obj.ObjectMeta.Labels),
-		Stats:           ToStatsModel(obj.Spec.Stats),
+		ID:           obj.ObjectMeta.Name,
+		Name:         obj.Spec.Name,
+		Namespace:    obj.ObjectMeta.Namespace,
+		TopicGroup:   obj.Spec.TopicGroup,
+		Persistent:   &obj.Spec.Persistent,
+		Partitioned:  &obj.Spec.Partitioned,
+		PartitionNum: obj.Spec.PartitionNum,
+		Status:       obj.Status.Status,
+		Message:      obj.Status.Message,
+		URL:          obj.Spec.Url,
+		CreatedAt:    obj.CreationTimestamp.Unix(),
+		Permissions:  ps,
+		Users:        user.GetUsersFromLabels(obj.ObjectMeta.Labels),
+		Stats:        ToStatsModel(obj.Spec.Stats),
 	}
 
 }
@@ -272,23 +269,47 @@ func ToListModel(items *v1.TopicList) []*Topic {
 
 func (a *Topic) Validate() topicerr.TopicError {
 	for k, v := range map[string]string{
-		"name": a.Name,
+		"name":       a.Name,
+		"topicGroup": a.TopicGroup,
 	} {
 		if len(v) == 0 {
 			return topicerr.TopicError{
 				Err:       fmt.Errorf("%s is null", k),
 				ErrorCode: topicerr.ErrorBadRequest,
 			}
-		} else {
-			if ok, err := regexp.MatchString(NameReg, v); !ok {
-				return topicerr.TopicError{
-					Err:       fmt.Errorf("name is illegal: %v ", err),
-					ErrorCode: topicerr.ErrorCreateTopic,
-				}
-			}
 		}
 
 	}
+
+	//TODO 正则表达式校验失败，待定位
+	//if ok, err := regexp.MatchString(NameReg, a.Name); !ok {
+	//	return topicerr.TopicError{
+	//		Err:       fmt.Errorf("name is illegal: %v ", err),
+	//		ErrorCode: topicerr.ErrorCreateTopic,
+	//	}
+	//}
+
+	if a.Persistent == nil {
+		return topicerr.TopicError{
+			Err:       fmt.Errorf("%s is null", "persistent"),
+			ErrorCode: topicerr.ErrorBadRequest,
+		}
+	}
+
+	if a.Partitioned == nil {
+		return topicerr.TopicError{
+			Err:       fmt.Errorf("%s is null", "partitioned"),
+			ErrorCode: topicerr.ErrorBadRequest,
+		}
+	}
+
+	if *a.Partitioned && a.PartitionNum == 0 {
+		return topicerr.TopicError{
+			Err:       fmt.Errorf("parition number of partitioned topic must be greater than 0"),
+			ErrorCode: topicerr.ErrorPartitionTopicPartitionEqualZero,
+		}
+	}
+
 	a.ID = names.NewID()
 	return topicerr.TopicError{
 		Err: nil,
@@ -298,7 +319,7 @@ func (a *Topic) Validate() topicerr.TopicError {
 func (a *Topic) GetUrl() (url string) {
 
 	var build strings.Builder
-	if a.IsNonPersistent {
+	if *a.Persistent {
 		build.WriteString("non-persistent://")
 	} else {
 		build.WriteString("persistent://")

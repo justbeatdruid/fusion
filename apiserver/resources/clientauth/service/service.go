@@ -224,6 +224,11 @@ func (s *Service) RegenerateToken(ca *Clientauth) (*Clientauth, error) {
 	if err != nil {
 		return nil, fmt.Errorf("clientauth id is not exist, id : %+v, error : %+v", ca.ID, err)
 	}
+	if cad.Spec.ExipreAt > time.Now().Unix() {
+		// 说明当前token仍然有效，不能重新生成token
+		return nil, fmt.Errorf("token is valid, cannot regenerate")
+	}
+
 	//校验时间，token的过期时间必须大于当前时间
 	if ca.ExpireAt <= time.Now().Unix() {
 		return nil, fmt.Errorf("token expire time:%d must be greater than now", ca.ExpireAt)
