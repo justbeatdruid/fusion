@@ -400,7 +400,7 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 	spec := &parser.TopicExcelSpec{
 		SheetName:        "topics",
 		MultiPartFileKey: "uploadfile",
-		TitleRowSpecList: []string{"topic租户名称", "topic组名称", "topic名称", "分区数量", "非持久化"},
+		TitleRowSpecList: []string{"topic租户名称", "topic组名称", "topic名称", "多分区", "分区数量", "持久化"},
 	}
 	tps, err := parser.ParseTopicsFromExcel(req, response, spec)
 	if err != nil {
@@ -673,7 +673,7 @@ func (c *controller) ExportTopics(req *restful.Request) (int, *ExportResponse) {
 	topicIds := req.QueryParameters("topicIds")
 	file := excelize.NewFile()
 	index := file.NewSheet("topics")
-	s := []string{"topic租户名称", "topic组名称", "topic名称", "分区数量", "非持久化"}
+	s := []string{"topic租户名称", "topic组名称", "topic名称", "多分区", "分区数量", "持久化"}
 	j := 0
 	for i := 65; i < 70; i++ {
 		file.SetCellValue("topics", string(i)+"1", s[j])
