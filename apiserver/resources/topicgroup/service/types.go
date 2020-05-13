@@ -151,7 +151,7 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 	crd.Spec = v1.TopicgroupSpec{
 		Name:        app.Name,
 		Policies:    ToPolicesApi(app.Policies),
-		Descirption: app.Description,
+		Description: app.Description,
 	}
 
 	status := app.Status
@@ -178,7 +178,7 @@ func ToModel(obj *v1.Topicgroup) *Topicgroup {
 		Policies:    ToPolicesModel(obj.Spec.Policies),
 		Users:       user.GetUsersFromLabels(obj.ObjectMeta.Labels),
 		Available:   obj.Spec.Available,
-		Description: obj.Spec.Descirption,
+		Description: obj.Spec.Description,
 	}
 }
 
@@ -537,7 +537,7 @@ func (p *Policies) checkBacklogQuota() error {
 			break
 		default:
 			if backlogQuota[destinationStorage].Policy != NotSetString {
-				return fmt.Errorf("backlogQuota policy is invalid: %destinationStorage", backlogQuota["destination_storage"].Policy)
+				return fmt.Errorf("backlogQuota policy is invalid: %+v", backlogQuota["destination_storage"].Policy)
 			}
 		}
 	}

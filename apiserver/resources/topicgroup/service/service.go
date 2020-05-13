@@ -221,7 +221,7 @@ func (s *Service) ModifyTopicgroup(id string, topicgroup *Topicgroup, opts ...ut
 	if err = topicgroup.ValidateModifyBody(); err != nil {
 		return nil, fmt.Errorf("bad request: %+v", err)
 	}
-	crd.Spec.Descirption = topicgroup.Description
+	crd.Spec.Description = topicgroup.Description
 	crd.Spec.Policies = s.MergePolicies(topicgroup.Policies, crd.Spec.Policies)
 	crd.Status.Status = v1.Update
 	crd.Status.Message = "accepted update topic group policies"

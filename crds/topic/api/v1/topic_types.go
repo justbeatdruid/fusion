@@ -30,13 +30,14 @@ type TopicSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Topic. Edit Topic_types.go to remove/update
-	Name            string       `json:"name"`
-	TopicGroup      string       `json:"topicGroup"`      //topic分组ID
-	Partition       int          `json:"partition"`       //topic的分区数量，不指定时默认为1，指定partition大于1，则该topic的消息会被多个broker处理
-	IsNonPersistent bool         `json:"isNonPersistent"` //Topic是否不持久化
-	Url             string       `json:"url"`             //Topic url
-	Permissions     []Permission `json:"permissions"`
-	Stats           Stats        `json:"stats"` //Topic的统计数据
+	Name         string       `json:"name"`
+	TopicGroup   string       `json:"topicGroup"`   //topic分组ID
+	PartitionNum int          `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
+	Partitioned  bool         `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
+	Persistent   bool         `json:"persistent"`   //是否持久化，默认为true，非必填
+	Url          string       `json:"url"`          //Topic url
+	Permissions  []Permission `json:"permissions"`
+	Stats        Stats        `json:"stats"` //Topic的统计数据
 }
 
 type Actions []string
@@ -159,10 +160,10 @@ func init() {
 func (in *Topic) GetUrl() (url string) {
 
 	var build strings.Builder
-	if in.Spec.IsNonPersistent {
-		build.WriteString("non-persistent://")
-	} else {
+	if in.Spec.Persistent {
 		build.WriteString("persistent://")
+	} else {
+		build.WriteString("non-persistent://")
 	}
 
 	build.WriteString(in.Namespace)

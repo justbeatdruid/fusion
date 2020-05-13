@@ -171,7 +171,7 @@ func (c *controller) DeleteClientauths(req *restful.Request) (int, *ListResponse
 		}
 	}
 	for _, id := range ids {
-		if _, err := c.service.DeleteClientauth(id,util.WithNamespace(authUser.Namespace)); err != nil {
+		if _, err := c.service.DeleteClientauth(id, util.WithNamespace(authUser.Namespace)); err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    fail,
 				Message: fmt.Errorf("delete clientauth error: %+v", err).Error(),

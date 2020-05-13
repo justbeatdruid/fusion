@@ -415,14 +415,16 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 	var data []service.Topic
 	for _, tp := range tps.ParseData {
 
-		partition, _ := strconv.Atoi(tp[3])
-		isNonPersisten, _ := strconv.ParseBool(tp[4])
+		partitioned, _ := strconv.ParseBool(tp[3])
+		partitionNum, _ := strconv.Atoi(tp[4])
+		persistent, _ := strconv.ParseBool(tp[5])
 		topic := &service.Topic{
-			Tenant:          tp[0],
-			TopicGroup:      tp[1],
-			Name:            tp[2],
-			Partition:       partition,
-			IsNonPersistent: isNonPersisten,
+			Tenant:       tp[0],
+			TopicGroup:   tp[1],
+			Name:         tp[2],
+			Partitioned:  &partitioned,
+			PartitionNum: partitionNum,
+			Persistent:   &persistent,
 		}
 
 		if tpErr := topic.Validate(); tpErr.Err != nil {
@@ -704,8 +706,9 @@ func (c *controller) ExportTopics(req *restful.Request) (int, *ExportResponse) {
 			file.SetCellValue("topics", string(cell)+strconv.Itoa(row), topic.Tenant)
 			file.SetCellValue("topics", string(cell+1)+strconv.Itoa(row), topic.TopicGroup)
 			file.SetCellValue("topics", string(cell+2)+strconv.Itoa(row), topic.Name)
-			file.SetCellValue("topics", string(cell+3)+strconv.Itoa(row), topic.Partition)
-			file.SetCellValue("topics", string(cell+4)+strconv.Itoa(row), topic.IsNonPersistent)
+			file.SetCellValue("topics", string(cell+3)+strconv.Itoa(row), topic.Partitioned)
+			file.SetCellValue("topics", string(cell+4)+strconv.Itoa(row), topic.PartitionNum)
+			file.SetCellValue("topics", string(cell+5)+strconv.Itoa(row), topic.Persistent)
 		}
 	}
 	file.SetActiveSheet(index)
@@ -834,7 +837,7 @@ func (c *controller) ListUsers(req *restful.Request) (int, *ListResponse) {
 
 	var permissions = make([]service.Permission, 0)
 	for _, p := range permissionList {
-		ca, err := c.service.QueryAuthUserById(p.AuthUserID,util.WithNamespace(authUser.Namespace))
+		ca, err := c.service.QueryAuthUserById(p.AuthUserID, util.WithNamespace(authUser.Namespace))
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    1,
@@ -955,17 +958,17 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	//根据MessageID查询topic信息
 	if len(messageId) > 0 {
 		//校验messageId的合法性
-		strings.ReplaceAll(messageId,";",",")
+		strings.ReplaceAll(messageId, ";", ",")
 		//两边没有括号就加上括号
-        h, m, ok := c.QueryParamterValidate(`^\(`,messageId)
-		if ok==1 {
+		h, m, ok := c.QueryParamterValidate(`^\(`, messageId)
+		if ok == 1 {
 			return h, m
-		}else if ok==2 {
-			messageId = "("+messageId+")"
+		} else if ok == 2 {
+			messageId = "(" + messageId + ")"
 		}
 		reg := `^\([0-9]{1,}\,[0-9]{1,}\,[0-9]{1,}\)$`
 		h, m, ok = c.QueryParamterValidate(reg, messageId)
-		if ok!=0 {
+		if ok != 0 {
 			return h, m
 		}
 		sql = fmt.Sprintf(messageIdSql, messageId)
@@ -981,11 +984,11 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 		//校验时间的合法性
 		reg := `/^[1-9]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\s+(20|21|22|23|[0-1]\d):[0-5]\d:[0-5]\d$/`
 		h, m, ok := c.QueryParamterValidate(reg, startTime)
-		if ok!=0 {
+		if ok != 0 {
 			return h, m
 		}
 		h, m, ok = c.QueryParamterValidate(reg, endTime)
-		if ok!=0 {
+		if ok != 0 {
 			return h, m
 		}
 		sql = fmt.Sprintf(timeSql, startTime, endTime)

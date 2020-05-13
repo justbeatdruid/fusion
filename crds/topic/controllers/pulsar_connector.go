@@ -92,7 +92,7 @@ type ConsumerStat struct {
 
 //CreateTopic 调用Pulsar的Restful Admin API，创建Topic
 func (r *Connector) CreateTopic(topic *nlptv1.Topic) (err error) {
-	if topic.Spec.Partition > 1 {
+	if topic.Spec.Partitioned {
 		return r.CreatePartitionedTopic(topic)
 	}
 
@@ -114,7 +114,7 @@ func (r *Connector) CreatePartitionedTopic(topic *nlptv1.Topic) (err error) {
 	klog.Infof("CreatePartitionedTopic Param: tenant:%s, namespace:%s, topicName:%s", topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl := r.getUrl(topic)
 
-	response, _, errs := request.Put(topicUrl).Send(topic.Spec.Partition - 1).EndStruct("")
+	response, _, errs := request.Put(topicUrl).Send(topic.Spec.PartitionNum).EndStruct("")
 	if response.StatusCode == 204 {
 		return nil
 	} else {
@@ -145,7 +145,7 @@ func (r *Connector) DeleteTopic(topic *nlptv1.Topic) (err error) {
 func (r *Connector) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Permission) (err error) {
 	request := r.GetHttpRequest()
 	var url string
-	if topic.Spec.IsNonPersistent {
+	if topic.Spec.Persistent {
 		url = nonPersistentPermissionUrl
 	} else {
 		url = persistentPermissionUrl
@@ -166,11 +166,11 @@ func (r *Connector) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Perm
 
 func (r *Connector) getUrl(topic *nlptv1.Topic) string {
 	url := persistentTopicUrl
-	if topic.Spec.IsNonPersistent {
+	if !topic.Spec.Persistent {
 		url = nonPersistentTopicUrl
 	}
 
-	if topic.Spec.Partition > 1 {
+	if topic.Spec.Partitioned {
 		url += "/partitions"
 	}
 	topicUrl := fmt.Sprintf(url, topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
@@ -182,7 +182,7 @@ func (r *Connector) getUrl(topic *nlptv1.Topic) string {
 func (r *Connector) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err error) {
 	request := r.GetHttpRequest()
 	url := persistentTopicUrl
-	if topic.Spec.IsNonPersistent {
+	if topic.Spec.Persistent {
 		url = nonPersistentTopicUrl
 	}
 
@@ -214,7 +214,7 @@ func (r *Connector) GetHttpRequest() *gorequest.SuperAgent {
 func (r *Connector) GetStats(topic nlptv1.Topic) (*nlptv1.Stats, error) {
 	request := r.GetHttpRequest()
 	url := persistentTopicUrl
-	if topic.Spec.IsNonPersistent {
+	if topic.Spec.Persistent {
 		url = nonPersistentTopicUrl
 	}
 	url += statsUrl

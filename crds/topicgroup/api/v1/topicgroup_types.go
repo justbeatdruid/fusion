@@ -30,7 +30,7 @@ type TopicgroupSpec struct {
 	Name        string    `json:"name"` //namespace名称
 	Policies    *Policies `json:"policies,omitempty"`
 	Available   bool      `json:"available"`              //资源是否可用
-	Descirption string    `json:"description, omitempty"` //描述
+	Description string    `json:"description, omitempty"` //描述
 }
 type Policies struct {
 	RetentionPolicies           *RetentionPolicies        `json:"retention_policies,omitempty"`     //消息保留策略
