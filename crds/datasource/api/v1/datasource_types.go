@@ -38,7 +38,7 @@ type DatasourceSpec struct {
 
 	RDB           *RDB           `json:"rdb,omitempty"`
 	DataWarehouse *dwv1.Database `json:"datawarehouse,omitempty"`
-	Topic         *string        `json:"topic,omitempty"`
+	MessageQueue  *MessageQueue  `json:"mq,omitempty"`
 
 	Location string `json:"localtion"`
 	AuthType string `json:"authType"`
@@ -53,7 +53,7 @@ func (t Type) String() string {
 const (
 	RDBType           Type = "rdb"
 	DataWarehouseType Type = "datawarehouse"
-	TopicType         Type = "topic"
+	TopicType         Type = "pulsar"
 )
 
 type RDB struct {
@@ -137,6 +137,17 @@ func FromString(s string) Status {
 	default:
 		return Unknown
 	}
+}
+
+type MessageQueue struct {
+	Type    string             `json:"type"`
+	InnerID *string            `json:"innerId,omitempty"`
+	Outter  *MessageConnection `json:"mqConnection,omitempty"`
+}
+
+type MessageConnection struct {
+	Address  string `json:"address"`
+	Insecure bool   `json:"insecure"`
 }
 
 // +kubebuilder:object:root=true

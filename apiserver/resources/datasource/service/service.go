@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"net"
 	"strings"
 
 	dwtype "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
@@ -9,7 +10,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb/driver"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	dwv1 "github.com/chinamobile/nlpt/crds/datasource/datawarehouse/api/v1"
-	topicv1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
+	tgv1 "github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 	"github.com/chinamobile/nlpt/pkg/util"
 
@@ -25,8 +26,8 @@ var defaultNamespace = "default"
 var Supported = []string{}
 
 type Service struct {
-	client      dynamic.NamespaceableResourceInterface
-	topicClient dynamic.NamespaceableResourceInterface
+	client   dynamic.NamespaceableResourceInterface
+	tgClient dynamic.NamespaceableResourceInterface
 
 	tenantEnabled bool
 	dataService   dw.Connector
@@ -35,8 +36,8 @@ type Service struct {
 func NewService(client dynamic.Interface, supported []string, dsConnector dw.Connector, tenantEnabled bool) *Service {
 	Supported = supported
 	return &Service{
-		client:      client.Resource(v1.GetOOFSGVR()),
-		topicClient: client.Resource(topicv1.GetOOFSGVR()),
+		client:   client.Resource(v1.GetOOFSGVR()),
+		tgClient: client.Resource(tgv1.GetOOFSGVR()),
 
 		tenantEnabled: tenantEnabled,
 		dataService:   dsConnector,
@@ -497,6 +498,8 @@ func (s *Service) Ping(ds *Datasource) error {
 			return fmt.Errorf("cannot get datawarehouse: %+v", err)
 		}
 		return err
+	case v1.TopicType:
+		return s.CheckTopic(ds.Namespace, ds.MessageQueue)
 	default:
 		return fmt.Errorf("not supported for %s", ds.Type)
 	}
@@ -531,17 +534,40 @@ func (s *Service) GetDataSourceByApiId(apiId string, parames string) (map[string
 }
 */
 
-func (s *Service) CheckTopic(crdNamespace string, tid *string) error {
-	if tid == nil {
-		return fmt.Errorf("topic id is null")
+func (s *Service) CheckTopic(crdNamespace string, mq *v1.MessageQueue) error {
+	if mq == nil {
+		return fmt.Errorf("message queue is null")
 	}
-	crd, err := s.topicClient.Namespace(crdNamespace).Get(*tid, metav1.GetOptions{})
-	if err != nil {
-		return fmt.Errorf("error get crd: %+v", err)
+	switch mq.Type {
+	case "public":
+		if mq.Outter == nil {
+			return fmt.Errorf("public message queue connection info is null")
+		}
+		endpoints := strings.Split(mq.Outter.Address, ",")
+		for _, ep := range endpoints {
+			a, err := net.ResolveTCPAddr("tcp", ep)
+			if err != nil {
+				return fmt.Errorf("cannot resolve address: %+v", err)
+			}
+			c, err := net.DialTCP("tcp", nil, a)
+			if err != nil {
+				return fmt.Errorf("cannot dial tcp: %+v", err)
+			}
+			c.Close()
+		}
+		return nil
+	default:
+		if mq.InnerID == nil {
+			return fmt.Errorf("topic id not set")
+		}
+		crd, err := s.tgClient.Namespace(crdNamespace).Get(*mq.InnerID, metav1.GetOptions{})
+		if err != nil {
+			return fmt.Errorf("error get crd: %+v", err)
+		}
+		t := &tgv1.Topicgroup{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), t); err != nil {
+			return fmt.Errorf("convert unstructured to crd error: %+v", err)
+		}
+		return nil
 	}
-	t := &topicv1.Topic{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), t); err != nil {
-		return fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	return nil
 }
