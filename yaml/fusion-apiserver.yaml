@@ -78,6 +78,8 @@ spec:
         - --pulsar-host=10.160.32.24
         - --pulsar-port=30003
         - --pulsar-auth-enable=true
+        - --presto-host=10.160.32.24
+        - --presto-port=30004
         - --etcd-endpoints=http://fusion-etcd-0.fusion-etcd:2379,http://fusion-etcd-1.fusion-etcd:2379,http://fusion-etcd-2.fusion-etcd:2379
         env:
         - name: MY_POD_NAMESPACE

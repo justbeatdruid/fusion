@@ -24,6 +24,7 @@ import (
 type controller struct {
 	service *service.Service
 	errMsg  config.ErrorConfig
+	tpConfig *config.TopicConfig
 }
 
 const (
@@ -37,6 +38,7 @@ func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TopicConfig, cfg.LocalConfig),
 		cfg.LocalConfig,
+		cfg.TopicConfig,
 	}
 }
 
@@ -998,7 +1000,12 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	return httpStatus, messageResponse
 }
 func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
-	messages, err := pulsarsql.QueryTopicMessages(sql)
+	connector := pulsarsql.Connector{
+		PrestoUser: "test-user",
+		Host:       c.tpConfig.PrestoHost,
+		Port:       c.tpConfig.PrestoPort,
+	}
+	messages, err := pulsarsql.QueryTopicMessages(connector, sql)
 	if err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:      1,

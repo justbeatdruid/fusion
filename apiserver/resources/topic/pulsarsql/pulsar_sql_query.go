@@ -7,12 +7,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 )
 
-func QueryTopicMessages(sql string) ([]service.Messages, error) {
-	c := &Connector{
-		PrestoUser: "test_user",
-		Host:       "10.160.32.24",
-		Port:       30004,
-	}
+func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 	var (
 		M     []service.Messages
 		ok    bool

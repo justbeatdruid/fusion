@@ -28,7 +28,7 @@ const (
 	FULL_TRANSITIVE         = "FULL_TRANSITIVE"
 	None                    = "None"
 	Prefix                  = "Prefix"
-	NameReg                 = "^[-=:.\\w]{100}$"
+	NameReg                 = "^[-=:.\\w]{1,100}$"
 )
 
 type Topicgroup struct {
