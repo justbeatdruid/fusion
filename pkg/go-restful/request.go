@@ -15,6 +15,7 @@ var defaultRequestContentType string
 type Request struct {
 	Request           *http.Request
 	entity            interface{}
+	entityCopy        interface{}
 	pathParameters    map[string]string
 	attributes        map[string]interface{} // for storing request-scoped values
 	selectedRoutePath string                 // root path + route path that matched the request, e.g. /meetings/{id}/attendees
@@ -102,6 +103,7 @@ func (r *Request) ReadEntity(entityPointer interface{}) (err error) {
 		}
 	}
 	r.entity = entityPointer
+	defer func() { r.entityCopy = Copy(r.entity) }()
 	return entityReader.Read(r, entityPointer)
 }
 
@@ -121,5 +123,5 @@ func (r Request) SelectedRoutePath() string {
 }
 
 func (r Request) GetEntity() interface{} {
-	return r.entity
+	return r.entityCopy
 }
