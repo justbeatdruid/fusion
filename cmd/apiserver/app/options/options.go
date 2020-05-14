@@ -138,7 +138,7 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		DatasourceConfig:     appconfig.NewDatasourceConfig(s.Datasource.Supported),
 		DataserviceConnector: dw.NewConnector(s.Dataservice.MetadataHost, s.Dataservice.MetadataPort, s.Dataservice.DataHost, s.Dataservice.DataPort),
 
-		TopicConfig:   appconfig.NewTopicConfig(s.Topic.Host, s.Topic.Port, s.Topic.AuthEnable, s.Topic.SuperUserToken, s.Topic.TokenSecret),
+		TopicConfig:   appconfig.NewTopicConfig(s.Topic.Host, s.Topic.Port, s.Topic.AuthEnable, s.Topic.SuperUserToken, s.Topic.TokenSecret, s.Topic.PrestoHost, s.Topic.PrestoPort),
 		Auditor:       audit.NewAuditor(s.Audit.Host, s.Audit.Port),
 		TenantEnabled: s.TenantEnabled,
 		LocalConfig:   *errConfig,
