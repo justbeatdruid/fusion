@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -16,7 +17,7 @@ const (
 	DefaultTenant    = "public"
 	DefaultNamespace = "default"
 	Separator        = "/"
-	NameReg          = "^[-=:.\\w]{100}$"
+	NameReg          = "^[-=:.\\w]{1,100}$"
 )
 
 type Topic struct {
@@ -281,13 +282,12 @@ func (a *Topic) Validate() topicerr.TopicError {
 
 	}
 
-	//TODO 正则表达式校验失败，待定位
-	//if ok, err := regexp.MatchString(NameReg, a.Name); !ok {
-	//	return topicerr.TopicError{
-	//		Err:       fmt.Errorf("name is illegal: %v ", err),
-	//		ErrorCode: topicerr.ErrorCreateTopic,
-	//	}
-	//}
+	if ok, _ := regexp.MatchString(NameReg, a.Name); !ok {
+		return topicerr.TopicError{
+			Err:       fmt.Errorf("name is illegal: %v ", a.Name),
+			ErrorCode: topicerr.ErrorCreateTopic,
+		}
+	}
 
 	if a.Persistent == nil {
 		return topicerr.TopicError{
