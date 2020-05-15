@@ -475,7 +475,10 @@ func (c *controller) CountAppsIncrement(dss []v1.Datasource) (int, string) {
 		}
 	}
 	total := len(dss)
-	pre := float64(increment) / float64(total) * 100
+	var pre float64
+	if total > 0 {
+		pre = float64(increment) / float64(total) * 100
+	}
 	percentage = fmt.Sprintf("%.0f%s", pre, "%")
 
 	return increment, percentage
