@@ -24,8 +24,8 @@ func DefaultTopicOptions() *TopicOptions {
 		AuthEnable:     true,
 		SuperUserToken: "/data/pulsar-secret/superUserToken",
 		TokenSecret:    "/data/pulsar-secret/tokenSecret",
-		PrestoHost: "10.160.32.24",
-		PrestoPort: 30004,
+		PrestoHost:     "10.160.32.24",
+		PrestoPort:     30004,
 	}
 }
 
@@ -38,8 +38,8 @@ func (o *TopicOptions) AddFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&o.AuthEnable, "pulsar-auth-enable", o.AuthEnable, "enable pulsar authentication")
 	fs.StringVar(&o.SuperUserToken, "pulsar-admin-token", o.SuperUserToken, "admin token of pulsar")
 	fs.StringVar(&o.TokenSecret, "pulsar-token-secret", o.TokenSecret, "token secret file path")
-	fs.StringVar(&o.PrestoHost, "presto-host", o.PrestoHost, "connect pulsar presto server" )
-	fs.IntVar(&o.PrestoPort, "presto-port", o.PrestoPort, "connect pulsar presto server" )
+	fs.StringVar(&o.PrestoHost, "presto-host", o.PrestoHost, "connect pulsar presto server")
+	fs.IntVar(&o.PrestoPort, "presto-port", o.PrestoPort, "connect pulsar presto server")
 
 }
 

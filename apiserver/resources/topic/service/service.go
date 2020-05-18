@@ -175,7 +175,6 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
-
 	err = kubernetes.EnsureNamespace(s.kubeClient, tp.Namespace)
 	if err != nil {
 		return nil, tperror.TopicError{
@@ -294,6 +293,10 @@ func (s *Service) UpdateStatus(tp *v1.Topic) (*v1.Topic, error) {
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
 	klog.V(5).Infof("try to update status for crd: %+v", crd)
+	err = kubernetes.EnsureNamespace(s.kubeClient, tp.Namespace)
+	if err != nil {
+		return nil, fmt.Errorf("cannot ensure k8s namespace: %+v", err)
+	}
 	crd, err = s.client.Namespace(tp.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error update crd status: %+v", err)
@@ -508,4 +511,18 @@ func (s *Service) GetTopicgroup(id string, namespace string) (*topicgroupv1.Topi
 
 	return tg, nil
 
+}
+
+func (s *Service) AddPartitionsOfTopic(id string, partitionNum int, ops ...util.OpOption) (*Topic, error) {
+	tp, err := s.Get(id, ops...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	tp.Status.Status = v1.Update
+	tp.Spec.PartitionNum = partitionNum
+	v1tp, err := s.UpdateStatus(tp)
+	if err!=nil{
+		return nil, fmt.Errorf("cannot update object: %+v", err)
+	}
+	return ToModel(v1tp),nil
 }

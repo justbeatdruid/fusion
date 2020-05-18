@@ -22,8 +22,8 @@ import (
 )
 
 type controller struct {
-	service *service.Service
-	errMsg  config.ErrorConfig
+	service  *service.Service
+	errMsg   config.ErrorConfig
 	tpConfig *config.TopicConfig
 }
 
@@ -55,6 +55,7 @@ type CreateRequest = Wrapped
 type DeleteResponse = Wrapped
 type GrantResponse = Wrapped
 type ExportResponse = Wrapped
+type AddPartitions = Wrapped
 
 /*type DeleteResponse struct {
 	Code    int    `json:"code"`
@@ -1121,4 +1122,36 @@ func (c *controller) QueryParamterValidate(reg string, param string) (int, *Mess
 	} else {
 		return http.StatusOK, nil, 0
 	}
+}
+
+func (c *controller) AddPartitionsOfTopic(req *restful.Request) (int, *AddPartitions) {
+	id := req.PathParameter("id")
+	partitions := req.PathParameter("partitions")
+	partitionNum, _ := strconv.ParseInt(partitions, 10, 8)
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &AddPartitions{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Data:      nil,
+			Detail:    "",
+		}
+	}
+	topic, err := c.service.AddPartitionsOfTopic(id, int(partitionNum), util.WithNamespace(authUser.Namespace))
+	if err != nil {
+		return http.StatusInternalServerError, &AddPartitions{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAddPartitionsOfTopicError,
+			Message:   c.errMsg.Topic[tperror.ErrorAddPartitionsOfTopicError],
+			Data:      nil,
+			Detail:    fmt.Sprintf("add partition fail: %+v ", err),
+		}
+	} else {
+		return http.StatusOK, &AddPartitions{
+			Code: 0,
+			Data: topic,
+		}
+	}
+
 }

@@ -150,7 +150,6 @@ func (r *Connector) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Perm
 	} else {
 		url = persistentPermissionUrl
 	}
-
 	url = fmt.Sprintf(url, topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name, permission.AuthUserName)
 	url = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
 	response, body, errs := request.Post(url).Send(permission.Actions).End()
@@ -282,4 +281,16 @@ func (r *Connector) FormatStats(stats *Stats) *nlptv1.Stats {
 	}
 	parsedStats.Subscriptions = subscriptions
 	return parsedStats
+}
+
+func (r *Connector) AddPartitionsOfTopic(topic *nlptv1.Topic) error {
+	request := r.GetHttpRequest()
+	url := r.getUrl(topic)
+	response, body, errs := request.Post(url).Send(topic.Spec.PartitionNum).Retry(3, 5*time.Second).End()
+	if response.StatusCode == 204 {
+		return nil
+	} else {
+		return fmt.Errorf("Increment partitions error: %+v ", body)
+	}
+	return fmt.Errorf("Increment partitions error: %+v ", errs)
 }
