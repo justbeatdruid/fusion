@@ -32,6 +32,7 @@ const (
 	ErrorGetTopicGroupInfo                = "010000024" //查询TopicGroup详情失败
 	ErrorQueryParameterError              = "010000025" //查询信息失败，原因：查询参数不正确
 	ErrorPartitionTopicPartitionEqualZero = "010000026" //创建Topic失败，原因：多分区Topic的分区数不能为0
+	ErrorAddPartitionsOfTopicError        = "010000027" //增加topic分区失败
 )
 
 type TopicError struct {
