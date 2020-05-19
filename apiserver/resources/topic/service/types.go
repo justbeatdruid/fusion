@@ -36,6 +36,7 @@ type Topic struct {
 	Permissions  []Permission `json:"permissions"`
 	Users        user.Users   `json:"users"`
 	Stats        *Stats       `json:"stats"` //Topic的统计数据
+	Description  string       `json:"description"`        //描述
 }
 
 type Stats struct {

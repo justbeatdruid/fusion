@@ -68,6 +68,9 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 						case "__sequence_id__":
 						case "__properties__":
 						default:
+							if v==nil{
+								continue
+							}
 							msg[k] = v
 							if str, ok := v.(string); ok {
 								size = size + binary.Size([]byte(str))
