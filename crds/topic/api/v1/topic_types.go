@@ -37,7 +37,8 @@ type TopicSpec struct {
 	Persistent   bool         `json:"persistent"`   //是否持久化，默认为true，非必填
 	Url          string       `json:"url"`          //Topic url
 	Permissions  []Permission `json:"permissions"`
-	Stats        Stats        `json:"stats"` //Topic的统计数据
+	Stats        Stats        `json:"stats"`       //Topic的统计数据
+	Description  string       `json:"description"` //描述
 }
 
 type Actions []string

@@ -35,8 +35,8 @@ type Topic struct {
 	Message      string       `json:"message"`
 	Permissions  []Permission `json:"permissions"`
 	Users        user.Users   `json:"users"`
-	Stats        *Stats       `json:"stats"` //Topic的统计数据
-	Description  string       `json:"description"`        //描述
+	Stats        *Stats       `json:"stats"`       //Topic的统计数据
+	Description  string       `json:"description"` //描述
 }
 
 type Stats struct {
@@ -138,6 +138,7 @@ func ToAPI(app *Topic) *v1.Topic {
 		Name:         app.Name,
 		TopicGroup:   app.TopicGroup,
 		PartitionNum: app.PartitionNum,
+		Description:  app.Description,
 	}
 
 	if app.Persistent != nil {
@@ -194,6 +195,7 @@ func ToModel(obj *v1.Topic) *Topic {
 		Permissions:  ps,
 		Users:        user.GetUsersFromLabels(obj.ObjectMeta.Labels),
 		Stats:        ToStatsModel(obj.Spec.Stats),
+		Description:  obj.Spec.Description,
 	}
 
 }
