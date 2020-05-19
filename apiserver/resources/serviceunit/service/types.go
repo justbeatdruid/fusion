@@ -232,7 +232,7 @@ func (s *Service) Validate(a *Serviceunit) error {
 		if len(a.DatasourceID.ID) == 0 {
 			return fmt.Errorf("datasource is null")
 		} else {
-			if _, err := s.checkDatasource(a.DatasourceID); err != nil {
+			if _, err := s.checkDatasource(a.Namespace, a.DatasourceID); err != nil {
 				return fmt.Errorf("error datasource: %+v", err)
 			} else {
 				//a.Datasource = *ds
@@ -250,11 +250,11 @@ func (s *Service) Validate(a *Serviceunit) error {
 	return nil
 }
 
-func (s *Service) checkDatasource(d *v1.Datasource) (*datav1.DatasourceSpec, error) {
+func (s *Service) checkDatasource(namespace string, d *v1.Datasource) (*datav1.DatasourceSpec, error) {
 	if d == nil {
 		return nil, fmt.Errorf("datasource is null")
 	}
-	data, err := s.getDatasource(d.ID)
+	data, err := s.getDatasource(namespace, d.ID)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get datasource: %+v", err)
 	}

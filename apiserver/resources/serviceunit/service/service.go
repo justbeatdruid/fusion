@@ -80,7 +80,7 @@ func (s *Service) GetServiceunit(id string, opts ...util.OpOption) (*Serviceunit
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 	if su.Spec.Type == v1.DataService && len(su.Spec.DatasourceID.ID) > 0 {
-		data, err := s.getDatasource(su.Spec.DatasourceID.ID)
+		data, err := s.getDatasource(su.ObjectMeta.Namespace, su.Spec.DatasourceID.ID)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get datasource: %+v", err)
 		}
@@ -348,9 +348,8 @@ func (s *Service) UpdateStatus(su *v1.Serviceunit) (*v1.Serviceunit, error) {
 	return su, nil
 }
 
-func (s *Service) getDatasource(id string) (*datav1.Datasource, error) {
+func (s *Service) getDatasource(crdNamespace, id string) (*datav1.Datasource, error) {
 	// TODO
-	crdNamespace := defaultNamespace
 	crd, err := s.datasourceClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
