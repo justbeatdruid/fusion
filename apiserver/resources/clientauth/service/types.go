@@ -26,6 +26,7 @@ type Clientauth struct {
 	AuthorizedMap map[string]int `json:"authorizedMap"` //已授权信息，key：topic id，value：1
 	Status        v1.Status      `json:"status"`
 	Message       string         `json:"message"`
+	Description   string         `json:"description"` //描述
 }
 
 // only used in creation options
@@ -38,11 +39,12 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 	crd.ObjectMeta.Namespace = app.Namespace
 
 	crd.Spec = v1.ClientauthSpec{
-		Name:       app.Name,
-		CreateUser: &app.CreateUser,
-		Token:      app.Token,
-		ExipreAt:   app.ExpireAt,
-		IssuedAt:   app.IssuedAt,
+		Name:        app.Name,
+		CreateUser:  &app.CreateUser,
+		Token:       app.Token,
+		ExipreAt:    app.ExpireAt,
+		IssuedAt:    app.IssuedAt,
+		Description: app.Description,
 	}
 	if len(crd.Namespace) == 0 {
 		crd.Namespace = DefaultNamespace
@@ -60,16 +62,17 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 
 func ToModel(obj *v1.Clientauth) *Clientauth {
 	ca := &Clientauth{
-		ID:         obj.ObjectMeta.Name,
-		Name:       obj.Spec.Name,
-		CreateUser: *obj.Spec.CreateUser,
-		Namespace:  obj.Namespace,
-		CreatedAt:  util.NewTime(obj.ObjectMeta.CreationTimestamp.Time).Unix(),
-		IssuedAt:   obj.Spec.IssuedAt,
-		ExpireAt:   obj.Spec.ExipreAt,
-		Token:      obj.Spec.Token,
-		Status:     obj.Status.Status,
-		Message:    obj.Status.Message,
+		ID:          obj.ObjectMeta.Name,
+		Name:        obj.Spec.Name,
+		CreateUser:  *obj.Spec.CreateUser,
+		Namespace:   obj.Namespace,
+		CreatedAt:   util.NewTime(obj.ObjectMeta.CreationTimestamp.Time).Unix(),
+		IssuedAt:    obj.Spec.IssuedAt,
+		ExpireAt:    obj.Spec.ExipreAt,
+		Token:       obj.Spec.Token,
+		Status:      obj.Status.Status,
+		Message:     obj.Status.Message,
+		Description: obj.Spec.Description,
 	}
 
 	if obj.Spec.AuthorizedMap != nil {

@@ -521,8 +521,8 @@ func (s *Service) AddPartitionsOfTopic(id string, partitionNum int, ops ...util.
 	tp.Status.Status = v1.Update
 	tp.Spec.PartitionNum = partitionNum
 	v1tp, err := s.UpdateStatus(tp)
-	if err!=nil{
+	if err != nil {
 		return nil, fmt.Errorf("cannot update object: %+v", err)
 	}
-	return ToModel(v1tp),nil
+	return ToModel(v1tp), nil
 }

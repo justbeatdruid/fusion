@@ -68,7 +68,7 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 						case "__sequence_id__":
 						case "__properties__":
 						default:
-							if v==nil{
+							if v == nil {
 								continue
 							}
 							msg[k] = v

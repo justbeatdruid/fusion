@@ -35,6 +35,7 @@ type ClientauthSpec struct {
 	ExipreAt      int64           `json:"expireAt"`
 	Token         string          `json:"token"`
 	AuthorizedMap *map[string]int `json:"authorizedMap"` //已授权topic id列表
+	Description   string          `json:"description"`   //描述
 }
 
 // ClientauthStatus defines the observed state of Clientauth

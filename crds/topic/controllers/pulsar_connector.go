@@ -290,5 +290,5 @@ func (r *Connector) AddPartitionsOfTopic(topic *nlptv1.Topic) error {
 	if response.StatusCode == 204 {
 		return nil
 	}
-	return fmt.Errorf("Increment partitions error: %+v; %+v ", body,errs)
+	return fmt.Errorf("Increment partitions error: %+v; %+v ", body, errs)
 }
