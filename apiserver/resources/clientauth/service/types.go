@@ -40,7 +40,6 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 
 	crd.Spec = v1.ClientauthSpec{
 		Name:        app.Name,
-		CreateUser:  &app.CreateUser,
 		Token:       app.Token,
 		ExipreAt:    app.ExpireAt,
 		IssuedAt:    app.IssuedAt,
@@ -57,6 +56,7 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 		Status:  status,
 		Message: "success",
 	}
+	crd.ObjectMeta.Labels = user.AddUsersLabels(app.CreateUser, crd.ObjectMeta.Labels)
 	return crd
 }
 
@@ -64,7 +64,7 @@ func ToModel(obj *v1.Clientauth) *Clientauth {
 	ca := &Clientauth{
 		ID:          obj.ObjectMeta.Name,
 		Name:        obj.Spec.Name,
-		CreateUser:  *obj.Spec.CreateUser,
+		CreateUser:  user.GetUsersFromLabels(obj.ObjectMeta.Labels),
 		Namespace:   obj.Namespace,
 		CreatedAt:   util.NewTime(obj.ObjectMeta.CreationTimestamp.Time).Unix(),
 		IssuedAt:    obj.Spec.IssuedAt,
