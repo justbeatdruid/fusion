@@ -16,7 +16,6 @@ limitations under the License.
 package v1
 
 import (
-	"github.com/chinamobile/nlpt/pkg/auth/user"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -30,12 +29,11 @@ type ClientauthSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 	Name          string          `json:"name"`
-	CreateUser    *user.Users     `json:"createUser"` //创建用户
 	IssuedAt      int64           `json:"issuedAt"`
 	ExipreAt      int64           `json:"expireAt"`
 	Token         string          `json:"token"`
-	AuthorizedMap *map[string]int `json:"authorizedMap"` //已授权topic id列表
-	Description   string          `json:"description"`   //描述
+	AuthorizedMap *map[string]int `json:"authorizedMap,omitempty"` //已授权topic id列表
+	Description   string          `json:"description,omitempty"`   //描述
 }
 
 // ClientauthStatus defines the observed state of Clientauth

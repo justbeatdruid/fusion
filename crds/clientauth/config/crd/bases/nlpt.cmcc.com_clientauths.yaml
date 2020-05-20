@@ -3,6 +3,8 @@
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
 metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.2.4
   creationTimestamp: null
   name: clientauths.nlpt.cmcc.com
 spec:
@@ -12,7 +14,7 @@ spec:
     listKind: ClientauthList
     plural: clientauths
     singular: clientauth
-  scope: ""
+  scope: Namespaced
   validation:
     openAPIV3Schema:
       description: Clientauth is the Schema for the clientauths API
@@ -32,53 +34,12 @@ spec:
         spec:
           description: ClientauthSpec defines the desired state of Clientauth
           properties:
-            Name:
-              type: string
             authorizedMap:
               additionalProperties:
                 type: integer
               type: object
-            createUser:
-              properties:
-                managers:
-                  items:
-                    properties:
-                      id:
-                        type: string
-                      name:
-                        type: string
-                    required:
-                    - id
-                    - name
-                    type: object
-                  type: array
-                members:
-                  items:
-                    properties:
-                      id:
-                        type: string
-                      name:
-                        type: string
-                    required:
-                    - id
-                    - name
-                    type: object
-                  type: array
-                owner:
-                  properties:
-                    id:
-                      type: string
-                    name:
-                      type: string
-                  required:
-                  - id
-                  - name
-                  type: object
-              required:
-              - managers
-              - members
-              - owner
-              type: object
+            description:
+              type: string
             expireAt:
               format: int64
               type: integer
@@ -92,7 +53,6 @@ spec:
             token:
               type: string
           required:
-          - Name
           - expireAt
           - issuedAt
           - name
