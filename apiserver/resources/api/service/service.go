@@ -99,14 +99,6 @@ func (s *Service) CreateApi(model *Api) (*Api, error, string) {
 	model.Serviceunit.Host = su.Spec.KongService.Host
 	model.Serviceunit.Protocol = su.Spec.KongService.Protocol
 	model.Serviceunit.Type = string(su.Spec.Type)
-	//api协议依赖服务单元
-	if model.Serviceunit.Protocol == "https" {
-		model.Protocol = v1.HTTPS               //data type
-		model.ApiDefineInfo.Protocol = v1.HTTPS //web type
-	} else {
-		model.Protocol = v1.HTTP
-		model.ApiDefineInfo.Protocol = v1.HTTP
-	}
 
 	//init publish count
 	model.PublishInfo.PublishCount = 0

@@ -217,7 +217,7 @@ type KongApiInfo struct {
 	StripPath     bool     `json:"strip_path"`
 	PreserveHost  bool     `json:"preserve_host"`
 	Snis          []string `json:"snis"`
-	Protocols     []string `json:"protocols"`
+	Protocols     []string `json:"protocols"` // 创建api时后端服务协议从服务单元获取
 	KongID        string   `json:"kong_id"`
 	JwtID         string   `json:"jwt_id"`
 	AclID         string   `json:"acl_id"`
@@ -273,6 +273,12 @@ type WebParams struct {
 	MaxNum      int           `json:"maxNum"`
 	MinSize     int           `json:"minSize"`
 	MaxSize     int           `json:"maxSize"`
+	BackendInfo BackendParams `json:"backend"`
+}
+
+type BackendParams struct {
+	Name     string       `json:"name"`     //必须
+	Location LocationType `json:"location"` //必须
 }
 
 type LocationType string

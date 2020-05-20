@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	v1 "github.com/chinamobile/nlpt/crds/api/api/v1"
+	"k8s.io/klog"
 	"net/http"
 	"time"
 
@@ -122,6 +123,7 @@ func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
 	body.Data.Namespace = authuser.Namespace
+	klog.V(5).Infof("body namespace is : %s", body.Data.Namespace)
 	if api, err, code := c.service.CreateApi(body.Data); err != nil {
 		if errors.IsNameDuplicated(err) {
 			code = "001000022"
