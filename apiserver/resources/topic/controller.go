@@ -31,7 +31,7 @@ const (
 	order        = `select * from (select row_number() over(order by __publish_time__ desc) __row__, * from pulsar."%s/%s"."%s" %s) as t where __row__ between %d and %d`
 	messageIdSql = `WHERE "__message_id__" = '%s'`
 	keySql       = `WHERE "__key__" = '%s'`
-	timeSql      = `WHERE "__publish_time__" BETWEEN %s AND %s`
+	timeSql      = `WHERE "__publish_time__" BETWEEN timestamp '%s' AND timestamp '%s'`
 )
 
 func newController(cfg *config.Config) *controller {
@@ -985,15 +985,38 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	//根据time查询topic信息
 	if len(startTime) > 0 && len(endTime) > 0 {
 		//校验时间的合法性
-		reg := `/^[1-9]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\s+(20|21|22|23|[0-1]\d):[0-5]\d:[0-5]\d$/`
-		h, m, ok := c.QueryParamterValidate(reg, startTime)
-		if ok != 0 {
-			return h, m
+		//reg := `/^[1-9]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[1-2][0-9]|3[0-1])\s+(20|21|22|23|[0-1]\d):[0-5]\d:[0-5]\d$/`
+		//h, m, ok := c.QueryParamterValidate(reg, startTime)
+		//if ok != 0 {
+		//	return h, m
+		//}
+		//h, m, ok = c.QueryParamterValidate(reg, endTime)
+		//if ok != 0 {
+		//	return h, m
+		//}
+		startTimeInt64, err := strconv.ParseInt(startTime, 10, 64)
+		if err != nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+				Detail:    fmt.Errorf("startTime error: %+v", err).Error(),
+			}
 		}
-		h, m, ok = c.QueryParamterValidate(reg, endTime)
-		if ok != 0 {
-			return h, m
+
+		endTimeInt64, err := strconv.ParseInt(endTime, 10, 64)
+		if err != nil {
+			return http.StatusInternalServerError, &MessageResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorQueryMessage,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+				Detail:    fmt.Errorf("endTime error: %+v", err).Error(),
+			}
 		}
+
+
+		startTime = time.Unix(startTimeInt64, 0).Format("2006-01-02 15:04:05")
+		endTime = time.Unix(endTimeInt64, 0).Format("2006-01-02 15:04:05")
 		sql = fmt.Sprintf(timeSql, startTime, endTime)
 		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, start, end)
 	}
