@@ -126,7 +126,7 @@ func getResourceType(path string) string {
 		case "serviceunits":
 			return "服务单元"
 		case "clientauths":
-			return "认证用户"
+			return "消息客户端认证"
 		case "topics":
 			return "Topic"
 		case "topicgroups":
