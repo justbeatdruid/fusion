@@ -496,6 +496,9 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 
 	if apiInfo, ok := data["apiDefineInfo"]; ok {
 		if config, ok := apiInfo.(map[string]interface{}); ok {
+			if _, ok = config["protocol"]; ok {
+				target.Spec.ApiDefineInfo.Protocol = source.ApiDefineInfo.Protocol
+			}
 			if _, ok = config["path"]; ok {
 				target.Spec.ApiDefineInfo.Path = source.ApiDefineInfo.Path
 			}
