@@ -297,6 +297,16 @@ func (s *Service) Validate(a *Api) error {
 
 	}
 
+	for _, p := range apiList.Items {
+		for _, path := range p.Spec.KongApi.Paths {
+			for _, apath := range a.KongApi.Paths {
+				if path == apath {
+					return fmt.Errorf("path duplicated: %s",path)
+				}
+			}
+		}
+	}
+
 	if len(a.Users.Owner.ID) == 0 {
 		return fmt.Errorf("owner not set")
 	}

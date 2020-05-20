@@ -185,6 +185,31 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[
 			}
 			return sus
 		}
+
+		stype := util.OpList(opts...).Stype()
+		if stype == "web" {
+			var sus []*Serviceunit = make([]*Serviceunit, 0)
+			for _, item := range items.Items {
+				if item.Spec.Type == "data" {
+					continue
+				}
+				su := ToModel(&item, opts...)
+				sus = append(sus, su)
+			}
+			return sus
+		} else if stype == "data" {
+			var sus []*Serviceunit = make([]*Serviceunit, 0)
+			for _, item := range items.Items {
+				if item.Spec.Type == "web" {
+					continue
+				}
+				su := ToModel(&item, opts...)
+				sus = append(sus, su)
+			}
+			return sus
+		}
+
+
 	}
 	var sus []*Serviceunit = make([]*Serviceunit, len(items.Items))
 	for i, item := range items.Items {

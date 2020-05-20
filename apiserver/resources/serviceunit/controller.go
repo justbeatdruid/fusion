@@ -232,6 +232,7 @@ func (c *controller) ListServiceunit(req *restful.Request) (int, *ListResponse) 
 	size := req.QueryParameter("size")
 	group := req.QueryParameter("group")
 	name := req.QueryParameter("name")
+	stype := req.QueryParameter("type")
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
@@ -241,7 +242,8 @@ func (c *controller) ListServiceunit(req *restful.Request) (int, *ListResponse) 
 			Detail:    "auth model error",
 		}
 	}
-	if su, err := c.service.ListServiceunit(util.WithGroup(group), util.WithNameLike(name), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+	if su, err := c.service.ListServiceunit(util.WithGroup(group), util.WithNameLike(name), util.WithUser(authuser.Name),
+		util.WithNamespace(authuser.Namespace), util.WithStype(stype)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			ErrorCode: "008000008",
