@@ -101,12 +101,7 @@ func ToAPI(api *Api) *v1.Api {
 		Restriction:        api.Restriction,
 		PublishInfo:        api.PublishInfo,
 	}
-	if len(crd.Spec.ApiDefineInfo.Method) == 0 {
-		crd.Spec.ApiDefineInfo.Method = api.Method
-	}
-	if len(crd.Spec.ApiDefineInfo.Protocol) == 0 {
-		crd.Spec.ApiDefineInfo.Protocol = api.Protocol
-	}
+
 	crd.Status = v1.ApiStatus{
 		Status: v1.Init,
 		Action: v1.Create,
@@ -290,7 +285,7 @@ func (s *Service) Validate(a *Api) error {
 	if len(a.Name) == 0 {
 		return fmt.Errorf("name is null")
 	}
-
+	klog.V(5).Infof("validate namespace is : %s", a.Namespace)
 	apiList, err := s.ListApis(a.Namespace)
 	if err != nil {
 		return fmt.Errorf("cannot list api object: %+v", err)
@@ -320,7 +315,7 @@ func (s *Service) Validate(a *Api) error {
 		a.Protocol = v1.HTTP
 	}
 	a.ReturnType = v1.Json
-
+	klog.V(5).Infof("validate serviceunit namespace is : %s", a.Namespace)
 	su, err := s.getServiceunit(a.Serviceunit.ID, a.Namespace)
 	if err != nil {
 		return fmt.Errorf("cannot get serviceunit: %+v", err)
@@ -329,7 +324,7 @@ func (s *Service) Validate(a *Api) error {
 		if len(a.ApiDefineInfo.Method) == 0 {
 			a.ApiDefineInfo.Method = a.Method
 		}
-
+		//后端协议 若后端未设置协议默认和前端协议保持一致
 		if len(a.ApiDefineInfo.Protocol) == 0 {
 			a.ApiDefineInfo.Protocol = a.Protocol
 		}
@@ -362,13 +357,18 @@ func (s *Service) Validate(a *Api) error {
 	}
 	//参数校验
 	if su.Spec.Type == "web" {
+		switch a.ApiDefineInfo.Protocol {
+		case v1.HTTP, v1.HTTPS:
+		default:
+			return fmt.Errorf("wrong protocol type: %s. ", a.ApiDefineInfo.Protocol)
+		}
 		switch a.ApiDefineInfo.Method {
 		case v1.GET, v1.POST, v1.PUT, v1.DELETE, v1.PATCH:
 		default:
-			return fmt.Errorf("wrong method type: %s. ", a.Method)
+			return fmt.Errorf("wrong method type: %s. ", a.ApiDefineInfo.Method)
 		}
 		for i, p := range a.ApiQueryInfo.WebParams {
-			if len(p.Name) == 0 {
+			if len(p.Name) == 0 || len(p.BackendInfo.Name) == 0 {
 				return fmt.Errorf("%dth parameter name is null", i)
 			}
 			if len(p.Type) == 0 {
@@ -382,7 +382,12 @@ func (s *Service) Validate(a *Api) error {
 			switch p.Location {
 			case v1.Path, v1.Header, v1.Query, v1.Body:
 			default:
-				return fmt.Errorf("%dth parameter location is wrong: %s", i, p.Location)
+				return fmt.Errorf("%dth query parameter location is wrong: %s", i, p.Location)
+			}
+			switch p.BackendInfo.Location {
+			case v1.Path, v1.Header, v1.Query, v1.Body:
+			default:
+				return fmt.Errorf("%dth backend parameter location is wrong: %s", i, p.BackendInfo.Location)
 			}
 		}
 		// kongapi paths  正常返回值

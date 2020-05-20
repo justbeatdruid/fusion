@@ -321,19 +321,19 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
 	requestBody.StripPath = false
 	if db.Spec.Serviceunit.Type == "data" {
-		//data 类型使用 Spec.Method Spec.Protocol
+		//data  后端服务协议使用服务单元的协议信息 method使用API请求中定义的
 		methods = append(methods, strings.ToUpper(string(db.Spec.ApiDefineInfo.Method)))
-		protocols = append(protocols, strings.ToLower(string(db.Spec.ApiDefineInfo.Protocol)))
+		protocols = append(protocols, strings.ToLower(string(db.Spec.Serviceunit.Protocol)))
 		requestBody.Protocols = protocols
 		requestBody.Methods = methods
 		queryPath := fmt.Sprintf("%s%s%s%s%s", "/api/v1/apis/", db.ObjectMeta.Namespace, "/", db.ObjectMeta.Name, "/data")
 		paths = append(paths, queryPath)
 		requestBody.Paths = paths
 	} else {
-		////web 类型使用 KongApi.Method KongApi.Protocol
+		////web 类型使用 KongApi.Method KongApi.Protocol 后端服务协议使用服务单元的协议信息 method使用API请求中定义的
 		requestBody.Paths = db.Spec.KongApi.Paths
 		methods = append(methods, strings.ToUpper(string(db.Spec.ApiDefineInfo.Method)))
-		protocols = append(protocols, strings.ToLower(string(db.Spec.ApiDefineInfo.Protocol)))
+		protocols = append(protocols, strings.ToLower(string(db.Spec.Serviceunit.Protocol)))
 		requestBody.Protocols = protocols
 		requestBody.Methods = methods
 		if len(db.Spec.KongApi.Hosts) != 0 {
@@ -621,7 +621,7 @@ func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api, isOffline bool) (err 
 	requestBody.StripPath = isOffline
 	if db.Spec.Serviceunit.Type == "data" {
 		methods = append(methods, strings.ToUpper(string(db.Spec.ApiDefineInfo.Method)))
-		protocols = append(protocols, strings.ToLower(string(db.Spec.ApiDefineInfo.Protocol)))
+		protocols = append(protocols, strings.ToLower(string(db.Spec.Serviceunit.Protocol)))
 		requestBody.Protocols = protocols
 		requestBody.Methods = methods
 		queryPath := fmt.Sprintf("%s%s%s%s%s", "/api/v1/apis/", db.ObjectMeta.Namespace, "/", db.ObjectMeta.Name, "/data")
@@ -629,7 +629,7 @@ func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api, isOffline bool) (err 
 		requestBody.Paths = paths
 	} else {
 		methods = append(methods, strings.ToUpper(string(db.Spec.ApiDefineInfo.Method)))
-		protocols = append(protocols, strings.ToLower(string(db.Spec.ApiDefineInfo.Protocol)))
+		protocols = append(protocols, strings.ToLower(string(db.Spec.Serviceunit.Protocol)))
 		requestBody.Protocols = protocols
 		requestBody.Methods = methods
 		requestBody.Paths = db.Spec.KongApi.Paths

@@ -2,7 +2,7 @@ curl localhost:8001/api/v1/serviceunits -H 'content-type:application/json' -H 'X
 -H 'userId:6' -H'tenantId:3000' -d'
 {
   "data": {
-    "name": "sunyu1",
+    "name": "wmj测试1",
     "type": "web",
     "description": "a simple serviceunit",
     "kongService": {
