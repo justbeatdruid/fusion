@@ -83,7 +83,7 @@ func (s *Service) CreateApi(model *Api) (*Api, error, string) {
 
 	// refill datawarehouse query
 	if su.Spec.Type == "data" && su.Spec.DatasourceID != nil {
-		ds, err := s.getDatasource(su.Spec.DatasourceID.ID)
+		ds, err := s.getDatasource(crdNamespace, su.Spec.DatasourceID.ID)
 		if err != nil {
 			return nil, fmt.Errorf("get datasource error: %+v", err), "001000019"
 		}
@@ -522,9 +522,8 @@ func (s *Service) getApplication(id, crdNamespace string) (*appv1.Application, e
 	return app, nil
 }
 
-func (s *Service) getDatasource(id string) (*dsv1.Datasource, error) {
-	crdNamespace := defaultNamespace
-	crd, err := s.datasourceClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+func (s *Service) getDatasource(namespace string, id string) (*dsv1.Datasource, error) {
+	crd, err := s.datasourceClient.Namespace(namespace).Get(id, metav1.GetOptions{})
 	if err != nil {
 		return nil, fmt.Errorf("error get crd: %+v", err)
 	}
@@ -777,7 +776,7 @@ func (s *Service) Query(apiid string, params map[string][]string, limitstr strin
 		if err != nil {
 			return d, fmt.Errorf("get serviceunit error: %+v", err)
 		}
-		ds, err := s.getDatasource(su.Spec.DatasourceID.ID)
+		ds, err := s.getDatasource(api.ObjectMeta.Namespace, su.Spec.DatasourceID.ID)
 		if err != nil {
 			return d, fmt.Errorf("get datasource error: %+v", err)
 		}
