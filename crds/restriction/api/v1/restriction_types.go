@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	"github.com/chinamobile/nlpt/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -68,6 +69,7 @@ type Api struct {
 	Result        Result    `json:"result"`
 	DisplayStatus DisStatus `json:"disStatus"`
 	Detail        string    `json:"detail"`
+	BindedAt	util.Time	`json:"bindedAt"`
 }
 type Result string
 

@@ -420,6 +420,7 @@ func (s *Service) BindApi(id string, apis []v1.Api, opts ...util.OpOption) (*Tra
 				Name:   apiSource.Spec.Name,
 				KongID: apiSource.Spec.KongApi.KongID,
 				Result: v1.BINDING,
+				BindedAt: util.Now(),
 			})
 		}
 		//update api 操作时会判断是绑定还是解绑所以先将状态设置成bind

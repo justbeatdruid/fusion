@@ -383,6 +383,7 @@ func (s *Service) BindApi(id string, apis []v1.Api, opts ...util.OpOption) (*Res
 				Name:   apiSource.Spec.Name,
 				KongID: apiSource.Spec.KongApi.KongID,
 				Result: v1.BINDING,
+				BindedAt: util.Now(),
 			})
 		}
 
