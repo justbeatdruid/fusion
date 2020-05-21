@@ -51,6 +51,8 @@ type Config struct {
 	LocalConfig ErrorConfig
 
 	Mutex mutex.Mutex
+
+	Database *DatabaseConfig
 }
 
 func (c *Config) GetKubeClient() *clientset.Clientset {
