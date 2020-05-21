@@ -17,6 +17,8 @@ github.com/apache/pulsar-client-go/pulsar/internal
 github.com/apache/pulsar-client-go/pulsar/internal/auth
 github.com/apache/pulsar-client-go/pulsar/internal/compression
 github.com/apache/pulsar-client-go/pulsar/internal/pb
+# github.com/astaxie/beego v1.12.1
+github.com/astaxie/beego/orm
 # github.com/beorn7/perks v1.0.0
 github.com/beorn7/perks/quantile
 # github.com/blang/semver v3.5.0+incompatible

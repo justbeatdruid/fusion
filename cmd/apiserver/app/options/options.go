@@ -38,6 +38,8 @@ type ServerRunOptions struct {
 	Cas         *CasOptions
 	Audit       *AuditOptions
 	Etcd        *EtcdOptions
+
+	Database *DatabaseOptions
 }
 
 func NewServerRunOptions() *ServerRunOptions {
@@ -52,6 +54,8 @@ func NewServerRunOptions() *ServerRunOptions {
 		Cas:           DefaultCasOptions(),
 		Audit:         DefaultAuditOptions(),
 		Etcd:          DefaultEtcdOptions(),
+
+		Database: DefaultDatabaseOptions(),
 	}
 
 	if len(s.CrdNamespace) == 0 {
@@ -71,6 +75,7 @@ func (s *ServerRunOptions) Flags() cliflag.NamedFlagSets {
 	s.Cas.AddFlags(fss.FlagSet("cas"))
 	s.Audit.AddFlags(fss.FlagSet("audit"))
 	s.Etcd.AddFlags(fss.FlagSet("etcd"))
+	s.Database.AddFlags(fss.FlagSet("database"))
 	kfset := flag.NewFlagSet("klog", flag.ExitOnError)
 	klog.InitFlags(kfset)
 	fss.FlagSet("klog").AddGoFlagSet(kfset)
@@ -144,6 +149,9 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		LocalConfig:   *errConfig,
 
 		Mutex: mtx,
+
+		Database: appconfig.NewDatabaseConfig(s.Database.Enabled, s.Database.Type, s.Database.Host, s.Database.Port, s.Database.Username, s.Database.Password,
+			s.Database.Database, s.Database.Schema),
 	}
 	casType := "cas"
 	if s.TenantEnabled {
