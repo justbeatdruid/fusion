@@ -29,7 +29,7 @@ type controller struct {
 
 const (
 	order        = `select * from (select row_number() over(order by __publish_time__ desc) __row__, * from pulsar."%s/%s"."%s" %s) as t where __row__ between %d and %d`
-	messageIdSql = `WHERE "__message_id__" = '%s'`
+	messageIdSql = `WHERE "__message_id__" = '%s' AND "__partition__" = '%s'`
 	keySql       = `WHERE "__key__" = '%s'`
 	timeSql      = `WHERE "__publish_time__" BETWEEN timestamp '%s' AND timestamp '%s'`
 )
@@ -960,8 +960,9 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	end := p * s
 	//根据MessageID查询topic信息
 	if len(messageId) > 0 {
-		//校验messageId的合法性
-		strings.ReplaceAll(messageId, ";", ",")
+		//通过pulsar客户端查出来的id格式为622:1:-1:0
+		//将冒号换成逗号
+		strings.ReplaceAll(messageId, ":", ",")
 		//两边没有括号就加上括号
 		h, m, ok := c.QueryParamterValidate(`^\(`, messageId)
 		if ok == 1 {
@@ -969,12 +970,17 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 		} else if ok == 2 {
 			messageId = "(" + messageId + ")"
 		}
-		reg := `^\([0-9]{1,}\,[0-9]{1,}\,[0-9]{1,}\)$`
+		reg := `^\([0-9]{1,}\,[0-9]{1,}\,-1|[0-9]{1,},[0-9]{1,}\)$`
+		//校验messageId的合法性
 		h, m, ok = c.QueryParamterValidate(reg, messageId)
 		if ok != 0 {
 			return h, m
 		}
-		sql = fmt.Sprintf(messageIdSql, messageId)
+		//分区的第三个数字表示分区
+		idSplit:=strings.Split(messageId,",")
+		partition := idSplit[2]
+		messageId = strings.Join(append(idSplit[0:2],idSplit[3]),",")
+		sql = fmt.Sprintf(messageIdSql, messageId, partition)
 		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, start, end)
 	}
 	//根据key查询topic信息
