@@ -38,3 +38,10 @@ func FromUser(rt string, rid string, labels map[string]string) []UserRelation {
 	}
 	return rls
 }
+
+func Equal(u1, u2 []UserRelation) bool {
+	if len(u1) != len(u2) {
+		return false
+	}
+	return true
+}

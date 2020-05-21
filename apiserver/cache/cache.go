@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/chinamobile/nlpt/apiserver/database"
+
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -100,9 +102,10 @@ func (t *typedLister) List(namespace string, lo metav1.ListOptions) (uobjs []run
 
 var once sync.Once
 
-func StartCache(dynClient dynamicclient.Interface) *Listers {
+func StartCache(dynClient dynamicclient.Interface, db *database.DatabaseConnection) *Listers {
 	var c *Listers = nil
 	once.Do(func() {
+		initGVM(db)
 		f := NewInformerFactory(dynClient)
 		c = &Listers{
 			listerMap: make(map[string]cache.GenericLister),
