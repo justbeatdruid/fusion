@@ -15,11 +15,11 @@ func NewInformerFactory(dynClient dynamicclient.Interface) dynamicinformer.Dynam
 
 func NewLister(f dynamicinformer.DynamicSharedInformerFactory, gvr schema.GroupVersionResource, stopCh <-chan struct{}) cache.GenericLister {
 	i := f.ForResource(gvr)
-	go startWatching(stopCh, i.Informer())
+	go startWatching(stopCh, i.Informer(), gvr.Resource)
 	return i.Lister()
 }
 
-func startWatching(stopCh <-chan struct{}, s cache.SharedIndexInformer) {
+func startWatching(stopCh <-chan struct{}, s cache.SharedIndexInformer, r string) {
 	handlers := cache.ResourceEventHandlerFuncs{
 		AddFunc: func(obj interface{}) {
 			klog.V(9).Infof("received add event")
@@ -30,6 +30,9 @@ func startWatching(stopCh <-chan struct{}, s cache.SharedIndexInformer) {
 		DeleteFunc: func(obj interface{}) {
 			klog.V(9).Infof("received update event")
 		},
+	}
+	if h, ok := gvm[r]; ok {
+		handlers = h
 	}
 
 	s.AddEventHandler(handlers)

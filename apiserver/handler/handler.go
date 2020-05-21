@@ -36,11 +36,11 @@ func NewHandler(cfg *config.Config) *Handler {
 }
 
 func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Handler, error) {
-	_, err := database.NewDatabaseConnection(h.config.Database)
+	db, err := database.NewDatabaseConnection(h.config.Database)
 	if err != nil {
 		return nil, fmt.Errorf("cannot connect to database: %+v", err)
 	}
-	lister := cache.StartCache(h.config.GetDynamicClient())
+	lister := cache.StartCache(h.config.GetDynamicClient(), db)
 	//TODO cache will be used in service
 
 	wsContainer := restful.NewContainer()
