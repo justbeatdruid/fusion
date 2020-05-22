@@ -1,15 +1,14 @@
 package service
 
 import (
-	"encoding/json"
 	"fmt"
+	"github.com/chinamobile/nlpt/pkg/names"
 	"strings"
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
 	dwv1 "github.com/chinamobile/nlpt/crds/api/datawarehouse/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
-	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -294,14 +293,13 @@ func (s *Service) Validate(a *Api) error {
 		if p.Spec.Name == a.Name {
 			return errors.NameDuplicatedError("api name duplicated: %s", p.Spec.Name)
 		}
-
 	}
 	for _, p := range apiList.Items {
-		if p.Spec.ApiDefineInfo.Method == a.ApiDefineInfo.Method {
-			for _, path := range p.Spec.KongApi.Paths {
-				if path == a.KongApi.Paths[0] {
-					return fmt.Errorf("path duplicated: %s",path)
-				}
+		for _, path := range p.Spec.KongApi.Paths {
+			if path == a.KongApi.Paths[0] && p.Spec.ApiDefineInfo.Method == a.ApiDefineInfo.Method {
+				return fmt.Errorf("path duplicated: %s",path)
+			} else {
+				continue
 			}
 		}
 	}
