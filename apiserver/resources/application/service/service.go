@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/chinamobile/nlpt/apiserver/database"
 	k8s "github.com/chinamobile/nlpt/apiserver/kubernetes"
 	"github.com/chinamobile/nlpt/crds/application/api/v1"
 	groupv1 "github.com/chinamobile/nlpt/crds/applicationgroup/api/v1"
@@ -26,15 +27,19 @@ type Service struct {
 	groupClient dynamic.NamespaceableResourceInterface
 
 	tenantEnabled bool
+
+	db *database.DatabaseConnection
 }
 
-func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool, db *database.DatabaseConnection) *Service {
 	return &Service{
 		kubeClient:  kubeClient,
 		client:      client.Resource(v1.GetOOFSGVR()),
 		groupClient: client.Resource(groupv1.GetOOFSGVR()),
 
 		tenantEnabled: tenantEnabled,
+
+		db: db,
 	}
 }
 
@@ -156,6 +161,9 @@ func (s *Service) PatchApplication(id string, data interface{}, opts ...util.OpO
 }
 
 func (s *Service) List(opts ...util.OpOption) (*v1.ApplicationList, error) {
+	if s.db.Enabled() {
+		return s.ListFromDatabase(opts...)
+	}
 	var options metav1.ListOptions
 	op := util.OpList(opts...)
 	group := op.Group()

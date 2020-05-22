@@ -1,11 +1,9 @@
 package handler
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/chinamobile/nlpt/apiserver/cache"
-	"github.com/chinamobile/nlpt/apiserver/database"
 	"github.com/chinamobile/nlpt/apiserver/handler/callback"
 	"github.com/chinamobile/nlpt/apiserver/handler/filter"
 	"github.com/chinamobile/nlpt/apiserver/resources/api"
@@ -36,11 +34,7 @@ func NewHandler(cfg *config.Config) *Handler {
 }
 
 func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Handler, error) {
-	db, err := database.NewDatabaseConnection(h.config.Database)
-	if err != nil {
-		return nil, fmt.Errorf("cannot connect to database: %+v", err)
-	}
-	lister := cache.StartCache(h.config.GetDynamicClient(), db)
+	lister := cache.StartCache(h.config.GetDynamicClient(), h.config.Database)
 	//TODO cache will be used in service
 
 	wsContainer := restful.NewContainer()

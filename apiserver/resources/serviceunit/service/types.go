@@ -209,7 +209,6 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[
 			return sus
 		}
 
-
 	}
 	var sus []*Serviceunit = make([]*Serviceunit, len(items.Items))
 	for i, item := range items.Items {
