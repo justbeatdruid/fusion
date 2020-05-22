@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: fusion-mysql
+  labels:
+    app: fusion
+spec:
+  type: NodePort
+  ports:
+    - port: 3306
+      nodePort: 30336
+  selector:
+    app: fusion
+    tier: mysql

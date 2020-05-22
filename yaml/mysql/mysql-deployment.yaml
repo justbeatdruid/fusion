@@ -1,0 +1,59 @@
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: fusion-mysql
+  labels:
+    app: fusion
+spec:
+  selector:
+    matchLabels:
+      app: fusion
+      tier: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: fusion
+        tier: mysql
+    spec:
+      containers:
+      - image: registry.cmcc.com/library/mysql:5.7
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+             secretKeyRef:
+               name: mysql-secret
+               key: password
+        - name: MYSQL_DATABASE
+          value: fusion
+        ports:
+        - containerPort: 3306
+          name: mysql
+        resources:
+          requests:
+            memory: "1024Mi"
+            cpu: "500m"
+          limits:
+            memory: "1024Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: mysqlnfs
+          mountPath: /var/lib/mysql
+        - name: config-volume
+          mountPath: /etc/my.cnf
+          subPath: my.cnf
+      volumes:
+      - name: mysqlnfs
+        persistentVolumeClaim:
+            claimName: fusion-mysql-claim
+      - name: config-volume
+        configMap:
+            name: fusion-mysql
+            defaultMode: 420
+            items:
+            - key: my.cnf.simple
+              path: my.cnf
+        
+   
