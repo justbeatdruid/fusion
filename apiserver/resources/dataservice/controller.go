@@ -3,6 +3,7 @@ package dataservice
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/dataservice/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
@@ -17,30 +18,43 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient()),
+		service.NewService(cfg.GetKubeClient()),
 	}
 }
 
+//Wrapped ...
 type Wrapped struct {
 	Code    int                  `json:"code"`
 	Message string               `json:"message"`
 	Data    *service.Dataservice `json:"data,omitempty"`
 }
 
+//CreateResponse ...
 type CreateResponse = Wrapped
+
+//CreateRequest ...
 type CreateRequest = Wrapped
+
+//DeleteResponse ...
 type DeleteResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
 }
+
+//GetResponse ...
 type GetResponse = Wrapped
+
+//ListResponse ...
 type ListResponse = struct {
 	Code    int         `json:"code"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data"`
 }
+
+//PingResponse ...
 type PingResponse = DeleteResponse
 
+//CreateDataservice ...
 func (c *controller) CreateDataservice(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
@@ -55,71 +69,90 @@ func (c *controller) CreateDataservice(req *restful.Request) (int, *CreateRespon
 			Message: "read entity error: data is null",
 		}
 	}
-	if ds, err := c.service.CreateDataservice(body.Data); err != nil {
+	ds, err := c.service.CreateDataservice(body.Data)
+	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:    2,
 			Message: fmt.Errorf("create database error: %+v", err).Error(),
 		}
-	} else {
-		return http.StatusOK, &CreateResponse{
-			Code: 0,
-			Data: ds,
-		}
 	}
+	return http.StatusOK, &CreateResponse{
+		Code: 0,
+		Data: ds,
+	}
+
 }
 
+//GetDataservice ...
 func (c *controller) GetDataservice(req *restful.Request) (int, *GetResponse) {
-	id := req.PathParameter("id")
-	if ds, err := c.service.GetDataservice(id); err != nil {
+	ds, err := c.service.GetDataservice(req.PathParameter("id"))
+	if err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:    1,
 			Message: fmt.Errorf("get database error: %+v", err).Error(),
 		}
-	} else {
-		return http.StatusOK, &GetResponse{
-			Code: 0,
-			Data: ds,
-		}
 	}
+	return http.StatusOK, &GetResponse{
+		Code: 0,
+		Data: ds,
+	}
+
 }
 
+//DeleteDataservice ...
 func (c *controller) DeleteDataservice(req *restful.Request) (int, *DeleteResponse) {
-	id := req.PathParameter("id")
-	if err := c.service.DeleteDataservice(id); err != nil {
+	err := c.service.DeleteDataservice(req.PathParameter("id"))
+	if err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:    1,
 			Message: fmt.Errorf("delete database error: %+v", err).Error(),
 		}
-	} else {
-		return http.StatusOK, &DeleteResponse{
-			Code:    0,
-			Message: "",
-		}
 	}
+	return http.StatusOK, &DeleteResponse{
+		Code:    0,
+		Message: "",
+	}
+
 }
 
+//ListDataservice ...
 func (c *controller) ListDataservice(req *restful.Request) (int, *ListResponse) {
-	page := req.QueryParameter("page")
-	size := req.QueryParameter("size")
-	if ds, err := c.service.ListDataservice(); err != nil {
+	offsetStr := req.QueryParameter("offset")
+	limitStr := req.QueryParameter("limit")
+	offset, err := strconv.Atoi(offsetStr)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: fmt.Errorf("offset para error, offset: %+v, err :%v", offsetStr, err).Error(),
+		}
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: fmt.Errorf("offset para error, limit: %+v, err :%v", limitStr, err).Error(),
+		}
+	}
+	ds, err := c.service.ListDataservice(offset, limit)
+	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:    1,
 			Message: fmt.Errorf("list database error: %+v", err).Error(),
 		}
-	} else {
-		var dss DataserviceList = ds
-		data, err := util.PageWrap(dss, page, size)
-		if err != nil {
-			return http.StatusInternalServerError, &ListResponse{
-				Code:    1,
-				Message: fmt.Sprintf("page parameter error: %+v", err),
-			}
-		}
-		return http.StatusOK, &ListResponse{
-			Code: 0,
-			Data: data,
+	}
+	var dss DataserviceList = ds
+	data, err := util.PageWrap(dss, offsetStr, limitStr)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:    1,
+			Message: fmt.Sprintf("page parameter error: %+v", err),
 		}
 	}
+	return http.StatusOK, &ListResponse{
+		Code: 0,
+		Data: data,
+	}
+
 }
 
 type DataserviceList []*service.Dataservice

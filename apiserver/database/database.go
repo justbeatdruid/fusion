@@ -2,6 +2,7 @@ package database
 
 import (
 	"fmt"
+	"strconv"
 	"sync"
 
 	"github.com/astaxie/beego/orm"
@@ -34,12 +35,11 @@ func NewDatabaseConnection(cfg *config.DatabaseConfig) (*DatabaseConnection, err
 	orm.DebugLog = orm.NewLog(new(KlogWriter))
 	orm.Debug = true
 	var err error
+
 	switch cfg.Type {
 	case "mysql":
 		orm.RegisterDriver("mysql", orm.DRMySQL)
-		err = orm.RegisterDataBase(databaseAlias, "mysql",
-			fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8", cfg.Username, cfg.Password,
-				cfg.Host, cfg.Port, cfg.Database))
+		err = orm.RegisterDataBase(databaseAlias, "mysql", cfg.Username+":"+cfg.Password+"@tcp("+cfg.Host+":"+strconv.Itoa(cfg.Port)+")/"+cfg.Database)
 	case "postgres":
 		orm.RegisterDriver("postgres", orm.DRPostgres)
 		err = orm.RegisterDataBase(databaseAlias, "postgres",
@@ -49,16 +49,16 @@ func NewDatabaseConnection(cfg *config.DatabaseConfig) (*DatabaseConnection, err
 	default:
 		return nil, fmt.Errorf("unspported database %s", cfg.Type)
 	}
+
 	if err != nil {
 		return nil, fmt.Errorf("cannot register database: %+v", err)
 	}
-	orm.RegisterModel(new(model.Application), new(model.UserRelation))
+	orm.RegisterModel(new(model.Application), new(model.UserRelation), new(model.Task), new(model.TbDagRun))
 	if err = orm.RunSyncdb("default", false, true); err != nil {
 		return nil, fmt.Errorf("cannot sync database: %+v", err)
 	}
 	return &DatabaseConnection{orm.NewOrm(), &sync.Mutex{}}, nil
 }
-
 func (d *DatabaseConnection) Begin() error {
 	d.mtx.Lock()
 	if err := d.Ormer.Begin(); err != nil {
