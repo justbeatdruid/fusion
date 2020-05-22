@@ -81,7 +81,11 @@ spec:
         - --presto-host=10.160.32.24
         - --presto-port=30004
         - --etcd-endpoints=http://fusion-etcd-0.fusion-etcd:2379,http://fusion-etcd-1.fusion-etcd:2379,http://fusion-etcd-2.fusion-etcd:2379
-        - --database-host=fusion-mysql --database-port=3306 --database-username=root --database-password=123456 --database-databasename=fusion
+        - --database-host=fusion-mysql
+        - --database-port=3306
+        - --database-username=root
+        - --database-password=123456
+        - --database-databasename=fusion
         env:
         - name: MY_POD_NAMESPACE
           valueFrom:
