@@ -10,7 +10,6 @@ import (
 	_ "github.com/lib/pq"
 
 	"github.com/chinamobile/nlpt/apiserver/database/model"
-	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 
 	"k8s.io/klog"
 )
@@ -18,6 +17,8 @@ import (
 type DatabaseConnection struct {
 	orm.Ormer
 	mtx *sync.Mutex
+
+	enabled bool
 }
 
 // implements io.Writer
@@ -31,7 +32,27 @@ func (*KlogWriter) Write(p []byte) (int, error) {
 
 const databaseAlias = "default"
 
-func NewDatabaseConnection(cfg *config.DatabaseConfig) (*DatabaseConnection, error) {
+func NewDatabaseConnection(e bool, t, h string, p int, u, s, d, c string) (*DatabaseConnection, error) {
+	cfg := DatabaseConfig{e, t, h, p, u, s, d, c}
+	return newDatabaseConnection(cfg)
+}
+
+type DatabaseConfig struct {
+	Enabled  bool
+	Type     string
+	Host     string
+	Port     int
+	Username string
+	Password string
+	Database string
+	Schema   string
+}
+
+var c = make(chan struct{})
+
+func newDatabaseConnection(cfg DatabaseConfig) (*DatabaseConnection, error) {
+	//panic when called twice
+	close(c)
 	orm.DebugLog = orm.NewLog(new(KlogWriter))
 	orm.Debug = true
 	var err error
@@ -57,7 +78,11 @@ func NewDatabaseConnection(cfg *config.DatabaseConfig) (*DatabaseConnection, err
 	if err = orm.RunSyncdb("default", false, true); err != nil {
 		return nil, fmt.Errorf("cannot sync database: %+v", err)
 	}
-	return &DatabaseConnection{orm.NewOrm(), &sync.Mutex{}}, nil
+	return &DatabaseConnection{orm.NewOrm(), &sync.Mutex{}, cfg.Enabled}, nil
+}
+
+func (d *DatabaseConnection) Enabled() bool {
+	return d.enabled
 }
 func (d *DatabaseConnection) Begin() error {
 	d.mtx.Lock()
@@ -71,6 +96,11 @@ func (d *DatabaseConnection) Begin() error {
 func (d *DatabaseConnection) Commit() error {
 	defer d.mtx.Unlock()
 	return d.Ormer.Commit()
+}
+
+func (d *DatabaseConnection) Rollback() error {
+	defer d.mtx.Unlock()
+	return d.Ormer.Rollback()
 }
 
 func (d *DatabaseConnection) AddObject(o model.Table, us interface{}, count int) (err error) {
@@ -185,4 +215,79 @@ func (d *DatabaseConnection) DeleteApplication(obj interface{}) error {
 		return fmt.Errorf("get application from obj error: %+v", err)
 	}
 	return d.DeleteObject(&o)
+}
+
+func (d *DatabaseConnection) QueryApplication(uid string, md *model.Application) (result []model.Application, err error) {
+	conditions := make([]model.Condition, 0)
+	if md == nil {
+		return nil, fmt.Errorf("model is null")
+	}
+	if len(md.Namespace) == 0 {
+		return nil, fmt.Errorf("namespace not set in model")
+	}
+	conditions = append(conditions, model.Condition{"namespace", model.Equals, md.Namespace})
+	if len(md.Group) > 0 {
+		conditions = append(conditions, model.Condition{"group", model.Equals, md.Group})
+	}
+	if len(md.Name) > 0 {
+		conditions = append(conditions, model.Condition{"name", model.Like, md.Name})
+	}
+	if len(md.Status) > 0 {
+		conditions = append(conditions, model.Condition{"status", model.Equals, md.Status})
+	}
+
+	err = d.query(uid, md, conditions, &result)
+	return
+}
+
+func (d *DatabaseConnection) query(uid string, md model.Table, conditions []model.Condition, result interface{}) (err error) {
+	var sql string
+	var values []interface{}
+	and := false
+	if len(uid) > 0 {
+		sqlTpl := `SELECT * FROM %s WHERE id IN (SELECT resource_id FROM user_relation WHERE resource_type = "%s" AND user_id = "%s")`
+		sql = fmt.Sprintf(sqlTpl, md.TableName(), md.ResourceType(), uid)
+		//sql = fmt.Sprintf(sqlTpl, md.TableName())
+		and = true
+	} else {
+		sql = `SELECT * FROM ` + md.TableName()
+		values = make([]interface{}, len(conditions))
+	}
+	for i, c := range conditions {
+		var k, o, v string
+		k = c.Field
+		v = c.Value
+		switch c.Operator {
+		case model.Equals:
+			o = "="
+		case model.LessThan:
+			o = "<"
+		case model.NotLessThan:
+			o = ">="
+		case model.MoreThan:
+			o = ">"
+		case model.NotMoreThan:
+			o = "<="
+		case model.Like:
+			o = "LIKE"
+			v = `%%` + v + `%%`
+		case model.In:
+			o = "IN"
+			v = `(` + v + `)`
+		}
+		if and {
+			sql = sql + " AND "
+		} else {
+			sql = sql + " WHERE "
+		}
+		if len(uid) > 0 {
+			sql = sql + k + " " + o + " \"" + v + "\""
+		} else {
+			sql = sql + k + " " + o + " ?"
+			values[i] = v
+		}
+		and = true
+	}
+	_, err = d.Raw(sql, values...).QueryRows(result)
+	return
 }

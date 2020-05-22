@@ -14,6 +14,7 @@ import (
 	"k8s.io/klog"
 
 	"github.com/chinamobile/nlpt/apiserver/cache"
+	"github.com/chinamobile/nlpt/apiserver/database"
 	"github.com/chinamobile/nlpt/apiserver/mutex"
 	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/audit"
@@ -135,6 +136,11 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot create etcd client: %+v", err)
 	}
+	db, err := database.NewDatabaseConnection(s.Database.Enabled, s.Database.Type, s.Database.Host, s.Database.Port, s.Database.Username, s.Database.Password,
+		s.Database.Database, s.Database.Schema)
+	if err != nil {
+		return nil, fmt.Errorf("cannot connect to database: %+v", err)
+	}
 	c := &appconfig.Config{
 		Client:     client,
 		Dynamic:    dynClient,
@@ -150,8 +156,7 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 
 		Mutex: mtx,
 
-		Database: appconfig.NewDatabaseConfig(s.Database.Enabled, s.Database.Type, s.Database.Host, s.Database.Port, s.Database.Username, s.Database.Password,
-			s.Database.Database, s.Database.Schema),
+		Database: db,
 	}
 	casType := "cas"
 	if s.TenantEnabled {

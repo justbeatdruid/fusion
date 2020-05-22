@@ -977,9 +977,9 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 			return h, m
 		}
 		//分区的第三个数字表示分区
-		idSplit:=strings.Split(messageId,",")
+		idSplit := strings.Split(messageId, ",")
 		partition := idSplit[2]
-		messageId = strings.Join(append(idSplit[0:2],idSplit[3]),",")
+		messageId = strings.Join(append(idSplit[0:2], idSplit[3]), ",")
 		sql = fmt.Sprintf(messageIdSql, messageId, partition)
 		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, start, end)
 	}
@@ -1019,7 +1019,6 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 				Detail:    fmt.Errorf("endTime error: %+v", err).Error(),
 			}
 		}
-
 
 		startTime = time.Unix(startTimeInt64, 0).Format("2006-01-02 15:04:05")
 		endTime = time.Unix(endTimeInt64, 0).Format("2006-01-02 15:04:05")
