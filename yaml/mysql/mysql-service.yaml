@@ -5,10 +5,10 @@ metadata:
   labels:
     app: fusion
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - port: 3306
-      nodePort: 30336
+      #nodePort: 30336
   selector:
-    app: fusion
-    tier: mysql
+    app: fusion-mysql
+    version: v0.1-alpha

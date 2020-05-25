@@ -3,19 +3,20 @@ kind: Deployment
 metadata:
   name: fusion-mysql
   labels:
-    app: fusion
+    app: fusion-mysql
+    version: v0.1-alpha
 spec:
   selector:
     matchLabels:
-      app: fusion
-      tier: mysql
+      app: fusion-mysql
+      version: v0.1-alpha
   strategy:
     type: Recreate
   template:
     metadata:
       labels:
-        app: fusion
-        tier: mysql
+        app: fusion-mysql
+        version: v0.1-alpha
     spec:
       containers:
       - image: registry.cmcc.com/library/mysql:5.7
@@ -28,6 +29,16 @@ spec:
                key: password
         - name: MYSQL_DATABASE
           value: fusion
+        - name: LANG
+          valueFrom:
+            configMapKeyRef:
+              key: LANG
+              name: fusion-locale-config
+        - name: LANGUAGE
+          valueFrom:
+            configMapKeyRef:
+              key: LANGUAGE
+              name: fusion-locale-config
         ports:
         - containerPort: 3306
           name: mysql
