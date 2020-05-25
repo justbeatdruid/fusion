@@ -38,6 +38,7 @@ type Service struct {
 	kubeClient  *clientset.Clientset
 	client      dynamic.NamespaceableResourceInterface
 	topicClient dynamic.NamespaceableResourceInterface
+
 }
 
 func NewService(client dynamic.Interface, kubeClient *clientset.Clientset) *Service {
@@ -47,6 +48,7 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset) *Serv
 }
 
 func (s *Service) CreateTopicgroup(model *Topicgroup) (*Topicgroup, tgerror.TopicgroupError) {
+
 	if err := model.Validate(); err != nil {
 		return nil, tgerror.TopicgroupError{
 			Err:       fmt.Errorf("bad request: %+v", err),
@@ -71,6 +73,7 @@ func (s *Service) ListTopicgroup(opts ...util.OpOption) ([]*Topicgroup, error) {
 }
 
 func (s *Service) SearchTopicgroup(tgList []*Topicgroup, opts ...util.OpOption) ([]*Topicgroup, error) {
+
 	nameLike := util.OpList(opts...).NameLike()
 	topic := util.OpList(opts...).Topic()
 	available := util.OpList(opts...).Available()
@@ -223,8 +226,8 @@ func (s *Service) ModifyTopicgroup(id string, topicgroup *Topicgroup, opts ...ut
 	}
 	crd.Spec.Description = topicgroup.Description
 	crd.Spec.Policies = s.MergePolicies(topicgroup.Policies, crd.Spec.Policies)
-	crd.Status.Status = v1.Update
-	crd.Status.Message = "accepted update topic group policies"
+	crd.Status.Status = v1.Updating
+	crd.Status.Message = "updating topic group policies"
 	crd, err = s.UpdateStatus(crd)
 	if err != nil {
 		return nil, fmt.Errorf("modify topicgroup failed:%+v", err)
@@ -378,6 +381,8 @@ func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupE
 			ErrorCode: tgerror.ErrorEnsureNamespace,
 		}
 	}
+
+
 	crd, err = s.client.Namespace(tp.Namespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {
 		return nil, tgerror.TopicgroupError{
@@ -429,8 +434,8 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topicgroup, erro
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
-	tg.Status.Status = v1.Delete
-	tg.Status.Message = "accepted delete request"
+	tg.Status.Status = v1.Deleting
+	tg.Status.Message = "deleting"
 	return s.UpdateStatus(tg)
 }
 

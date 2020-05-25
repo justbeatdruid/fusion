@@ -31,6 +31,7 @@ type TopicgroupSpec struct {
 	Policies    *Policies `json:"policies,omitempty"`
 	Available   bool      `json:"available"`             //资源是否可用
 	Description string    `json:"description,omitempty"` //描述
+	DisplayStatus ShowStatus       `json:"disStatus"`
 }
 type Policies struct {
 	RetentionPolicies           *RetentionPolicies        `json:"retention_policies,omitempty"`     //消息保留策略
@@ -88,17 +89,31 @@ type BacklogQuota struct {
 type Status string
 
 const (
-	Init     Status = "init"
-	Creating Status = "creating"
-	Created  Status = "created"
-	Delete   Status = "delete"
-	Deleting Status = "deleting"
-	Error    Status = "error"
-	Update   Status = "update"
-	Updating Status = "updating"
-	Updated  Status = "updated"
+	//Init     Status = "init"
+	Creating     Status = "creating"
+	Created      Status = "created"
+	CreateFailed Status = "createFailed"
+	DeleteFailed Status = "deleteFailed"
+	Deleting     Status = "deleting"
+	//Error    Status = "error"
+	UpdateFailed Status = "updateFailed"
+	Updating     Status = "updating"
+	Updated      Status = "updated"
+
+)
+type ShowStatus string //界面显示状态
+const (
+	CreatingOfShow     ShowStatus = "创建中"
+	CreatedOfShow      ShowStatus = "创建成功"
+	CreateFailedOfShow ShowStatus = "创建失败"
+	UpdatingOfShow     ShowStatus = "更新中"
+	UpdatedOfShow      ShowStatus = "更新成功"
+	UpdateFailedOfShow ShowStatus = "更新失败"
+	DeletingOfShow     ShowStatus = "删除中"
+	DeleteFailedOfShow ShowStatus = "删除失败"
 )
 
+var ShowStatusMap map[Status]ShowStatus = make(map[Status]ShowStatus, 0)
 // TopicgroupStatus defines the observed state of Topicgroup
 type TopicgroupStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -127,6 +142,24 @@ type TopicgroupList struct {
 	Items           []Topicgroup `json:"items"`
 }
 
+type RuntimeConfiguration struct {
+
+}
 func init() {
 	SchemeBuilder.Register(&Topicgroup{}, &TopicgroupList{})
+	initShowStatusMap()
+
+}
+
+func initShowStatusMap() {
+	ShowStatusMap[Creating] = CreatingOfShow
+	ShowStatusMap[CreateFailed] = CreateFailedOfShow
+	ShowStatusMap[Created] = CreatedOfShow
+	ShowStatusMap[Updating] = UpdatingOfShow
+	ShowStatusMap[Updated] = UpdatedOfShow
+	ShowStatusMap[UpdateFailed] = UpdateFailedOfShow
+	ShowStatusMap[Deleting] = DeletingOfShow
+	ShowStatusMap[DeleteFailed] = DeleteFailedOfShow
+
+
 }

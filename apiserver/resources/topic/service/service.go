@@ -326,6 +326,7 @@ func (s *Service) ListTopicMessagesTime(topicUrls []string, start int64, end int
 			Topic:          topicUrl,
 			StartMessageID: pulsar.EarliestMessageID(),
 		})
+
 		if err != nil {
 			return nil, fmt.Errorf("create reader error: %+v", err)
 		}
