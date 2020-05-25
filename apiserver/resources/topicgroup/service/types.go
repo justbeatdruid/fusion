@@ -42,6 +42,7 @@ type Topicgroup struct {
 	Status      v1.Status  `json:"status"`
 	Message     string     `json:"message"`
 	Available   bool       `json:"available"` //是否可用
+	ShowStatus  v1.ShowStatus `json:"displayStatus"` //界面显示状态
 }
 
 type Policies struct {
@@ -156,7 +157,7 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 
 	status := app.Status
 	if len(status) == 0 {
-		status = v1.Init
+		status = v1.Creating
 	}
 	crd.Status = v1.TopicgroupStatus{
 		Status:  status,
@@ -168,6 +169,8 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 }
 
 func ToModel(obj *v1.Topicgroup) *Topicgroup {
+
+
 	return &Topicgroup{
 		ID:          obj.ObjectMeta.Name,
 		Name:        obj.Spec.Name,
@@ -179,6 +182,8 @@ func ToModel(obj *v1.Topicgroup) *Topicgroup {
 		Users:       user.GetUsersFromLabels(obj.ObjectMeta.Labels),
 		Available:   obj.Spec.Available,
 		Description: obj.Spec.Description,
+		ShowStatus:  v1.ShowStatusMap[obj.Status.Status],
+
 	}
 }
 
