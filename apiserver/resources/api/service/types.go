@@ -234,7 +234,7 @@ func publicParameters(post bool) []v1.ApiParameter {
 	return ap
 }
 
-func ToListModel(items *v1.ApiList, publishedOnly bool, opts ...util.OpOption) []*Api {
+func ToListModel(items *v1.ApiList, publishedOnly bool, status string, opts ...util.OpOption) []*Api {
 	if len(opts) > 0 || publishedOnly {
 		nameLike := util.OpList(opts...).NameLike()
 		res := util.OpList(opts...).Restriction()
@@ -248,6 +248,12 @@ func ToListModel(items *v1.ApiList, publishedOnly bool, opts ...util.OpOption) [
 			}
 			if publishedOnly {
 				if a.Status.PublishStatus != v1.Released {
+					continue
+				}
+			}
+			//根据发布状态查询API
+			if len(status) > 0 {
+				if a.Status.PublishStatus != v1.PublishStatus(status) {
 					continue
 				}
 			}

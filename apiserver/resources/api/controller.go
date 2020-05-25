@@ -33,8 +33,9 @@ func newController(cfg *config.Config) *controller {
 }
 
 const (
-	serviceunit = "serviceunit"
-	application = "application"
+	serviceunit   = "serviceunit"
+	application   = "application"
+	publishstatus = "status"
 )
 
 type Wrapped struct {
@@ -376,8 +377,8 @@ func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 		}
 	}
 	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application),
-		util.WithNameLike(name), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace),
-		util.WithRestriction(res), util.WithTrafficcontrol(traff)); err != nil {
+		req.QueryParameter(publishstatus), util.WithNameLike(name), util.WithUser(authuser.Name),
+		util.WithNamespace(authuser.Namespace), util.WithRestriction(res), util.WithTrafficcontrol(traff)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			ErrorCode: "001000010",
