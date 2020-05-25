@@ -175,7 +175,7 @@ func (s *Service) PatchApi(id string, data interface{}, opts ...util.OpOption) (
 	return ToModel(api), err
 }
 
-func (s *Service) ListApi(suid, appid string, opts ...util.OpOption) ([]*Api, error) {
+func (s *Service) ListApi(suid, appid, status string, opts ...util.OpOption) ([]*Api, error) {
 	if len(suid) > 0 && len(appid) > 0 {
 		return nil, fmt.Errorf("i am not sure if it is suitable to get api with application id and service unit id, but it make no sense")
 	}
@@ -207,12 +207,15 @@ func (s *Service) ListApi(suid, appid string, opts ...util.OpOption) ([]*Api, er
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
+
+	//publishedOnly false 表示查询所有，true表示查询已发布的api
 	publishedOnly := false
 	//大数据默认查询发布的api，汇聚平台查询所有api
-	if len(suid) == 0 && len(appid) == 0 && !s.tenantEnabled {
+	//需要确认一下，大数据场景若设置status查询则需要设置publishedOnly为false
+	if len(suid) == 0 && len(appid) == 0 && len(status) == 0 && !s.tenantEnabled {
 		publishedOnly = true
 	}
-	result := ToListModel(apis, publishedOnly, opts...)
+	result := ToListModel(apis, publishedOnly, status, opts...)
 	if len(appid) > 0 {
 		for i := range result {
 			if apis.Items[i].Status.Applications != nil {
