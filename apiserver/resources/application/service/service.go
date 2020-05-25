@@ -2,6 +2,8 @@ package service
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/apiserver/resources/application/mqservice"
+	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"strings"
 
 	"github.com/chinamobile/nlpt/apiserver/database"
@@ -29,17 +31,17 @@ type Service struct {
 	tenantEnabled bool
 
 	db *database.DatabaseConnection
+	token *mqservice.Token
 }
 
-func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool, db *database.DatabaseConnection) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool, db *database.DatabaseConnection, topicConfig *config.TopicConfig) *Service {
 	return &Service{
 		kubeClient:  kubeClient,
 		client:      client.Resource(v1.GetOOFSGVR()),
 		groupClient: client.Resource(groupv1.GetOOFSGVR()),
-
 		tenantEnabled: tenantEnabled,
-
 		db: db,
+		token: mqservice.NewToken(topicConfig.TokenSecret),
 	}
 }
 
@@ -48,6 +50,7 @@ func (s *Service) GetClient() dynamic.NamespaceableResourceInterface {
 }
 
 func (s *Service) CreateApplication(model *Application) (*Application, error, string) {
+
 	if err := s.Validate(model); err != nil {
 		return nil, err, "002000019"
 	}
