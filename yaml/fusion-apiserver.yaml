@@ -117,6 +117,16 @@ spec:
           valueFrom:
             fieldRef:
               fieldPath: metadata.namespace
+        - name: LANG
+          valueFrom:
+            configMapKeyRef:
+              key: LANG
+              name: fusion-locale-config
+        - name: LANGUAGE
+          valueFrom:
+            configMapKeyRef:
+              key: LANGUAGE
+              name: fusion-locale-config
         image: registry.cmcc.com/library/fusion-apiserver:0.1.0
         imagePullPolicy: Always
         name: fusion-apiserver
