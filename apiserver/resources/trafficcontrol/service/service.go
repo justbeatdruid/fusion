@@ -416,10 +416,10 @@ func (s *Service) BindApi(id string, apis []v1.Api, opts ...util.OpOption) (*Tra
 		}
 		if isFisrtBind == true {
 			traffic.Spec.Apis = append(traffic.Spec.Apis, v1.Api{
-				ID:     api.ID,
-				Name:   apiSource.Spec.Name,
-				KongID: apiSource.Spec.KongApi.KongID,
-				Result: v1.BINDING,
+				ID:       api.ID,
+				Name:     apiSource.Spec.Name,
+				KongID:   apiSource.Spec.KongApi.KongID,
+				Result:   v1.BINDING,
 				BindedAt: util.Now(),
 			})
 		}

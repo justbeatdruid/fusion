@@ -69,7 +69,7 @@ type Api struct {
 	Result        Result    `json:"result"`
 	DisplayStatus DisStatus `json:"disStatus"`
 	Detail        string    `json:"detail"`
-	BindedAt	util.Time	`json:"bindedAt"`
+	BindedAt      util.Time `json:"bindedAt"`
 }
 type Result string
 

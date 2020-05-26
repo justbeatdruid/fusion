@@ -32,16 +32,16 @@ const (
 )
 
 type Topicgroup struct {
-	ID          string     `json:"id"`
-	Name        string     `json:"name"` //Topic分组名称
-	Namespace   string     `json:"namespace"`
-	Description string     `json:"description"`        //描述
-	Policies    *Policies  `json:"policies,omitempty"` //Topic分组的策略
-	CreatedAt   int64      `json:"createdAt"`          //创建时间
-	Users       user.Users `json:"users"`
-	Status      v1.Status  `json:"status"`
-	Message     string     `json:"message"`
-	Available   bool       `json:"available"` //是否可用
+	ID          string        `json:"id"`
+	Name        string        `json:"name"` //Topic分组名称
+	Namespace   string        `json:"namespace"`
+	Description string        `json:"description"`        //描述
+	Policies    *Policies     `json:"policies,omitempty"` //Topic分组的策略
+	CreatedAt   int64         `json:"createdAt"`          //创建时间
+	Users       user.Users    `json:"users"`
+	Status      v1.Status     `json:"status"`
+	Message     string        `json:"message"`
+	Available   bool          `json:"available"`     //是否可用
 	ShowStatus  v1.ShowStatus `json:"displayStatus"` //界面显示状态
 }
 
@@ -170,7 +170,6 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 
 func ToModel(obj *v1.Topicgroup) *Topicgroup {
 
-
 	return &Topicgroup{
 		ID:          obj.ObjectMeta.Name,
 		Name:        obj.Spec.Name,
@@ -183,7 +182,6 @@ func ToModel(obj *v1.Topicgroup) *Topicgroup {
 		Available:   obj.Spec.Available,
 		Description: obj.Spec.Description,
 		ShowStatus:  v1.ShowStatusMap[obj.Status.Status],
-
 	}
 }
 
