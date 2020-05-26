@@ -27,7 +27,7 @@ import (
 	"k8s.io/klog"
 )
 
-var defaultNamespace = "default"
+//var defaultNamespace = "default"
 
 // TopicSynchronizer reconciles a Topic object
 type TopicSynchronizer struct {
@@ -40,9 +40,7 @@ func (r *TopicSynchronizer) SyncTopicStats() error {
 	ctx := context.Background()
 
 	topicList := &nlptv1.TopicList{}
-	if err := r.List(ctx, topicList, &client.ListOptions{
-		Namespace: defaultNamespace,
-	}); err != nil {
+	if err := r.List(ctx, topicList); err != nil {
 		return fmt.Errorf("cannot list topics: %+v", err)
 	}
 	for _, tp := range topicList.Items {
