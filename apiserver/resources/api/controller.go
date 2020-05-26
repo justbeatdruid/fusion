@@ -371,6 +371,8 @@ func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 	name := req.QueryParameter("name")
 	res := req.QueryParameter("restriction")
 	traff := req.QueryParameter("trafficcontrol")
+	authType := req.QueryParameter("authType")
+	apiBackendType := req.QueryParameter("apiBackendType")
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
@@ -382,7 +384,8 @@ func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 	}
 	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application),
 		req.QueryParameter(publishstatus), util.WithNameLike(name), util.WithUser(authuser.Name),
-		util.WithNamespace(authuser.Namespace), util.WithRestriction(res), util.WithTrafficcontrol(traff)); err != nil {
+		util.WithNamespace(authuser.Namespace), util.WithRestriction(res), util.WithTrafficcontrol(traff),
+		util.WithAuthType(authType), util.WithApiBackendType(apiBackendType)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			ErrorCode: "001000010",

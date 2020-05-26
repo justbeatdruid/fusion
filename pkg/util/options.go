@@ -12,6 +12,8 @@ type Op struct {
 	typpe          string
 	stype          string
 	id			   string
+	authType	string
+	apiBackendType	string
 }
 
 func (o Op) NameLike() string       { return o.nameLike }
@@ -25,6 +27,8 @@ func (o Op) Available() string      { return o.available }
 func (o Op) Type() string           { return o.typpe }
 func (o Op) Stype() string          { return o.stype }
 func (o Op) Id() string				{ return o.id }
+func (o Op) AuthType() string	{ return o.authType}
+func (o Op) ApiBackendType() string { return o.apiBackendType}
 
 type OpOption func(*Op)
 
@@ -39,6 +43,8 @@ func WithAvailable(s string) OpOption      { return func(op *Op) { op.available 
 func WithType(s string) OpOption           { return func(op *Op) { op.typpe = s } }
 func WithStype(s string) OpOption          { return func(op *Op) { op.stype = s } }
 func WithId(s string) OpOption			   { return func(op *Op) { op.id = s}}
+func WithAuthType(s string) OpOption { return func(op *Op) { op.authType = s}}
+func WithApiBackendType(s string) OpOption { return func(op *Op) { op.apiBackendType = s}}
 
 func OpList(opts ...OpOption) Op {
 	ret := Op{}

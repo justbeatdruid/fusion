@@ -239,6 +239,8 @@ func ToListModel(items *v1.ApiList, publishedOnly bool, status string, opts ...u
 		nameLike := util.OpList(opts...).NameLike()
 		res := util.OpList(opts...).Restriction()
 		traff := util.OpList(opts...).Trafficcontrol()
+		authType := util.OpList(opts...).AuthType()
+		apiBackendType := util.OpList(opts...).ApiBackendType()
 		var apis []*Api = make([]*Api, 0)
 		for i, a := range items.Items {
 			if len(nameLike) > 0 {
@@ -272,6 +274,16 @@ func ToListModel(items *v1.ApiList, publishedOnly bool, status string, opts ...u
 				}
 			} else if traff == "unbind" {
 				if len(a.Spec.Traffic.ID) != 0 || len(a.Spec.Traffic.SpecialID) != 0 {
+					continue
+				}
+			}
+			if len(authType) > 0 {
+				if string(a.Spec.AuthType) != authType {
+					continue
+				}
+			}
+			if len(apiBackendType) > 0 {
+				if a.Spec.ApiBackendType != apiBackendType {
 					continue
 				}
 			}
