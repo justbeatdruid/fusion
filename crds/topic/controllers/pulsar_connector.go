@@ -7,6 +7,7 @@ import (
 	"github.com/parnurzeal/gorequest"
 	"k8s.io/klog"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -133,7 +134,7 @@ func (r *Connector) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	fmt.Print(" Response: ", body, response, errs)
 	if response.StatusCode == 204 {
 		return nil
-	} else if body == "Topic not found" || body == "Partitioned topic does not exist" {
+	} else if strings.Contains(body, "Topic not found") || strings.Contains(body, "Partitioned topic does not exist") {
 		return nil
 	} else {
 		errMsg := fmt.Sprintf("delete topic error, url: %s, Error code: %d, Error Message: %s", topicUrl, response.StatusCode, body)
