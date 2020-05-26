@@ -45,10 +45,14 @@ type Wrapped struct {
 	Data      *service.Api `json:"data,omitempty"`
 }
 
+type RequestWrapped struct {
+	Data *service.Api `json:"data,omitempty"`
+}
+
 type BindRequest struct {
-	Code    int    `json:"code"`
-	Message string `json:"message"`
-	Data    struct {
+	//Code    int    `json:"code"`
+	//Message string `json:"message"`
+	Data struct {
 		Operation string       `json:"operation"`
 		Apis      []v1.ApiBind `json:"apis"`
 	} `json:"data,omitempty"`
@@ -56,7 +60,7 @@ type BindRequest struct {
 
 type BindResponse = Wrapped
 type CreateResponse = Wrapped
-type CreateRequest = Wrapped
+type CreateRequest = RequestWrapped
 type DeleteResponse = Wrapped
 type GetResponse = Wrapped
 type ListResponse = struct {
