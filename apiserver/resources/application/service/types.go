@@ -3,13 +3,12 @@ package service
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
 	v1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
+	"strings"
 )
 
 type Application struct {
@@ -126,9 +125,10 @@ func ToModel(obj *v1.Application, opts ...util.OpOption) *Application {
 func ToListModel(items *v1.ApplicationList, groups map[string]string, opts ...util.OpOption) []*Application {
 	if len(opts) > 0 {
 		nameLike := util.OpList(opts...).NameLike()
-		if len(nameLike) > 0 {
-			var apps []*Application = make([]*Application, 0)
-			for _, item := range items.Items {
+		id := util.OpList(opts...).Id()
+		var apps []*Application = make([]*Application, 0)
+		for _, item := range items.Items {
+			if len(nameLike) > 0 {
 				if !strings.Contains(item.Spec.Name, nameLike) {
 					continue
 				}
@@ -138,12 +138,18 @@ func ToListModel(items *v1.ApplicationList, groups map[string]string, opts ...ut
 				if gname, ok := groups[item.Spec.Group.ID]; ok {
 					item.Spec.Group.Name = gname
 				}
-				app := ToModel(&item, opts...)
-				apps = append(apps, app)
 			}
-			return apps
+			if len(id) > 0 {
+				if id != item.ObjectMeta.Name {
+					continue
+				}
+			}
+			app := ToModel(&item, opts...)
+			apps = append(apps, app)
 		}
+		return apps
 	}
+
 	var apps []*Application = make([]*Application, len(items.Items))
 	for i, item := range items.Items {
 		if gid, ok := item.ObjectMeta.Labels[v1.GroupLabel]; ok {

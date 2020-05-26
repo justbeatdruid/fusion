@@ -11,6 +11,7 @@ type Op struct {
 	available      string
 	typpe          string
 	stype          string
+	id			   string
 }
 
 func (o Op) NameLike() string       { return o.nameLike }
@@ -23,6 +24,7 @@ func (o Op) Topic() string          { return o.topic }
 func (o Op) Available() string      { return o.available }
 func (o Op) Type() string           { return o.typpe }
 func (o Op) Stype() string          { return o.stype }
+func (o Op) Id() string				{ return o.id }
 
 type OpOption func(*Op)
 
@@ -36,6 +38,7 @@ func WithTopic(s string) OpOption          { return func(op *Op) { op.topic = s 
 func WithAvailable(s string) OpOption      { return func(op *Op) { op.available = s } }
 func WithType(s string) OpOption           { return func(op *Op) { op.typpe = s } }
 func WithStype(s string) OpOption          { return func(op *Op) { op.stype = s } }
+func WithId(s string) OpOption			   { return func(op *Op) { op.id = s}}
 
 func OpList(opts ...OpOption) Op {
 	ret := Op{}
