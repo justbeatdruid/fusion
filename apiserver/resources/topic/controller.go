@@ -1187,3 +1187,7 @@ func (c *controller) AddPartitionsOfTopic(req *restful.Request) (int, *AddPartit
 	}
 
 }
+
+func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *AddPartitions) {
+	return 0, nil
+}

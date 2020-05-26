@@ -111,8 +111,7 @@ func (s *Service) ListMessagesTime(topicUrls []string, start int64, end int64) (
 
 //不带时间查询
 func (s *Service) ListMessages(topicUrls []string) ([]Message, error) {
-	topicUrls = make([]string, 1)
-	topicUrls = append(topicUrls, "persistent://public/default/topic")
+	topicUrls = make([]string, 0)
 	messages, err := s.ListTopicMessages(topicUrls)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get TopicMessages: %+v", err)
