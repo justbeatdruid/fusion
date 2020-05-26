@@ -25,19 +25,15 @@ type TenantUserList struct {
 }
 
 type TenantUser struct {
-	UserID            int    `json:"userId"`
+	UserID            int    `json:"user_id"`
 	Username          string `json:"username"`
 	Password          string `json:"password"`
-	Salt              string `json:"salt"`
 	Email             string `json:"email"`
 	Mobile            string `json:"mobile,omitempty"`
 	Status            int    `json:"status,omitempty"`
-	RoleIDList        string `json:"roleIdList,omitempty"`
-	CreateUserID      int    `json:"createUserId"`
-	CreateUserAccount string `json:"createUserAccount,omitempty"`
-	CreateTime        string `json:"createTime"`
-	RoleName          string `json:"roleName,omitempty"`
-	GroupName         string `json:"groupName,omitempty"`
+	CreateUserID      int    `json:"create_user_id"`
+	CreateUserAccount string `json:"create_user_account,omitempty"`
+	CreateTime        string `json:"create_time"`
 }
 
 func FromTenantUser(c TenantUser) User {
@@ -45,7 +41,6 @@ func FromTenantUser(c TenantUser) User {
 		UserID:     c.UserID,
 		Username:   c.Username,
 		Password:   c.Password,
-		Salt:       c.Salt,
 		Status:     c.Status,
 		Email:      c.Email,
 		Mobile:     c.Mobile,
