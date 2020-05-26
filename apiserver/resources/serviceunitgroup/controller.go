@@ -33,8 +33,13 @@ type Wrapped struct {
 	Data      *service.ServiceunitGroup `json:"data,omitempty"`
 }
 
+type RequestWrapped struct {
+	Data *service.ServiceunitGroup `json:"data,omitempty"`
+}
+
 type CreateResponse = Wrapped
-type CreateRequest = Wrapped
+type CreateRequest = RequestWrapped
+
 type DeleteResponse struct {
 	Code      int    `json:"code"`
 	Message   string `json:"message"`

@@ -50,8 +50,12 @@ type Wrapped struct {
 	Detail    string         `json:"detail"`
 }
 
+type RequestWrapped struct {
+	Data *service.Topic `json:"data,omitempty"`
+}
+
 type CreateResponse = Wrapped
-type CreateRequest = Wrapped
+type CreateRequest = RequestWrapped
 type DeleteResponse = Wrapped
 type GrantResponse = Wrapped
 type ExportResponse = Wrapped

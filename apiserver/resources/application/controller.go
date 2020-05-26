@@ -38,7 +38,11 @@ type Wrapped struct {
 	Data      *service.Application `json:"data,omitempty"`
 }
 
-type CreateRequest = Wrapped
+type RequestWrapped struct {
+	Data *service.Application `json:"data,omitempty"`
+}
+
+type CreateRequest = RequestWrapped
 type CreateResponse = Wrapped
 type DeleteResponse = Wrapped
 type GetResponse = Wrapped
@@ -237,6 +241,7 @@ func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) 
 	size := req.QueryParameter("size")
 	group := req.QueryParameter("group")
 	name := req.QueryParameter("name")
+	id := req.QueryParameter("id")
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
@@ -247,7 +252,7 @@ func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) 
 		}
 	}
 	if app, err := c.service.ListApplication(util.WithGroup(group), util.WithNameLike(name),
-		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace), util.WithId(id)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			Detail:    fmt.Errorf("list application error: %+v", err).Error(),

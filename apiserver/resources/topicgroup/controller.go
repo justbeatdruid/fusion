@@ -41,8 +41,12 @@ type Wrapped struct {
 	Detail    string              `json:"detail"`
 }
 
+type RequestWrapped struct {
+	Data *service.Topicgroup `json:"data,omitempty"`
+}
+
 type CreateResponse = Wrapped
-type CreateRequest = Wrapped
+type CreateRequest = RequestWrapped
 type DeleteResponse = Wrapped
 
 /*type DeleteResponse struct {
