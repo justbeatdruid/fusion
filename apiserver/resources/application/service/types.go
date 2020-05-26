@@ -22,6 +22,7 @@ type Application struct {
 	AccessSecretKey string          `json:"accessSecretKey"`
 	APIs            []v1.Api        `json:"apis"`
 	ConsumerInfo    v1.ConsumerInfo `json:"consumerInfo"`
+	TopicAuth       v1.TopicAuth    `json:"topicAuth"`
 
 	Status    v1.Status `json:"status"`
 	UserCount int       `json:"userCount"`
@@ -101,6 +102,7 @@ func ToModel(obj *v1.Application, opts ...util.OpOption) *Application {
 		AccessSecretKey: obj.Spec.AccessSecretKey,
 		APIs:            obj.Spec.APIs,
 		ConsumerInfo:    obj.Spec.ConsumerInfo,
+		TopicAuth:       obj.Spec.TopicAuth,
 
 		Status:   obj.Status.Status,
 		APICount: len(obj.Spec.APIs),
