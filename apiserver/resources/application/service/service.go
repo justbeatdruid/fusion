@@ -30,18 +30,18 @@ type Service struct {
 
 	tenantEnabled bool
 
-	db *database.DatabaseConnection
+	db    *database.DatabaseConnection
 	token *mqservice.Token
 }
 
 func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool, db *database.DatabaseConnection, topicConfig *config.TopicConfig) *Service {
 	return &Service{
-		kubeClient:  kubeClient,
-		client:      client.Resource(v1.GetOOFSGVR()),
-		groupClient: client.Resource(groupv1.GetOOFSGVR()),
+		kubeClient:    kubeClient,
+		client:        client.Resource(v1.GetOOFSGVR()),
+		groupClient:   client.Resource(groupv1.GetOOFSGVR()),
 		tenantEnabled: tenantEnabled,
-		db: db,
-		token: mqservice.NewToken(topicConfig.TokenSecret),
+		db:            db,
+		token:         mqservice.NewToken(topicConfig.TokenSecret),
 	}
 }
 
@@ -50,7 +50,6 @@ func (s *Service) GetClient() dynamic.NamespaceableResourceInterface {
 }
 
 func (s *Service) CreateApplication(model *Application) (*Application, error, string) {
-
 	if err := s.Validate(model); err != nil {
 		return nil, err, "002000019"
 	}
@@ -91,6 +90,7 @@ func (s *Service) DeleteApplication(id string, opts ...util.OpOption) (*Applicat
 }
 
 func (s *Service) Create(app *v1.Application) (*v1.Application, error) {
+	(*app).Spec.Result = v1.CREATING
 	var crdNamespace = defaultNamespace
 	if s.tenantEnabled {
 		crdNamespace = app.ObjectMeta.Namespace
@@ -100,6 +100,16 @@ func (s *Service) Create(app *v1.Application) (*v1.Application, error) {
 	} else {
 		app.ObjectMeta.Namespace = defaultNamespace
 	}
+	token, errs := s.token.Create(app.ObjectMeta.Name)
+	if errs != nil {
+		return nil, fmt.Errorf("cannot create topic token: %+v", errs)
+	}
+
+	if len(token) == 0 {
+		return nil, fmt.Errorf("get topic token len is null")
+	}
+
+	(*app).Spec.TopicAuth.Token = token
 	if err := k8s.EnsureNamespace(s.kubeClient, crdNamespace); err != nil {
 		return nil, fmt.Errorf("cannot ensure k8s namespace: %+v", err)
 	}
@@ -127,7 +137,7 @@ func (s *Service) Create(app *v1.Application) (*v1.Application, error) {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.application of creating: %+v", app)
-	(*app).Spec.Result = v1.CREATING
+
 	return app, nil
 }
 
