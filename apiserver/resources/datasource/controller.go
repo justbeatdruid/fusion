@@ -34,9 +34,14 @@ type Wrapped struct {
 	Message   string              `json:"message"`
 	Data      *service.Datasource `json:"data,omitempty"`
 }
-type CreateRequest = Wrapped
-type UpdateRequest = Wrapped
-type PingRequest = Wrapped
+
+type RequestWrapped struct {
+	Data *service.Datasource `json:"data,omitempty"`
+}
+
+type CreateRequest = RequestWrapped
+type UpdateRequest = RequestWrapped
+type PingRequest = RequestWrapped
 
 type CreateResponse = Wrapped
 type UpdateResponse = Wrapped
