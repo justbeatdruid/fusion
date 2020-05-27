@@ -44,7 +44,7 @@ func (r *TopicSynchronizer) SyncTopicStats() error {
 		return fmt.Errorf("cannot list topics: %+v", err)
 	}
 	for _, tp := range topicList.Items {
-		if tp.Status.Status == nlptv1.Init || tp.Status.Status == nlptv1.Creating {
+		if  tp.Status.Status == nlptv1.Creating {
 			continue
 		}
 		stats, err := r.Connector.GetStats(tp)

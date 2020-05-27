@@ -37,6 +37,8 @@ type Topic struct {
 	Users        user.Users   `json:"users"`
 	Stats        *Stats       `json:"stats"`       //Topic的统计数据
 	Description  string       `json:"description"` //描述
+	ShowStatus   v1.ShowStatus       `json:"displayStatus"` //页面显示状态
+	AuthorizationStatus string  `json:"authorizationStatus"` //用户授权状态
 }
 
 type Stats struct {
@@ -107,7 +109,7 @@ type Permission struct {
 	AuthUserID   string  `json:"authUserId"`   //对应clientauth的ID
 	AuthUserName string  `json:"authUserName"` //对应clientauth的NAME
 	Actions      Actions `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
-	Status       string  `json:"status"`       //用户的授权状态，已授权、待删除、待授权
+	Status       v1.Status  `json:"status"`       //用户的授权状态，已授权、待删除、待授权
 	Token        string  `json:"token"`        //Token
 	Effective    bool    `json:"effective"`
 	IssuedAt     int64   `json:"issuedAt"`
@@ -151,7 +153,7 @@ func ToAPI(app *Topic) *v1.Topic {
 
 	status := app.Status
 	if len(status) == 0 {
-		status = v1.Init
+		status = v1.Creating
 	}
 
 	crd.Status = v1.TopicStatus{
@@ -196,6 +198,7 @@ func ToModel(obj *v1.Topic) *Topic {
 		Users:        user.GetUsersFromLabels(obj.ObjectMeta.Labels),
 		Stats:        ToStatsModel(obj.Spec.Stats),
 		Description:  obj.Spec.Description,
+		ShowStatus:   v1.ShowStatusMap[obj.Status.Status],
 	}
 
 }

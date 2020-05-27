@@ -252,7 +252,7 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topic, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
-	tp.Status.Status = v1.Delete
+	tp.Status.Status = v1.Deleting
 	return s.UpdateStatus(tp)
 }
 
@@ -275,11 +275,11 @@ func (s *Service) DeletePer(id string, authUserId string, opts ...util.OpOption)
 
 	for index := range tp.Spec.Permissions {
 		if tp.Spec.Permissions[index].AuthUserID == authUserId {
-			tp.Spec.Permissions[index].Status.Status = "delete"
+			tp.Spec.Permissions[index].Status.Status = v1.DeletingAuthorization
 			break
 		}
 	}
-	tp.Status.Status = v1.Update
+	tp.Status.Status = v1.DeletingAuthorization
 	return s.UpdateStatus(tp)
 }
 
@@ -459,12 +459,12 @@ func (s *Service) GrantPermissions(topicId string, authUserId string, actions Ac
 		AuthUserName: authUserName,
 		Actions:      as,
 		Status: v1.PermissionStatus{
-			Status:  v1.Grant,
+			Status:  v1.Authorizing,
 			Message: "",
 		},
 	}
 	tp.Spec.Permissions = append(tp.Spec.Permissions, perm)
-	tp.Status.Status = v1.Update
+	tp.Status.AuthorizationStatus = v1.Authorizing
 	v1Tp, err := s.UpdateStatus(tp)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update object: %+v", err)
@@ -518,7 +518,7 @@ func (s *Service) AddPartitionsOfTopic(id string, partitionNum int, ops ...util.
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
-	tp.Status.Status = v1.Update
+	tp.Status.Status = v1.Updating
 	tp.Spec.PartitionNum = partitionNum
 	v1tp, err := s.UpdateStatus(tp)
 	if err != nil {
