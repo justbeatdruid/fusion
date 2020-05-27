@@ -40,6 +40,8 @@ type TopicSpec struct {
 	Stats        Stats        `json:"stats"`       //Topic的统计数据
 	AppIDs		 []string     `json:"appIDs"`     //已绑定的应用ID列表
 	Description  string       `json:"description"` //描述
+	DisplayStatus ShowStatus  `json:"disStatus"`
+
 }
 
 type Actions []string
@@ -67,27 +69,55 @@ type TopicStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 	Status  Status `json:"status"`
 	Message string `json:"message"`
+	AuthorizationStatus Status  `json:"authorizationStatus"`
 }
 
 type PermissionStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status  string `json:"status"`
+	Status  Status `json:"status"`
 	Message string `json:"message"`
 }
 
 type Status string
 
 const (
-	Init     Status = "init"
+	//Init     Status = "init"
 	Creating Status = "creating"
 	Created  Status = "created"
-	Delete   Status = "delete"
+	CreateFailed Status = "createFailed"
 	Deleting Status = "deleting"
-	Error    Status = "error"
+	DeleteFailed Status = "deleteFailed"
+	//Error    Status = "error"
 	Updating Status = "updating"
 	Updated  Status = "updated"
-	Update   Status = "update"
+	UpdateFailed Status = "updateFailed"
+	AuthorizeFailed Status = "authorizeFailed"
+	Authorizing Status = "authorizing"
+	Authorized Status = "authorized"
+	DeletingAuthorization = "deletingAuthorization"
+	DeleteAuthorizationFailed = "deleteAuthorizationFailed"
+	DeletedAuthorization = "deletedAuthorization"
+)
+
+type ShowStatus string 
+const(
+	CreatingOfShow     ShowStatus = "创建中"
+	CreatedOfShow      ShowStatus = "创建成功"
+	CreateFailedOfShow ShowStatus = "创建失败"
+	UpdatingOfShow     ShowStatus = "更新中"
+	UpdatedOfShow      ShowStatus = "更新成功"
+	UpdateFailedOfShow ShowStatus = "更新失败"
+	DeletingOfShow     ShowStatus = "删除中"
+	DeleteFailedOfShow ShowStatus = "删除失败"
+	AuthorizingOfShow  ShowStatus = "授权中"
+	AuthorizeFailedOfShow ShowStatus = "授权失败"
+	AuthorizedFailedOfShow ShowStatus = "授权成功"
+	DeletingAuthorizationOfShow ShowStatus = "删除授权中"
+	DeleteAuthorizationFailedOfShow ShowStatus = "删除授权失败"
+	DeletedAuthorizationOfShow ShowStatus = "删除授权成功"
+
+
 )
 
 // +kubebuilder:object:root=true
@@ -157,8 +187,9 @@ type ConsumerStat struct {
 
 func init() {
 	SchemeBuilder.Register(&Topic{}, &TopicList{})
+	initShowStatusMap()
 }
-
+var ShowStatusMap = make(map[Status]ShowStatus)
 func (in *Topic) GetUrl() (url string) {
 
 	var build strings.Builder
@@ -175,4 +206,17 @@ func (in *Topic) GetUrl() (url string) {
 	build.WriteString(in.Spec.Name)
 
 	return build.String()
+}
+
+func initShowStatusMap() {
+	ShowStatusMap[Creating] = CreatingOfShow
+	ShowStatusMap[CreateFailed] = CreateFailedOfShow
+	ShowStatusMap[Created] = CreatedOfShow
+	ShowStatusMap[Updating] = UpdatingOfShow
+	ShowStatusMap[Updated] = UpdatedOfShow
+	ShowStatusMap[UpdateFailed] = UpdateFailedOfShow
+	ShowStatusMap[Deleting] = DeletingOfShow
+	ShowStatusMap[DeleteFailed] = DeleteFailedOfShow
+
+
 }

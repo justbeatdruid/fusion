@@ -6,10 +6,10 @@ type Token struct {
 	Secret string `json:"secret"`
 }
 
-func NewToken(secret string) *Token{
+func NewToken(secret string) *Token {
 	return &Token{secret}
 }
-func (t *Token) Create(username string) (*string, error) {
+func (t *Token) Create(username string) (string, error) {
 	var content = []byte(t.Secret)
 	jwtToken := jwt.New(jwt.SigningMethodHS256)
 
@@ -18,7 +18,6 @@ func (t *Token) Create(username string) (*string, error) {
 	//默认用HS256算法
 	header["alg"] = jwt.SigningMethodHS256.Name
 
-
 	claims := make(jwt.MapClaims)
 	claims["sub"] = username
 
@@ -26,7 +25,7 @@ func (t *Token) Create(username string) (*string, error) {
 	jwtToken.Header = header
 	ts, err := jwtToken.SignedString(content)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
-	return &ts, nil
+	return ts, nil
 }

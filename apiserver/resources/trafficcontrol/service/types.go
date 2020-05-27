@@ -123,7 +123,7 @@ func ToListModel(items *v1.TrafficcontrolList, opts ...util.OpOption) []*Traffic
 // check create parameters
 func (s *Service) Validate(a *Trafficcontrol) error {
 	for k, v := range map[string]string{
-		"name":        a.Name,
+		"name": a.Name,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)

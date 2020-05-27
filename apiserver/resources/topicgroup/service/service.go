@@ -38,7 +38,6 @@ type Service struct {
 	kubeClient  *clientset.Clientset
 	client      dynamic.NamespaceableResourceInterface
 	topicClient dynamic.NamespaceableResourceInterface
-
 }
 
 func NewService(client dynamic.Interface, kubeClient *clientset.Clientset) *Service {
@@ -381,7 +380,6 @@ func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupE
 			ErrorCode: tgerror.ErrorEnsureNamespace,
 		}
 	}
-
 
 	crd, err = s.client.Namespace(tp.Namespace).Create(crd, metav1.CreateOptions{})
 	if err != nil {

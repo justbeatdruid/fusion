@@ -27,11 +27,11 @@ type TopicgroupSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
-	Name        string    `json:"name"` //namespace名称
-	Policies    *Policies `json:"policies,omitempty"`
-	Available   bool      `json:"available"`             //资源是否可用
-	Description string    `json:"description,omitempty"` //描述
-	DisplayStatus ShowStatus       `json:"disStatus"`
+	Name          string     `json:"name"` //namespace名称
+	Policies      *Policies  `json:"policies,omitempty"`
+	Available     bool       `json:"available"`             //资源是否可用
+	Description   string     `json:"description,omitempty"` //描述
+	DisplayStatus ShowStatus `json:"disStatus"`
 }
 type Policies struct {
 	RetentionPolicies           *RetentionPolicies        `json:"retention_policies,omitempty"`     //消息保留策略
@@ -99,8 +99,8 @@ const (
 	UpdateFailed Status = "updateFailed"
 	Updating     Status = "updating"
 	Updated      Status = "updated"
-
 )
+
 type ShowStatus string //界面显示状态
 const (
 	CreatingOfShow     ShowStatus = "创建中"
@@ -114,6 +114,7 @@ const (
 )
 
 var ShowStatusMap map[Status]ShowStatus = make(map[Status]ShowStatus, 0)
+
 // TopicgroupStatus defines the observed state of Topicgroup
 type TopicgroupStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
@@ -143,8 +144,8 @@ type TopicgroupList struct {
 }
 
 type RuntimeConfiguration struct {
-
 }
+
 func init() {
 	SchemeBuilder.Register(&Topicgroup{}, &TopicgroupList{})
 	initShowStatusMap()
@@ -160,6 +161,5 @@ func initShowStatusMap() {
 	ShowStatusMap[UpdateFailed] = UpdateFailedOfShow
 	ShowStatusMap[Deleting] = DeletingOfShow
 	ShowStatusMap[DeleteFailed] = DeleteFailedOfShow
-
 
 }

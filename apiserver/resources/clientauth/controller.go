@@ -155,6 +155,11 @@ func (c *controller) GetClientauth(req *restful.Request) (int, *GetResponse) {
 			Detail:    fmt.Errorf("get database error: %+v", err).Error(),
 		}
 	} else {
+		if ca.ExpireAt > util.Now().Unix() {
+			ca.Effective = true
+		} else {
+			ca.Effective = false
+		}
 		return http.StatusOK, &GetResponse{
 			Code: success,
 			Data: ca,

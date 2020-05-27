@@ -38,6 +38,7 @@ type ApplicationSpec struct {
 	AccessSecretKey string       `json:"accessSecretKey"`
 	APIs            []Api        `json:"apis"`
 	ConsumerInfo    ConsumerInfo `json:"comsumer"`
+	TopicAuth       TopicAuth    `json:"topicAuth"`
 	Result          Result       `json:"result"`
 	DisplayStatus   DisStatus    `json:"disStatus"`
 }
@@ -57,6 +58,10 @@ type ConsumerInfo struct {
 	Key        string `json:"key"`
 	Secret     string `json:"secret"`
 	Token      string `json:"jwt"`
+}
+
+type TopicAuth struct {
+	Token string `json:"jwt"`
 }
 
 // ApplicationStatus defines the observed state of Application

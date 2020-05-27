@@ -392,6 +392,9 @@ func (s *Service) BindApi(id string, apis []v1.Api, opts ...util.OpOption) (*Tra
 		if err != nil {
 			return nil, fmt.Errorf("cannot get api: %+v", err)
 		}
+		if apiSource.Status.PublishStatus != apiv1.Released {
+			return nil, fmt.Errorf("api not released: %s", apiSource.Spec.Name)
+		}
 		//SPECAPPC 1个API可以绑定多个
 		if len(apiSource.Spec.Traffic.ID) > 0 && traffic.Spec.Type != v1.SPECAPPC {
 			return nil, fmt.Errorf("api alrady bound to traffic")
@@ -416,10 +419,10 @@ func (s *Service) BindApi(id string, apis []v1.Api, opts ...util.OpOption) (*Tra
 		}
 		if isFisrtBind == true {
 			traffic.Spec.Apis = append(traffic.Spec.Apis, v1.Api{
-				ID:     api.ID,
-				Name:   apiSource.Spec.Name,
-				KongID: apiSource.Spec.KongApi.KongID,
-				Result: v1.BINDING,
+				ID:       api.ID,
+				Name:     apiSource.Spec.Name,
+				KongID:   apiSource.Spec.KongApi.KongID,
+				Result:   v1.BINDING,
 				BindedAt: util.Now(),
 			})
 		}
