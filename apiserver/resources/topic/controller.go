@@ -98,6 +98,18 @@ type ImportResponse struct {
 	Detail    string          `json:"detail"`
 }
 
+type BindOrReleaseRequest struct {
+	Operation string       `json:"operation"`
+	Topics      []service.BindInfo `json:"topics"`
+}
+type BindOrReleaseResponse struct {
+	Code      int             `json:"code"`
+	ErrorCode string          `json:"errorCode"`
+	Message   string          `json:"message"`
+	Data      []service.Topic `json:"data"`
+	Detail    string          `json:"detail"`
+}
+
 type TopicSlice TopicList
 type MessageSlice MessageList
 
@@ -1188,6 +1200,43 @@ func (c *controller) AddPartitionsOfTopic(req *restful.Request) (int, *AddPartit
 
 }
 
-func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *AddPartitions) {
+func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *BindOrReleaseResponse) {
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &BindOrReleaseResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Data:      nil,
+			Detail:    "",
+		}
+	}
+
+	body := &BindOrReleaseRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &BindOrReleaseResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorReadEntity,
+			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
+			Data:      nil,
+			Detail:    fmt.Sprintf("bind or release topics error: %+v ", err),
+		}
+	}
+
+	appid := req.PathParameter("app-id")
+	if len(appid) == 0 {
+		return http.StatusInternalServerError, &BindOrReleaseResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorReadEntity,
+			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
+			Data:      nil,
+			Detail:    fmt.Sprintf("bind or release topics error: %+v", err),
+		}
+	}
+
+	if err := c.service.BatchBindOrRelease(appid, body.Operation, body.Topics, util.WithNamespace(authUser.Namespace)); err != nil {
+
+	}
+
 	return 0, nil
 }

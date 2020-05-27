@@ -5,8 +5,10 @@ import (
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/apiserver/kubernetes"
+	"github.com/chinamobile/nlpt/apiserver/resources/topic"
 	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	clientauthv1 "github.com/chinamobile/nlpt/crds/clientauth/api/v1"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
 	topicgroupv1 "github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
@@ -36,6 +38,7 @@ type Service struct {
 	client           dynamic.NamespaceableResourceInterface
 	clientAuthClient dynamic.NamespaceableResourceInterface
 	topicGroupClient dynamic.NamespaceableResourceInterface
+	applicationClient dynamic.NamespaceableResourceInterface
 	errMsg           config.ErrorConfig
 	ip               string
 	host             int
@@ -47,6 +50,7 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topCo
 	return &Service{client: client.Resource(oofsGVR),
 		clientAuthClient: client.Resource(clientauthv1.GetOOFSGVR()),
 		topicGroupClient: client.Resource(topicgroupv1.GetOOFSGVR()),
+		applicationClient: client.Resource(appv1.GetOOFSGVR()),
 		errMsg:           errMsg,
 		ip:               topConfig.Host,
 		host:             topConfig.Port,
@@ -525,4 +529,59 @@ func (s *Service) AddPartitionsOfTopic(id string, partitionNum int, ops ...util.
 		return nil, fmt.Errorf("cannot update object: %+v", err)
 	}
 	return ToModel(v1tp), nil
+}
+
+func (s *Service) getApplication(id, crdNamespace string) (*appv1.Application, error) {
+	crd, err := s.applicationClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	app := &appv1.Application{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), app); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.application: %+v", app)
+	return app, nil
+}
+
+func (s *Service) BatchBindOrRelease(appid, operation string, topics []BindInfo, opts ...util.OpOption) error {
+	switch operation {
+	case "bind":
+		return s.BatchBindApi(appid, topics, opts...)
+	case "release":
+		return s.BatchReleaseApi(appid, topics, opts...)
+	default:
+		return fmt.Errorf("unknown operation %s, only bind or release can be accepted", operation)
+	}
+}
+
+
+func (s *Service) BatchBindApi(appid string, topics []BindInfo, opts ...util.OpOption) error {
+	op := util.OpList(opts...)
+
+	_, err := s.getApplication(appid,op.Namespace())
+	if err != nil {
+		return fmt.Errorf("get application error: %+v", err)
+	}
+
+	for _, t := range topics {
+		tp, err := s.Get(t.ID,  opts...)
+		if err != nil {
+			return fmt.Errorf("query topic by id error: %+v", err)
+		}
+		for _, boundAppID := range tp.Spec.AppIDs {
+			if boundAppID == appid {
+				return fmt.Errorf("application has already bound to topic")
+			}
+
+		}
+
+		tp.Spec.AppIDs = append(tp.Spec.AppIDs, appid)
+
+	}
+
+
+}
+
+func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.OpOption) error {
 }

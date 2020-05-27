@@ -120,6 +120,10 @@ type Statistics struct {
 	MessageSize string `json:"MessageSize"`
 }
 
+type BindInfo struct {
+	ID string `json:"id"`
+}
+
 const (
 	Consume = "consume"
 	Produce = "produce"
