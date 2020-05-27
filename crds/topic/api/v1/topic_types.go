@@ -38,6 +38,7 @@ type TopicSpec struct {
 	Url          string       `json:"url"`          //Topic url
 	Permissions  []Permission `json:"permissions"`
 	Stats        Stats        `json:"stats"`       //Topic的统计数据
+	AppIDs		 []string     `json:"appIDs"`     //已绑定的应用ID列表
 	Description  string       `json:"description"` //描述
 }
 
