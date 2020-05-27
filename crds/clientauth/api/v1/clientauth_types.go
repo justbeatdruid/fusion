@@ -42,6 +42,7 @@ type ClientauthStatus struct {
 	// Important: Run "make" to regenerate code after modifying this file
 	Status  Status `json:"status"`
 	Message string `json:"message"`
+	AuthorizationStatus Status  `json:"authorizationStatus"`
 }
 
 const (

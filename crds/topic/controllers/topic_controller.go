@@ -51,12 +51,11 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	//klog.Infof("get new topic event: %+v", *topic)
 	//klog.Infof("Status:%s", topic.Status.Status)
 
-	if topic.Status.Status == nlptv1.Init {
+	if topic.Status.Status == nlptv1.Creating {
 		//klog.Info("Current status is Init")
-		topic.Status.Status = nlptv1.Creating
 		if err := r.Operator.CreateTopic(topic); err != nil {
 			topic.Spec.Url = topic.GetUrl()
-			topic.Status.Status = nlptv1.Error
+			topic.Status.Status = nlptv1.CreateFailed
 			topic.Status.Message = fmt.Sprintf("create topic error:%+v", err)
 			klog.Errorf("create topic failed, err: %+v", err)
 		} else {
@@ -73,67 +72,84 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	}
 
-	if topic.Status.Status == nlptv1.Delete {
+	if topic.Status.Status == nlptv1.Deleting {
 		topic.Status.Status = nlptv1.Deleting
 		if err := r.Operator.DeleteTopic(topic); err != nil {
-			topic.Status.Status = nlptv1.Error
+			topic.Status.Status = nlptv1.DeleteFailed
 			topic.Status.Message = fmt.Sprintf("delete topic error: %+v", err)
-			r.Update(ctx, topic)
+			if err := r.Update(ctx, topic); err != nil {
+				klog.Errorf("Update Topic Failed: %+v", *topic)
+			}
 		} else {
 			//删除数据
-			r.Delete(ctx, topic)
+			if err = r.Delete(ctx, topic);err!=nil{
+				klog.Errorf("delete Topic Failed: %+v", *topic)
+			}
 		}
 
 	}
 
-	if topic.Status.Status == nlptv1.Update {
-		topic.Status.Status = nlptv1.Updating
-		klog.Infof("Start Grant Topic: %+v", *topic)
+	if topic.Status.Status == nlptv1.Updating {
 		//增加topic分区
 		if err := r.Operator.AddPartitionsOfTopic(topic); err != nil {
-			topic.Status.Status = nlptv1.Error
+			topic.Status.Status = nlptv1.UpdateFailed
 			topic.Status.Message = fmt.Sprintf("add topic partition error: %+v ", err)
 		} else {
 			topic.Status.Status = nlptv1.Updated
 			topic.Status.Message = "message"
 		}
-		//授权操作
-		for _, p := range topic.Spec.Permissions {
-			if p.Status.Status == nlptv1.Grant {
-				if err := r.Operator.GrantPermission(topic, &p); err != nil {
-					p.Status.Status = "error"
-					p.Status.Message = fmt.Sprintf("grant permission error: %+v", err)
-				} else {
-					p.Status.Status = nlptv1.Granted
-					p.Status.Message = "success"
-				}
-
-			}
+		if err := r.Update(ctx, topic); err != nil {
+			klog.Errorf("Update Topic Failed: %+v", *topic)
 		}
+	}
 
 		//删除授权
-		for index, p := range topic.Spec.Permissions {
-			if p.Status.Status == "delete" {
-				p.Status.Status = "deleting"
-				if err := r.Operator.DeletePer(topic, &p); err != nil {
-					p.Status.Status = "error"
-					p.Status.Message = fmt.Sprintf("revoke permission error: %+v", err)
-					//删除失败，将标签重置为true
-					topic.ObjectMeta.Labels[p.AuthUserID] = "true"
-					topic.Status.Status = nlptv1.Error
-				} else {
-					pers := topic.Spec.Permissions
-					topic.Spec.Permissions = append(pers[:index], pers[index+1:]...)
-					//收回权限成功，删除标签
-					delete(topic.ObjectMeta.Labels, p.AuthUserID)
+		if topic.Status.AuthorizationStatus == nlptv1.DeletingAuthorization{
+			for index, p := range topic.Spec.Permissions {
+				if p.Status.Status == nlptv1.DeletingAuthorization{
+					if err := r.Operator.DeletePer(topic, &p); err != nil {
+						p.Status.Status = nlptv1.DeleteAuthorizationFailed
+						p.Status.Message = fmt.Sprintf("revoke permission error: %+v", err)
+						//删除失败，将标签重置为true
+						topic.ObjectMeta.Labels[p.AuthUserID] = "true"
+						topic.Status.AuthorizationStatus = nlptv1.DeleteAuthorizationFailed
+					} else {
+						pers := topic.Spec.Permissions
+						topic.Spec.Permissions = append(pers[:index], pers[index+1:]...)
+						//收回权限成功，删除标签
+						delete(topic.ObjectMeta.Labels, p.AuthUserID)
+					}
 				}
 			}
+			if err := r.Update(ctx, topic); err != nil {
+				klog.Errorf("Update Topic Failed: %+v", *topic)
+			}
 		}
-		//topic.Status.Status = nlptv1.Updated
-		//更新数据库的状态
+
+
+        if topic.Status.AuthorizationStatus == nlptv1.Authorizing{
+			klog.Infof("Start Grant Topic: %+v", *topic)
+			//授权操作
+			for _, p := range topic.Spec.Permissions {
+				if p.Status.Status == nlptv1.Authorizing {
+					if err := r.Operator.GrantPermission(topic, &p); err != nil {
+						p.Status.Status = nlptv1.AuthorizeFailed
+						p.Status.Message = fmt.Sprintf("grant permission error: %+v", err)
+						topic.Status.AuthorizationStatus = nlptv1.AuthorizeFailed
+					} else {
+						p.Status.Status = nlptv1.Authorized
+						p.Status.Message = "success"
+						topic.Status.AuthorizationStatus = nlptv1.Authorized
+					}
+				}
+			}
+			if err := r.Update(ctx, topic); err != nil {
+				klog.Errorf("Update Topic Failed: %+v", *topic)
+			}
+		}
+
+
 		klog.Infof("Final Topic: %+v", *topic)
-		r.Update(ctx, topic)
-	}
 	return ctrl.Result{}, nil
 }
 
