@@ -505,6 +505,19 @@ func (s *Service) Ping(ds *Datasource) error {
 	}
 }
 
+func (s *Service) Query(id, querySql string, opts ...util.OpOption) (interface{}, error) {
+	ds, err := s.Get(id, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot datasource: %+v", err)
+	}
+	switch ds.Spec.Type {
+	case v1.RDBType:
+	default:
+		return nil, fmt.Errorf("unsupported datasource type: %s", ds.Spec.Type)
+	}
+	return driver.GetRDBData(ds, querySql)
+}
+
 /*
 func (s *Service) GetDataSourceByApiId(apiId string, parames string) (map[string]interface{}, error) {
 	result := make(map[string]interface{})

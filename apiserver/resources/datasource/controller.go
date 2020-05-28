@@ -42,6 +42,16 @@ type RequestWrapped struct {
 type CreateRequest = RequestWrapped
 type UpdateRequest = RequestWrapped
 type PingRequest = RequestWrapped
+type QueryRequest struct {
+	SQL string `json:"sql"`
+}
+type QueryResponse struct {
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Detail    string      `json:"detail"`
+	Message   string      `json:"message"`
+	Data      interface{} `json:"data,omitempty"`
+}
 
 type CreateResponse = Wrapped
 type UpdateResponse = Wrapped
@@ -298,6 +308,44 @@ func (c *controller) Ping(req *restful.Request) (int, *PingResponse) {
 	}
 	return http.StatusOK, &PingResponse{
 		Code: 0,
+	}
+}
+
+func (c *controller) Query(req *restful.Request) (int, *QueryResponse) {
+	id := req.PathParameter("id")
+	body := &QueryRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &QueryResponse{
+			Code:   1,
+			Detail: fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.SQL == "" {
+		return http.StatusInternalServerError, &QueryResponse{
+			Code:   1,
+			Detail: "read entity error: sql is null",
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "006000005"
+		return http.StatusInternalServerError, &QueryResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
+		}
+	}
+	res, err := c.service.Query(id, body.SQL, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace))
+	if err != nil {
+		return http.StatusInternalServerError, &QueryResponse{
+			Code:   1,
+			Detail: fmt.Errorf("exec sql error: %+v", err).Error(),
+		}
+	}
+	return http.StatusOK, &QueryResponse{
+		Code: 0,
+		Data: res,
 	}
 }
 
