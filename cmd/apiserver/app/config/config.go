@@ -49,6 +49,8 @@ type Config struct {
 
 	TenantEnabled bool
 
+	SyncMode bool
+
 	LocalConfig ErrorConfig
 
 	Mutex mutex.Mutex

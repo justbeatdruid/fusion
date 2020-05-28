@@ -30,6 +30,7 @@ type ServerRunOptions struct {
 	Kubeconfig    string
 	CrdNamespace  string
 	TenantEnabled bool
+	SyncMode      bool
 
 	ConfigPath string
 
@@ -48,6 +49,7 @@ func NewServerRunOptions() *ServerRunOptions {
 		ListenAddress: ":8001",
 		CrdNamespace:  os.Getenv("MY_POD_NAMESPACE"),
 		TenantEnabled: false,
+		SyncMode:      false,
 		ConfigPath:    "/data/err.json",
 		Datasource:    DefaultDatasourceOptions(),
 		Dataservice:   DefaultDataserviceOptions(),
@@ -85,6 +87,7 @@ func (s *ServerRunOptions) Flags() cliflag.NamedFlagSets {
 	fs.StringVar(&s.Kubeconfig, "kubeconfig", s.Kubeconfig, "Path to kubeconfig file with authorization and master location information.")
 	fs.StringVar(&s.ListenAddress, "listen", s.ListenAddress, "Address of app manager server listening on")
 	fs.BoolVar(&s.TenantEnabled, "tenant-enabled", s.TenantEnabled, "Enable tenant, that means for on resource, role of user is always same for all items in tenant. If tenant enabled, we do not check anymore for user's writing or reading permission")
+	fs.BoolVar(&s.SyncMode, "sync-mode", s.SyncMode, "If true, run sync only and do not run rest server. If false, run rest server but not sync data from crd to database")
 	fs.StringVar(&s.ConfigPath, "local-config", s.ConfigPath, "Location of local config")
 	return fss
 }
@@ -152,6 +155,7 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		TopicConfig:   appconfig.NewTopicConfig(s.Topic.Host, s.Topic.Port, s.Topic.AuthEnable, s.Topic.SuperUserToken, s.Topic.TokenSecret, s.Topic.PrestoHost, s.Topic.PrestoPort),
 		Auditor:       audit.NewAuditor(s.Audit.Host, s.Audit.Port),
 		TenantEnabled: s.TenantEnabled,
+		SyncMode:      s.SyncMode,
 		LocalConfig:   *errConfig,
 
 		Mutex: mtx,
