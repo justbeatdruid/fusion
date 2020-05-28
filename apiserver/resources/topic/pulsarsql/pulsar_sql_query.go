@@ -48,10 +48,7 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 								return nil, fmt.Errorf("__partition__ type error")
 							}
 						case "__key__":
-							m.Key,ok = v.(string)
-							if !ok {
-								return nil, fmt.Errorf("__key__ type error")
-							}
+							m.Key = v
 						case "__row__":
 						case "__value__":
 							//如果是字节数组，需要解码
