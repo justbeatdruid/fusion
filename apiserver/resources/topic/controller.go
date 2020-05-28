@@ -33,7 +33,7 @@ const (
 	keySql       = `WHERE "__key__" = '%s'`
 	timeSql      = `WHERE "__publish_time__" BETWEEN timestamp '%s' AND timestamp '%s'`
 	order        = `WITH subquery_1 AS (
-    SELECT count("__message_id__") as count from pulsar."%s/%s"."%s" %s),
+    SELECT count("__message_id__") as __count__ from pulsar."%s/%s"."%s" %s),
 subquery_2 AS (
    select * from (select row_number() over(order by __publish_time__ desc) row, * from pulsar."%s/%s"."%s" %s) as t where row between %d and %d
 )   
