@@ -20,7 +20,10 @@ import (
 	"fmt"
 	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
+	resv1 "github.com/chinamobile/nlpt/crds/restriction/api/v1"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
+	trav1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
+	"github.com/chinamobile/nlpt/pkg/util"
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -196,6 +199,20 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			r.Operator.Host, r.Operator.KongPortalPort, api.Spec.KongApi.Paths[0]))
 		api.Status.Message = "success"
 		r.Update(ctx, api)
+		//创建完成后判断是否关联流量控制访问控制，若关联则需要更新相关的状态启动绑定
+		if len(api.Spec.Traffic.ID) != 0 {
+			r.UpdateTrafficStatus(ctx, req, api, api.Spec.Traffic.ID)
+		}
+		if len(api.Spec.Traffic.SpecialID) != 0 {
+			for _, specialID := range api.Spec.Traffic.SpecialID {
+				r.UpdateTrafficStatus(ctx, req, api, specialID)
+			}
+
+		}
+		if len(api.Spec.Restriction.ID) != 0 {
+			r.UpdateRestrictionStatus(ctx, req, api)
+		}
+
 		return ctrl.Result{}, nil
 	}
 
@@ -370,6 +387,79 @@ func (r *ApiReconciler) UpdateBindFail(ctx context.Context, api *nlptv1.Api, app
 		return err
 	}
 	return nil
+}
+
+func (r *ApiReconciler) UpdateTrafficStatus(ctx context.Context, req ctrl.Request, api *nlptv1.Api, id string) {
+	tra := &trav1.Trafficcontrol{}
+	NamespacedName := types.NamespacedName{
+		Namespace: req.NamespacedName.Namespace,
+		Name:      id,
+	}
+	if err := r.Get(ctx, NamespacedName, tra); err != nil {
+		klog.Errorf("cannot get traffic control with name %s: %+v", NamespacedName, err)
+	}
+	klog.Infof("get traffic info %+v", *tra)
+
+	tra.Status.Status = trav1.Bind
+	tra.ObjectMeta.Labels[api.ObjectMeta.Name] = "true"
+	isFisrtBind := true
+	for index, v := range tra.Spec.Apis {
+		if v.ID == api.ObjectMeta.Name {
+			tra.Spec.Apis[index].Result = trav1.BINDING
+			isFisrtBind = false
+			break
+		}
+	}
+	if isFisrtBind == true {
+		tra.Spec.Apis = append(tra.Spec.Apis, trav1.Api{
+			ID:       api.ObjectMeta.Name,
+			Name:     api.Spec.Name,
+			KongID:   api.Spec.KongApi.KongID,
+			Result:   trav1.BINDING,
+			BindedAt: util.Now(),
+		})
+	}
+	klog.Infof("update traffic apis: %+v", tra.Spec.Apis)
+
+	if err := r.Update(ctx, tra); err != nil {
+		klog.Errorf("update traffic error: %+v", err)
+	}
+}
+
+func (r *ApiReconciler) UpdateRestrictionStatus(ctx context.Context, req ctrl.Request, api *nlptv1.Api) {
+	res := &resv1.Restriction{}
+	NamespacedName := types.NamespacedName{
+		Namespace: req.NamespacedName.Namespace,
+		Name:      api.Spec.Restriction.ID,
+	}
+	if err := r.Get(ctx, NamespacedName, res); err != nil {
+		klog.Errorf("cannot get restriction with name %s: %+v", NamespacedName, err)
+	}
+	klog.Infof("get restriction info %+v", *res)
+
+	res.Status.Status = resv1.Bind
+	res.ObjectMeta.Labels[api.ObjectMeta.Name] = "true"
+	isFisrtBind := true
+	for index, v := range res.Spec.Apis {
+		if v.ID == api.ObjectMeta.Name {
+			res.Spec.Apis[index].Result = resv1.BINDING
+			isFisrtBind = false
+			break
+		}
+	}
+	if isFisrtBind == true {
+		res.Spec.Apis = append(res.Spec.Apis, resv1.Api{
+			ID:       api.ObjectMeta.Name,
+			Name:     api.Spec.Name,
+			KongID:   api.Spec.KongApi.KongID,
+			Result:   resv1.BINDING,
+			BindedAt: util.Now(),
+		})
+	}
+	klog.Infof("update restriction apis: %+v", res.Spec.Apis)
+	if err := r.Update(ctx, res); err != nil {
+		klog.Errorf("update res error: %+v", err)
+	}
 }
 
 func (r *ApiReconciler) SetupWithManager(mgr ctrl.Manager) error {
