@@ -48,7 +48,10 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 								return nil, fmt.Errorf("__partition__ type error")
 							}
 						case "__key__":
-							m.Key = v
+							m.Key,ok = v.(string)
+							if !ok {
+								return nil, fmt.Errorf("__key__ type error")
+							}
 						case "__row__":
 						case "__value__":
 							//如果是字节数组，需要解码
@@ -67,6 +70,8 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 						case "__event_time__":
 						case "__sequence_id__":
 						case "__properties__":
+						case "__count__":
+							m.Total = v.(int)
 						default:
 							if v == nil {
 								continue
