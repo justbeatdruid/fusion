@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 	"github.com/chinamobile/nlpt/crds/clientauth/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
@@ -27,6 +28,7 @@ type Clientauth struct {
 	Status        v1.Status      `json:"status"`
 	Message       string         `json:"message"`
 	Description   string         `json:"description"` //描述
+	IsPermanent   bool           `json:"isPermanent"` //token是否永久有效
 }
 
 // only used in creation options
@@ -82,7 +84,7 @@ func ToModel(obj *v1.Clientauth) *Clientauth {
 }
 
 func ToListModel(items *v1.ClientauthList) []*Clientauth {
-	var app []*Clientauth = make([]*Clientauth, len(items.Items))
+	var app  = make([]*Clientauth, len(items.Items))
 	for i := range items.Items {
 		app[i] = ToModel(&items.Items[i])
 	}
@@ -92,15 +94,16 @@ func ToListModel(items *v1.ClientauthList) []*Clientauth {
 func (a *Clientauth) Validate() error {
 	for k, v := range map[string]string{
 		"name": a.Name,
-		"exp":  string(a.ExpireAt),
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
-
+	if a.ExpireAt == 0 && a.IsPermanent==false{
+		return errors.New("ExpireAt is null")
+	}
 	//校验时间，token的过期时间必须大于当前时间
-	if a.ExpireAt <= time.Now().Unix() {
+	if a.ExpireAt != 0 && a.ExpireAt <= time.Now().Unix() {
 		return fmt.Errorf("token expire time:%d must be greater than now", a.ExpireAt)
 	}
 
