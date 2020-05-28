@@ -62,6 +62,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.POST("/datasources/{id}/sql").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("test datasource if sql correct").
+		To(r.testSql).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.GET("/datasources/{id}/tables").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -166,6 +174,11 @@ func (r *router) getField(request *restful.Request, response *restful.Response) 
 
 func (r *router) testConnection(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.Ping(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) testSql(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.Query(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 
