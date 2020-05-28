@@ -34,7 +34,13 @@ func NewHandler(cfg *config.Config) *Handler {
 }
 
 func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Handler, error) {
-	lister := cache.StartCache(h.config.GetDynamicClient(), h.config.Database)
+	var lister *cache.Listers
+	if h.config.SyncMode {
+		lister = cache.StartCache(h.config.GetDynamicClient(), h.config.Database)
+		return restful.NewContainer(), nil
+	} else {
+		lister = cache.StartCache(h.config.GetDynamicClient(), nil)
+	}
 	//TODO cache will be used in service
 
 	wsContainer := restful.NewContainer()

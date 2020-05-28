@@ -11,6 +11,9 @@ import (
 var gvm = make(map[string]cache.ResourceEventHandlerFuncs)
 
 func initGVM(db *database.DatabaseConnection) {
+	if db == nil {
+		return
+	}
 	for _, g := range gvs {
 		var addFunc, deleteFunc func(interface{}) error
 		var updateFunc func(o, n interface{}) error
