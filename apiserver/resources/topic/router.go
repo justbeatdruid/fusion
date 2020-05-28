@@ -137,13 +137,6 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	ws.Route(ws.DELETE("/topics/applications/{app-id}").
-		Consumes(restful.MIME_JSON).
-		Produces(restful.MIME_JSON).
-		Doc("batch release topics from application").
-		To(r.batchReleaseTopics).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
-		Do(returns200, returns500))
 }
 
 func (r *router) createTopic(request *restful.Request, response *restful.Response) {
@@ -217,11 +210,6 @@ func (r *router) addPartitionsOfTopic(request *restful.Request, response *restfu
 }
 
 func (r *router) batchBindTopics(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.BatchBindOrReleaseApi("bind", request)
-	response.WriteHeaderAndEntity(code, result)
-}
-
-func (r *router) batchReleaseTopics(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.BatchBindOrReleaseApi("release", request)
+	code, result := r.controller.BatchBindOrReleaseApi(request)
 	response.WriteHeaderAndEntity(code, result)
 }

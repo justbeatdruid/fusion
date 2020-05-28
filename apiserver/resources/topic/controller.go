@@ -195,9 +195,9 @@ func (c *controller) GetTopic(req *restful.Request) (int, *GetResponse) {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
-			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 			Data:      nil,
-			Detail:    "",
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
 	if tp, err := c.service.GetTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
@@ -223,8 +223,8 @@ func (c *controller) DoStatisticsOnTopics(req *restful.Request) (int, *Statistic
 		return http.StatusInternalServerError, &StatisticsResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
-			Message:   fmt.Sprintf("auth model error: %+v", err),
-			Detail:    "",
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
 	tp, err := c.service.ListTopic(util.WithNamespace(authUser.Namespace))
@@ -319,9 +319,9 @@ func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
-			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 			Data:      nil,
-			Detail:    "",
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
 	if topic, err := c.service.DeleteTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
@@ -349,9 +349,9 @@ func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
-			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 			Data:      nil,
-			Detail:    "",
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
 	if tp, err := c.service.ListTopic(util.WithNamespace(authUser.Namespace)); err != nil {
@@ -389,6 +389,7 @@ func (c *controller) ListTopic(req *restful.Request) (int, *ListResponse) {
 func (c *controller) ListTopicByField(req *restful.Request, tps []*service.Topic) []*service.Topic {
 	name := req.QueryParameter("name")
 	topicGroup := req.QueryParameter("topicGroup")
+	application := req.QueryParameter("application")
 	//Topic名称查询参数
 	if len(name) > 0 {
 		tps = c.ListTopicByTopicName(name, tps)
@@ -396,6 +397,10 @@ func (c *controller) ListTopicByField(req *restful.Request, tps []*service.Topic
 	//TopicGroup查询参数
 	if len(topicGroup) > 0 {
 		tps = c.ListTopicByTopicGroup(topicGroup, tps)
+	}
+
+	if len(application) > 0 {
+		tps = c.ListTopicByApplication(application, tps)
 	}
 
 	return tps
@@ -651,6 +656,20 @@ func (c *controller) ListTopicByTopicGroup(topicGroup string, tps []*service.Top
 	return tpsResult
 }
 
+func (c *controller) ListTopicByApplication(application string, tps []*service.Topic) []*service.Topic {
+	var tpsResult []*service.Topic
+
+	for _, tp := range tps {
+		for _, app := range tp.Applications {
+			if app.ID == application {
+				tpsResult = append(tpsResult, tp)
+				continue
+			}
+		}
+	}
+	return tpsResult
+}
+
 /*//通过topicGroup和topicName匹配topic
 func (c *controller) ListTopicByTopicGroupAndName(topicGroup string, topicName string, tps []*service.Topic) []*service.Topic {
 	var tpsResult []*service.Topic
@@ -716,9 +735,9 @@ func (c *controller) ExportTopics(req *restful.Request) (int, *ExportResponse) {
 			return http.StatusInternalServerError, &ExportResponse{
 				Code:      fail,
 				ErrorCode: tperror.ErrorAuthError,
-				Message:   fmt.Sprintf("list database error: %+v", err),
+				Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 				Data:      nil,
-				Detail:    "",
+				Detail:    fmt.Sprintf("auth model error: %+v", err),
 			}
 		} else {
 			//以坐标位置写入
@@ -766,9 +785,9 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 		return http.StatusInternalServerError, &GrantResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
-			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 			Data:      nil,
-			Detail:    "",
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
 	if tp, err := c.service.GrantPermissions(id, authUserId, actions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
@@ -795,9 +814,9 @@ func (c *controller) DeletePermissions(req *restful.Request) (int, *DeleteRespon
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
-			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 			Data:      nil,
-			Detail:    "",
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
 	if topic, err := c.service.DeletePermissions(id, authUserId, util.WithNamespace(authUser.Namespace)); err != nil {
@@ -839,9 +858,9 @@ func (c *controller) ListUsers(req *restful.Request) (int, *ListResponse) {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
-			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 			Data:      nil,
-			Detail:    "",
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
 	tp, err := c.service.GetTopic(topicId, util.WithNamespace(authUser.Namespace))
@@ -932,9 +951,9 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
-			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 			Data:      nil,
-			Detail:    "",
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
 	//判断topic和topicGroup是否存在
@@ -1177,9 +1196,9 @@ func (c *controller) AddPartitionsOfTopic(req *restful.Request) (int, *AddPartit
 		return http.StatusInternalServerError, &AddPartitions{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
-			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 			Data:      nil,
-			Detail:    "",
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
 	topic, err := c.service.AddPartitionsOfTopic(id, int(partitionNum), util.WithNamespace(authUser.Namespace))
@@ -1206,9 +1225,9 @@ func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *BindOrRe
 		return http.StatusInternalServerError, &BindOrReleaseResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
-			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 			Data:      nil,
-			Detail:    "",
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
 
@@ -1219,7 +1238,7 @@ func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *BindOrRe
 			ErrorCode: tperror.ErrorReadEntity,
 			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
 			Data:      nil,
-			Detail:    fmt.Sprintf("bind or release topics error: %+v ", err),
+			Detail:    fmt.Sprintf("bind or unbind topics error: %+v ", err),
 		}
 	}
 
@@ -1230,12 +1249,18 @@ func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *BindOrRe
 			ErrorCode: tperror.ErrorReadEntity,
 			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
 			Data:      nil,
-			Detail:    fmt.Sprintf("bind or release topics error: %+v", err),
+			Detail:    fmt.Sprintf("bind or unBind topics error: %+v", err),
 		}
 	}
 
 	if err := c.service.BatchBindOrRelease(appid, body.Operation, body.Topics, util.WithNamespace(authUser.Namespace)); err != nil {
-
+		return http.StatusInternalServerError, &BindOrReleaseResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorBindOrUnbindTopicError,
+			Message:   c.errMsg.Topic[tperror.ErrorBindOrUnbindTopicError],
+			Data:      nil,
+			Detail:    fmt.Sprintf("bind or unBind topics error: %+v", err),
+		}
 	}
 
 	return 0, nil

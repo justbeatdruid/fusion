@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/apiserver/kubernetes"
-	"github.com/chinamobile/nlpt/apiserver/resources/topic"
 	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
@@ -540,7 +539,7 @@ func (s *Service) getApplication(id, crdNamespace string) (*appv1.Application, e
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), app); err != nil {
 		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
-	klog.V(5).Infof("get v1.application: %+v", app)
+	//klog.V(5).Infof("get v1.application: %+v", app)
 	return app, nil
 }
 
@@ -569,19 +568,60 @@ func (s *Service) BatchBindApi(appid string, topics []BindInfo, opts ...util.OpO
 		if err != nil {
 			return fmt.Errorf("query topic by id error: %+v", err)
 		}
-		for _, boundAppID := range tp.Spec.AppIDs {
-			if boundAppID == appid {
+		for _, boundAppID := range tp.Spec.Applications {
+			if boundAppID.ID == appid {
 				return fmt.Errorf("application has already bound to topic")
 			}
 
 		}
-
-		tp.Spec.AppIDs = append(tp.Spec.AppIDs, appid)
-
+		application := v1.Application{
+			ID:     appid,
+			Status: v1.Binding,
+		}
+		tp.Spec.Applications = append(tp.Spec.Applications, application)
+		tp.Status.BindStatus = v1.BindingOrUnBinding
+		if tp, err = s.UpdateStatus(tp); err != nil {
+			return fmt.Errorf("application bind topic failed, error: %+v", err)
+		}
 	}
-
-
+	return nil
 }
 
 func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.OpOption) error {
+	op := util.OpList(opts...)
+
+	app, err := s.getApplication(appid,op.Namespace())
+	if err != nil {
+		return fmt.Errorf("get application(%+v) error: %+v", appid, err)
+	}
+
+	for _, t := range topics {
+		tp, err := s.Get(t.ID,  opts...)
+		if err != nil {
+			return fmt.Errorf("query topic by id(%+v) error: %+v", t.ID, err)
+		}
+
+		var topicIsBound = false
+		for _, boundAppID := range tp.Spec.Applications {
+			if boundAppID.ID == appid {
+				topicIsBound = true
+				break
+			}
+		}
+
+		if !topicIsBound {
+			return fmt.Errorf("topic(%+v) does not bind the application(%+v)", tp.Spec.Name, app.Spec.Name)
+		}
+
+		application := v1.Application{
+			ID:     appid,
+			Status: v1.Unbinding,
+		}
+		tp.Spec.Applications = append(tp.Spec.Applications, application)
+		tp.Status.BindStatus = v1.BindingOrUnBinding
+		if tp, err = s.UpdateStatus(tp); err != nil {
+			return fmt.Errorf("application unbind topic failed, error: %+v", err)
+		}
+	}
+	return nil
 }

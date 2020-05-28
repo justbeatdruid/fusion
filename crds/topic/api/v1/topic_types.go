@@ -30,20 +30,24 @@ type TopicSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Topic. Edit Topic_types.go to remove/update
-	Name         string       `json:"name"`
-	TopicGroup   string       `json:"topicGroup"`   //topic分组ID
-	PartitionNum int          `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
-	Partitioned  bool         `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
-	Persistent   bool         `json:"persistent"`   //是否持久化，默认为true，非必填
-	Url          string       `json:"url"`          //Topic url
-	Permissions  []Permission `json:"permissions"`
-	Stats        Stats        `json:"stats"`       //Topic的统计数据
-	AppIDs		 []string     `json:"appIDs"`     //已绑定的应用ID列表
-	Description  string       `json:"description"` //描述
-	DisplayStatus ShowStatus  `json:"disStatus"`
+	Name          string       `json:"name"`
+	TopicGroup    string       `json:"topicGroup"`   //topic分组ID
+	PartitionNum  int          `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
+	Partitioned   bool         `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
+	Persistent    bool         `json:"persistent"`   //是否持久化，默认为true，非必填
+	Url           string       `json:"url"`          //Topic url
+	Permissions   []Permission `json:"permissions"`
+	Stats         Stats        `json:"stats"`       //Topic的统计数据
+	Applications  []Application     `json:"applications"`      //已绑定的应用ID列表
+	Description   string       `json:"description"` //描述
+	DisplayStatus ShowStatus   `json:"disStatus"`
 
 }
 
+type Application struct {
+	ID string `json:"id"`
+	Status Status `json:"status"`
+}
 type Actions []string
 
 const (
@@ -70,6 +74,7 @@ type TopicStatus struct {
 	Status  Status `json:"status"`
 	Message string `json:"message"`
 	AuthorizationStatus Status  `json:"authorizationStatus"`
+	BindStatus Status `json:"bindStatus"`
 }
 
 type PermissionStatus struct {
@@ -98,6 +103,15 @@ const (
 	DeletingAuthorization = "deletingAuthorization"
 	DeleteAuthorizationFailed = "deleteAuthorizationFailed"
 	DeletedAuthorization = "deletedAuthorization"
+	BindingOrUnBinding = "bindingOrUnbinding"
+	Binding Status = "binding"
+	Bound Status = "bound"
+	BindFailed Status = "bindFailed"
+	Unbinding Status = "unBinding"
+	UnbindFailed Status = "unBindFailed"
+	UnbindSuccess Status = "unBindSuccess"
+
+
 )
 
 type ShowStatus string 
