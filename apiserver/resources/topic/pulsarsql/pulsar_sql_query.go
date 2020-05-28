@@ -59,10 +59,13 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 							if ok {
 								decoded, err := base64.StdEncoding.DecodeString(value)
 								if err != nil {
-									return nil, fmt.Errorf("base64 decode error: %s ", err)
+									//这种情况发送端直接发的string类型
+									m.Message = v
+									size = size + binary.Size(v)
+								}else {
+									m.Message = string(decoded)
+									size = size + binary.Size(decoded)
 								}
-								m.Message = string(decoded)
-								size = size + binary.Size(decoded)
 							} else {
 								m.Message = v
 								size = size + binary.Size(v)
