@@ -130,7 +130,8 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
         if topic.Status.AuthorizationStatus == nlptv1.Authorizing{
 			klog.Infof("Start Grant Topic: %+v", *topic)
 			//授权操作
-			for _, p := range topic.Spec.Permissions {
+			for i := 0 ; i < len(topic.Spec.Permissions); i++ {
+				p := topic.Spec.Permissions[i]
 				if p.Status.Status == nlptv1.Authorizing {
 					if err := r.Operator.GrantPermission(topic, &p); err != nil {
 						p.Status.Status = nlptv1.AuthorizeFailed
@@ -141,15 +142,70 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 						p.Status.Message = "success"
 						topic.Status.AuthorizationStatus = nlptv1.Authorized
 					}
+					topic.Spec.Permissions[i] = p
 				}
 			}
+
 			if err := r.Update(ctx, topic); err != nil {
 				klog.Errorf("Update Topic Failed: %+v", *topic)
 			}
 		}
 
+		if topic.Status.BindStatus == nlptv1.BindingOrUnBinding {
+			for i := 0; i < len(topic.Spec.Applications); i++ {
+				application := topic.Spec.Applications[i]
+				switch application.Status {
+				case nlptv1.Binding:
+					actions := make([]string, 0)
+					actions = append(actions, nlptv1.Consume)
+					actions = append(actions, nlptv1.Produce)
 
-		klog.Infof("Final Topic: %+v", *topic)
+					p := nlptv1.Permission{
+						AuthUserID:   "",
+						AuthUserName: application.ID,
+						Actions:      actions,
+					}
+					if err := r.Operator.GrantPermission(topic, &p); err != nil {
+						application.Status = nlptv1.BindFailed
+					} else {
+						application.Status = nlptv1.Bound
+						p.Status.Message = "success"
+					}
+				case nlptv1.Unbinding:
+					p := nlptv1.Permission{
+						AuthUserID:   "",
+						AuthUserName: application.ID,
+					}
+					if err := r.Operator.DeletePer(topic, &p);err != nil {
+						application.Status = nlptv1.UnbindFailed
+					} else {
+						application.Status = nlptv1.UnbindSuccess
+					}
+				}
+				topic.Spec.Applications[i] = application
+				if err := r.Update(ctx, topic); err != nil {
+					klog.Errorf("Update Topic Failed: %+v", *topic)
+				}
+			}
+
+			//处理解绑定的场景
+			var apps = make([]nlptv1.Application, 0)
+			for i := 0; i < len(topic.Spec.Applications); i++ {
+				application := topic.Spec.Applications[i]
+				if application.Status != nlptv1.UnbindSuccess {
+					apps = append(apps, application)
+				}
+			}
+
+			topic.Spec.Applications = apps
+			if err := r.Update(ctx, topic); err != nil {
+				klog.Errorf("Update Topic Failed: %+v", *topic)
+			}
+
+		}
+
+
+		//klog.Infof("Final Topic: %+v", *topic)
 	return ctrl.Result{}, nil
 }
 

@@ -39,6 +39,7 @@ type Topic struct {
 	Description  string       `json:"description"` //描述
 	ShowStatus   v1.ShowStatus       `json:"displayStatus"` //页面显示状态
 	AuthorizationStatus string  `json:"authorizationStatus"` //用户授权状态
+	Applications  []v1.Application `json:"applications"`  //绑定的应用列表
 }
 
 type Stats struct {
@@ -122,6 +123,10 @@ type Statistics struct {
 	MessageSize string `json:"MessageSize"`
 }
 
+type BindInfo struct {
+	ID string `json:"id"`
+}
+
 const (
 	Consume = "consume"
 	Produce = "produce"
@@ -199,6 +204,7 @@ func ToModel(obj *v1.Topic) *Topic {
 		Stats:        ToStatsModel(obj.Spec.Stats),
 		Description:  obj.Spec.Description,
 		ShowStatus:   v1.ShowStatusMap[obj.Status.Status],
+		Applications: obj.Spec.Applications,
 	}
 
 }
