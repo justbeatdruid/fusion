@@ -28,10 +28,16 @@ type controller struct {
 }
 
 const (
-	order        = `select * from (select row_number() over(order by __publish_time__ desc) __row__, * from pulsar."%s/%s"."%s" %s) as t where __row__ between %d and %d`
+	//order        = `select * from (select row_number() over(order by __publish_time__ desc) __row__, * from pulsar."%s/%s"."%s" %s) as t where __row__ between %d and %d`
 	messageIdSql = `WHERE "__message_id__" = '%s' AND "__partition__" = '%s'`
 	keySql       = `WHERE "__key__" = '%s'`
 	timeSql      = `WHERE "__publish_time__" BETWEEN timestamp '%s' AND timestamp '%s'`
+	order        = `WITH subquery_1 AS (
+    SELECT count("__message_id__") as count from pulsar."%s/%s"."%s" %s),
+subquery_2 AS (
+   select * from (select row_number() over(order by __publish_time__ desc) row, * from pulsar."%s/%s"."%s" %s) as t where row between %d and %d
+)   
+select * From subquery_1, subquery_2`
 )
 
 func newController(cfg *config.Config) *controller {
@@ -79,6 +85,8 @@ type MessageResponse = struct {
 	Message   string      `json:"message"`
 	Data      interface{} `json:"data"`
 	Detail    string      `json:"detail"`
+	TotalSize int         `json:"totalSize"`
+	Page      int         `json:"page"`
 }
 
 type StatisticsResponse = struct {
@@ -985,12 +993,12 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 		partition := idSplit[2]
 		messageId = strings.Join(append(idSplit[0:2], idSplit[3]), ",")
 		sql = fmt.Sprintf(messageIdSql, messageId, partition)
-		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, start, end)
+		sql = fmt.Sprintf(order, tenant,topicGroup,topic,sql,tenant, topicGroup, topic, sql, start, end)
 	}
 	//根据key查询topic信息
 	if len(key) > 0 {
 		sql = fmt.Sprintf(keySql, key)
-		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, start, end)
+		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, tenant, topicGroup, topic, sql, start, end)
 	}
 	//根据time查询topic信息
 	if len(startTime) > 0 && len(endTime) > 0 {
@@ -1027,9 +1035,10 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 		startTime = time.Unix(startTimeInt64, 0).Format("2006-01-02 15:04:05")
 		endTime = time.Unix(endTimeInt64, 0).Format("2006-01-02 15:04:05")
 		sql = fmt.Sprintf(timeSql, startTime, endTime)
-		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, start, end)
+		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql,tenant, topicGroup, topic, sql, start, end)
 	}
 	httpStatus, messageResponse = c.QueryTopicMessage(sql)
+    messageResponse.Page = int(p)
 	return httpStatus, messageResponse
 }
 func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
@@ -1050,6 +1059,7 @@ func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
 	return http.StatusOK, &MessageResponse{
 		Code: success,
 		Data: messages,
+		TotalSize: messages[0].Total,
 	}
 }
 
