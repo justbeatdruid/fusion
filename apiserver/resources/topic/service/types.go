@@ -94,7 +94,7 @@ type Messages struct {
 	Message      interface{} `json:"message"`
 	Size         int         `json:"size"`
 	Partition    float64     `json:"partition"`
-	Key          string      `json:"key"`
+	Key          interface{}     `json:"key"`
 	Total        int         `json:"total"`
 }
 type Message struct {
