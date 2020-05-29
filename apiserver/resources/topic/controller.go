@@ -85,7 +85,7 @@ type MessageResponse = struct {
 	Message   string      `json:"message"`
 	Data      interface{} `json:"data"`
 	Detail    string      `json:"detail"`
-	TotalSize int         `json:"totalSize"`
+	TotalSize interface{}         `json:"totalSize"`
 	Page      int         `json:"page"`
 }
 
@@ -1013,13 +1013,14 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 		} else if ok == 2 {
 			messageId = "(" + messageId + ")"
 		}
-		reg := `^\([0-9]{1,}\,[0-9]{1,}\,-1|[0-9]{1,},[0-9]{1,}\)$`
+		//reg := `^\([0-9]{1,}\,[0-9]{1,}\,-1|[0-9]{1,},[0-9]{1,}\)$`
 		//校验messageId的合法性
-		h, m, ok = c.QueryParamterValidate(reg, messageId)
-		if ok != 0 {
-			return h, m
-		}
-		//分区的第三个数字表示分区
+		//h, m, ok = c.QueryParamterValidate(reg, messageId)
+		//if ok != 0 {
+		//	return h, m
+		//}
+
+		/*第三个数字表示分区*/
 		idSplit := strings.Split(messageId, ",")
 		partition := idSplit[2]
 		messageId = strings.Join(append(idSplit[0:2], idSplit[3]), ",")
