@@ -105,7 +105,8 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 		//删除授权
 		if topic.Status.AuthorizationStatus == nlptv1.DeletingAuthorization{
-			for index, p := range topic.Spec.Permissions {
+			for i:=0;i<len(topic.Spec.Permissions);i++ {
+				p:=topic.Spec.Permissions[i]
 				if p.Status.Status == nlptv1.DeletingAuthorization{
 					if err := r.Operator.DeletePer(topic, &p); err != nil {
 						p.Status.Status = nlptv1.DeleteAuthorizationFailed
@@ -115,9 +116,10 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 						topic.Status.AuthorizationStatus = nlptv1.DeleteAuthorizationFailed
 					} else {
 						pers := topic.Spec.Permissions
-						topic.Spec.Permissions = append(pers[:index], pers[index+1:]...)
+						topic.Spec.Permissions = append(pers[:i], pers[i+1:]...)
 						//收回权限成功，删除标签
 						delete(topic.ObjectMeta.Labels, p.AuthUserID)
+						topic.Status.AuthorizationStatus = nlptv1.DeletedAuthorization
 					}
 				}
 			}
