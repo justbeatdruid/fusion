@@ -126,6 +126,27 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+	if s.SyncMode {
+		db, err := database.NewDatabaseConnection(s.Database.Enabled, s.Database.Type, s.Database.Host, s.Database.Port, s.Database.Username, s.Database.Password,
+			s.Database.Database, s.Database.Schema)
+		if err != nil {
+			return nil, fmt.Errorf("cannot connect to database: %+v", err)
+		}
+		casType := "cas"
+		if s.TenantEnabled {
+			casType = "tenant"
+		} else {
+			cache.SetGVs([]string{"apis", "applications", "applicationgroups", "applies", "datasources", "serviceunits", "serviceunitgroups"})
+		}
+		cas.SetConnectionInfo(casType, s.Cas.Host, s.Cas.Port)
+		return &appconfig.Config{
+			Client:     client,
+			Dynamic:    dynClient,
+			Kubeconfig: kubeconfig,
+			SyncMode:   s.SyncMode,
+			Database:   db,
+		}, nil
+	}
 
 	errConfig, err := s.ParseLocalConfig()
 	if err != nil {
