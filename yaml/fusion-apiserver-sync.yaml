@@ -40,9 +40,35 @@ spec:
         version: v0.1-alpha
     spec:
       serviceAccount: fusion-apiserver-sync
+      initContainers:
+      - image: registry.cmcc.com/library/mysql:5.7
+        name: init
+        command:
+        - sh
+        - -xc 
+        - |
+          database=fusion
+          while true; do
+            echo "Waiting for mysql to come up"
+            mysqladmin ping -hfusion-mysql -P3306 -uroot -p${MYSQL_ROOT_PASSWORD} > /dev/null 2>&1 && break
+            sleep 1s
+          done
+          mysql -hfusion-mysql -P3306 -uroot -p${MYSQL_ROOT_PASSWORD} <<EOF
+          SET character_set_client=utf8;
+          SET character_set_connection=utf8;
+          SET character_set_database=utf8;
+          SET character_set_results=utf8;
+          CREATE DATABASE IF NOT EXISTS ${database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+          EOF
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+             secretKeyRef:
+               name: mysql-secret
+               key: password
       containers:
       - command:
-        - fusion-apiserver-sync
+        - fusion-apiserver
         - --v=5
         - --dataservice-data-host=10.160.32.5
         - --tenant-enabled=true
