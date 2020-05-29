@@ -278,7 +278,7 @@ func ToDispatchRateModel(obj *v1.Policies) (map[string]SubscribeRate, map[string
 	tRate := make(map[string]DispatchRate)
 	if obj != nil && obj.TopicDispatchRate != nil {
 		for k, v := range *obj.TopicDispatchRate {
-			sRate[k] = DispatchRate{
+			tRate[k] = DispatchRate{
 				DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
 				DispatchThrottlingRateInByte: v.DispatchThrottlingRateInByte,
 				RelativeToPublishRate:        v.RelativeToPublishRate,
