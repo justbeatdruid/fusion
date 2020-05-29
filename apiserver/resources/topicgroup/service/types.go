@@ -36,6 +36,7 @@ type Topicgroup struct {
 	Name        string        `json:"name"` //Topic分组名称
 	Namespace   string        `json:"namespace"`
 	Description string        `json:"description"`        //描述
+	TopicCount  int 	      `json:"topicCount"`
 	Policies    *Policies     `json:"policies,omitempty"` //Topic分组的策略
 	CreatedAt   int64         `json:"createdAt"`          //创建时间
 	Users       user.Users    `json:"users"`
@@ -151,7 +152,7 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 
 	crd.Spec = v1.TopicgroupSpec{
 		Name:        app.Name,
-		Policies:    ToPolicesApi(app.Policies),
+		//Policies:    ToPolicesApi(app.Policies),
 		Description: app.Description,
 	}
 
@@ -598,10 +599,10 @@ func (a *Topicgroup) Validate() error {
 		}
 	}
 
-	p := a.Policies
-	if err := p.Validate(); err != nil {
-		return err
-	}
+	//p := a.Policies
+	//if err := p.Validate(); err != nil {
+	//	return err
+	//}
 	a.ID = names.NewID()
 	return nil
 }
