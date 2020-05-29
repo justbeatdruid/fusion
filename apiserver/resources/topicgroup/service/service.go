@@ -68,9 +68,16 @@ func (s *Service) ListTopicgroup(opts ...util.OpOption) ([]*Topicgroup, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
-	return ToListModel(tgs), nil
+	return s.ToListModel(tgs), nil
 }
-
+func (s *Service) ToListModel(items *v1.TopicgroupList) []*Topicgroup {
+	var app = make([]*Topicgroup, len(items.Items))
+	for i := range items.Items {
+		app[i] = ToModel(&items.Items[i])
+		app[i].TopicCount = s.GetTopicCountOfTopicgroup(app[i].Name, util.WithNamespace(app[i].Namespace))
+	}
+	return app
+}
 func (s *Service) SearchTopicgroup(tgList []*Topicgroup, opts ...util.OpOption) ([]*Topicgroup, error) {
 
 	nameLike := util.OpList(opts...).NameLike()
@@ -176,11 +183,20 @@ func (s *Service) listTopics(topicName string) ([]*service.Topic, error) {
 	return tpsResult, nil
 }
 
-func (s *Service) GetTopicCountOfTopicgroup(id string, opts ...util.OpOption) int {
-	tps, err := s.getTopicsCrd(id)
+func (s *Service) GetTopicCountOfTopicgroup(name string, opts ...util.OpOption) int {
+	options := metav1.ListOptions{}
+	options.LabelSelector = fmt.Sprintf("%s=%s", LabelTopicgroup, name)
+	//查询所有的topic
+	op := util.OpList(opts...)
+	crd, err := s.topicClient.Namespace(op.Namespace()).List(options)
 	if err != nil {
 		return 0
 	}
+	tps := &topicv1.TopicList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
+		return 0
+	}
+
 	return len(tps.Items)
 }
 func (s *Service) getTopicsCrd(id string, opts ...util.OpOption) (*topicv1.TopicList, error) {
