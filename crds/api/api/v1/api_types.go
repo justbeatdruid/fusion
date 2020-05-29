@@ -312,6 +312,8 @@ type ApiStatus struct {
 	ReleasedAt       metav1.Time   `json:"releasedAt"`
 	ApplicationCount int           `json:"applicationCount"`
 	CalledCount      int           `json:"calledCount"`
+	FailedCount      int           `json:"failedCount"`
+	LatencyCount     int           `json:"latencyCount"`
 	Message          string        `json:"msg"`
 
 	Applications map[string]ApiApplicationStatus `json:"applications"`
