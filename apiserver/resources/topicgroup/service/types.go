@@ -187,6 +187,9 @@ func ToModel(obj *v1.Topicgroup) *Topicgroup {
 }
 
 func ToPolicesModel(obj *v1.Policies) *Policies {
+	if obj == nil {
+		return nil
+	}
 	cRate, sRate, tRate := ToDispatchRateModel(obj)
 	bMap := ToBacklogQuotaModel(obj)
 	managedLedgerMaxMarkDeleteRate := ToManagedLedgerMaxMarkDeleteRateModel(obj)
@@ -251,7 +254,7 @@ func ToBacklogQuotaModel(obj *v1.Policies) map[string]BacklogQuota {
 
 func ToDispatchRateModel(obj *v1.Policies) (map[string]SubscribeRate, map[string]DispatchRate, map[string]DispatchRate) {
 	cRate := make(map[string]SubscribeRate)
-	if obj.ClusterSubscribeRate != nil {
+	if obj != nil && obj.ClusterSubscribeRate != nil {
 		for k, v := range *obj.ClusterSubscribeRate {
 			cRate[k] = SubscribeRate{
 				SubscribeThrottlingRatePerConsumer: v.SubscribeThrottlingRatePerConsumer,
@@ -261,7 +264,7 @@ func ToDispatchRateModel(obj *v1.Policies) (map[string]SubscribeRate, map[string
 	}
 
 	sRate := make(map[string]DispatchRate)
-	if obj.SubscriptionDispatchRate != nil {
+	if obj != nil && obj.SubscriptionDispatchRate != nil {
 		for k, v := range *obj.SubscriptionDispatchRate {
 			sRate[k] = DispatchRate{
 				DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
@@ -273,7 +276,7 @@ func ToDispatchRateModel(obj *v1.Policies) (map[string]SubscribeRate, map[string
 	}
 
 	tRate := make(map[string]DispatchRate)
-	if obj.TopicDispatchRate != nil {
+	if obj != nil && obj.TopicDispatchRate != nil {
 		for k, v := range *obj.TopicDispatchRate {
 			sRate[k] = DispatchRate{
 				DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,

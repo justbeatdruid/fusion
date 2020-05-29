@@ -175,6 +175,14 @@ func (s *Service) listTopics(topicName string) ([]*service.Topic, error) {
 	}
 	return tpsResult, nil
 }
+
+func (s *Service) GetTopicCountOfTopicgroup(id string, opts ...util.OpOption) int {
+	tps, err := s.getTopicsCrd(id)
+	if err != nil {
+		return 0
+	}
+	return len(tps.Items)
+}
 func (s *Service) getTopicsCrd(id string, opts ...util.OpOption) (*topicv1.TopicList, error) {
 	op := util.OpList(opts...)
 	tg, err := s.GetTopicgroup(id, opts...)
