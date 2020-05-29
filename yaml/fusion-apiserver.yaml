@@ -101,17 +101,18 @@ spec:
         - --cas-port=8091
         - --audit-host=fusion-auditlog
         - --audit-port=6868
-        - --pulsar-host=10.160.32.24
-        - --pulsar-port=30003
+        - --pulsar-host=pulsar-proxy.pulsar
+        - --pulsar-port=6650
         - --pulsar-auth-enable=true
-        - --presto-host=10.160.32.24
-        - --presto-port=30004
+        - --presto-host=pulsar-proxy.pulsar
+        - --presto-port=8081
         - --etcd-endpoints=http://fusion-etcd-0.fusion-etcd:2379,http://fusion-etcd-1.fusion-etcd:2379,http://fusion-etcd-2.fusion-etcd:2379
         - --database-host=fusion-mysql
         - --database-port=3306
         - --database-username=root
         - --database-password=123456
         - --database-databasename=fusion
+        - --sync-mode=false
         env:
         - name: MY_POD_NAMESPACE
           valueFrom:
