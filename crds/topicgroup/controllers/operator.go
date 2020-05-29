@@ -30,7 +30,7 @@ const (
 	messageTTLSuffix                  = "/messageTTL"
 	retentionSuffix                   = "/retention"
 	deduplicationSuffix               = "/deduplication"           //Enable or disable broker side deduplication for all topics in a namespace
-	isAllowAutoUpdateSchemaSuffix     = "/isAllowAutoUpdateSchema" //Update flag of whether allow auto update schema
+	isAllowAutoUpdateSchemaSuffix     = "/isAllowAutoUpdateSchema" //UpdateFailed flag of whether allow auto update schema
 	schemaValidationEnforcedSuffix    = "/schemaValidationEnforced"
 	maxConsumersPerSubscriptionSuffix = "/maxConsumersPerSubscription"
 	maxConsumersPerTopicSuffix        = "/maxConsumersPerTopic"
@@ -45,6 +45,7 @@ const (
 	subscribeRateSuffix               = "/subscribeRate"
 	subscriptionAuthModeSuffix        = "/subscriptionAuthMode"
 	subscriptionDispatchRateSuffix    = "/subscriptionDispatchRate"
+	runtimeConfigurationUrl = "/admin/v2/brokers/runtime/configuration"
 
 	clusters     = "/admin/v2/clusters"
 	tenants      = "/admin/v2/tenants"
@@ -103,7 +104,7 @@ func (r *Operator) CreateNamespace(namespace *v1.Topicgroup) error {
 	request := r.GetHttpRequest()
 	url := r.getUrl(namespace)
 
-	response, _, err := request.Put(url).Send(namespace.Spec.Policies).End()
+	response, _, err := request.Put(url).Send("").End()
 	if response.StatusCode == http.StatusNoContent {
 		return nil
 	} else {
@@ -122,8 +123,8 @@ func (r *Operator) DeleteNamespace(namespace *v1.Topicgroup) error {
 		return nil
 	} else {
 		//TODO 报错404：{"reason":"Namespace public/test1 does not exist."}的时候应该如何处理
-		klog.Errorf("Delete Topicgroup error, error: %+v, response code: %+v", err, response.StatusCode)
-		return errors.New(fmt.Sprintf("%s:%d%s", "Delete Topicgroup error, response code", response.StatusCode, body))
+		klog.Errorf("DeleteFailed Topicgroup error, error: %+v, response code: %+v", err, response.StatusCode)
+		return errors.New(fmt.Sprintf("%s:%d%s", "DeleteFailed Topicgroup error, response code", response.StatusCode, body))
 	}
 }
 
@@ -242,6 +243,7 @@ func (r *Operator) AddTokenToHeader(request *gorequest.SuperAgent) *gorequest.Su
 
 func (r *Operator) GetHttpRequest() *gorequest.SuperAgent {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
+	request.Header.Add("Content-Type", "application/json")
 	return r.AddTokenToHeader(request)
 
 }
@@ -261,13 +263,14 @@ func (r *Operator) GetAllClusters() ([]string, error) {
 		return clusters, nil
 	}
 
-	return nil, fmt.Errorf("get all clusters error, response: %+v", response)
+	return nil, fmt.Errorf("get all clusters error, code: %+v, response: %+v", response.StatusCode, response)
 }
 
 //Get the list of existing tenants
 func (r *Operator) GetAllTenants() ([]string, error) {
 	request := r.GetHttpRequest()
 	url := fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, tenants)
+
 
 	var tenants = make([]string, 1)
 	response, _, errs := request.Get(url).EndStruct(&tenants)
@@ -280,7 +283,7 @@ func (r *Operator) GetAllTenants() ([]string, error) {
 		return tenants, nil
 	}
 
-	return nil, fmt.Errorf("get all tenants error, response: %+v", response)
+	return nil, fmt.Errorf("get all tenants error, code: %+v, response: %+v", response.StatusCode, response)
 }
 
 //Create tenant if not exist
@@ -327,6 +330,11 @@ func (r *Operator) CreateTenant(tenant string, clusters []string) error {
 	}
 
 	return fmt.Errorf("unable to create tenant, url: %+v, response: %+v", url, response)
+}
+
+//TODO 待补充
+func (r *Operator) GetRuntimeConfiguration() (*v1.RuntimeConfiguration, error) {
+	return nil, nil
 }
 
 func toCrdModel(policies *Policies) *v1.Policies {

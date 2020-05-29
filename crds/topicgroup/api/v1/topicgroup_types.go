@@ -28,10 +28,11 @@ type TopicgroupSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	Name          string     `json:"name"` //namespace名称
+	TopicsCount   int        `json:"topicsCount"` //绑定Topic数量
 	Policies      *Policies  `json:"policies,omitempty"`
 	Available     bool       `json:"available"`             //资源是否可用
 	Description   string     `json:"description,omitempty"` //描述
-	DisplayStatus ShowStatus `json:"disStatus"`
+	DisplayStatus ShowStatus `json:"disStatus"`  //界面显示状态
 }
 type Policies struct {
 	RetentionPolicies           *RetentionPolicies        `json:"retention_policies,omitempty"`     //消息保留策略
