@@ -1,0 +1,32 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fusion-kong-proxy
+spec:
+  template:
+    metadata:
+      name: fusion-kong-proxy
+    spec:
+      initContainers:
+      - name: wait-for-kong
+        image: registry.cmcc.com/library/busybox:latest
+        command: [ "/bin/sh", "-c", "until nc -zv kong-kong-admin 8001 -w1; do echo 'waiting for kong'; sleep 1; done" ]
+      containers:
+        - name: fusion-kong-proxy
+          image: registry.cmcc.com/library/curl:latest
+          args:
+          - /bin/sh
+          - -c
+          - |
+              curl -iXPOST http://10.160.32.24:30081/services -H 'Content-Type:application/json' -d '{"name":"proxy-fusion-portal","url":"http://fusion-portal:80"}'
+              curl -iXPOST http://10.160.32.24:30081/services/proxy-fusion-portal/routes -H 'Content-Type:application/json' -d '{"name":"path-fusion-portal","paths":["/"],"strip_path": false}'
+              curl -iXPOST http://10.160.32.24:30081/services -H 'Content-Type:application/json' -d '{"name":"proxy-prometheus-k8s","url":"http://prometheus-k8s.monitoring:9090"}'
+              curl -iXPOST http://10.160.32.24:30081/services/proxy-prometheus-k8s/routes -H 'Content-Type:application/json' -d '{"name":"path-prometheus-k8s","paths":["/api/v1/query"],"strip_path": false}'
+              curl -iXPOST http://10.160.32.24:30081/services -H 'Content-Type:application/json' -d '{"name":"proxy-fusion-apiserver","url":"http://fusion-apiserver:8001"}'
+              curl -iXPOST http://10.160.32.24:30081/services/proxy-fusion-apiserver/routes -H 'Content-Type:application/json' -d '{"name":"path-fusion-apiserver","paths":["/api/v1"],"strip_path": false}'
+              curl -iXPOST http://10.160.32.24:30081/routes/path-fusion-apiserver/plugins -H 'Content-Type:application/json' -d '{"name":"pre-function","config":{"functions":["local a=require\"socket.http\"local b=require\"ltn12\"local c=require\"cjson.safe\"local d={}local e=kong.request.get_header(\"token\")kong.log(\"Get request token: \",e)local f=kong.request.get_header(\"isManager\")kong.log(\"Get isManager: \",f)local g=ngx.var.upstream_uri;kong.log(\"Get request path: \",g)local h=kong.request.get_method()kong.log(\"Get request method: \",h)local i=kong.request.get_header(\"managerGroupUuid\")kong.log(\"Get request group uuid is:\",i)local j=string.format(\"?path=%s&method=%s&isManager=%s\",g,h,f)local k=\"http://tenant-manager:8091/tenant-manager/sys/support/checkIdentity\"..j;kong.log(\"Check identity url is: \",k)local l,l,m=a.request{url=k,method=\"GET\",headers={[\"token\"]=e},sink=b.sink.table(d)}if type(d)~=\"table\"then kong.response.exit(500,{message=\"Check identity response_body is not table\",code=500})end;local n=table.concat(d)local o,p=c.decode(n)if p then kong.log(\"Failed to decode check identity response body: \",p)kong.response.exit(500,{message=p,code=500})end;local q=o.code;kong.log(\"Check identity return code is:\",q)local r=o.msg;kong.log(\"Check identity return msg is:\",r)if q~=0 then kong.log(\"Check identity return code is: \",q)kong.response.exit(500,{message=o.msg,code=q})end;local s=o.userId;kong.log(\"Check identity return userId is:\",s)kong.service.request.add_header(\"userId\",s)kong.service.request.add_header(\"tenantId\",i)kong.log(\"=======Check identity end=======\") "]}}'
+              curl -iXPOST http://10.160.32.24:30081/services -H 'Content-Type:application/json' -d '{"name":"proxy-fusion-auditlog","url":"http://fusion-auditlog:6868"}'
+              curl -iXPOST http://10.160.32.24:30081/services/proxy-fusion-auditlog/routes -H 'Content-Type:application/json' -d '{"name":"path-fusion-auditlog","paths":["/apis/v1/auditlogs"],"strip_path": false}'
+              curl -iXPOST http://10.160.32.24:30081/services -H 'Content-Type:application/json' -d '{"name":"proxy-tenant-manager","url":"http://tenant-manager:8091"}'
+              curl -iXPOST http://10.160.32.24:30081/services/proxy-tenant-manager/routes -H 'Content-Type:application/json' -d '{"name":"path-tenant-manager","paths":["/tenant-manager"],"strip_path": false}'
+      restartPolicy: OnFailure
