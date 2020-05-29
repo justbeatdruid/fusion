@@ -145,6 +145,13 @@ func (r *Operator) GetNamespacePolicies(namespace *v1.Topicgroup) (*v1.Policies,
 	}
 
 	polices.Persistence = persistence
+
+	retention, err := r.GetRetention(namespace)
+	if err != nil {
+		return nil, fmt.Errorf("get namespace policy error: %+v or http code is not success: %+v", errs, response.StatusCode)
+	}
+
+	polices.RetentionPolicies = retention
 	return toCrdModel(polices), nil
 
 }
@@ -216,6 +223,18 @@ func (r *Operator) SetRetention(namespace *v1.Topicgroup) error {
 		return fmt.Errorf("set retention error: %+v or http code is not success: %+v", errs, response.StatusCode)
 	}
 	return nil
+}
+
+func (r *Operator) GetRetention(namespace *v1.Topicgroup) (*v1.RetentionPolicies, error) {
+	request := r.GetHttpRequest()
+	url := r.getUrl(namespace) + retentionSuffix
+
+	rentention := &v1.RetentionPolicies{}
+	response, _, errs := request.Get(url).Send("").EndStruct(rentention)
+	if response.StatusCode != http.StatusOK || errs != nil {
+		return nil, fmt.Errorf("get retention error: %+v or http code is not success: %+v", errs, response.StatusCode)
+	}
+	return rentention, nil
 }
 func (r *Operator) SetBacklogQuota(namespace *v1.Topicgroup) error {
 	request := r.GetHttpRequest()
