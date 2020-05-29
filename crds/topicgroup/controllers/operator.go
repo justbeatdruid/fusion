@@ -243,7 +243,7 @@ func (r *Operator) AddTokenToHeader(request *gorequest.SuperAgent) *gorequest.Su
 
 func (r *Operator) GetHttpRequest() *gorequest.SuperAgent {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
-	request.Header.Add("Content-Type", "application/json")
+	//request.Header.Add("Content-Type", "application/json")
 	return r.AddTokenToHeader(request)
 
 }
