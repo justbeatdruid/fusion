@@ -10,7 +10,6 @@ import (
 func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 	var (
 		M     []service.Messages
-		ok    bool
 		state string
 	)
 	response, err := c.CreateQueryRequest(sql)
