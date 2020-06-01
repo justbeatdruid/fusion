@@ -132,6 +132,30 @@ func GetUsersFromLabels(labels map[string]string) Users {
 	return u
 }
 
+func GetCasUsers(labels map[string]string) []CasData {
+	u := GetUsersFromLabels(labels)
+	res := []CasData{{
+		ID:   intstr.FromString(u.Owner.ID),
+		Name: idnames(u.Owner.ID),
+		Role: Owner,
+	}}
+	for _, usr := range u.Managers {
+		res = append(res, CasData{
+			ID:   intstr.FromString(usr.ID),
+			Name: idnames(usr.ID),
+			Role: Manager,
+		})
+	}
+	for _, usr := range u.Members {
+		res = append(res, CasData{
+			ID:   intstr.FromString(usr.ID),
+			Name: idnames(usr.ID),
+			Role: Member,
+		})
+	}
+	return res
+}
+
 func GetUserCountFromLabels(labels map[string]string) int {
 	count := 0
 	for k, _ := range labels {
@@ -321,6 +345,7 @@ type Data struct {
 type Role string
 
 const (
+	Owner   = "owner"
 	Manager = "manager"
 	Member  = "member"
 )
@@ -336,8 +361,17 @@ type Wrapped struct {
 type UserResponse = Wrapped
 type UserRequest = Wrapped
 
+type ListResponse struct {
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Detail    string      `json:"detail"`
+	Message   string      `json:"message"`
+	Data      interface{} `json:"data,omitempty"`
+}
+
 type CasData struct {
 	ID   intstr.IntOrString `json:"id"`
+	Name string             `json:"name"`
 	Role Role               `json:"role"`
 }
 
@@ -353,4 +387,17 @@ func ToData(c *CasData) (*Data, error) {
 		ID:   id,
 		Role: c.Role,
 	}, nil
+}
+
+type UserList []CasData
+
+func (ul UserList) Len() int {
+	return len(ul)
+}
+
+func (ul UserList) GetItem(i int) (interface{}, error) {
+	if i >= len(ul) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return ul[i], nil
 }

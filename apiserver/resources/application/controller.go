@@ -532,6 +532,52 @@ func (c *controller) ChangeUser(req *restful.Request) (int, *user.UserResponse) 
 	}
 }
 
+func (c *controller) GetUsers(req *restful.Request) (int, *user.ListResponse) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	id := req.PathParameter("id")
+	if len(id) == 0 {
+		return http.StatusInternalServerError, &user.ListResponse{
+			Code:      1,
+			ErrorCode: "002000014",
+			Message:   c.errMsg.Application["002000014"],
+			Detail:    "id in path parameter is null",
+		}
+	}
+	_, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &user.ListResponse{
+			Code:      1,
+			ErrorCode: "002000003",
+			Message:   c.errMsg.Application["002000003"],
+			Detail:    "auth model error",
+		}
+	}
+	if ul, err := c.service.GetUsers(id); err != nil {
+		return http.StatusInternalServerError, &user.ListResponse{
+			Code:      2,
+			ErrorCode: "000000001",
+			Message:   c.errMsg.Application["000000001"],
+			Detail:    fmt.Errorf("get application user error: %+v", err).Error(),
+		}
+	} else {
+		data, err := util.PageWrap(ul, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &user.ListResponse{
+				Code:      1,
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
+				ErrorCode: "002000009",
+				Message:   c.errMsg.Application["002000009"],
+			}
+		}
+		return http.StatusOK, &user.ListResponse{
+			Code:      0,
+			ErrorCode: "0",
+			Data:      data,
+		}
+	}
+}
+
 func (c *controller) DoStatisticsOncApps(req *restful.Request) (int, *StatisticsResponse) {
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
