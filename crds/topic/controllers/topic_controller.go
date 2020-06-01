@@ -82,7 +82,7 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			}
 		} else {
 			//删除数据
-			if err = r.Delete(ctx, topic);err!=nil{
+			if err = r.Delete(ctx, topic); err != nil {
 				klog.Errorf("delete Topic Failed: %+v", *topic)
 			}
 		}
@@ -103,111 +103,109 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
-		//删除授权
-		if topic.Status.AuthorizationStatus == nlptv1.DeletingAuthorization{
-			for i:=0;i<len(topic.Spec.Permissions);i++ {
-				p:=topic.Spec.Permissions[i]
-				if p.Status.Status == nlptv1.DeletingAuthorization{
-					if err := r.Operator.DeletePer(topic, &p); err != nil {
-						p.Status.Status = nlptv1.DeleteAuthorizationFailed
-						p.Status.Message = fmt.Sprintf("revoke permission error: %+v", err)
-						//删除失败，将标签重置为true
-						topic.ObjectMeta.Labels[p.AuthUserID] = "true"
-						topic.Status.AuthorizationStatus = nlptv1.DeleteAuthorizationFailed
-					} else {
-						pers := topic.Spec.Permissions
-						topic.Spec.Permissions = append(pers[:i], pers[i+1:]...)
-						//收回权限成功，删除标签
-						delete(topic.ObjectMeta.Labels, p.AuthUserID)
-						topic.Status.AuthorizationStatus = nlptv1.DeletedAuthorization
-					}
+	//删除授权
+	if topic.Status.AuthorizationStatus == nlptv1.DeletingAuthorization {
+		for i := 0; i < len(topic.Spec.Permissions); i++ {
+			p := topic.Spec.Permissions[i]
+			if p.Status.Status == nlptv1.DeletingAuthorization {
+				if err := r.Operator.DeletePer(topic, &p); err != nil {
+					p.Status.Status = nlptv1.DeleteAuthorizationFailed
+					p.Status.Message = fmt.Sprintf("revoke permission error: %+v", err)
+					//删除失败，将标签重置为true
+					topic.ObjectMeta.Labels[p.AuthUserID] = "true"
+					topic.Status.AuthorizationStatus = nlptv1.DeleteAuthorizationFailed
+				} else {
+					pers := topic.Spec.Permissions
+					topic.Spec.Permissions = append(pers[:i], pers[i+1:]...)
+					//收回权限成功，删除标签
+					delete(topic.ObjectMeta.Labels, p.AuthUserID)
+					topic.Status.AuthorizationStatus = nlptv1.DeletedAuthorization
 				}
 			}
+		}
+		if err := r.Update(ctx, topic); err != nil {
+			klog.Errorf("Update Topic Failed: %+v", *topic)
+		}
+	}
+
+	if topic.Status.AuthorizationStatus == nlptv1.Authorizing {
+		klog.Infof("Start Grant Topic: %+v", *topic)
+		//授权操作
+		for i := 0; i < len(topic.Spec.Permissions); i++ {
+			p := topic.Spec.Permissions[i]
+			if p.Status.Status == nlptv1.Authorizing {
+				if err := r.Operator.GrantPermission(topic, &p); err != nil {
+					p.Status.Status = nlptv1.AuthorizeFailed
+					p.Status.Message = fmt.Sprintf("grant permission error: %+v", err)
+					topic.Status.AuthorizationStatus = nlptv1.AuthorizeFailed
+				} else {
+					p.Status.Status = nlptv1.Authorized
+					p.Status.Message = "success"
+					topic.Status.AuthorizationStatus = nlptv1.Authorized
+				}
+				topic.Spec.Permissions[i] = p
+			}
+		}
+
+		if err := r.Update(ctx, topic); err != nil {
+			klog.Errorf("Update Topic Failed: %+v", *topic)
+		}
+	}
+
+	if topic.Status.BindStatus == nlptv1.BindingOrUnBinding {
+		for i := 0; i < len(topic.Spec.Applications); i++ {
+			application := topic.Spec.Applications[i]
+			switch application.Status {
+			case nlptv1.Binding:
+				actions := make([]string, 0)
+				actions = append(actions, nlptv1.Consume)
+				actions = append(actions, nlptv1.Produce)
+
+				p := nlptv1.Permission{
+					AuthUserID:   "",
+					AuthUserName: application.ID,
+					Actions:      actions,
+				}
+				if err := r.Operator.GrantPermission(topic, &p); err != nil {
+					application.Status = nlptv1.BindFailed
+				} else {
+					application.Status = nlptv1.Bound
+					p.Status.Message = "success"
+				}
+			case nlptv1.Unbinding:
+				p := nlptv1.Permission{
+					AuthUserID:   "",
+					AuthUserName: application.ID,
+				}
+				if err := r.Operator.DeletePer(topic, &p); err != nil {
+					application.Status = nlptv1.UnbindFailed
+				} else {
+					application.Status = nlptv1.UnbindSuccess
+				}
+			}
+			topic.Spec.Applications[i] = application
 			if err := r.Update(ctx, topic); err != nil {
 				klog.Errorf("Update Topic Failed: %+v", *topic)
 			}
 		}
 
-
-        if topic.Status.AuthorizationStatus == nlptv1.Authorizing{
-			klog.Infof("Start Grant Topic: %+v", *topic)
-			//授权操作
-			for i := 0 ; i < len(topic.Spec.Permissions); i++ {
-				p := topic.Spec.Permissions[i]
-				if p.Status.Status == nlptv1.Authorizing {
-					if err := r.Operator.GrantPermission(topic, &p); err != nil {
-						p.Status.Status = nlptv1.AuthorizeFailed
-						p.Status.Message = fmt.Sprintf("grant permission error: %+v", err)
-						topic.Status.AuthorizationStatus = nlptv1.AuthorizeFailed
-					} else {
-						p.Status.Status = nlptv1.Authorized
-						p.Status.Message = "success"
-						topic.Status.AuthorizationStatus = nlptv1.Authorized
-					}
-					topic.Spec.Permissions[i] = p
-				}
-			}
-
-			if err := r.Update(ctx, topic); err != nil {
-				klog.Errorf("Update Topic Failed: %+v", *topic)
+		//处理解绑定的场景
+		var apps = make([]nlptv1.Application, 0)
+		for i := 0; i < len(topic.Spec.Applications); i++ {
+			application := topic.Spec.Applications[i]
+			if application.Status != nlptv1.UnbindSuccess {
+				apps = append(apps, application)
 			}
 		}
 
-		if topic.Status.BindStatus == nlptv1.BindingOrUnBinding {
-			for i := 0; i < len(topic.Spec.Applications); i++ {
-				application := topic.Spec.Applications[i]
-				switch application.Status {
-				case nlptv1.Binding:
-					actions := make([]string, 0)
-					actions = append(actions, nlptv1.Consume)
-					actions = append(actions, nlptv1.Produce)
-
-					p := nlptv1.Permission{
-						AuthUserID:   "",
-						AuthUserName: application.ID,
-						Actions:      actions,
-					}
-					if err := r.Operator.GrantPermission(topic, &p); err != nil {
-						application.Status = nlptv1.BindFailed
-					} else {
-						application.Status = nlptv1.Bound
-						p.Status.Message = "success"
-					}
-				case nlptv1.Unbinding:
-					p := nlptv1.Permission{
-						AuthUserID:   "",
-						AuthUserName: application.ID,
-					}
-					if err := r.Operator.DeletePer(topic, &p);err != nil {
-						application.Status = nlptv1.UnbindFailed
-					} else {
-						application.Status = nlptv1.UnbindSuccess
-					}
-				}
-				topic.Spec.Applications[i] = application
-				if err := r.Update(ctx, topic); err != nil {
-					klog.Errorf("Update Topic Failed: %+v", *topic)
-				}
-			}
-
-			//处理解绑定的场景
-			var apps = make([]nlptv1.Application, 0)
-			for i := 0; i < len(topic.Spec.Applications); i++ {
-				application := topic.Spec.Applications[i]
-				if application.Status != nlptv1.UnbindSuccess {
-					apps = append(apps, application)
-				}
-			}
-
-			topic.Spec.Applications = apps
-			if err := r.Update(ctx, topic); err != nil {
-				klog.Errorf("Update Topic Failed: %+v", *topic)
-			}
-
+		topic.Spec.Applications = apps
+		if err := r.Update(ctx, topic); err != nil {
+			klog.Errorf("Update Topic Failed: %+v", *topic)
 		}
 
+	}
 
-		//klog.Infof("Final Topic: %+v", *topic)
+	//klog.Infof("Final Topic: %+v", *topic)
 	return ctrl.Result{}, nil
 }
 

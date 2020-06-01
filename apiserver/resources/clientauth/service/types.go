@@ -84,7 +84,7 @@ func ToModel(obj *v1.Clientauth) *Clientauth {
 }
 
 func ToListModel(items *v1.ClientauthList) []*Clientauth {
-	var app  = make([]*Clientauth, len(items.Items))
+	var app = make([]*Clientauth, len(items.Items))
 	for i := range items.Items {
 		app[i] = ToModel(&items.Items[i])
 	}
@@ -99,7 +99,7 @@ func (a *Clientauth) Validate() error {
 			return fmt.Errorf("%s is null", k)
 		}
 	}
-	if a.ExpireAt == 0 && a.IsPermanent==false{
+	if a.ExpireAt == 0 && a.IsPermanent == false {
 		return errors.New("ExpireAt is null")
 	}
 	//校验时间，token的过期时间必须大于当前时间

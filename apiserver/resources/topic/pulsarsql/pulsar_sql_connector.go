@@ -105,7 +105,7 @@ func (c *Connector) CreateQueryRequest(sql string) (*Response, error) {
 	url := fmt.Sprintf("%s://%s:%d%s", protocol, c.Host, c.Port, statementUrl)
 
 	responseBody := &ResponseBody{}
-	request.Header.Add("Content-Type","application/json")
+	request.Header.Add("Content-Type", "application/json")
 	response, _, errs := request.Post(url).Type(gorequest.TypeText).Send(sql).EndStruct(responseBody)
 	if errs != nil {
 		return nil, fmt.Errorf("create pulsar sql request error: %+v", errs)
@@ -120,7 +120,7 @@ func (c *Connector) CreateQueryRequest(sql string) (*Response, error) {
 func (c *Connector) QueryMessage(url string) (*Response, error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
 	//request.Header.Set(headerKey, c.PrestoUser)
-	request.Header.Add("Content-Type","application/json")
+	request.Header.Add("Content-Type", "application/json")
 
 	responseBody := &ResponseBody{}
 	response, _, errs := request.Get(url).Retry(10, 1000*1000, http.StatusNotFound).EndStruct(responseBody)

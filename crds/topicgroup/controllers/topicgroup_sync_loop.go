@@ -56,7 +56,6 @@ func (r *TopicgroupSynchronizer) SyncTopicgroup() error {
 		}
 	}
 
-
 	return nil
 }
 
@@ -65,7 +64,7 @@ func (r *TopicgroupSynchronizer) Start(stop <-chan struct{}) error {
 	time.Sleep(time.Second * 10)
 	wait.Until(func() {
 		if err := r.SyncTopicgroup(); err != nil {
-			klog.Errorf( "sync topic stats error: %+v", err)
+			klog.Errorf("sync topic stats error: %+v", err)
 		}
 		// do not use wait.NerverStop
 	}, time.Second*60*5, stop)
