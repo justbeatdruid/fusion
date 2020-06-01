@@ -40,9 +40,9 @@ type ClientauthSpec struct {
 type ClientauthStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status  Status `json:"status"`
-	Message string `json:"message"`
-	AuthorizationStatus Status  `json:"authorizationStatus"`
+	Status              Status `json:"status"`
+	Message             string `json:"message"`
+	AuthorizationStatus Status `json:"authorizationStatus"`
 }
 
 const (

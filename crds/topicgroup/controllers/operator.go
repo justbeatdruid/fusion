@@ -45,7 +45,7 @@ const (
 	subscribeRateSuffix               = "/subscribeRate"
 	subscriptionAuthModeSuffix        = "/subscriptionAuthMode"
 	subscriptionDispatchRateSuffix    = "/subscriptionDispatchRate"
-	runtimeConfigurationUrl = "/admin/v2/brokers/runtime/configuration"
+	runtimeConfigurationUrl           = "/admin/v2/brokers/runtime/configuration"
 
 	clusters     = "/admin/v2/clusters"
 	tenants      = "/admin/v2/tenants"
@@ -142,7 +142,7 @@ func (r *Operator) isNamespacesExist(namespace *v1.Topicgroup) (bool, error) {
 		return true, nil
 	}
 
-	if response.StatusCode == http.StatusNotFound && (strings.Contains(body, `"reason": "Tenant does not exist"`) || strings.Contains(body, ` "reason": "Namespace does not exist"`))  {
+	if response.StatusCode == http.StatusNotFound && (strings.Contains(body, `"reason": "Tenant does not exist"`) || strings.Contains(body, ` "reason": "Namespace does not exist"`)) {
 		return false, nil
 
 	}
@@ -314,7 +314,6 @@ func (r *Operator) GetAllClusters() ([]string, error) {
 func (r *Operator) GetAllTenants() ([]string, error) {
 	request := r.GetHttpRequest()
 	url := fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, tenants)
-
 
 	var tenants = make([]string, 1)
 	response, _, errs := request.Get(url).EndStruct(&tenants)

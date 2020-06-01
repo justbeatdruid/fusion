@@ -35,8 +35,8 @@ type Topicgroup struct {
 	ID          string        `json:"id"`
 	Name        string        `json:"name"` //Topic分组名称
 	Namespace   string        `json:"namespace"`
-	Description string        `json:"description"`        //描述
-	TopicCount  int 	      `json:"topicCount"`
+	Description string        `json:"description"` //描述
+	TopicCount  int           `json:"topicCount"`
 	Policies    *Policies     `json:"policies,omitempty"` //Topic分组的策略
 	CreatedAt   int64         `json:"createdAt"`          //创建时间
 	Users       user.Users    `json:"users"`
@@ -151,7 +151,7 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 	crd.ObjectMeta.Namespace = app.Namespace
 
 	crd.Spec = v1.TopicgroupSpec{
-		Name:        app.Name,
+		Name: app.Name,
 		//Policies:    ToPolicesApi(app.Policies),
 		Description: app.Description,
 	}
