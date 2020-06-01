@@ -194,10 +194,42 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 		if len(a.Config.Special) > v1.MAXNUM {
 			return fmt.Errorf("special config maxnum limit exceeded.")
 		}
-		for _, value := range a.Config.Special {
-			if _, err := s.getApplication(value.ID, a.Namespace); err != nil {
+		for _, spec := range a.Config.Special {
+			if _, err := s.getApplication(spec.ID, a.Namespace); err != nil {
 				return fmt.Errorf("get application for create traffic error: %+v", err)
 			}
+			if (spec.Year + spec.Month + spec.Day + spec.Hour + spec.Minute + spec.Second) == 0 {
+				return fmt.Errorf("at least one limit config must exist.")
+			} else {
+				var list []int
+				if spec.Second > 0 {
+					list = append(list, spec.Second)
+				}
+				if spec.Minute > 0 {
+					list = append(list, spec.Minute)
+				}
+				if spec.Hour > 0 {
+					list = append(list, spec.Hour)
+				}
+				if spec.Day > 0 {
+					list = append(list, spec.Day)
+				}
+				if spec.Month > 0 {
+					list = append(list, spec.Month)
+				}
+				if spec.Year > 0 {
+					list = append(list, spec.Year)
+				}
+				var list2 = make([]int, len(list[:len(list):len(list)]))
+				copy(list2, list[:len(list):len(list)])
+				sort.Ints(list)
+				for index, _ := range list {
+					if list[index] != list2[index] {
+						return fmt.Errorf("the number per minute must be greater than the number per second... for special")
+					}
+				}
+			}
+
 		}
 	default:
 		return fmt.Errorf("wrong type for create traffic: %s.", a.Type)
