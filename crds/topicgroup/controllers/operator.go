@@ -128,17 +128,42 @@ func (r *Operator) DeleteNamespace(namespace *v1.Topicgroup) error {
 	}
 }
 
+func (r *Operator) isNamespacesExist(namespace *v1.Topicgroup) (bool, error) {
+	request := r.GetHttpRequest()
+	url := r.getUrl(namespace)
+
+	response, body, errs := request.Get(url).Send("").End()
+	if errs != nil {
+		klog.Errorf("get namespace policy finished, url: %+v, response: %+v, errs: %+v", url, response, errs)
+		return true, fmt.Errorf("get namespace policy error: %+v ", errs)
+	}
+
+	if response.StatusCode == http.StatusOK {
+		return true, nil
+	}
+
+	if response.StatusCode == http.StatusNotFound && (strings.Contains(body, `"reason": "Tenant does not exist"`) || strings.Contains(body, ` "reason": "Namespace does not exist"`))  {
+		return false, nil
+
+	}
+	return true, nil
+}
+
 func (r *Operator) GetNamespacePolicies(namespace *v1.Topicgroup) (*v1.Policies, error) {
 	request := r.GetHttpRequest()
 	url := r.getUrl(namespace)
 
 	polices := &Policies{}
 	response, _, errs := request.Get(url).Send("").EndStruct(polices)
-	if response.StatusCode != http.StatusOK || errs != nil {
+	if errs != nil {
 		klog.Errorf("get namespace policy finished, url: %+v, response: %+v, errs: %+v", url, response, errs)
-		return nil, fmt.Errorf("get namespace policy error: %+v or http code is not success: %+v", errs, response.StatusCode)
+		return nil, fmt.Errorf("get namespace policy error: %+v ", errs)
 	}
 
+	if response.StatusCode != http.StatusOK {
+		klog.Errorf("get namespace policy finished, url: %+v, response: %+v, errs: %+v", url, response, errs)
+		return nil, fmt.Errorf("get namespace policy http code is not 200: %+v ", response.StatusCode)
+	}
 	persistence, err := r.GetPersistence(namespace)
 	if err != nil {
 		return nil, fmt.Errorf("get namespace policy error: %+v or http code is not success: %+v", errs, response.StatusCode)
