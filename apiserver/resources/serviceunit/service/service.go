@@ -507,3 +507,12 @@ func (s *Service) ChangeUser(id, operator string, data *user.Data) error {
 	}
 	return nil
 }
+
+func (s *Service) GetUsers(id string) (user.UserList, error) {
+	crd, err := s.Get(id)
+	if err != nil {
+		return nil, fmt.Errorf("get crd error: %+v", err)
+	}
+	labels := crd.ObjectMeta.Labels
+	return user.GetCasUsers(labels), nil
+}

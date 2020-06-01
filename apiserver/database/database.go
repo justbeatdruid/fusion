@@ -53,6 +53,9 @@ var c = make(chan struct{})
 func newDatabaseConnection(cfg DatabaseConfig) (*DatabaseConnection, error) {
 	//panic when called twice
 	close(c)
+	if !cfg.Enabled {
+		return &DatabaseConnection{enabled: false}, nil
+	}
 	orm.DebugLog = orm.NewLog(new(KlogWriter))
 	orm.Debug = true
 	var err error
