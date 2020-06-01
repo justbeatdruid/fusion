@@ -59,6 +59,7 @@ type Api struct {
 	CalledCount      int              `json:"calledCount"`
 	FailedCount      int              `json:"failedCount"`
 	LatencyCount     int              `json:"latencyCount"`
+	CallFrequency    int              `json:"callFrequency"`
 
 	PublishInfo v1.PublishInfo
 
@@ -117,6 +118,7 @@ func ToAPI(api *Api) *v1.Api {
 		CalledCount:      api.CalledCount,
 		FailedCount:      api.FailedCount,
 		LatencyCount:     api.LatencyCount,
+		CallFrequency:    api.CallFrequency,
 	}
 	// add user labels
 	crd.ObjectMeta.Labels = user.AddUsersLabels(api.Users, crd.ObjectMeta.Labels)
@@ -159,6 +161,7 @@ func ToModel(obj *v1.Api) *Api {
 		CalledCount:      obj.Status.CalledCount,
 		FailedCount:      obj.Status.FailedCount,
 		LatencyCount:     obj.Status.LatencyCount,
+		CallFrequency:    obj.Status.CallFrequency,
 	}
 
 	if len(model.Method) == 0 {
