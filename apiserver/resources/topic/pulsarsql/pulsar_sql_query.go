@@ -10,7 +10,6 @@ import (
 func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 	var (
 		M     []service.Messages
-		ok    bool
 		state string
 	)
 	response, err := c.CreateQueryRequest(sql)
@@ -31,22 +30,13 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 					for k, v := range data {
 						switch k {
 						case "__message_id__":
-							if m.ID, ok = v.(string); !ok {
-								return nil, fmt.Errorf("message_id type error")
-							}
+							m.ID = v
 						case "__publish_time__":
-							m.Time, ok = v.(string)
-							if !ok {
-								return nil, fmt.Errorf("__publish_time__ type error")
-							}
+							m.Time = v
 						case "__producer_name__":
-							if m.ProducerName, ok = v.(string); !ok {
-								return nil, fmt.Errorf("__producer_name__ type error")
-							}
+							m.ProducerName= v
 						case "__partition__":
-							if m.Partition, ok = v.(float64); !ok {
-								return nil, fmt.Errorf("__partition__ type error")
-							}
+							m.Partition=v
 						case "__key__":
 							m.Key = v
 						case "__row__":
@@ -56,7 +46,7 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 							if ok {
 								decoded, err := base64.StdEncoding.DecodeString(value)
 								if err != nil {
-									//这种情况发送端直接发的string类型
+									//这种情况发送端直接发的string类型,没有经过base64编码
 									m.Message = v
 									size = size + binary.Size(v)
 								}else {
@@ -71,7 +61,7 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 						case "__sequence_id__":
 						case "__properties__":
 						case "__count__":
-							m.Total = v.(int)
+							m.Total = v
 						default:
 							if v == nil {
 								continue

@@ -57,7 +57,10 @@ type Api struct {
 	ReleasedAt       util.Time        `json:"releasedAt"`
 	ApplicationCount int              `json:"applicationCount"`
 	CalledCount      int              `json:"calledCount"`
-	PublishInfo      v1.PublishInfo
+	FailedCount      int              `json:"failedCount"`
+	LatencyCount     int              `json:"latencyCount"`
+
+	PublishInfo v1.PublishInfo
 
 	ApplicationBindStatus *v1.ApiApplicationStatus `json:"applicationBindStatus"`
 }
@@ -112,6 +115,8 @@ func ToAPI(api *Api) *v1.Api {
 		ReleasedAt:       metav1.Now(),
 		ApplicationCount: api.ApplicationCount,
 		CalledCount:      api.CalledCount,
+		FailedCount:      api.FailedCount,
+		LatencyCount:     api.LatencyCount,
 	}
 	// add user labels
 	crd.ObjectMeta.Labels = user.AddUsersLabels(api.Users, crd.ObjectMeta.Labels)
@@ -119,6 +124,7 @@ func ToAPI(api *Api) *v1.Api {
 }
 
 func ToModel(obj *v1.Api) *Api {
+	klog.V(5).Infof("obj to model: %+v", obj)
 	model := &Api{
 		ID:        obj.ObjectMeta.Name,
 		Namespace: obj.ObjectMeta.Namespace,
@@ -151,6 +157,8 @@ func ToModel(obj *v1.Api) *Api {
 		ReleasedAt:       util.NewTime(obj.Status.ReleasedAt.Time),
 		ApplicationCount: 0,
 		CalledCount:      obj.Status.CalledCount,
+		FailedCount:      obj.Status.FailedCount,
+		LatencyCount:     obj.Status.LatencyCount,
 	}
 
 	if len(model.Method) == 0 {

@@ -72,6 +72,13 @@ func (r *router) Install(ws *restful.WebService) {
 			Do(returns200, returns500))
 
 	*/
+	ws.Route(ws.GET("/serviceunits/{id}/users").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("get an serviceunit by id").
+		To(r.getUsers).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 
 	ws.Route(ws.POST("/serviceunits/{id}/users").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -158,5 +165,10 @@ func (r *router) changeUser(request *restful.Request, response *restful.Response
 
 func (r *router) changeOwner(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ChangeOwner(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) getUsers(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.GetUsers(request)
 	response.WriteHeaderAndEntity(code, result)
 }

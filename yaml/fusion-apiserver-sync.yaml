@@ -2,91 +2,84 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: fusion-apiserver
+  name: fusion-apiserver-sync
   namespace: default
   labels:
-    app: fusion-apiserver
+    app: fusion-apiserver-sync
     version: v0.1-alpha
 spec:
-  type: NodePort
+  type: ClusterIP
   ports:
     - name: service
-      nodePort: 30800
       port: 8001
       protocol: TCP
       targetPort: 8001
   selector:
-    app: fusion-apiserver
+    app: fusion-apiserver-sync
     version: v0.1-alpha
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: pulsar-secret
-type: Opaque
-data:
-  tokenSecret: bnBqaC9NM0lKN2FLU09RMTkyOFVUL0xNT3I3VnNCdHkrdGFEMk5TeVZ6Zz0=
-  superUserToken: ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKemRXSWlPaUpoWkcxcGJpSjkuZU5FYnFldVVYeE03YnNuUDhnbnhZcTdoUmtQNTBScWMwbnNXRlJwOHo2QQo=
 ---
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   labels:
-    app: fusion-apiserver
+    app: fusion-apiserver-sync
     version: v0.1-alpha
-  name: fusion-apiserver
+  name: fusion-apiserver-sync
   namespace: default
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
-      app: fusion-apiserver
+      app: fusion-apiserver-sync
       version: v0.1-alpha
+  serviceName: fusion-apiserver-sync
   template:
     metadata:
       labels:
-        app: fusion-apiserver
+        app: fusion-apiserver-sync
         version: v0.1-alpha
     spec:
-      affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-          - labelSelector:
-              matchExpressions:
-              - key: app
-                operator: In
-                values:
-                - fusion-apiserver
-              - key: version
-                operator: In
-                values:
-                - v0.1-alpha
-            topologyKey: "kubernetes.io/hostname"
-      serviceAccount: fusion-apiserver
+      serviceAccount: fusion-apiserver-sync
+      initContainers:
+      - image: registry.cmcc.com/library/mysql:5.7
+        name: init
+        command:
+        - sh
+        - -xc 
+        - |
+          database=fusion
+          while true; do
+            echo "Waiting for mysql to come up"
+            mysqladmin ping -hfusion-mysql -P3306 -uroot -p${MYSQL_ROOT_PASSWORD} > /dev/null 2>&1 && break
+            sleep 1s
+          done
+          mysql -hfusion-mysql -P3306 -uroot -p${MYSQL_ROOT_PASSWORD} <<EOF
+          SET character_set_client=utf8;
+          SET character_set_connection=utf8;
+          SET character_set_database=utf8;
+          SET character_set_results=utf8;
+          CREATE DATABASE IF NOT EXISTS ${database} DEFAULT CHARACTER SET utf8 DEFAULT COLLATE utf8_general_ci;
+          EOF
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+             secretKeyRef:
+               name: mysql-secret
+               key: password
       containers:
       - command:
         - fusion-apiserver
         - --v=5
         - --dataservice-data-host=10.160.32.5
-        #- --cas-host=10.160.32.30
-        #- --cas-port=8000
         - --tenant-enabled=true
         - --cas-host=tenant-manager
         - --cas-port=8091
-        - --audit-host=fusion-auditlog
-        - --audit-port=6868
-        - --pulsar-host=pulsar-proxy.pulsar
-        - --pulsar-port=6650
-        - --pulsar-auth-enable=true
-        - --presto-host=pulsar-proxy.pulsar
-        - --presto-port=8081
-        - --etcd-endpoints=http://fusion-etcd-0.fusion-etcd:2379,http://fusion-etcd-1.fusion-etcd:2379,http://fusion-etcd-2.fusion-etcd:2379
         - --database-host=fusion-mysql
         - --database-port=3306
         - --database-username=root
         - --database-password=123456
         - --database-databasename=fusion
-        - --sync-mode=false
+        - --sync-mode=true
         env:
         - name: MY_POD_NAMESPACE
           valueFrom:
@@ -104,7 +97,7 @@ spec:
               name: fusion-locale-config
         image: registry.cmcc.com/library/fusion-apiserver:0.1.0
         imagePullPolicy: Always
-        name: fusion-apiserver
+        name: fusion-apiserver-sync
         ports:
         - containerPort: 8001
           name: http
@@ -116,36 +109,21 @@ spec:
         volumeMounts:
         - mountPath: /etc/localtime
           name: host-time
-        - mountPath: /data/err.json
-          subPath: err.json
-          name: config-volume
-        - name: pulsar-secret-volume
-          mountPath: /data/pulsar-secret
-          readOnly: true
       restartPolicy: Always
       securityContext:
         fsGroup: 0
         runAsUser: 0
       volumes:
-      - emptyDir: {}
-        name: data
       - hostPath:
           path: /etc/localtime
         name: host-time
-      - name: config-volume
-        configMap:
-             name: err-config
-      - name: pulsar-secret-volume
-        secret:
-          secretName: pulsar-secret
-
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
 metadata:
-  name: fusion-apiserver
+  name: fusion-apiserver-sync
   labels:
-    app: fusion-apiserver
+    app: fusion-apiserver-sync
     version: v0.1-alpha
 roleRef:
   apiGroup: rbac.authorization.k8s.io
@@ -153,14 +131,14 @@ roleRef:
   name: cluster-admin
 subjects:
 - kind: ServiceAccount
-  name: fusion-apiserver
+  name: fusion-apiserver-sync
   namespace: default
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: fusion-apiserver
+  name: fusion-apiserver-sync
   namespace: default
   labels:
-    app: fusion-apiserver
+    app: fusion-apiserver-sync
     version: v0.1-alpha
