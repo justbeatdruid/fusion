@@ -107,6 +107,12 @@ func (r *ApiSynchronizer) SyncApiCountFromKong() error {
 	}
 	klog.Infof("sync api latency count map list : %+v", latencyCountMap)
 
+	callFrequencyMap := make(map[string]int)
+	if err := r.Operator.syncApiCallFrequencyFromKong(callFrequencyMap); err != nil {
+		return fmt.Errorf("sync api call frequency from kong failed: %+v", err)
+	}
+	klog.Infof("sync api rate count map list : %+v", callFrequencyMap)
+
 	for _, value := range apiList.Items {
 		apiID := value.ObjectMeta.Name
 		needUpdateApi := false
@@ -125,6 +131,12 @@ func (r *ApiSynchronizer) SyncApiCountFromKong() error {
 		if _, ok := latencyCountMap[apiID]; ok {
 			if value.Status.LatencyCount != latencyCountMap[apiID] {
 				value.Status.LatencyCount = latencyCountMap[apiID]
+				needUpdateApi = true
+			}
+		}
+		if _, ok := callFrequencyMap[apiID]; ok {
+			if value.Status.CallFrequency != callFrequencyMap[apiID] {
+				value.Status.CallFrequency = callFrequencyMap[apiID]
 				needUpdateApi = true
 			}
 		}

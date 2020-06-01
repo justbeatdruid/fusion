@@ -314,6 +314,7 @@ type ApiStatus struct {
 	CalledCount      int           `json:"calledCount"`
 	FailedCount      int           `json:"failedCount"`
 	LatencyCount     int           `json:"latencyCount"`
+	CallFrequency    int           `json:"callFrequency"`
 	Message          string        `json:"msg"`
 
 	Applications map[string]ApiApplicationStatus `json:"applications"`
