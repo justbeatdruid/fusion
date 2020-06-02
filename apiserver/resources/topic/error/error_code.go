@@ -34,8 +34,8 @@ const (
 	ErrorPartitionTopicPartitionEqualZero = "010000026" //创建Topic失败，原因：多分区Topic的分区数不能为0
 	ErrorAddPartitionsOfTopicError        = "010000027" //增加topic分区失败
 	ErrorBindOrUnbindTopicError           = "010000028" //应用与Topic绑定/解绑定失败
-	ErrorQuerySubscriptionsInfo           = "010000029" //查询Topic订阅关系失败
-
+    ErrorSendMessagesError                = "010000029" //发送消息失败
+	ErrorQuerySubscriptionsInfo           = "010000030" //查询Topic订阅关系失败
 )
 
 type TopicError struct {

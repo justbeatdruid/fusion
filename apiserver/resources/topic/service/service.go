@@ -2,10 +2,13 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
+
 	"github.com/chinamobile/nlpt/apiserver/kubernetes"
 	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
+	"github.com/chinamobile/nlpt/apiserver/resources/topic/pulsargo"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	clientauthv1 "github.com/chinamobile/nlpt/crds/clientauth/api/v1"
@@ -521,6 +524,9 @@ func (s *Service) AddPartitionsOfTopic(id string, partitionNum int, ops ...util.
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
+	if tp.Spec.PartitionNum>partitionNum {
+		return nil,errors.New("The number of partitions must be larger than the original ")
+	}
 	tp.Status.Status = v1.Updating
 	tp.Spec.PartitionNum = partitionNum
 	v1tp, err := s.UpdateStatus(tp)
@@ -624,3 +630,17 @@ func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.
 	}
 	return nil
 }
+
+
+func (s *Service) SendMessages(topicUrl string,messagesBody string,key string) (pulsar.MessageID,error){
+	client,err := s.GetPulsarClient()
+	if err!=nil {
+		return nil,fmt.Errorf("create pulsar client error: %s",err)
+	}
+	messageId,err := pulsargo.SendMessages(client,topicUrl,messagesBody,key)
+    if err!=nil{
+    	return nil,fmt.Errorf("SendMessages error %s",err)
+	}
+	return messageId,nil
+}
+

@@ -17,6 +17,8 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"io/ioutil"
 	"k8s.io/klog"
 	"os"
 
@@ -41,6 +43,21 @@ func init() {
 	_ = nlptv1.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 	klog.InitFlags(nil)
+}
+
+func ParsePulsarSecret() (string, error) {
+	tokenSecretPath := "/data/pulsar-secret/tokenSecret"
+	b := make([]byte, 5)
+	b, err := ioutil.ReadFile(tokenSecretPath)
+	if err != nil {
+		return "", fmt.Errorf("cannot read token secret: %+v", err)
+	}
+	tokenSecret := string(b)
+	if len(tokenSecret) == 0 {
+		return "", fmt.Errorf("token secret path not set")
+	}
+	klog.Infof("get token secret is %s", tokenSecret)
+	return tokenSecret, nil
 }
 
 func main() {
@@ -79,7 +96,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	operator, err := controllers.NewOperator(operatorHost, operatorPort, operatorCAFile)
+	topicToken, err := ParsePulsarSecret()
+	if err != nil || len(topicToken) == 0 {
+		setupLog.Error(err, "unable to parse pulsar secret operator")
+		os.Exit(1)
+	}
+
+	operator, err := controllers.NewOperator(operatorHost, operatorPort, operatorCAFile, topicToken)
 	if err != nil {
 		setupLog.Error(err, "unable to create operator")
 		os.Exit(1)

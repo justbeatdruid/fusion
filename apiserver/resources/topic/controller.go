@@ -29,7 +29,7 @@ type controller struct {
 
 const (
 	//order        = `select * from (select row_number() over(order by __publish_time__ desc) __row__, * from pulsar."%s/%s"."%s" %s) as t where __row__ between %d and %d`
-	messageIdSql = `WHERE "__message_id__" = '%s' AND "__partition__" = '%s'`
+	messageIdSql = `WHERE "__message_id__" = '%s' AND "__partition__" = %s`
 	keySql       = `WHERE "__key__" = '%s'`
 	timeSql      = `WHERE "__publish_time__" BETWEEN timestamp '%s' AND timestamp '%s'`
 	order        = `WITH subquery_1 AS (
@@ -66,7 +66,7 @@ type DeleteResponse = Wrapped
 type GrantResponse = Wrapped
 type ExportResponse = Wrapped
 type AddPartitions = Wrapped
-
+type SendMessagesResponse =ListResponse
 /*type DeleteResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -1100,11 +1100,19 @@ func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
 			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	}
-	return http.StatusOK, &MessageResponse{
-		Code:      success,
-		Data:      messages,
-		TotalSize: messages[0].Total,
+	if messages!=nil {
+		return http.StatusOK, &MessageResponse{
+			Code:      success,
+			Data:      messages,
+			TotalSize: messages[0].Total,
+		}
+	}else {
+		return http.StatusOK, &MessageResponse{
+			Code:      success,
+			Data:      messages,
+		}
 	}
+
 }
 
 //查询参数是否有值判断
@@ -1316,4 +1324,49 @@ func (c *controller) GetSubscriptionsOfTopic(req *restful.Request) (int, *Subscr
 
 	return 0, nil
 
+}
+func (c *controller) SendMessages(req *restful.Request)  (int,*SendMessagesResponse){
+	 sM := &service.SendMessages{}
+	 if err := req.ReadEntity(sM);err!=nil{
+	 	return http.StatusInternalServerError,&SendMessagesResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorReadEntity,
+			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
+			Data:      nil,
+			Detail:    fmt.Sprintf("cannot read entity: %+v", err),
+		}
+	 }
+     topicId := sM.ID
+     authUser,err := auth.GetAuthUser(req)
+     if err!=nil{
+     	return http.StatusInternalServerError,&SendMessagesResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Data:      nil,
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	 }
+      tp,err := c.service.GetTopic(topicId,util.WithNamespace(authUser.Namespace));
+      if err!=nil{
+		 return http.StatusInternalServerError, &SendMessagesResponse{
+			 Code:      fail,
+			 ErrorCode: tperror.ErrorGetTopicInfo,
+			 Message:   c.errMsg.Topic[tperror.ErrorGetTopicInfo],
+			 Detail:    fmt.Sprintf("get database error: %+v", err),
+		 }
+	 }
+     messageId,err := c.service.SendMessages(tp.URL,sM.MessageBody,sM.Key)
+     if err!=nil{
+		 return http.StatusInternalServerError, &SendMessagesResponse{
+			 Code:      fail,
+			 ErrorCode: tperror.ErrorSendMessagesError,
+			 Message:   c.errMsg.Topic[tperror.ErrorSendMessagesError],
+			 Detail:    fmt.Sprintf("send message error: %+v", err),
+		 }
+	 }
+	 return http.StatusOK,&SendMessagesResponse{
+		    Code:      success,
+		    Data:      messageId,
+	 }
 }
