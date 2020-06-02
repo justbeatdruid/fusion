@@ -18,6 +18,15 @@ spec:
     app: fusion-application-controller-manager
     version: v0.1-alpha
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: pulsar-secret
+type: Opaque
+data:
+  tokenSecret: bnBqaC9NM0lKN2FLU09RMTkyOFVUL0xNT3I3VnNCdHkrdGFEMk5TeVZ6Zz0=
+  superUserToken: ZXlKaGJHY2lPaUpJVXpJMU5pSjkuZXlKemRXSWlPaUpoWkcxcGJpSjkuZU5FYnFldVVYeE03YnNuUDhnbnhZcTdoUmtQNTBScWMwbnNXRlJwOHo2QQo=
+---
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -80,6 +89,9 @@ spec:
         volumeMounts:
         - mountPath: /data
           name: data
+        - name: pulsar-secret-volume
+          mountPath: /data/pulsar-secret
+          readOnly: true
       restartPolicy: Always
       securityContext:
         fsGroup: 0
@@ -87,6 +99,9 @@ spec:
       volumes:
       - emptyDir: {}
         name: data
+      - name: pulsar-secret-volume
+        secret:
+          secretName: pulsar-secret
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
