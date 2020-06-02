@@ -193,6 +193,14 @@ type SubscriptionStat struct {
 
 type ConsumerStat struct {
 	MsgRateOut string `json:"msgRateOut"`
+	MsgThroughputOut string `json:"msgThroughputOut"`
+	ConsumerName string `json:"consumerName"`
+	AvailablePermits int `json:"availablePermits"`
+	UnackedMessages int `json:"unackedMessages"`
+	LastAckedTimestamp int64 `json:"lastAckedTimestamp"`
+	LastConsumedTimestamp int64 `json:"lastConsumedTimestamp"`
+	ConnectedSince string `json:"connectedSince"`
+	Address string `json:"address"`
 }
 
 func init() {
