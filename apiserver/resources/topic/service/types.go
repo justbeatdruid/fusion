@@ -127,6 +127,11 @@ type Statistics struct {
 type BindInfo struct {
 	ID string `json:"id"`
 }
+type SendMessages struct {
+	ID string `json:"id"`
+    Key string `json:"tag"`
+	MessageBody string `json:"messageBody"`
+}
 
 const (
 	Consume = "consume"

@@ -136,7 +136,14 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.batchBindTopics).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
-
+	//发送消息
+	ws.Route(ws.POST("/topics/messages").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("send message to topic").
+		To(r.sendMessages).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func (r *router) createTopic(request *restful.Request, response *restful.Response) {
@@ -211,5 +218,10 @@ func (r *router) addPartitionsOfTopic(request *restful.Request, response *restfu
 
 func (r *router) batchBindTopics(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.BatchBindOrReleaseApi(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) sendMessages(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.SendMessages(request)
 	response.WriteHeaderAndEntity(code, result)
 }
