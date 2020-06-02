@@ -142,7 +142,7 @@ func (r *Operator) isNamespacesExist(namespace *v1.Topicgroup) (bool, error) {
 		return true, nil
 	}
 
-	if response.StatusCode == http.StatusNotFound && (strings.Contains(body, `"reason": "Tenant does not exist"`) || strings.Contains(body, ` "reason": "Namespace does not exist"`)) {
+	if response.StatusCode == http.StatusNotFound && (strings.Contains(body, `Tenant does not exist`) || strings.Contains(body, `Namespace does not exist`)) {
 		return false, nil
 
 	}
