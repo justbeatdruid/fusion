@@ -29,7 +29,7 @@ type controller struct {
 
 const (
 	//order        = `select * from (select row_number() over(order by __publish_time__ desc) __row__, * from pulsar."%s/%s"."%s" %s) as t where __row__ between %d and %d`
-	messageIdSql = `WHERE "__message_id__" = '%s' AND "__partition__" = '%s'`
+	messageIdSql = `WHERE "__message_id__" = '%s' AND "__partition__" = %s`
 	keySql       = `WHERE "__key__" = '%s'`
 	timeSql      = `WHERE "__publish_time__" BETWEEN timestamp '%s' AND timestamp '%s'`
 	order        = `WITH subquery_1 AS (
@@ -1088,11 +1088,19 @@ func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
 			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	}
-	return http.StatusOK, &MessageResponse{
-		Code:      success,
-		Data:      messages,
-		TotalSize: messages[0].Total,
+	if messages!=nil {
+		return http.StatusOK, &MessageResponse{
+			Code:      success,
+			Data:      messages,
+			TotalSize: messages[0].Total,
+		}
+	}else {
+		return http.StatusOK, &MessageResponse{
+			Code:      success,
+			Data:      messages,
+		}
 	}
+
 }
 
 //查询参数是否有值判断
