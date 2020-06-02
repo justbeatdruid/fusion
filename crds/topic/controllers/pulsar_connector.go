@@ -18,6 +18,7 @@ const (
 	persistentPermissionUrl    = "/admin/v2/persistent/%s/%s/%s/permissions/%s"
 	nonPersistentPermissionUrl = "/admin/v2/non-persistent/%s/%s/%s/permissions/%s"
 	statsUrl                   = "/stats"
+	partitionedStatsUrl        = "/partitioned-stats"
 )
 
 type requestLogger struct {
@@ -89,6 +90,14 @@ type SubscriptionStat struct {
 
 type ConsumerStat struct {
 	MsgRateOut float64 `json:"msgRateOut"`
+	MsgThroughputOut float64 `json:"msgThroughputOut"`
+	ConsumerName string `json:"consumerName"`
+	AvailablePermits int `json:"availablePermits"`
+	UnackedMessages int `json:"unackedMessages"`
+	LastAckedTimestamp int64 `json:"lastAckedTimestamp"`
+	LastConsumedTimestamp int64 `json:"lastConsumedTimestamp"`
+	ConnectedSince string `json:"connectedSince"`
+	Address string `json:"address"`
 }
 
 //CreateTopic 调用Pulsar的Restful Admin API，创建Topic
@@ -98,10 +107,16 @@ func (r *Connector) CreateTopic(topic *nlptv1.Topic) (err error) {
 	}
 
 	request := r.GetHttpRequest()
-	klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
+	//klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl := r.getUrl(topic)
 	response, _, errs := request.Put(topicUrl).Send("").EndStruct("")
 	if response.StatusCode == 204 {
+		stats, err := r.GetStats(*topic)
+		if err != nil {
+			fmt.Errorf("%+v", err)
+			return nil
+		}
+		topic.Spec.Stats = *stats
 		return nil
 	} else {
 		errMsg := fmt.Sprintf("Create topic error, url: %s, Error code: %d, Error Message: %+v", topicUrl, response.StatusCode, errs)
@@ -130,9 +145,10 @@ func (r *Connector) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	request := r.GetHttpRequest()
 	topicUrl := r.getUrl(topic)
 	response, body, errs := request.Delete(topicUrl).Retry(3, 5*time.Second, http.StatusBadRequest, http.StatusInternalServerError).End()
-	fmt.Println("URL:", topicUrl)
-	fmt.Print(" Response: ", body, response, errs)
-	if response.StatusCode == 204 {
+	if err != nil {
+		return fmt.Errorf("delete topic(%+v) error: %+v", topicUrl, errs)
+	}
+	if response.StatusCode == http.StatusNoContent {
 		return nil
 	} else if strings.Contains(body, "Topic not found") || strings.Contains(body, "Partitioned topic does not exist") {
 		return nil
@@ -154,7 +170,9 @@ func (r *Connector) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Perm
 	url = fmt.Sprintf(url, topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name, permission.AuthUserName)
 	url = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
 	response, body, errs := request.Post(url).Send(permission.Actions).End()
-
+	if err != nil {
+		return fmt.Errorf("grant permission error,  topic(%+v) error: %+v", topic.Spec.Url, errs)
+	}
 	klog.Infof("grant permission result, url: %+v, response: %+v, body: %+v, err:%+v", url, response, body, errs)
 	if response.StatusCode == 204 {
 		return nil
@@ -190,17 +208,20 @@ func (r *Connector) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err er
 	topicUrl = fmt.Sprintf("%s://%s:%d%s/%s/%s", protocol, r.Host, r.Port, topicUrl, "permissions", P.AuthUserName)
 	response, _, errs := request.Delete(topicUrl).Retry(3, 5*time.Second).Send("").EndStruct("")
 
+	if err != nil {
+		return fmt.Errorf("revoke permission error,  topic(%+v) error: %+v", topic.Spec.Url, errs)
+	}
 	if response.StatusCode == http.StatusNoContent {
 		return nil
 	}
-	errMsg := fmt.Sprintf("delete topic error, url: %s, Error code: %d, Error Message: %+v", topicUrl, response.StatusCode, errs)
+	errMsg := fmt.Sprintf("revoke permission error, url: %s, Error code: %d, Error Message: %+v", topicUrl, response.StatusCode, errs)
 	klog.Error(errMsg)
 	return errors.New(errMsg)
 }
 
 func (r *Connector) AddTokenToHeader(request *gorequest.SuperAgent) *gorequest.SuperAgent {
 	if r.AuthEnable {
-		request.Header.Set("Authorization", "Bearer "+r.SuperUserToken)
+		request.Header.Set("Authorization", "Bearer "+ r.SuperUserToken)
 	}
 	return request
 }
@@ -214,16 +235,21 @@ func (r *Connector) GetHttpRequest() *gorequest.SuperAgent {
 func (r *Connector) GetStats(topic nlptv1.Topic) (*nlptv1.Stats, error) {
 	request := r.GetHttpRequest()
 	url := persistentTopicUrl
-	if topic.Spec.Persistent {
+	if !topic.Spec.Persistent {
 		url = nonPersistentTopicUrl
 	}
-	url += statsUrl
+
+	if topic.Spec.Partitioned {
+		url += partitionedStatsUrl
+	} else {
+		url += statsUrl
+	}
 	url = fmt.Sprintf(url, topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 	url = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
 	stats := &Stats{}
 	response, _, errs := request.Get(url).Retry(3, 5*time.Second, http.StatusNotFound, http.StatusBadGateway).EndStruct(stats)
 	if errs != nil {
-		klog.Errorf("get stats error, url: %+v, errs: %+v", url, errs)
+		klog.Errorf("get stats error, url: %+v, response: %+v, errs: %+v", url, response, errs)
 		return nil, fmt.Errorf("get stats error: %+v", errs)
 	}
 
@@ -232,7 +258,7 @@ func (r *Connector) GetStats(topic nlptv1.Topic) (*nlptv1.Stats, error) {
 		//直接将无小数点的float类型数据保存在crd中，反序列化时会当成int64类型，导致类型出错
 		return r.FormatStats(stats), nil
 	}
-	klog.Errorf("get stats error, url: %+v, status code: %+v, errs: %+v", url, response.StatusCode, errs)
+	//klog.Errorf("get stats error, url: %+v, status code: %+v, errs: %+v", url, response.StatusCode, errs)
 	return nil, fmt.Errorf("get stats error: %+v", errs)
 
 }
@@ -270,10 +296,18 @@ func (r *Connector) FormatStats(stats *Stats) *nlptv1.Stats {
 			subscription.MsgRateExpired = fmt.Sprintf("%.3f", v.MsgRateExpired)
 			subscription.MsgRateRedeliver = fmt.Sprintf("%.3f", v.MsgRateRedeliver)
 
-			var consumers = make([]nlptv1.ConsumerStat, len(v.Consumers))
+			var consumers = make([]nlptv1.ConsumerStat, 0)
 			for _, consumer := range v.Consumers {
 				var c nlptv1.ConsumerStat
 				c.MsgRateOut = fmt.Sprintf("%.8f", consumer.MsgRateOut)
+				c.MsgThroughputOut = fmt.Sprintf("%.8f", consumer.MsgThroughputOut)
+				c.Address = consumer.Address
+				c.ConsumerName = consumer.ConsumerName
+				c.ConnectedSince = consumer.ConnectedSince
+				c.LastConsumedTimestamp = consumer.LastConsumedTimestamp
+				c.LastAckedTimestamp = consumer.LastAckedTimestamp
+				c.UnackedMessages = consumer.UnackedMessages
+				c.AvailablePermits = consumer.AvailablePermits
 				consumers = append(consumers, c)
 			}
 			subscription.Consumers = consumers

@@ -118,6 +118,13 @@ type BindOrReleaseResponse struct {
 	Detail    string          `json:"detail"`
 }
 
+type SubscriptionsResponse struct {
+	Code      int             `json:"code"`
+	ErrorCode string          `json:"errorCode"`
+	Message   string          `json:"message"`
+	Data      []service.Topic `json:"data"`
+	Detail    string          `json:"detail"`
+}
 type TopicSlice TopicList
 type MessageSlice MessageList
 
@@ -445,13 +452,18 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 	}
 
 	var data []service.Topic
+	//var tgmap = make(map[string]string)
+
 	for _, tp := range tps.ParseData {
 
 		partitioned, _ := strconv.ParseBool(tp[3])
 		partitionNum, _ := strconv.Atoi(tp[4])
 		persistent, _ := strconv.ParseBool(tp[5])
+
+		//根据topicGroup名称查找当前租户下是否有同名的资源
+
 		topic := &service.Topic{
-			Tenant:       tp[0],
+			//Tenant:       tp[0],
 			TopicGroup:   tp[1],
 			Name:         tp[2],
 			Partitioned:  &partitioned,
@@ -1285,6 +1297,34 @@ func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *BindOrRe
 	return 0, nil
 }
 
+func (c *controller) GetSubscriptionsOfTopic(req *restful.Request) (int, *SubscriptionsResponse) {
+	id := req.PathParameter("id")
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &SubscriptionsResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Data:      nil,
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+
+	_, err = c.service.GetTopic(id, util.WithNamespace(authUser.Namespace))
+	if err != nil {
+		return http.StatusInternalServerError, &SubscriptionsResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorQuerySubscriptionsInfo,
+			Message:   c.errMsg.Topic[tperror.ErrorQuerySubscriptionsInfo],
+			Data:      nil,
+			Detail:    fmt.Sprintf("query subscription error: %+v", err),
+		}
+	}
+
+
+	return 0, nil
+
+}
 func (c *controller) SendMessages(req *restful.Request)  (int,*SendMessagesResponse){
 	 sM := &service.SendMessages{}
 	 if err := req.ReadEntity(sM);err!=nil{
