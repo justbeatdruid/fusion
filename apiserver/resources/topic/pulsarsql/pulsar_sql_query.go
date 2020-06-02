@@ -5,6 +5,8 @@ import (
 	"encoding/binary"
 	"fmt"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
+	"strconv"
+	"strings"
 )
 
 func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
@@ -77,6 +79,13 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 					if m.Message == nil {
 						m.Message = msg
 					}
+                    id := m.ID.(string)
+                    partition := m.Partition.(float64)
+                    par := strconv.FormatFloat(partition,'f',-1,64)
+                    ids := strings.Split(id,",")
+                    ids = append(ids[0:2], par,ids[2])
+                    id = strings.Join(ids,",")
+                    m.ID = id
 					m.Size = size
 					M = append(M, m)
 				}
