@@ -157,32 +157,30 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 		if (a.Config.Year + a.Config.Month + a.Config.Day + a.Config.Hour + a.Config.Minute + a.Config.Second) == 0 {
 			return fmt.Errorf("at least one limit config must exist.")
 		} else {
+			//list存 年月日时分秒，list2存list的index
 			var list []int
-			if a.Config.Second > 0 {
-				list = append(list, a.Config.Second)
+			list = append(list, a.Config.Second)
+			list = append(list, a.Config.Minute)
+			list = append(list, a.Config.Hour)
+			list = append(list, a.Config.Day)
+			list = append(list, a.Config.Month)
+			list = append(list, a.Config.Year)
+			var list2 []int
+			for i, _ := range list {
+				if list[i] != 0 {
+					list2 = append(list2,i)
+				}
 			}
-			if a.Config.Minute > 0 {
-				list = append(list, a.Config.Minute)
-			}
-			if a.Config.Hour > 0 {
-				list = append(list, a.Config.Hour)
-			}
-			if a.Config.Day > 0 {
-				list = append(list, a.Config.Day)
-			}
-			if a.Config.Month > 0 {
-				list = append(list, a.Config.Month)
-			}
-			if a.Config.Year > 0 {
-				list = append(list, a.Config.Year)
-			}
-
-			var list2 = make([]int, len(list[:len(list):len(list)]))
-			copy(list2, list[:len(list):len(list)])
-			sort.Ints(list)
-			for index, _ := range list {
-				if list[index] != list2[index] {
-					return fmt.Errorf("the number per minute must be greater than the number per second...")
+			var atime [6]string
+			atime[0] = "秒钟"
+			atime[1] = "分钟"
+			atime[2] = "小时"
+			atime[3] = "天"
+			atime[4] = "月"
+			atime[5] = "年"
+			for i:=0; i<len(list2)-1;i++ {
+				if list[list2[i]] > list[list2[i+1]] {
+					return fmt.Errorf("每%s的值必须小于每%s的值",atime[list2[i]],atime[list2[i+1]])
 				}
 			}
 		}
