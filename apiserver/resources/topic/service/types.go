@@ -106,10 +106,32 @@ type ConsumerStat struct {
 	Address string `json:"address"`
 }
 
-type Subscriptions struct{
+type SubscriptionsInfo struct{
+	AverageMsgSize      float64                     `json:"averageMsgSize"`
+	StorageSize         int64                       `json:"storageSize"`
+	BacklogSize         int64                       `json:"backlogSize"`
+	Subscriptions       []Subscription              `json:"subscriptions"`
 
 }
 
+type Subscription struct {
+	Name string `json:"name"`
+	MsgRateOut                       float64        `json:"msgRateOut"`
+	MsgThroughputOut                 float64        `json:"msgThroughputOut"`
+	MsgRateRedeliver                 float64        `json:"msgRateRedeliver"`
+	MsgBacklog                       int64          `json:"msgBacklog"`
+	BlockedSubscriptionOnUnackedMsgs bool           `json:"blockedSubscriptionOnUnackedMsgs"`
+	MsgDelayed                       int64          `json:"msgDelayed"`
+	UnackedMessages                  int64          `json:"unackedMessages"`
+	Type                             string         `json:"type"`
+	MsgRateExpired                   float64        `json:"msgRateExpired"`
+	LastExpireTimestamp              int64          `json:"lastExpireTimestamp"`
+	LastConsumedFlowTimestamp        int64          `json:"lastConsumedFlowTimestamp"`
+	LastConsumedTimestamp            int64          `json:"lastConsumedTimestamp"`
+	LastAckedTimestamp               int64          `json:"lastAckedTimestamp"`
+	Consumers                        []ConsumerStat `json:"consumers"`
+	IsReplicated                     bool           `json:"isReplicated"`
+}
 type Messages struct {
 	ProducerName interface{} `json:"producerName"`
 	ID           interface{} `json:"id"`
@@ -403,4 +425,40 @@ func (p *Permission) Validate() error {
 	}
 
 	return nil
+}
+
+
+func (a *Topic) ToSubscriptionsModel() *SubscriptionsInfo {
+	if a.Stats == nil {
+		return nil
+	}
+	subs := &SubscriptionsInfo{
+		AverageMsgSize: a.Stats.AverageMsgSize,
+		StorageSize:    a.Stats.StorageSize,
+		BacklogSize:    a.Stats.BacklogSize,
+	}
+
+	if a.Stats.Subscriptions != nil {
+		subs.Subscriptions = make([]Subscription, 0)
+		for k, v := range a.Stats.Subscriptions {
+			sub := Subscription{}
+			sub.Name = k
+			sub.LastConsumedTimestamp = v.LastConsumedTimestamp
+			sub.LastAckedTimestamp = v.LastAckedTimestamp
+			sub.UnackedMessages = v.UnackedMessages
+			sub.MsgThroughputOut = v.MsgThroughputOut
+			sub.MsgRateOut = v.MsgRateOut
+			sub.Consumers = v.Consumers
+			sub.Type = v.Type
+			sub.MsgBacklog = v.MsgBacklog
+			sub.BlockedSubscriptionOnUnackedMsgs = v.BlockedSubscriptionOnUnackedMsgs
+			sub.MsgDelayed = v.MsgDelayed
+			sub.MsgRateExpired = v.MsgRateExpired
+			sub.MsgRateRedeliver = v.MsgRateRedeliver
+			sub.MsgThroughputOut = v.MsgThroughputOut
+			sub.IsReplicated = v.IsReplicated
+			subs.Subscriptions = append(subs.Subscriptions, sub)
+		}
+	}
+	return subs
 }

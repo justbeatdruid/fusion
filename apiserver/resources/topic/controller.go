@@ -122,7 +122,7 @@ type SubscriptionsResponse struct {
 	Code      int             `json:"code"`
 	ErrorCode string          `json:"errorCode"`
 	Message   string          `json:"message"`
-	Data      []service.Topic `json:"data"`
+	Data      interface{} `json:"data"`
 	Detail    string          `json:"detail"`
 }
 type TopicSlice TopicList
@@ -1311,7 +1311,7 @@ func (c *controller) GetSubscriptionsOfTopic(req *restful.Request) (int, *Subscr
 		}
 	}
 
-	_, err = c.service.GetTopic(id, util.WithNamespace(authUser.Namespace))
+	t, err := c.service.GetTopic(id, util.WithNamespace(authUser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &SubscriptionsResponse{
 			Code:      fail,
@@ -1322,9 +1322,12 @@ func (c *controller) GetSubscriptionsOfTopic(req *restful.Request) (int, *Subscr
 		}
 	}
 
-
-	return 0, nil
-
+	return http.StatusOK, &SubscriptionsResponse{
+		Code:      success,
+		ErrorCode: tperror.Success,
+		Data:      c.service.GetSubscriptionsOfTopic(t),
+		Detail:    fmt.Sprintf("query subscription success"),
+	}
 }
 func (c *controller) SendMessages(req *restful.Request)  (int,*SendMessagesResponse){
 	 sM := &service.SendMessages{}
