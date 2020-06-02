@@ -157,7 +157,7 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 		if (a.Config.Year + a.Config.Month + a.Config.Day + a.Config.Hour + a.Config.Minute + a.Config.Second) == 0 {
 			return fmt.Errorf("at least one limit config must exist.")
 		} else {
-			//list´æ ÄêÔÂÈÕÊ±·ÖÃë£¬list2´ælistµÄindex
+			//listå­˜ç§’åˆ†æ—¶æ—¥æœˆå¹´ï¼Œlist2å­˜listçš„index
 			var list []int
 			list = append(list, a.Config.Second)
 			list = append(list, a.Config.Minute)
@@ -172,15 +172,15 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 				}
 			}
 			var atime [6]string
-			atime[0] = "ÃëÖÓ"
-			atime[1] = "·ÖÖÓ"
-			atime[2] = "Ğ¡Ê±"
-			atime[3] = "Ìì"
-			atime[4] = "ÔÂ"
-			atime[5] = "Äê"
+			atime[0] = "ç§’é’Ÿ"
+			atime[1] = "åˆ†é’Ÿ"
+			atime[2] = "å°æ—¶"
+			atime[3] = "æ—¥"
+			atime[4] = "æœˆ"
+			atime[5] = "å¹´"
 			for i:=0; i<len(list2)-1;i++ {
 				if list[list2[i]] > list[list2[i+1]] {
-					return fmt.Errorf("Ã¿%sµÄÖµ±ØĞëĞ¡ÓÚÃ¿%sµÄÖµ",atime[list2[i]],atime[list2[i+1]])
+					return fmt.Errorf("Ã¿%sï¿½ï¿½Öµï¿½ï¿½ï¿½ï¿½Ğ¡ï¿½ï¿½Ã¿%sï¿½ï¿½Öµ",atime[list2[i]],atime[list2[i+1]])
 				}
 			}
 		}
