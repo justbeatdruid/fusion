@@ -100,6 +100,14 @@ func main() {
 	}
 	// +kubebuilder:scaffold:builder
 
+	if err = mgr.Add(&controllers.TopicgroupSynchronizer{
+		Client:    mgr.GetClient(),
+		Connector: operator,
+	}); err != nil {
+		setupLog.Error(err, "problem add runnable to manager")
+		os.Exit(1)
+	}
+
 	setupLog.Info("starting manager")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
 		setupLog.Error(err, "problem running manager")

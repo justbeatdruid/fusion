@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"strconv"
 	"strings"
@@ -749,5 +750,104 @@ func (r *Operator) SyncApiCountFromPrometheus(m map[string]int) error {
 	num := responseBody.Data.Result[0].Value[1].(string)
 	klog.Infof("SyncApiCountFromPrometheus ROUTE:  %s %s\n", route, num)
 	klog.Infof("SyncApiCountFromPrometheus Result:  %+v", m)
+	return nil
+}
+
+func (r *Operator) syncApiFailedCountFromKong(m map[string]int) error {
+	klog.Infof("sync api failed count from kong.")
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	responseBody := &PrometheusResponse{}
+
+	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s", schema, r.PrometheusHost, r.PrometheusPort,
+		"/api/v1/query?query=kong_http_status{code!~\"2.*\"}")).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Errorf("sync api failed count from kong error %+v.", errs)
+		return fmt.Errorf("get api failed count error %+v", errs)
+
+	}
+	klog.Infof("syncApiFailedCountFromKong: %d %s\n", response.StatusCode, string(body))
+	result := responseBody.Data.Result
+	if result == nil || len(result) == 0 {
+		klog.Warning("sync api failed count from prometheus null.")
+		return nil
+	}
+	for index := range result {
+		route := responseBody.Data.Result[index].Metric.Route
+		num := responseBody.Data.Result[index].Value[1].(string)
+		count, _ := strconv.Atoi(num)
+		m[route] = count
+	}
+	route := responseBody.Data.Result[0].Metric.Route
+	num := responseBody.Data.Result[0].Value[1].(string)
+	klog.Infof("syncApiFailedCountFromKong ROUTE:  %s%s\n", route, num)
+	klog.Infof("syncApiFailedCountFromKong Result Map:  %+v", m)
+	return nil
+}
+
+func (r *Operator) syncLatencyCountFromKong(m map[string]int) error {
+	klog.Infof("sync api latency count from kong.")
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	responseBody := &PrometheusResponse{}
+
+	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s", schema, r.PrometheusHost, r.PrometheusPort,
+		"/api/v1/query?query=kong_latency_sum/kong_latency_count{type=\"request\"}")).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Infof("sync api latency from kong error %+v.", errs)
+		return fmt.Errorf("get api latency error %+v", errs)
+
+	}
+	klog.Infof("syncApiLatencyCountFromKong: %d %s\n", response.StatusCode, string(body))
+	result := responseBody.Data.Result
+	if result == nil || len(result) == 0 {
+		klog.Warning("sync api latency from prometheus null.")
+		return nil
+	}
+	for index := range result {
+		route := responseBody.Data.Result[index].Metric.Route
+		num := responseBody.Data.Result[index].Value[1].(string)
+		count, _ := strconv.ParseFloat(num, 64)
+		intCount := int(count)
+		klog.V(5).Infof("syncApiLatencyCountFromKong ROUTE count:  %s%s%d\n", route, num, intCount)
+		m[route] = intCount
+	}
+	route := responseBody.Data.Result[0].Metric.Route
+	num := responseBody.Data.Result[0].Value[1].(string)
+	klog.Infof("syncApiLatencyCountFromKong ROUTE:  %s%s\n", route, num)
+	klog.Infof("syncApiLatencyCountFromKong Result:  %+v", m)
+	return nil
+}
+
+func (r *Operator) syncApiCallFrequencyFromKong(m map[string]int) error {
+	klog.Infof("sync api call frequency count from kong.")
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	responseBody := &PrometheusResponse{}
+	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s", schema, r.PrometheusHost, r.PrometheusPort,
+		"/api/v1/query?query=rate(kong_latency_count{type=\"kong\"}[5m])")).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Infof("sync api call frequency from kong error %+v.", errs)
+		return fmt.Errorf("get api call frequency error %+v", errs)
+	}
+	klog.Infof("sync api call frequency from kong response: %d %s\n", response.StatusCode, string(body))
+	result := responseBody.Data.Result
+	if result == nil || len(result) == 0 {
+		klog.Warning("sync api call frequency from prometheus null.")
+		return nil
+	}
+	for index := range result {
+		route := responseBody.Data.Result[index].Metric.Route
+		num := responseBody.Data.Result[index].Value[1].(string)
+		count, _ := strconv.ParseFloat(num, 64)
+		count = math.Floor(count*60 + 0.5)
+		intCount := int(count)
+		klog.V(5).Infof("sync api call frequency from kong route count:  %f\n", count)
+		m[route] = intCount
+	}
+	route := responseBody.Data.Result[0].Metric.Route
+	num := responseBody.Data.Result[0].Value[1].(string)
+	klog.Infof("sync api call frequency from kong route info:  %s%s\n", route, num)
+	klog.Infof("sync api call frequency from kong result:  %+v", m)
 	return nil
 }

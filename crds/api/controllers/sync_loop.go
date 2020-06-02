@@ -96,13 +96,53 @@ func (r *ApiSynchronizer) SyncApiCountFromKong() error {
 		return fmt.Errorf("sync api count from kong failed: %+v", err)
 	}
 	klog.Infof("sync api count map list : %+v", countMap)
+	failedCountMap := make(map[string]int)
+	if err := r.Operator.syncApiFailedCountFromKong(failedCountMap); err != nil {
+		return fmt.Errorf("sync api failed count from kong failed: %+v", err)
+	}
+	klog.Infof("sync api failed count map list : %+v", failedCountMap)
+	latencyCountMap := make(map[string]int)
+	if err := r.Operator.syncLatencyCountFromKong(latencyCountMap); err != nil {
+		return fmt.Errorf("sync api latency count from kong failed: %+v", err)
+	}
+	klog.Infof("sync api latency count map list : %+v", latencyCountMap)
+
+	callFrequencyMap := make(map[string]int)
+	if err := r.Operator.syncApiCallFrequencyFromKong(callFrequencyMap); err != nil {
+		return fmt.Errorf("sync api call frequency from kong failed: %+v", err)
+	}
+	klog.Infof("sync api rate count map list : %+v", callFrequencyMap)
+
 	for _, value := range apiList.Items {
 		apiID := value.ObjectMeta.Name
+		needUpdateApi := false
 		if _, ok := countMap[apiID]; ok {
 			if value.Status.CalledCount != countMap[apiID] {
 				value.Status.CalledCount = countMap[apiID]
-				r.Update(ctx, &value)
+				needUpdateApi = true
 			}
+		}
+		if _, ok := failedCountMap[apiID]; ok {
+			if value.Status.FailedCount != failedCountMap[apiID] {
+				value.Status.FailedCount = failedCountMap[apiID]
+				needUpdateApi = true
+			}
+		}
+		if _, ok := latencyCountMap[apiID]; ok {
+			if value.Status.LatencyCount != latencyCountMap[apiID] {
+				value.Status.LatencyCount = latencyCountMap[apiID]
+				needUpdateApi = true
+			}
+		}
+		if _, ok := callFrequencyMap[apiID]; ok {
+			if value.Status.CallFrequency != callFrequencyMap[apiID] {
+				value.Status.CallFrequency = callFrequencyMap[apiID]
+				needUpdateApi = true
+			}
+		}
+		if needUpdateApi {
+			klog.V(5).Infof("need update api count: %+v", value)
+			r.Update(ctx, &value)
 		}
 	}
 	klog.Infof("sync api list %d", len(apiList.Items))

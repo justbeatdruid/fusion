@@ -34,9 +34,9 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 						case "__publish_time__":
 							m.Time = v
 						case "__producer_name__":
-							m.ProducerName= v
+							m.ProducerName = v
 						case "__partition__":
-							m.Partition=v
+							m.Partition = v
 						case "__key__":
 							m.Key = v
 						case "__row__":
@@ -49,7 +49,7 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 									//这种情况发送端直接发的string类型,没有经过base64编码
 									m.Message = v
 									size = size + binary.Size(v)
-								}else {
+								} else {
 									m.Message = string(decoded)
 									size = size + binary.Size(decoded)
 								}

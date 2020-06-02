@@ -21,25 +21,25 @@ const (
 )
 
 type Topic struct {
-	ID           string       `json:"id"`
-	Name         string       `json:"name"` //topic名称
-	Namespace    string       `json:"namespace"`
-	Tenant       string       `json:"tenant"`       //topic的所属租户名称
-	TopicGroup   string       `json:"topicGroup"`   //topic所属分组ID
-	PartitionNum int          `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
-	Partitioned  *bool        `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
-	Persistent   *bool        `json:"persistent"`   //是否持久化，默认为true，非必填
-	URL          string       `json:"url"`          //URL
-	CreatedAt    int64        `json:"createdAt"`    //创建Topic的时间戳
-	Status       v1.Status    `json:"status"`
-	Message      string       `json:"message"`
-	Permissions  []Permission `json:"permissions"`
-	Users        user.Users   `json:"users"`
-	Stats        *Stats       `json:"stats"`       //Topic的统计数据
-	Description  string       `json:"description"` //描述
-	ShowStatus   v1.ShowStatus       `json:"displayStatus"` //页面显示状态
-	AuthorizationStatus string  `json:"authorizationStatus"` //用户授权状态
-	Applications  []v1.Application `json:"applications"`  //绑定的应用列表
+	ID                  string           `json:"id"`
+	Name                string           `json:"name"` //topic名称
+	Namespace           string           `json:"namespace"`
+	Tenant              string           `json:"tenant"`       //topic的所属租户名称
+	TopicGroup          string           `json:"topicGroup"`   //topic所属分组ID
+	PartitionNum        int              `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
+	Partitioned         *bool            `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
+	Persistent          *bool            `json:"persistent"`   //是否持久化，默认为true，非必填
+	URL                 string           `json:"url"`          //URL
+	CreatedAt           int64            `json:"createdAt"`    //创建Topic的时间戳
+	Status              v1.Status        `json:"status"`
+	Message             string           `json:"message"`
+	Permissions         []Permission     `json:"permissions"`
+	Users               user.Users       `json:"users"`
+	Stats               *Stats           `json:"stats"`               //Topic的统计数据
+	Description         string           `json:"description"`         //描述
+	ShowStatus          v1.ShowStatus    `json:"displayStatus"`       //页面显示状态
+	AuthorizationStatus string           `json:"authorizationStatus"` //用户授权状态
+	Applications        []v1.Application `json:"applications"`        //绑定的应用列表
 }
 
 type Stats struct {
@@ -88,14 +88,14 @@ type ConsumerStat struct {
 }
 
 type Messages struct {
-	ProducerName interface{}      `json:"producerName"`
-	ID           interface{}      `json:"id"`
-	Time         interface{}      `json:"time"`
+	ProducerName interface{} `json:"producerName"`
+	ID           interface{} `json:"id"`
+	Time         interface{} `json:"time"`
 	Message      interface{} `json:"message"`
-	Size         interface{}         `json:"size"`
-	Partition    interface{}     `json:"partition"`
-	Key          interface{}     `json:"key"`
-	Total        interface{}         `json:"total"`
+	Size         interface{} `json:"size"`
+	Partition    interface{} `json:"partition"`
+	Key          interface{} `json:"key"`
+	Total        interface{} `json:"total"`
 }
 type Message struct {
 	TopicName string           `json:"topicName"`
@@ -108,14 +108,14 @@ type Message struct {
 type Actions []string
 
 type Permission struct {
-	AuthUserID   string  `json:"authUserId"`   //对应clientauth的ID
-	AuthUserName string  `json:"authUserName"` //对应clientauth的NAME
-	Actions      Actions `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
-	Status       v1.Status  `json:"status"`       //用户的授权状态，已授权、待删除、待授权
-	Token        string  `json:"token"`        //Token
-	Effective    bool    `json:"effective"`
-	IssuedAt     int64   `json:"issuedAt"`
-	ExpireAt     int64   `json:"expireAt"`
+	AuthUserID   string    `json:"authUserId"`   //对应clientauth的ID
+	AuthUserName string    `json:"authUserName"` //对应clientauth的NAME
+	Actions      Actions   `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
+	Status       v1.Status `json:"status"`       //用户的授权状态，已授权、待删除、待授权
+	Token        string    `json:"token"`        //Token
+	Effective    bool      `json:"effective"`
+	IssuedAt     int64     `json:"issuedAt"`
+	ExpireAt     int64     `json:"expireAt"`
 }
 
 type Statistics struct {

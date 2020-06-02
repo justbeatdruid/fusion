@@ -35,29 +35,29 @@ var oofsGVR = schema.GroupVersionResource{
 }
 
 type Service struct {
-	kubeClient       *clientset.Clientset
-	client           dynamic.NamespaceableResourceInterface
-	clientAuthClient dynamic.NamespaceableResourceInterface
-	topicGroupClient dynamic.NamespaceableResourceInterface
+	kubeClient        *clientset.Clientset
+	client            dynamic.NamespaceableResourceInterface
+	clientAuthClient  dynamic.NamespaceableResourceInterface
+	topicGroupClient  dynamic.NamespaceableResourceInterface
 	applicationClient dynamic.NamespaceableResourceInterface
-	errMsg           config.ErrorConfig
-	ip               string
-	host             int
-	authEnable       bool
-	adminToken       string
+	errMsg            config.ErrorConfig
+	ip                string
+	host              int
+	authEnable        bool
+	adminToken        string
 }
 
 func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topConfig *config.TopicConfig, errMsg config.ErrorConfig) *Service {
 	return &Service{client: client.Resource(oofsGVR),
-		clientAuthClient: client.Resource(clientauthv1.GetOOFSGVR()),
-		topicGroupClient: client.Resource(topicgroupv1.GetOOFSGVR()),
+		clientAuthClient:  client.Resource(clientauthv1.GetOOFSGVR()),
+		topicGroupClient:  client.Resource(topicgroupv1.GetOOFSGVR()),
 		applicationClient: client.Resource(appv1.GetOOFSGVR()),
-		errMsg:           errMsg,
-		ip:               topConfig.Host,
-		host:             topConfig.Port,
-		authEnable:       topConfig.AuthEnable,
-		adminToken:       topConfig.AdminToken,
-		kubeClient:       kubeClient,
+		errMsg:            errMsg,
+		ip:                topConfig.Host,
+		host:              topConfig.Port,
+		authEnable:        topConfig.AuthEnable,
+		adminToken:        topConfig.AdminToken,
+		kubeClient:        kubeClient,
 	}
 }
 
@@ -556,17 +556,16 @@ func (s *Service) BatchBindOrRelease(appid, operation string, topics []BindInfo,
 	}
 }
 
-
 func (s *Service) BatchBindApi(appid string, topics []BindInfo, opts ...util.OpOption) error {
 	op := util.OpList(opts...)
 
-	_, err := s.getApplication(appid,op.Namespace())
+	_, err := s.getApplication(appid, op.Namespace())
 	if err != nil {
 		return fmt.Errorf("get application error: %+v", err)
 	}
 
 	for _, t := range topics {
-		tp, err := s.Get(t.ID,  opts...)
+		tp, err := s.Get(t.ID, opts...)
 		if err != nil {
 			return fmt.Errorf("query topic by id error: %+v", err)
 		}
@@ -592,13 +591,13 @@ func (s *Service) BatchBindApi(appid string, topics []BindInfo, opts ...util.OpO
 func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.OpOption) error {
 	op := util.OpList(opts...)
 
-	app, err := s.getApplication(appid,op.Namespace())
+	app, err := s.getApplication(appid, op.Namespace())
 	if err != nil {
 		return fmt.Errorf("get application(%+v) error: %+v", appid, err)
 	}
 
 	for _, t := range topics {
-		tp, err := s.Get(t.ID,  opts...)
+		tp, err := s.Get(t.ID, opts...)
 		if err != nil {
 			return fmt.Errorf("query topic by id(%+v) error: %+v", t.ID, err)
 		}
@@ -627,6 +626,8 @@ func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.
 	}
 	return nil
 }
+
+
 func (s *Service) SendMessages(topicUrl string,messagesBody string,key string) (pulsar.MessageID,error){
 	client,err := s.GetPulsarClient()
 	if err!=nil {
@@ -638,3 +639,4 @@ func (s *Service) SendMessages(topicUrl string,messagesBody string,key string) (
 	}
 	return messageId,nil
 }
+

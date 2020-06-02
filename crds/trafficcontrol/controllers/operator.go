@@ -62,9 +62,7 @@ type RateRequestBody struct {
 	Consumer struct {
 		ID string `json:"id"`
 	} `json:"consumer"`
-	Config struct {
-		Minute int `json:"minute"`
-	} `json:"config"`
+	Config map[string]interface{} `json:"config"`
 }
 
 type RateResponseBody struct {
@@ -147,36 +145,36 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 
 func (r *Operator) getRequestBody(spec nlptv1.TrafficcontrolSpec) *RateLimitingRequestBody {
 	requestBody := &RateLimitingRequestBody{}
-	requestBody.Name = "rate-limiting"
-	requestBody.Config = make(map[string]interface{})
-	switch spec.Type {
-	case nlptv1.APIC:
-		requestBody.Config["limit_by"] = "service"
-	case nlptv1.IPC:
-		requestBody.Config["limit_by"] = "ip"
-	case nlptv1.APPC:
-		requestBody.Config["limit_by"] = "consumer"
-	default:
-		requestBody.Config["limit_by"] = "consumer"
-	}
+		requestBody.Name = "rate-limiting"
+		requestBody.Config = make(map[string]interface{})
+		switch spec.Type {
+		case nlptv1.APIC:
+			requestBody.Config["limit_by"] = "service"
+		case nlptv1.IPC:
+			requestBody.Config["limit_by"] = "ip"
+		case nlptv1.APPC:
+			requestBody.Config["limit_by"] = "consumer"
+		default:
+			requestBody.Config["limit_by"] = "consumer"
+		}
 
-	if spec.Config.Year != 0 {
-		requestBody.Config["year"] = spec.Config.Year
-	}
-	if spec.Config.Month != 0 {
-		requestBody.Config["month"] = spec.Config.Month
-	}
-	if spec.Config.Day != 0 {
-		requestBody.Config["day"] = spec.Config.Day
-	}
-	if spec.Config.Hour != 0 {
-		requestBody.Config["hour"] = spec.Config.Hour
-	}
-	if spec.Config.Minute != 0 {
-		requestBody.Config["minute"] = spec.Config.Minute
-	}
-	if spec.Config.Second != 0 {
-		requestBody.Config["second"] = spec.Config.Second
+		if spec.Config.Year != 0 {
+			requestBody.Config["year"] = spec.Config.Year
+		}
+		if spec.Config.Month != 0 {
+			requestBody.Config["month"] = spec.Config.Month
+		}
+		if spec.Config.Day != 0 {
+			requestBody.Config["day"] = spec.Config.Day
+		}
+		if spec.Config.Hour != 0 {
+			requestBody.Config["hour"] = spec.Config.Hour
+		}
+		if spec.Config.Minute != 0 {
+			requestBody.Config["minute"] = spec.Config.Minute
+		}
+		if spec.Config.Second != 0 {
+			requestBody.Config["second"] = spec.Config.Second
 	}
 	return requestBody
 }
@@ -277,7 +275,26 @@ func (r *Operator) AddSpecialAppRateLimitByKong(db *nlptv1.Trafficcontrol, route
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 	requestBody := &RateRequestBody{}
 	requestBody.Name = "rate-limiting"
-	requestBody.Config.Minute = db.Spec.Config.Special[index].Minute
+	requestBody.Config = make(map[string]interface{})
+	requestBody.Config["limit_by"] = "consumer"
+	if db.Spec.Config.Special[index].Year != 0 {
+		requestBody.Config["year"] = db.Spec.Config.Special[index].Year
+	}
+	if db.Spec.Config.Special[index].Month != 0 {
+		requestBody.Config["month"] = db.Spec.Config.Special[index].Month
+	}
+	if db.Spec.Config.Special[index].Day != 0 {
+		requestBody.Config["day"] = db.Spec.Config.Special[index].Day
+	}
+	if db.Spec.Config.Special[index].Hour != 0 {
+		requestBody.Config["hour"] = db.Spec.Config.Special[index].Hour
+	}
+	if db.Spec.Config.Special[index].Minute != 0 {
+		requestBody.Config["minute"] = db.Spec.Config.Special[index].Minute
+	}
+	if db.Spec.Config.Special[index].Second != 0 {
+		requestBody.Config["second"] = db.Spec.Config.Special[index].Second
+	}
 	requestBody.Consumer.ID = consumerId
 	responseBody := &RateResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
@@ -386,7 +403,24 @@ func (r *Operator) UpdateSpecialAppRateLimitConfig(db *nlptv1.Trafficcontrol, co
 				request = request.Retry(3, 5*time.Second, retryStatus...)
 				requestBody := &RateRequestBody{}
 				requestBody.Name = "rate-limiting"
-				requestBody.Config.Minute = db.Spec.Config.Special[j].Minute
+				if db.Spec.Config.Special[j].Year != 0 {
+					requestBody.Config["year"] = db.Spec.Config.Special[j].Year
+				}
+				if db.Spec.Config.Special[j].Month != 0 {
+					requestBody.Config["month"] = db.Spec.Config.Special[j].Month
+				}
+				if db.Spec.Config.Special[j].Day != 0 {
+					requestBody.Config["day"] = db.Spec.Config.Special[j].Day
+				}
+				if db.Spec.Config.Special[j].Hour != 0 {
+					requestBody.Config["hour"] = db.Spec.Config.Special[j].Hour
+				}
+				if db.Spec.Config.Special[j].Minute != 0 {
+					requestBody.Config["minute"] = db.Spec.Config.Special[j].Minute
+				}
+				if db.Spec.Config.Special[j].Second != 0 {
+					requestBody.Config["second"] = db.Spec.Config.Special[j].Second
+				}
 				requestBody.Consumer.ID = consumer[j]
 				response, body, errs := request.Send(requestBody).EndStruct(&RateResponseBody{})
 				if len(errs) > 0 || response.StatusCode != 200 {
@@ -441,7 +475,24 @@ func (r *Operator) UpdateSpecialAppRateLimit(db *nlptv1.Trafficcontrol, consumer
 				request = request.Retry(3, 5*time.Second, retryStatus...)
 				requestBody := &RateRequestBody{}
 				requestBody.Name = "rate-limiting"
-				requestBody.Config.Minute = db.Spec.Config.Special[index].Minute
+				if db.Spec.Config.Special[index].Year != 0 {
+					requestBody.Config["year"] = db.Spec.Config.Special[index].Year
+				}
+				if db.Spec.Config.Special[index].Month != 0 {
+					requestBody.Config["month"] = db.Spec.Config.Special[index].Month
+				}
+				if db.Spec.Config.Special[index].Day != 0 {
+					requestBody.Config["day"] = db.Spec.Config.Special[index].Day
+				}
+				if db.Spec.Config.Special[index].Hour != 0 {
+					requestBody.Config["hour"] = db.Spec.Config.Special[index].Hour
+				}
+				if db.Spec.Config.Special[index].Minute != 0 {
+					requestBody.Config["minute"] = db.Spec.Config.Special[index].Minute
+				}
+				if db.Spec.Config.Special[index].Second != 0 {
+					requestBody.Config["second"] = db.Spec.Config.Special[index].Second
+				}
 				requestBody.Consumer.ID = consumer[j]
 				response, body, errs := request.Send(requestBody).EndStruct(&RateResponseBody{})
 				if len(errs) > 0 || response.StatusCode != 200 {

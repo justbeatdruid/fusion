@@ -35,7 +35,8 @@ type Topicgroup struct {
 	ID          string        `json:"id"`
 	Name        string        `json:"name"` //Topic分组名称
 	Namespace   string        `json:"namespace"`
-	Description string        `json:"description"`        //描述
+	Description string        `json:"description"` //描述
+	TopicCount  int           `json:"topicCount"`
 	Policies    *Policies     `json:"policies,omitempty"` //Topic分组的策略
 	CreatedAt   int64         `json:"createdAt"`          //创建时间
 	Users       user.Users    `json:"users"`
@@ -150,8 +151,8 @@ func ToAPI(app *Topicgroup) *v1.Topicgroup {
 	crd.ObjectMeta.Namespace = app.Namespace
 
 	crd.Spec = v1.TopicgroupSpec{
-		Name:        app.Name,
-		Policies:    ToPolicesApi(app.Policies),
+		Name: app.Name,
+		//Policies:    ToPolicesApi(app.Policies),
 		Description: app.Description,
 	}
 
@@ -186,6 +187,9 @@ func ToModel(obj *v1.Topicgroup) *Topicgroup {
 }
 
 func ToPolicesModel(obj *v1.Policies) *Policies {
+	if obj == nil {
+		return nil
+	}
 	cRate, sRate, tRate := ToDispatchRateModel(obj)
 	bMap := ToBacklogQuotaModel(obj)
 	managedLedgerMaxMarkDeleteRate := ToManagedLedgerMaxMarkDeleteRateModel(obj)
@@ -250,7 +254,7 @@ func ToBacklogQuotaModel(obj *v1.Policies) map[string]BacklogQuota {
 
 func ToDispatchRateModel(obj *v1.Policies) (map[string]SubscribeRate, map[string]DispatchRate, map[string]DispatchRate) {
 	cRate := make(map[string]SubscribeRate)
-	if obj.ClusterSubscribeRate != nil {
+	if obj != nil && obj.ClusterSubscribeRate != nil {
 		for k, v := range *obj.ClusterSubscribeRate {
 			cRate[k] = SubscribeRate{
 				SubscribeThrottlingRatePerConsumer: v.SubscribeThrottlingRatePerConsumer,
@@ -260,7 +264,7 @@ func ToDispatchRateModel(obj *v1.Policies) (map[string]SubscribeRate, map[string
 	}
 
 	sRate := make(map[string]DispatchRate)
-	if obj.SubscriptionDispatchRate != nil {
+	if obj != nil && obj.SubscriptionDispatchRate != nil {
 		for k, v := range *obj.SubscriptionDispatchRate {
 			sRate[k] = DispatchRate{
 				DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
@@ -272,9 +276,9 @@ func ToDispatchRateModel(obj *v1.Policies) (map[string]SubscribeRate, map[string
 	}
 
 	tRate := make(map[string]DispatchRate)
-	if obj.TopicDispatchRate != nil {
+	if obj != nil && obj.TopicDispatchRate != nil {
 		for k, v := range *obj.TopicDispatchRate {
-			sRate[k] = DispatchRate{
+			tRate[k] = DispatchRate{
 				DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
 				DispatchThrottlingRateInByte: v.DispatchThrottlingRateInByte,
 				RelativeToPublishRate:        v.RelativeToPublishRate,
@@ -598,10 +602,10 @@ func (a *Topicgroup) Validate() error {
 		}
 	}
 
-	p := a.Policies
-	if err := p.Validate(); err != nil {
-		return err
-	}
+	//p := a.Policies
+	//if err := p.Validate(); err != nil {
+	//	return err
+	//}
 	a.ID = names.NewID()
 	return nil
 }

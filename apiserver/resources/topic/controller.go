@@ -85,7 +85,7 @@ type MessageResponse = struct {
 	Message   string      `json:"message"`
 	Data      interface{} `json:"data"`
 	Detail    string      `json:"detail"`
-	TotalSize interface{}         `json:"totalSize"`
+	TotalSize interface{} `json:"totalSize"`
 	Page      int         `json:"page"`
 }
 
@@ -107,8 +107,8 @@ type ImportResponse struct {
 }
 
 type BindOrReleaseRequest struct {
-	Operation string       `json:"operation"`
-	Topics      []service.BindInfo `json:"topics"`
+	Operation string             `json:"operation"`
+	Topics    []service.BindInfo `json:"topics"`
 }
 type BindOrReleaseResponse struct {
 	Code      int             `json:"code"`
@@ -721,7 +721,7 @@ func (c *controller) ExportTopics(req *restful.Request) (int, *ExportResponse) {
 	index := file.NewSheet("topics")
 	s := []string{"topic租户名称", "topic组名称", "topic名称", "多分区", "分区数量", "持久化"}
 	j := 0
-	for i := 65; i < 70; i++ {
+	for i := 65; i <= 70; i++ {
 		file.SetCellValue("topics", string(i)+"1", s[j])
 		j++
 	}
@@ -749,12 +749,12 @@ func (c *controller) ExportTopics(req *restful.Request) (int, *ExportResponse) {
 			}
 		} else {
 			//以坐标位置写入
-			file.SetCellValue("topics", string(cell)+strconv.Itoa(row), topic.Tenant)
+			file.SetCellValue("topics", string(cell)+strconv.Itoa(row), topic.Namespace)
 			file.SetCellValue("topics", string(cell+1)+strconv.Itoa(row), topic.TopicGroup)
 			file.SetCellValue("topics", string(cell+2)+strconv.Itoa(row), topic.Name)
-			file.SetCellValue("topics", string(cell+3)+strconv.Itoa(row), topic.Partitioned)
+			file.SetCellValue("topics", string(cell+3)+strconv.Itoa(row), *topic.Partitioned)
 			file.SetCellValue("topics", string(cell+4)+strconv.Itoa(row), topic.PartitionNum)
-			file.SetCellValue("topics", string(cell+5)+strconv.Itoa(row), topic.Persistent)
+			file.SetCellValue("topics", string(cell+5)+strconv.Itoa(row), *topic.Persistent)
 		}
 	}
 	file.SetActiveSheet(index)
@@ -1025,7 +1025,7 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 		partition := idSplit[2]
 		messageId = strings.Join(append(idSplit[0:2], idSplit[3]), ",")
 		sql = fmt.Sprintf(messageIdSql, messageId, partition)
-		sql = fmt.Sprintf(order, tenant,topicGroup,topic,sql,tenant, topicGroup, topic, sql, start, end)
+		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, tenant, topicGroup, topic, sql, start, end)
 	}
 	//根据key查询topic信息
 	if len(key) > 0 {
@@ -1067,10 +1067,10 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 		startTime = time.Unix(startTimeInt64, 0).Format("2006-01-02 15:04:05")
 		endTime = time.Unix(endTimeInt64, 0).Format("2006-01-02 15:04:05")
 		sql = fmt.Sprintf(timeSql, startTime, endTime)
-		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql,tenant, topicGroup, topic, sql, start, end)
+		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, tenant, topicGroup, topic, sql, start, end)
 	}
 	httpStatus, messageResponse = c.QueryTopicMessage(sql)
-    messageResponse.Page = int(p)
+	messageResponse.Page = int(p)
 	return httpStatus, messageResponse
 }
 func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
@@ -1089,8 +1089,8 @@ func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
 		}
 	}
 	return http.StatusOK, &MessageResponse{
-		Code: success,
-		Data: messages,
+		Code:      success,
+		Data:      messages,
 		TotalSize: messages[0].Total,
 	}
 }

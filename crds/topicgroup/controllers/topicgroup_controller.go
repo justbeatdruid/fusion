@@ -68,9 +68,9 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			namespace.Status.Status = nlptv1.Created
 			namespace.Status.Message = "success"
 			namespace.Spec.Available = true
-			r, err := r.Operator.GetNamespacePolicies(namespace)
+			p, err := r.Operator.GetNamespacePolicies(namespace)
 			if err == nil {
-				namespace.Spec.Policies = r
+				namespace.Spec.Policies = p
 				if namespace.Spec.Policies != nil {
 					if namespace.Spec.Policies.DeduplicationEnabled == nil {
 						*namespace.Spec.Policies.DeduplicationEnabled = false

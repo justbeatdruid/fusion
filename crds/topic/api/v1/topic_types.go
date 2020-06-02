@@ -30,22 +30,21 @@ type TopicSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Topic. Edit Topic_types.go to remove/update
-	Name          string       `json:"name"`
-	TopicGroup    string       `json:"topicGroup"`   //topic分组ID
-	PartitionNum  int          `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
-	Partitioned   bool         `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
-	Persistent    bool         `json:"persistent"`   //是否持久化，默认为true，非必填
-	Url           string       `json:"url"`          //Topic url
-	Permissions   []Permission `json:"permissions"`
-	Stats         Stats        `json:"stats"`       //Topic的统计数据
-	Applications  []Application     `json:"applications"`      //已绑定的应用ID列表
-	Description   string       `json:"description"` //描述
-	DisplayStatus ShowStatus   `json:"disStatus"`
-
+	Name          string        `json:"name"`
+	TopicGroup    string        `json:"topicGroup"`   //topic分组ID
+	PartitionNum  int           `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
+	Partitioned   bool          `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
+	Persistent    bool          `json:"persistent"`   //是否持久化，默认为true，非必填
+	Url           string        `json:"url"`          //Topic url
+	Permissions   []Permission  `json:"permissions"`
+	Stats         Stats         `json:"stats"`        //Topic的统计数据
+	Applications  []Application `json:"applications"` //已绑定的应用ID列表
+	Description   string        `json:"description"`  //描述
+	DisplayStatus ShowStatus    `json:"disStatus"`
 }
 
 type Application struct {
-	ID string `json:"id"`
+	ID     string `json:"id"`
 	Status Status `json:"status"`
 }
 type Actions []string
@@ -71,10 +70,10 @@ const (
 type TopicStatus struct {
 	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
-	Status  Status `json:"status"`
-	Message string `json:"message"`
-	AuthorizationStatus Status  `json:"authorizationStatus"`
-	BindStatus Status `json:"bindStatus"`
+	Status              Status `json:"status"`
+	Message             string `json:"message"`
+	AuthorizationStatus Status `json:"authorizationStatus"`
+	BindStatus          Status `json:"bindStatus"`
 }
 
 type PermissionStatus struct {
@@ -88,50 +87,47 @@ type Status string
 
 const (
 	//Init     Status = "init"
-	Creating Status = "creating"
-	Created  Status = "created"
+	Creating     Status = "creating"
+	Created      Status = "created"
 	CreateFailed Status = "createFailed"
-	Deleting Status = "deleting"
+	Deleting     Status = "deleting"
 	DeleteFailed Status = "deleteFailed"
 	//Error    Status = "error"
-	Updating Status = "updating"
-	Updated  Status = "updated"
-	UpdateFailed Status = "updateFailed"
-	AuthorizeFailed Status = "authorizeFailed"
-	Authorizing Status = "authorizing"
-	Authorized Status = "authorized"
-	DeletingAuthorization = "deletingAuthorization"
-	DeleteAuthorizationFailed = "deleteAuthorizationFailed"
-	DeletedAuthorization = "deletedAuthorization"
-	BindingOrUnBinding = "bindingOrUnbinding"
-	Binding Status = "binding"
-	Bound Status = "bound"
-	BindFailed Status = "bindFailed"
-	Unbinding Status = "unBinding"
-	UnbindFailed Status = "unBindFailed"
-	UnbindSuccess Status = "unBindSuccess"
-
-
+	Updating                  Status = "updating"
+	Updated                   Status = "updated"
+	UpdateFailed              Status = "updateFailed"
+	AuthorizeFailed           Status = "authorizeFailed"
+	Authorizing               Status = "authorizing"
+	Authorized                Status = "authorized"
+	DeletingAuthorization            = "deletingAuthorization"
+	DeleteAuthorizationFailed        = "deleteAuthorizationFailed"
+	DeletedAuthorization             = "deletedAuthorization"
+	BindingOrUnBinding               = "bindingOrUnbinding"
+	Binding                   Status = "binding"
+	Bound                     Status = "bound"
+	BindFailed                Status = "bindFailed"
+	Unbinding                 Status = "unBinding"
+	UnbindFailed              Status = "unBindFailed"
+	UnbindSuccess             Status = "unBindSuccess"
 )
 
-type ShowStatus string 
-const(
-	CreatingOfShow     ShowStatus = "创建中"
-	CreatedOfShow      ShowStatus = "创建成功"
-	CreateFailedOfShow ShowStatus = "创建失败"
-	UpdatingOfShow     ShowStatus = "更新中"
-	UpdatedOfShow      ShowStatus = "更新成功"
-	UpdateFailedOfShow ShowStatus = "更新失败"
-	DeletingOfShow     ShowStatus = "删除中"
-	DeleteFailedOfShow ShowStatus = "删除失败"
-	AuthorizingOfShow  ShowStatus = "授权中"
-	AuthorizeFailedOfShow ShowStatus = "授权失败"
-	AuthorizedFailedOfShow ShowStatus = "授权成功"
-	DeletingAuthorizationOfShow ShowStatus = "删除授权中"
+type ShowStatus string
+
+const (
+	CreatingOfShow                  ShowStatus = "创建中"
+	CreatedOfShow                   ShowStatus = "创建成功"
+	CreateFailedOfShow              ShowStatus = "创建失败"
+	UpdatingOfShow                  ShowStatus = "更新中"
+	UpdatedOfShow                   ShowStatus = "更新成功"
+	UpdateFailedOfShow              ShowStatus = "更新失败"
+	DeletingOfShow                  ShowStatus = "删除中"
+	DeleteFailedOfShow              ShowStatus = "删除失败"
+	AuthorizingOfShow               ShowStatus = "授权中"
+	AuthorizeFailedOfShow           ShowStatus = "授权失败"
+	AuthorizedFailedOfShow          ShowStatus = "授权成功"
+	DeletingAuthorizationOfShow     ShowStatus = "删除授权中"
 	DeleteAuthorizationFailedOfShow ShowStatus = "删除授权失败"
-	DeletedAuthorizationOfShow ShowStatus = "删除授权成功"
-
-
+	DeletedAuthorizationOfShow      ShowStatus = "删除授权成功"
 )
 
 // +kubebuilder:object:root=true
@@ -203,7 +199,9 @@ func init() {
 	SchemeBuilder.Register(&Topic{}, &TopicList{})
 	initShowStatusMap()
 }
+
 var ShowStatusMap = make(map[Status]ShowStatus)
+
 func (in *Topic) GetUrl() (url string) {
 
 	var build strings.Builder
@@ -231,6 +229,5 @@ func initShowStatusMap() {
 	ShowStatusMap[UpdateFailed] = UpdateFailedOfShow
 	ShowStatusMap[Deleting] = DeletingOfShow
 	ShowStatusMap[DeleteFailed] = DeleteFailedOfShow
-
 
 }
