@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
 
@@ -522,6 +523,9 @@ func (s *Service) AddPartitionsOfTopic(id string, partitionNum int, ops ...util.
 	tp, err := s.Get(id, ops...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	if tp.Spec.PartitionNum>partitionNum {
+		return nil,errors.New("The number of partitions must be larger than the original ")
 	}
 	tp.Status.Status = v1.Updating
 	tp.Spec.PartitionNum = partitionNum
