@@ -85,6 +85,9 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
                     ids := strings.Split(id,",")
                     ids = append(ids[0:2], par,ids[2])
                     id = strings.Join(ids,",")
+                    id = strings.Trim(id,"(")
+                    id = strings.Trim(id,")")
+                    id = strings.ReplaceAll(id,",",":")
                     m.ID = id
 					m.Size = size
 					M = append(M, m)
