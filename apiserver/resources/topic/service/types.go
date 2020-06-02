@@ -14,8 +14,6 @@ import (
 )
 
 const (
-	DefaultTenant    = "public"
-	DefaultNamespace = "default"
 	Separator        = "/"
 	NameReg          = "^[-=:.\\w]{1,100}$"
 )
@@ -24,7 +22,6 @@ type Topic struct {
 	ID                  string           `json:"id"`
 	Name                string           `json:"name"` //topic名称
 	Namespace           string           `json:"namespace"`
-	Tenant              string           `json:"tenant"`       //topic的所属租户名称
 	TopicGroup          string           `json:"topicGroup"`   //topic所属分组ID
 	PartitionNum        int              `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
 	Partitioned         *bool            `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
@@ -83,8 +80,34 @@ type SubscriptionStat struct {
 	IsReplicated                     bool           `json:"isReplicated"`
 }
 
+/**
+  "msgRateOut": 0.0,
+            "msgThroughputOut": 0.0,
+            "msgRateRedeliver": 0.0,
+            "consumerName": "lxj",
+            "availablePermits": 989,
+            "unackedMessages": 11,
+            "blockedConsumerOnUnackedMsgs": false,
+            "lastAckedTimestamp": 1591006348714,
+            "lastConsumedTimestamp": 1591006348527,
+            "metadata": {},
+            "connectedSince": "2020-06-01T18:11:56.981+08:00",
+            "address": "/10.233.91.230:55424"
+ */
 type ConsumerStat struct {
 	MsgRateOut float64 `json:"msgRateOut"`
+	MsgThroughputOut float64 `json:"msgThroughputOut"`
+	ConsumerName string `json:"consumerName"`
+	AvailablePermits int `json:"availablePermits"`
+	UnackedMessages int `json:"unackedMessages"`
+	LastAckedTimestamp int64 `json:"lastAckedTimestamp"`
+	LastConsumedTimestamp int64 `json:"lastConsumedTimestamp"`
+	ConnectedSince string `json:"connectedSince"`
+	Address string `json:"address"`
+}
+
+type Subscriptions struct{
+
 }
 
 type Messages struct {
@@ -213,7 +236,7 @@ func ToModel(obj *v1.Topic) *Topic {
 func ToSubscriptionStatModel(obj v1.SubscriptionStat) SubscriptionStat {
 	var consumers []ConsumerStat
 	if obj.Consumers != nil {
-		consumers = make([]ConsumerStat, len(obj.Consumers))
+		consumers = make([]ConsumerStat, 0)
 		for _, c := range obj.Consumers {
 			consumers = append(consumers, ToConsumersModel(c))
 		}
@@ -248,7 +271,19 @@ func ParseFloat(s string) float64 {
 }
 
 func ToConsumersModel(obj v1.ConsumerStat) ConsumerStat {
-	return ConsumerStat{MsgRateOut: ParseFloat(obj.MsgRateOut)}
+	return ConsumerStat{
+		MsgRateOut: ParseFloat(obj.MsgRateOut),
+		MsgThroughputOut: ParseFloat(obj.MsgThroughputOut),
+		ConnectedSince:obj.ConnectedSince,
+		ConsumerName: obj.ConsumerName,
+		AvailablePermits: obj.AvailablePermits,
+		Address: obj.Address,
+		UnackedMessages: obj.UnackedMessages,
+		LastAckedTimestamp: obj.LastAckedTimestamp,
+		LastConsumedTimestamp: obj.LastConsumedTimestamp,
+
+
+	}
 }
 
 func ToStatsModel(obj v1.Stats) *Stats {
@@ -338,7 +373,7 @@ func (a *Topic) GetUrl() (url string) {
 		build.WriteString("persistent://")
 	}
 
-	build.WriteString(a.Tenant)
+	build.WriteString(a.Namespace)
 	build.WriteString(Separator)
 	build.WriteString(a.TopicGroup)
 	build.WriteString(Separator)
