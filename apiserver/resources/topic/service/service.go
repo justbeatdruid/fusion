@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
+
 	"github.com/chinamobile/nlpt/apiserver/kubernetes"
 	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
+	"github.com/chinamobile/nlpt/apiserver/resources/topic/pulsargo"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	appv1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	clientauthv1 "github.com/chinamobile/nlpt/crds/clientauth/api/v1"
@@ -624,4 +626,15 @@ func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.
 		}
 	}
 	return nil
+}
+func (s *Service) SendMessages(topicUrl string,messagesBody string,key string) (pulsar.MessageID,error){
+	client,err := s.GetPulsarClient()
+	if err!=nil {
+		return nil,fmt.Errorf("create pulsar client error: %s",err)
+	}
+	messageId,err := pulsargo.SendMessages(client,topicUrl,messagesBody,key)
+    if err!=nil{
+    	return nil,fmt.Errorf("SendMessages error %s",err)
+	}
+	return messageId,nil
 }

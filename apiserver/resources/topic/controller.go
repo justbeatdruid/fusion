@@ -66,7 +66,7 @@ type DeleteResponse = Wrapped
 type GrantResponse = Wrapped
 type ExportResponse = Wrapped
 type AddPartitions = Wrapped
-
+type SendMessagesResponse =ListResponse
 /*type DeleteResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -1275,4 +1275,50 @@ func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *BindOrRe
 	}
 
 	return 0, nil
+}
+
+func (c *controller) SendMessages(req *restful.Request)  (int,*SendMessagesResponse){
+	 sM := &service.SendMessages{}
+	 if err := req.ReadEntity(sM);err!=nil{
+	 	return http.StatusInternalServerError,&SendMessagesResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorReadEntity,
+			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
+			Data:      nil,
+			Detail:    fmt.Sprintf("cannot read entity: %+v", err),
+		}
+	 }
+     topicId := sM.ID
+     authUser,err := auth.GetAuthUser(req)
+     if err!=nil{
+     	return http.StatusInternalServerError,&SendMessagesResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Data:      nil,
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	 }
+      tp,err := c.service.GetTopic(topicId,util.WithNamespace(authUser.Namespace));
+      if err!=nil{
+		 return http.StatusInternalServerError, &SendMessagesResponse{
+			 Code:      fail,
+			 ErrorCode: tperror.ErrorGetTopicInfo,
+			 Message:   c.errMsg.Topic[tperror.ErrorGetTopicInfo],
+			 Detail:    fmt.Sprintf("get database error: %+v", err),
+		 }
+	 }
+     messageId,err := c.service.SendMessages(tp.URL,sM.MessageBody,sM.Key)
+     if err!=nil{
+		 return http.StatusInternalServerError, &SendMessagesResponse{
+			 Code:      fail,
+			 ErrorCode: tperror.ErrorSendMessagesError,
+			 Message:   c.errMsg.Topic[tperror.ErrorSendMessagesError],
+			 Detail:    fmt.Sprintf("send message error: %+v", err),
+		 }
+	 }
+	 return http.StatusOK,&SendMessagesResponse{
+		    Code:      success,
+		    Data:      messageId,
+	 }
 }
