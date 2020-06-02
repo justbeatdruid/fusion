@@ -51,6 +51,19 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 	}
 	klog.Infof("get new application event: %+v", *application)
 
+	//add topic token
+	if application.Status.Status == nlptv1.Created && len(application.Spec.TopicAuth.Token) == 0 {
+		klog.Infof("need add topic token : %+v", *application)
+		token, err := r.Operator.CreateTopicToken(application.ObjectMeta.Name)
+		if err != nil {
+			klog.Errorf("cannot create topic token : %+v", err)
+		}
+		klog.Infof("get topic token : %s", token)
+		application.Spec.TopicAuth.Token = token
+		r.Update(ctx, application)
+		return ctrl.Result{}, nil
+	}
+
 	// your logic here
 	if application.Status.Status == nlptv1.Init {
 		// call kong api create

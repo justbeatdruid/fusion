@@ -21,9 +21,10 @@ var headers = map[string]string{
 var retryStatus = []int{http.StatusBadRequest, http.StatusInternalServerError}
 
 type Operator struct {
-	Host   string
-	Port   int
-	CAFile string
+	Host       string
+	Port       int
+	CAFile     string
+	TopicToken string
 }
 
 type ConsumerRequestBody struct {
@@ -97,12 +98,13 @@ func (r *requestLogger) Println(v ...interface{}) {
 	klog.V(4).Infof("%+v", v)
 }
 
-func NewOperator(host string, port int, cafile string) (*Operator, error) {
+func NewOperator(host string, port int, cafile string, token string) (*Operator, error) {
 	klog.Infof("NewOperator  event:%s %d %s", host, port, cafile)
 	return &Operator{
-		Host:   host,
-		Port:   port,
-		CAFile: cafile,
+		Host:       host,
+		Port:       port,
+		CAFile:     cafile,
+		TopicToken: token,
 	}, nil
 }
 
@@ -212,4 +214,23 @@ func (r *Operator) DeleteConsumerByKong(db *nlptv1.Application) (err error) {
 	}
 
 	return nil
+}
+
+func (r *Operator) CreateTopicToken(username string) (string, error) {
+	var content = []byte(r.TopicToken)
+	jwtToken := jwt.New(jwt.SigningMethodHS256)
+	header := make(map[string]interface{})
+
+	//默认用HS256算法
+	header["alg"] = jwt.SigningMethodHS256.Name
+	claims := make(jwt.MapClaims)
+	claims["sub"] = username
+
+	jwtToken.Claims = claims
+	jwtToken.Header = header
+	ts, err := jwtToken.SignedString(content)
+	if err != nil {
+		return "", err
+	}
+	return ts, nil
 }
