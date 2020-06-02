@@ -998,8 +998,8 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:      1,
 			ErrorCode: tperror.ErrorQueryMessage,
-			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
-			Detail:    fmt.Errorf("page error: %+v", err).Error(),
+			Message:   c.errMsg.Topic[tperror.ErrorQueryMessage],
+			Detail:    fmt.Sprintf("page error: %+v ", err),
 		}
 	}
 	s, err := strconv.ParseInt(size, 10, 64)
@@ -1007,7 +1007,7 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:      1,
 			ErrorCode: tperror.ErrorQueryMessage,
-			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+			Message:   c.errMsg.Topic[tperror.ErrorQueryMessage],
 			Detail:    fmt.Errorf("size error: %+v", err).Error(),
 		}
 	}
@@ -1061,7 +1061,7 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 			return http.StatusInternalServerError, &MessageResponse{
 				Code:      1,
 				ErrorCode: tperror.ErrorQueryMessage,
-				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+				Message:   c.errMsg.Topic[tperror.ErrorQueryMessage],
 				Detail:    fmt.Errorf("startTime error: %+v", err).Error(),
 			}
 		}
@@ -1071,7 +1071,7 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 			return http.StatusInternalServerError, &MessageResponse{
 				Code:      1,
 				ErrorCode: tperror.ErrorQueryMessage,
-				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+				Message:   c.errMsg.Topic[tperror.ErrorQueryMessage],
 				Detail:    fmt.Errorf("endTime error: %+v", err).Error(),
 			}
 		}
@@ -1096,7 +1096,7 @@ func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:      1,
 			ErrorCode: tperror.ErrorQueryMessage,
-			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+			Message:   c.errMsg.Topic[tperror.ErrorQueryMessage],
 			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	}
@@ -1110,6 +1110,7 @@ func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
 		return http.StatusOK, &MessageResponse{
 			Code:      success,
 			Data:      messages,
+			TotalSize: 0,
 		}
 	}
 
@@ -1201,7 +1202,7 @@ func (c *controller) QueryParamterValidate(reg string, param string) (int, *Mess
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:      1,
 			ErrorCode: tperror.ErrorQueryMessage,
-			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], err.Error()),
+			Message:   c.errMsg.Topic[tperror.ErrorQueryMessage],
 			Detail:    fmt.Errorf("regexp error: %+v", err).Error(),
 		}, 1
 	}
