@@ -97,7 +97,7 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 	body.Data.Users = user.InitWithOwner(authuser.Name)
 	body.Data.Namespace = authuser.Namespace
 	if db, err, code := c.service.CreateTrafficcontrol(body.Data); err != nil {
-		if strings.Contains(err.Error(), "Öµ±ØĞëĞ¡ÓÚÃ¿") {
+		if strings.Contains(err.Error(), "å¿…é¡»å°äºæ¯") {
 			comma := strings.Index(err.Error(),"Ã¿")
 			return http.StatusInternalServerError, &CreateResponse{
 				Code: 2,
