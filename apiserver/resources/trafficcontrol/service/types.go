@@ -180,7 +180,7 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 			atime[5] = "年"
 			for i:=0; i<len(list2)-1;i++ {
 				if list[list2[i]] > list[list2[i+1]] {
-					return fmt.Errorf("ÿ%s��ֵ����С��ÿ%s��ֵ",atime[list2[i]],atime[list2[i+1]])
+					return fmt.Errorf("每%s的次数必须小于每%s的次数",atime[list2[i]],atime[list2[i+1]])
 				}
 			}
 		}

@@ -355,6 +355,9 @@ func (s *Service) BindApi(id string, apis []v1.Api, opts ...util.OpOption) (*Res
 		if err != nil {
 			return nil, fmt.Errorf("cannot get api: %+v", err)
 		}
+		if apiSource.Status.PublishStatus != apiv1.Released {
+			return nil, fmt.Errorf("api not released: %s", apiSource.Spec.Name)
+		}
 		// 1个API只能绑定一个
 		if len(apiSource.Spec.Restriction.ID) > 0 {
 			return nil, fmt.Errorf("api alrady bound to restriction")
