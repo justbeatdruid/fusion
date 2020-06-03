@@ -2,13 +2,14 @@ package application
 
 import (
 	"fmt"
-	v1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/chinamobile/nlpt/apiserver/mutex"
 	"github.com/chinamobile/nlpt/apiserver/resources/application/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	v1 "github.com/chinamobile/nlpt/crds/application/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
@@ -532,29 +533,29 @@ func (c *controller) ChangeUser(req *restful.Request) (int, *user.UserResponse) 
 	}
 }
 
-func (c *controller) GetUsers(req *restful.Request) (int, *user.ListResponse) {
+func (c *controller) GetUsers(req *restful.Request) (int, map[string]string, *user.ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
 	id := req.PathParameter("id")
 	if len(id) == 0 {
-		return http.StatusInternalServerError, &user.ListResponse{
+		return http.StatusInternalServerError, nil, &user.ListResponse{
 			Code:      1,
 			ErrorCode: "002000014",
 			Message:   c.errMsg.Application["002000014"],
 			Detail:    "id in path parameter is null",
 		}
 	}
-	_, err := auth.GetAuthUser(req)
+	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
-		return http.StatusInternalServerError, &user.ListResponse{
+		return http.StatusInternalServerError, nil, &user.ListResponse{
 			Code:      1,
 			ErrorCode: "002000003",
 			Message:   c.errMsg.Application["002000003"],
 			Detail:    "auth model error",
 		}
 	}
-	if ul, err := c.service.GetUsers(id); err != nil {
-		return http.StatusInternalServerError, &user.ListResponse{
+	if ul, isAdmin, err := c.service.GetUsers(id, authuser.Name); err != nil {
+		return http.StatusInternalServerError, nil, &user.ListResponse{
 			Code:      2,
 			ErrorCode: "000000001",
 			Message:   c.errMsg.Application["000000001"],
@@ -563,18 +564,20 @@ func (c *controller) GetUsers(req *restful.Request) (int, *user.ListResponse) {
 	} else {
 		data, err := util.PageWrap(ul, page, size)
 		if err != nil {
-			return http.StatusInternalServerError, &user.ListResponse{
+			return http.StatusInternalServerError, nil, &user.ListResponse{
 				Code:      1,
 				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 				ErrorCode: "002000009",
 				Message:   c.errMsg.Application["002000009"],
 			}
 		}
-		return http.StatusOK, &user.ListResponse{
-			Code:      0,
-			ErrorCode: "0",
-			Data:      data,
-		}
+		return http.StatusOK, map[string]string{
+				"isadmin": strconv.FormatBool(isAdmin),
+			}, &user.ListResponse{
+				Code:      0,
+				ErrorCode: "0",
+				Data:      data,
+			}
 	}
 }
 

@@ -344,6 +344,9 @@ func (s *Service) GetTable(id, table string, opts ...util.OpOption) (*Table, err
 }
 
 func (s *Service) GetFields(id, table string, opts ...util.OpOption) (*Fields, error) {
+	if table == "" {
+		return nil, fmt.Errorf("table id or name is null")
+	}
 	result := &Fields{}
 	ds, err := s.Get(id, opts...)
 	if err != nil {
@@ -357,25 +360,33 @@ func (s *Service) GetFields(id, table string, opts ...util.OpOption) (*Fields, e
 		//mysql类型
 		if ds.Spec.RDB.Type == "mysql" {
 			//查询表结构sql
-			querySql := "select COLUMN_NAME '字段名称',COLUMN_TYPE '字段类型长度',IF(EXTRA='auto_increment',CONCAT(COLUMN_KEY," +
-				"'(', IF(EXTRA='auto_increment','自增长',EXTRA),')'),COLUMN_KEY) '主外键',IS_NULLABLE '空标识',COLUMN_COMMENT " +
-				"'字段说明' from information_schema.columns where table_name='" + table + "'" +
-				" and table_schema='" + ds.Spec.RDB.Database + "'"
+			querySql := `SELECT
+    COLUMN_NAME 'column_name',
+    COLUMN_TYPE 'column_type',
+    IF(EXTRA='auto_increment',CONCAT(COLUMN_KEY,
+                                     '(', IF(EXTRA='auto_increment','auto_increment',EXTRA),')'),
+                                     COLUMN_KEY) 'primary_key',
+    IS_NULLABLE 'nullable',
+    COLUMN_COMMENT 'description' 
+FROM information_schema.columns
+WHERE table_name='%s'
+    AND table_schema='%s'`
+			querySql = fmt.Sprintf(querySql, table, ds.Spec.RDB.Database)
 			mysqlData, err := driver.GetRDBData(ds, querySql)
 			if err != nil {
 				return nil, err
 			}
 			for _, v := range mysqlData {
 				table := rdb.Field{}
-				table.Name = v["字段名称"]
-				table.DataType = v["字段类型长度"]
-				table.Description = v["字段说明"]
-				if len(v["主外键"]) == 0 {
+				table.Name = v["column_name"]
+				table.DataType = v["column_type"]
+				table.Description = v["description"]
+				if len(v["primary_key"]) == 0 {
 					table.PrimaryKey = false
 				} else {
 					table.PrimaryKey = true
 				}
-				table.IsNullAble = strings.ToUpper(v["空标识"]) == "YES"
+				table.IsNullAble = strings.ToUpper(v["nullable"]) == "YES"
 				result.RDBFields = append(result.RDBFields, table)
 			}
 			//查询索引sql
@@ -516,6 +527,45 @@ func (s *Service) Query(id, querySql string, opts ...util.OpOption) (interface{}
 		return nil, fmt.Errorf("unsupported datasource type: %s", ds.Spec.Type)
 	}
 	return driver.GetRDBData(ds, querySql)
+}
+
+func (s *Service) Match(sId, sTable, tId, tTable string, opts ...util.OpOption) ([]FieldsTuple, error) {
+	sfields, err := s.GetFields(sId, sTable, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get source datasource fields: %+v", err)
+	}
+	tfields, err := s.GetFields(tId, tTable, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get target datasource fields: %+v", err)
+	}
+	klog.Infof("srouce fields=%+v", sfields.RDBFields)
+	klog.Infof("target fields=%+v", tfields.RDBFields)
+	if sfields.RDBFields == nil || len(sfields.RDBFields) == 0 ||
+		tfields.RDBFields == nil || len(tfields.RDBFields) == 0 {
+		return []FieldsTuple{}, nil
+	}
+	result := make([]FieldsTuple, 0)
+	find := func(name string) (string, string, bool) {
+		for _, f := range tfields.RDBFields {
+			if name == f.Name {
+				return f.Name, f.DataType, true
+			}
+		}
+		return "", "", false
+	}
+	for _, f := range sfields.RDBFields {
+		if n, t, ok := find(f.Name); ok {
+			result = append(result, FieldsTuple{
+				SourceFieldName: f.Name,
+				SourceFieldType: f.DataType,
+				TargetFieldName: n,
+				TargetFieldType: t,
+			})
+		} else {
+			return []FieldsTuple{}, nil
+		}
+	}
+	return result, nil
 }
 
 /*

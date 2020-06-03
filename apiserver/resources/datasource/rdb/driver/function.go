@@ -12,6 +12,7 @@ import (
 )
 
 func GetRDBData(ds *v1.Datasource, querySql string) ([]map[string]string, error) {
+	klog.V(5).Infof("query rdb with sql: %s", querySql)
 	if ds == nil || ds.Spec.RDB == nil {
 		return nil, fmt.Errorf("datasource connect info is null")
 	}

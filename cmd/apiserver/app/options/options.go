@@ -62,7 +62,7 @@ func NewServerRunOptions() *ServerRunOptions {
 	}
 
 	if len(s.CrdNamespace) == 0 {
-		klog.Infof("cannot find environmnent MY_POD_NAMESPACE, use default")
+		klog.V(4).Infof("cannot find environmnent MY_POD_NAMESPACE, use default")
 		s.CrdNamespace = "default"
 	}
 
