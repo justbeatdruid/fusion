@@ -1017,7 +1017,7 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	if len(messageId) > 0 {
 		//通过pulsar客户端查出来的id格式为622:1:-1:0
 		//将冒号换成逗号
-		strings.ReplaceAll(messageId, ":", ",")
+		messageId = strings.ReplaceAll(messageId, ":", ",")
 		//两边没有括号就加上括号
 		h, m, ok := c.QueryParamterValidate(`^\(`, messageId)
 		if ok == 1 {
