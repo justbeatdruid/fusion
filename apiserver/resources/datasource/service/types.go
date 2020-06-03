@@ -229,3 +229,10 @@ func support(tp v1.Type) bool {
 	}
 	return false
 }
+
+type FieldsTuple struct {
+	SourceFieldName string `json:"sourceFieldName"`
+	SourceFieldType string `json:"sourceFieldType"`
+	TargetFieldName string `json:"targetFieldName"`
+	TargetFieldType string `json:"targetFieldType"`
+}

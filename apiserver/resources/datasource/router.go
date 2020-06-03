@@ -102,6 +102,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.GET("/datasources/match").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("automatically match two rdb datasources fields").
+		To(r.match).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	/*
 		ws.Route(ws.GET("/datasources/{apiId}/data").
 			Consumes(restful.MIME_JSON).
@@ -184,5 +192,10 @@ func (r *router) testSql(request *restful.Request, response *restful.Response) {
 
 func (r *router) doStatistics(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DoStatistics(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) match(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.Match(request)
 	response.WriteHeaderAndEntity(code, result)
 }

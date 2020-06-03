@@ -458,6 +458,34 @@ func (c *controller) GetField(req *restful.Request) (int, *Unstructured) {
 	}
 }
 
+func (c *controller) Match(req *restful.Request) (int, *Unstructured) {
+	sid := req.QueryParameter("sourceId")
+	st := req.QueryParameter("sourceTable")
+	tid := req.QueryParameter("targetId")
+	tt := req.QueryParameter("targetTable")
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "006000005"
+		return http.StatusInternalServerError, &Unstructured{
+			Code:      1,
+			ErrorCode: code,
+			Message:   c.errCode[code],
+			Detail:    "auth model error",
+		}
+	}
+	result, err := c.service.Match(sid, st, tid, tt, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace))
+	if err != nil {
+		return http.StatusInternalServerError, &Unstructured{
+			Code:   1,
+			Detail: fmt.Errorf("match datasources fields error: %+v", err).Error(),
+		}
+	}
+	return http.StatusOK, &Unstructured{
+		Code: 0,
+		Data: result,
+	}
+}
+
 /*
 func (c *controller) getDataByApi(req *restful.Request) (int, *QueryDataResponse) {
 	apiId := req.PathParameter("apiId")
