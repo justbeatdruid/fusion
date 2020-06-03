@@ -98,7 +98,7 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 	body.Data.Namespace = authuser.Namespace
 	if db, err, code := c.service.CreateTrafficcontrol(body.Data); err != nil {
 		if strings.Contains(err.Error(), "必须小于每") {
-			comma := strings.Index(err.Error(),"ÿ")
+			comma := strings.Index(err.Error(),"每")
 			return http.StatusInternalServerError, &CreateResponse{
 				Code: 2,
 				ErrorCode: "012000014",
