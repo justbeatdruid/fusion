@@ -606,6 +606,12 @@ func (s *Service) CheckTopic(crdNamespace string, mq *v1.MessageQueue) error {
 		if mq.Outter == nil {
 			return fmt.Errorf("public message queue connection info is null")
 		}
+		if mq.Outter.Namespace == "" {
+			mq.Outter.Namespace = "pulsar/default"
+		}
+		if mq.Outter.AuthEnabled && mq.Outter.NamespaceToken == "" {
+			return fmt.Errorf("auth enabled but namespace token not priveded")
+		}
 		endpoints := strings.Split(mq.Outter.Address, ",")
 		for _, ep := range endpoints {
 			a, err := net.ResolveTCPAddr("tcp", ep)
