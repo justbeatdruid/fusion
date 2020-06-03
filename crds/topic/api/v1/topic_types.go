@@ -124,7 +124,7 @@ const (
 	DeleteFailedOfShow              ShowStatus = "删除失败"
 	AuthorizingOfShow               ShowStatus = "授权中"
 	AuthorizeFailedOfShow           ShowStatus = "授权失败"
-	AuthorizedFailedOfShow          ShowStatus = "授权成功"
+	AuthorizedOfShow                ShowStatus = "授权成功"
 	DeletingAuthorizationOfShow     ShowStatus = "删除授权中"
 	DeleteAuthorizationFailedOfShow ShowStatus = "删除授权失败"
 	DeletedAuthorizationOfShow      ShowStatus = "删除授权成功"
@@ -229,5 +229,7 @@ func initShowStatusMap() {
 	ShowStatusMap[UpdateFailed] = UpdateFailedOfShow
 	ShowStatusMap[Deleting] = DeletingOfShow
 	ShowStatusMap[DeleteFailed] = DeleteFailedOfShow
-
+    ShowStatusMap[Authorizing] = AuthorizingOfShow
+    ShowStatusMap[Authorized] = AuthorizedOfShow
+    ShowStatusMap[AuthorizeFailed] = AuthorizeFailedOfShow
 }
