@@ -324,12 +324,12 @@ func (s *Service) Validate(a *Api) error {
 			return errors.NameDuplicatedError("api name duplicated: %s", p.Spec.Name)
 		}
 	}
-	for _, p := range apiList.Items {
-		for _, path := range p.Spec.KongApi.Paths {
-			if path == a.KongApi.Paths[0] && p.Spec.ApiDefineInfo.Method == a.ApiDefineInfo.Method {
-				return fmt.Errorf("path duplicated: %s", path)
-			} else {
-				continue
+	if a.ApiBackendType == "web" {
+		for _, p := range apiList.Items {
+			for _, path := range p.Spec.KongApi.Paths {
+				if path == a.KongApi.Paths[0] && p.Spec.ApiDefineInfo.Method == a.ApiDefineInfo.Method {
+					return fmt.Errorf("path duplicated: %s", path)
+				}
 			}
 		}
 	}
