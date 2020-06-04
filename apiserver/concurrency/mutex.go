@@ -1,14 +1,12 @@
-package mutex
+package concurrency
 
 import (
 	"context"
 	"fmt"
-	"strings"
 	"time"
 
 	v3 "go.etcd.io/etcd/clientv3"
 	"go.etcd.io/etcd/clientv3/concurrency"
-	"go.etcd.io/etcd/pkg/transport"
 
 	log "k8s.io/klog"
 )
@@ -23,36 +21,9 @@ type etcdMutex struct {
 }
 
 func NewEtcdMutex(endpoints, cert, key, ca string, timeoutInSecond int) (Mutex, error) {
-	var cli *v3.Client
-	var err error
-	dialTimeout := 3 * time.Second
-	if len(cert) > 0 && len(key) > 0 && len(ca) > 0 {
-		tlsInfo := transport.TLSInfo{
-			CertFile:      cert,
-			KeyFile:       key,
-			TrustedCAFile: ca,
-		}
-		tlsConfig, err := tlsInfo.ClientConfig()
-		if err != nil {
-			return nil, fmt.Errorf("cannot configure tls: %+v", err)
-		}
-		cli, err = v3.New(v3.Config{
-			Endpoints:            strings.Split(endpoints, ","),
-			DialTimeout:          dialTimeout,
-			DialKeepAliveTime:    dialTimeout * 2,
-			DialKeepAliveTimeout: dialTimeout,
-			TLS:                  tlsConfig,
-		})
-	} else {
-		cli, err = v3.New(v3.Config{
-			Endpoints:            strings.Split(endpoints, ","),
-			DialTimeout:          dialTimeout,
-			DialKeepAliveTime:    dialTimeout,
-			DialKeepAliveTimeout: dialTimeout,
-		})
-	}
+	cli, err := newEtcdClient(endpoints, cert, key, ca, timeoutInSecond)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create etcd client: %+v", err)
+		return nil, err
 	}
 	return &etcdMutex{
 		client:  cli,
