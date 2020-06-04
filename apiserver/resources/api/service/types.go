@@ -485,6 +485,9 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	if _, ok := data["applications"]; ok {
 		target.Spec.Applications = source.Applications
 	}
+	if _, ok := data["description"]; ok {
+		target.Spec.Description = source.Description
+	}
 	/*
 		if _, ok = data["users"]; ok {
 			target.Spec.Users = source.Users
