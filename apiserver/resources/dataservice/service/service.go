@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/chinamobile/nlpt/apiserver/concurrency"
 	"github.com/chinamobile/nlpt/apiserver/database/model"
 	k8s "github.com/chinamobile/nlpt/apiserver/kubernetes"
 	dsv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
@@ -25,16 +26,18 @@ var crdNamespace = "default"
 type Service struct {
 	dsClient   dynamic.NamespaceableResourceInterface
 	kubeClient *clientset.Clientset
+	elector    concurrency.Elector
 }
 
 //NewService ...
-func NewService(kubeClient *clientset.Clientset, client dynamic.Interface) *Service {
+func NewService(kubeClient *clientset.Clientset, client dynamic.Interface, elector concurrency.Elector) *Service {
 	service := &Service{
 		dsClient:   client.Resource(dsv1.GetOOFSGVR()),
 		kubeClient: kubeClient,
+		elector:    elector,
 	}
 
-	//go service.dealIntegrationTask()
+	go elector.Campaign("data-intergration", service.dealIntegrationTask)
 
 	return service
 }
