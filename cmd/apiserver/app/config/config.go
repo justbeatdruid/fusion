@@ -6,8 +6,8 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
+	"github.com/chinamobile/nlpt/apiserver/concurrency"
 	"github.com/chinamobile/nlpt/apiserver/database"
-	"github.com/chinamobile/nlpt/apiserver/mutex"
 	"github.com/chinamobile/nlpt/pkg/audit"
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 )
@@ -53,7 +53,8 @@ type Config struct {
 
 	LocalConfig ErrorConfig
 
-	Mutex mutex.Mutex
+	Mutex   concurrency.Mutex
+	Elector concurrency.Elector
 
 	Database *database.DatabaseConnection
 }

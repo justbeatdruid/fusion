@@ -161,6 +161,7 @@ type Permission struct {
 	Effective    bool      `json:"effective"`
 	IssuedAt     int64     `json:"issuedAt"`
 	ExpireAt     int64     `json:"expireAt"`
+	ShowStatus   v1.ShowStatus `json:"showStatus"`
 }
 
 type Statistics struct {
@@ -218,7 +219,6 @@ func ToAPI(app *Topic) *v1.Topic {
 	}
 
 	crd.ObjectMeta.Labels = user.AddUsersLabels(app.Users, crd.ObjectMeta.Labels)
-
 	return crd
 }
 
@@ -234,6 +234,7 @@ func ToModel(obj *v1.Topic) *Topic {
 			AuthUserName: psm.AuthUserName,
 			Actions:      acs,
 			Status:       psm.Status.Status,
+			ShowStatus:   v1.ShowStatusMap[psm.Status.Status],
 		}
 		ps = append(ps, p)
 	}
@@ -294,7 +295,6 @@ func ParseFloat(s string) float64 {
 		return 0
 	}
 	return value
-
 }
 
 func ToConsumersModel(obj v1.ConsumerStat) ConsumerStat {

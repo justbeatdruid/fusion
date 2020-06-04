@@ -20,7 +20,7 @@ require (
 	github.com/onsi/gomega v1.7.0
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/prometheus/client_golang v1.0.0
-	github.com/satori/go.uuid v1.2.0 // indirect
+	github.com/satori/go.uuid v1.2.0
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5

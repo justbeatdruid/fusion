@@ -45,10 +45,30 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.listDataservice).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	ws.Route(ws.PATCH("/dataservices/{id}").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("update dataService").
+		To(r.updateDateService).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	ws.Route(ws.POST("/dataservices/operation").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("open or stop dataservice").
+		To(r.operationDataservice).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func (r *router) createDataservice(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.CreateDataservice(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) operationDataservice(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.OperationDataservice(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 
@@ -64,5 +84,9 @@ func (r *router) deleteDataservice(request *restful.Request, response *restful.R
 
 func (r *router) listDataservice(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListDataservice(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+func (r *router) updateDateService(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.UpdateDateService(request)
 	response.WriteHeaderAndEntity(code, result)
 }

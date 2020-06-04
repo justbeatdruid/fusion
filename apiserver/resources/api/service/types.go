@@ -324,15 +324,6 @@ func (s *Service) Validate(a *Api) error {
 			return errors.NameDuplicatedError("api name duplicated: %s", p.Spec.Name)
 		}
 	}
-	for _, p := range apiList.Items {
-		for _, path := range p.Spec.KongApi.Paths {
-			if path == a.KongApi.Paths[0] && p.Spec.ApiDefineInfo.Method == a.ApiDefineInfo.Method {
-				return fmt.Errorf("path duplicated: %s", path)
-			} else {
-				continue
-			}
-		}
-	}
 	if len(a.Users.Owner.ID) == 0 {
 		return fmt.Errorf("owner not set")
 	}
@@ -356,6 +347,17 @@ func (s *Service) Validate(a *Api) error {
 	if err != nil {
 		return fmt.Errorf("cannot get serviceunit: %+v", err)
 	}
+
+	if su.Spec.Type == "web" {
+		for _, p := range apiList.Items {
+			for _, path := range p.Spec.KongApi.Paths {
+				if path == a.KongApi.Paths[0] && p.Spec.ApiDefineInfo.Method == a.ApiDefineInfo.Method {
+					return fmt.Errorf("path duplicated: %s", path)
+				}
+			}
+		}
+	}
+
 	if su.Spec.Type == "data" {
 		if len(a.ApiDefineInfo.Method) == 0 {
 			a.ApiDefineInfo.Method = a.Method
