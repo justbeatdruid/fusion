@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/chinamobile/nlpt/apiserver/mutex"
+	"github.com/chinamobile/nlpt/apiserver/concurrency"
 	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/auth"
@@ -19,7 +19,7 @@ import (
 type controller struct {
 	service *service.Service
 	errMsg  config.ErrorConfig
-	lock    mutex.Mutex
+	lock    concurrency.Mutex
 }
 
 func newController(cfg *config.Config) *controller {
