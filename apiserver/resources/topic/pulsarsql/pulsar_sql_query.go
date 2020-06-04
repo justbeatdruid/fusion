@@ -2,7 +2,7 @@ package pulsarsql
 
 import (
 	"encoding/base64"
-	"encoding/binary"
+	"encoding/json"
 	"fmt"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	"strconv"
@@ -41,7 +41,7 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 							m.Partition = v
 						case "__key__":
 							m.Key = v
-						case "__row__":
+						case "row":
 						case "__value__":
 							//如果是字节数组，需要解码
 							value, ok := v.(string)
@@ -49,15 +49,15 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 								decoded, err := base64.StdEncoding.DecodeString(value)
 								if err != nil {
 									//这种情况发送端直接发的string类型,没有经过base64编码
-									m.Message = v
-									size = size + binary.Size(v)
+									m.Message = value
+									size = len(value)
 								} else {
 									m.Message = string(decoded)
-									size = size + binary.Size(decoded)
+									size = len(string(decoded))
 								}
 							} else {
 								m.Message = v
-								size = size + binary.Size(v)
+								size = 0
 							}
 						case "__event_time__":
 						case "__sequence_id__":
@@ -69,16 +69,19 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 								continue
 							}
 							msg[k] = v
-							if str, ok := v.(string); ok {
-								size = size + binary.Size([]byte(str))
-							} else {
-								size = size + binary.Size(v)
-							}
 						}
 					}
+
 					if m.Message == nil {
-						m.Message = msg
+						msgJson,err:=json.Marshal(msg)
+						if err!=nil {
+							return nil,fmt.Errorf("msg to json error: %s",msgJson)
+						}
+						msgString:=string(msgJson)
+						size = len(msgString)
+                      	m.Message = msg
 					}
+
                     id := m.ID.(string)
                     partition := m.Partition.(float64)
                     par := strconv.FormatFloat(partition,'f',-1,64)
@@ -89,7 +92,7 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
                     id = strings.Trim(id,")")
                     id = strings.ReplaceAll(id,",",":")
                     m.ID = id
-					m.Size = size
+                    m.Size = size
 					M = append(M, m)
 				}
 				return M, nil
