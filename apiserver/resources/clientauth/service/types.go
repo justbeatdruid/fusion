@@ -12,6 +12,7 @@ import (
 
 const (
 	DefaultNamespace = "default"
+	MaxDescriptionLen = 1024
 )
 
 type Clientauth struct {
@@ -107,6 +108,9 @@ func (a *Clientauth) Validate() error {
 		return fmt.Errorf("token expire time:%d must be greater than now", a.ExpireAt)
 	}
 
+	if len([]rune(a.Description))> MaxDescriptionLen{
+		return fmt.Errorf("description is not valid")
+	}
 	a.ID = names.NewID()
 	return nil
 }

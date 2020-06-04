@@ -16,6 +16,7 @@ import (
 const (
 	Separator        = "/"
 	NameReg          = "^[-=:.\\w]{1,100}$"
+	MaxDescriptionLen = 1024
 )
 
 type Topic struct {
@@ -385,6 +386,12 @@ func (a *Topic) Validate() topicerr.TopicError {
 		}
 	}
 
+	if len([]rune(a.Description))> MaxDescriptionLen{
+		return topicerr.TopicError{
+			Err:       fmt.Errorf("description is not valid"),
+			ErrorCode: topicerr.ErrorBadRequest,
+		}
+	}
 	a.ID = names.NewID()
 	return topicerr.TopicError{
 		Err: nil,

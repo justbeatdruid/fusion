@@ -114,7 +114,6 @@ type BindOrReleaseResponse struct {
 	Code      int             `json:"code"`
 	ErrorCode string          `json:"errorCode"`
 	Message   string          `json:"message"`
-	Data      []service.Topic `json:"data"`
 	Detail    string          `json:"detail"`
 }
 
@@ -1258,7 +1257,6 @@ func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *BindOrRe
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
 			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
-			Data:      nil,
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
@@ -1269,8 +1267,7 @@ func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *BindOrRe
 			Code:      fail,
 			ErrorCode: tperror.ErrorReadEntity,
 			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
-			Data:      nil,
-			Detail:    fmt.Sprintf("bind or unbind topics error: %+v ", err),
+			Detail:    fmt.Sprintf("%+v topics error: %+v ", body.Operation, err),
 		}
 	}
 
@@ -1280,22 +1277,31 @@ func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *BindOrRe
 			Code:      fail,
 			ErrorCode: tperror.ErrorReadEntity,
 			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
-			Data:      nil,
-			Detail:    fmt.Sprintf("bind or unBind topics error: %+v", err),
+			Detail:    fmt.Sprintf("%+v topics error: %+v", body.Operation, err),
 		}
 	}
 
 	if err := c.service.BatchBindOrRelease(appid, body.Operation, body.Topics, util.WithNamespace(authUser.Namespace)); err != nil {
+
+		var errorCode string
+		if body.Operation == "bind" {
+			errorCode = tperror.ErrorBindTopicError
+		} else {
+			errorCode = tperror.ErrorUnBindTopicError
+		}
 		return http.StatusInternalServerError, &BindOrReleaseResponse{
 			Code:      fail,
-			ErrorCode: tperror.ErrorBindOrUnbindTopicError,
-			Message:   c.errMsg.Topic[tperror.ErrorBindOrUnbindTopicError],
-			Data:      nil,
-			Detail:    fmt.Sprintf("bind or unBind topics error: %+v", err),
+			ErrorCode: errorCode,
+			Message:   c.errMsg.Topic[errorCode],
+			Detail:    fmt.Sprintf("%+v topics error: %+v", body.Operation, err),
 		}
 	}
 
-	return 0, nil
+	return http.StatusOK, &BindOrReleaseResponse{
+		Code:      success,
+		ErrorCode: tperror.Success,
+		Detail:    "success",
+	}
 }
 
 func (c *controller) GetSubscriptionsOfTopic(req *restful.Request) (int, *SubscriptionsResponse) {
