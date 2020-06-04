@@ -169,8 +169,6 @@ const (
 	TimeStr       = "2006-01-02 15:04:05"
 )
 
-//0：成功，1：运行中，2：失败，3：跳过，4：重新调度中，5：重试中，6：队列中，7：未开始，8：其他
-
 // ToAPI  only used in creation options
 func ToAPI(ds *model.Task, service *Service, opts ...util.OpOption) *Dataservice {
 	apiTask := &Dataservice{
