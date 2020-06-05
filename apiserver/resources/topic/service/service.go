@@ -527,7 +527,11 @@ func (s *Service) AddPartitionsOfTopic(id string, partitionNum int, ops ...util.
 	if tp.Spec.PartitionNum>partitionNum {
 		return nil,errors.New("The number of partitions must be larger than the original ")
 	}
+	if tp.Spec.Partitioned == false{
+		return nil,errors.New("Topic is not partitioned topic ")
+	}
 	tp.Status.Status = v1.Updating
+	tp.Spec.OldPartitionNum = tp.Spec.PartitionNum
 	tp.Spec.PartitionNum = partitionNum
 	v1tp, err := s.UpdateStatus(tp)
 	if err != nil {

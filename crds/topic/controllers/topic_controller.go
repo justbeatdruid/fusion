@@ -94,9 +94,10 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if err := r.Operator.AddPartitionsOfTopic(topic); err != nil {
 			topic.Status.Status = nlptv1.UpdateFailed
 			topic.Status.Message = fmt.Sprintf("add topic partition error: %+v ", err)
+			topic.Spec.PartitionNum = topic.Spec.OldPartitionNum
 		} else {
 			topic.Status.Status = nlptv1.Updated
-			topic.Status.Message = "message"
+			topic.Status.Message = "success"
 		}
 		if err := r.Update(ctx, topic); err != nil {
 			klog.Errorf("Update Topic Failed: %+v", *topic)
