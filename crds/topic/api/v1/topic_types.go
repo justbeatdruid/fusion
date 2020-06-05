@@ -33,6 +33,7 @@ type TopicSpec struct {
 	Name          string        `json:"name"`
 	TopicGroup    string        `json:"topicGroup"`   //topic分组ID
 	PartitionNum  int           `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
+	OldPartitionNum int         `json:"oldPartitionNum"` //保存修改前的分区数，用于更新失败回滚
 	Partitioned   bool          `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
 	Persistent    bool          `json:"persistent"`   //是否持久化，默认为true，非必填
 	Url           string        `json:"url"`          //Topic url
