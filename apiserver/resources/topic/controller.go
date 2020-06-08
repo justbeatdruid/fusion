@@ -30,7 +30,7 @@ type controller struct {
 const (
 	//order        = `select * from (select row_number() over(order by __publish_time__ desc) __row__, * from pulsar."%s/%s"."%s" %s) as t where __row__ between %d and %d`
 	messageIdSql = `WHERE "__message_id__" = '%s' AND "__partition__" = %s`
-	keySql       = `WHERE "__key__" = '%s'`
+	keySql       = `WHERE "__key__" LIKE '%%%s%%'`
 	timeSql      = `WHERE "__publish_time__" BETWEEN timestamp '%s' AND timestamp '%s'`
 	order        = `WITH subquery_1 AS (
     SELECT count("__message_id__") as __count__ from pulsar."%s/%s"."%s" %s),
