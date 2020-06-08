@@ -1,7 +1,6 @@
 package service
 
 import (
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"strconv"
@@ -83,7 +82,18 @@ func (s *Service) OperationDataservice(operationReq *OperationReq, userId, names
 	if err := operationReq.Validate(); err != nil {
 		return err
 	}
-	_, err := model.OperationTaskStatus(operationReq.Operation, userId, namespace, operationReq.DagID)
+	task, err := model.OperationTaskStatus(operationReq.Operation, userId, namespace, operationReq.DagID)
+
+	if operationReq.Operation == "delete" || operationReq.Operation == "stop" {
+		go func(task []model.Task) {
+			for i := range task {
+				if errCronjob := k8s.DeleteCronJob(s.kubeClient, task[i].Job, crdNamespace); errCronjob != nil {
+					klog.Errorf("errJob:%v, task:%v", errCronjob, task[i])
+				}
+			}
+		}(task)
+
+	}
 	return err
 }
 
@@ -181,7 +191,7 @@ func (s *Service) GetCmd(task model.Task) ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
-	url := "http://flinkx-rest:9080/flinkx/task/start?options=" + options + "&isAll=0&maxValue=100&metaId=asdfasdfasdf"
+	//url := "http://flinkx-rest:9080/flinkx/task/start?options=" + options + "&isAll=0&maxValue=100&metaId=asdfasdfasdf"
 	//curl localhost:9080/api/v1/apis -H 'content-type:application/json'  \
 	//-d'
 	// {
@@ -193,7 +203,13 @@ func (s *Service) GetCmd(task model.Task) ([]string, error) {
 	// byetes, _ := json.Marshal(body)
 
 	//return []string{"curl", url, "-H", "'content-type:application/json'"}, nil
-	return []string{"curl", url}, nil
+	// return []string{"curl", url}, nil
+	config, err := json.Marshal(task)
+	if err != nil {
+		klog.Errorf("json Marshal failed,err:%v, task:%v", err, task)
+		//return "", err
+	}
+	return []string{"./curlflinkx", options, string(config)}, nil
 
 }
 
@@ -253,18 +269,12 @@ func (s *Service) GetFlinkxBody(ds model.Task) (string, error) {
 		return "", err
 	}
 
-	config, err := json.Marshal(ds)
-	if err != nil {
-		klog.Errorf("json Marshal failed,err:%v, flinkJob:%v", err, flinkJob)
-		return "", err
-	}
-
 	flinkxBody := map[string]string{
 		"-jobid":      ds.DagId,
 		"-mode":       "local",
 		"-pluginRoot": "/root/flinkx-rest/plugins/",
 		"-job":        string(job),
-		"-config":     string(config),
+		//	"-config":     string(config),
 	}
 	klog.Infof("flinkxBody:%v", flinkxBody)
 	flinkxBytes, err := json.Marshal(flinkxBody)
@@ -272,7 +282,8 @@ func (s *Service) GetFlinkxBody(ds model.Task) (string, error) {
 		klog.Errorf("Marshal flinkxBody failed:err:%v", err)
 		return "", err
 	}
-	return base64.StdEncoding.EncodeToString(flinkxBytes), nil
+	//return base64.StdEncoding.EncodeToString(flinkxBytes), nil
+	return string(flinkxBytes), nil
 }
 
 //CreateJob ...
@@ -329,7 +340,7 @@ func (s *Service) getSchedule(task model.Task) (string, error) {
 
 func (s *Service) dealIntegrationTask() {
 	for {
-		time.Sleep(100 * time.Second)
+		time.Sleep(30 * time.Second)
 		task, err := model.GetTaskByStartTime()
 		if err != nil {
 			klog.Errorf("get task falied  Job failed,err:%v", err)
@@ -344,5 +355,4 @@ func (s *Service) dealIntegrationTask() {
 		}
 	}
 	return
-
 }

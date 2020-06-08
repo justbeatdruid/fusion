@@ -65,7 +65,7 @@ func CreateCronJob(client *clientset.Clientset, name, schedule, iamgeName, conta
 									Name:            containerName,
 									Image:           iamgeName,
 									Command:         cmd,
-									ImagePullPolicy: v1.PullIfNotPresent,
+									ImagePullPolicy: v1.PullAlways,
 								},
 							},
 							RestartPolicy: v1.RestartPolicyNever,

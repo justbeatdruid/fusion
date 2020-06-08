@@ -158,12 +158,13 @@ func GetTbDagRun(dagID string) (dagRun []TbDagRun, num int64, err error) {
 // OperationTaskStatus ...
 func OperationTaskStatus(operation, userId, namespace string, ids []string) (task []Task, err error) {
 	o := orm.NewOrm()
-	_, err = o.QueryTable("Task").Filter("DagId__in", ids).Filter("UserId", userId).Filter("Namespace", namespace).All(&task)
-	if err != nil {
-		return task, err
-	}
 
 	if operation == "delete" {
+		_, err = o.QueryTable("Task").Filter("DagId__in", ids).Filter("UserId", userId).Filter("Namespace", namespace).All(&task)
+		if err != nil {
+			return task, err
+		}
+
 		p, err := o.Raw("DELETE  FROM task  WHERE dag_id = ? and user_id = ? and namespace = ?").Prepare()
 
 		for i := range ids {
@@ -177,15 +178,26 @@ func OperationTaskStatus(operation, userId, namespace string, ids []string) (tas
 		p.Close()
 		return task, err
 	}
+	if operation == "stop" {
+		_, err = o.QueryTable("Task").Filter("DagId__in", ids).Filter("UserId", userId).Filter("Namespace", namespace).Filter("Status", true).All(&task)
+		if err != nil {
+			return task, err
+		}
 
-	p, err := o.Raw("UPDATE task SET status = ? WHERE dag_id = ? and user_id = ? and namespace = ?").Prepare()
+	}
+	_, err = o.QueryTable("Task").Filter("DagId__in", ids).Filter("UserId", userId).Filter("Namespace", namespace).Filter("Status", false).All(&task)
+	if err != nil {
+		return task, err
+	}
+
+	p, err := o.Raw("UPDATE task SET status = ? , job = ? WHERE dag_id = ? and user_id = ? and namespace = ? and status = ?").Prepare()
 
 	for i := range ids {
 		if operation == "stop" {
-			_, err = p.Exec(false, ids[i], userId, namespace)
+			_, err = p.Exec(false, "", ids[i], userId, namespace, true)
 
 		} else {
-			_, err = p.Exec(true, ids[i], userId, namespace)
+			_, err = p.Exec(true, "", ids[i], userId, namespace, false)
 
 		}
 		if err != nil {
@@ -209,7 +221,7 @@ func UpdateTaskJob(dagid, job string) error {
 //GetTaskByStartTime ...
 func GetTaskByStartTime() (tasks []Task, err error) {
 	o := orm.NewOrm()
-	_, err = o.QueryTable("Task").Filter("StartTime__lte", time.Now()).Filter("Job", "").Limit(10).OrderBy("-StartTime").All(&tasks)
+	_, err = o.QueryTable("Task").Filter("StartTime__lte", time.Now()).Filter("Job", "").Filter("Status", true).Limit(10).OrderBy("-StartTime").All(&tasks)
 
 	p, err := o.Raw("UPDATE task SET Job = ? WHERE dag_id = ? ").Prepare()
 	for i := range tasks {
