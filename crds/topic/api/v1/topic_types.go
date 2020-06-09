@@ -100,6 +100,9 @@ const (
 	AuthorizeFailed           Status = "authorizeFailed"
 	Authorizing               Status = "authorizing"
 	Authorized                Status = "authorized"
+	UpdatingAuthorization       Status = "updatingAuthorization"
+	UpdatingAuthorizationFailed       Status = "updatingAuthorizationFailed"
+	UpdatingAuthorizationSuccess       Status = "updatingAuthorizationSuccess"
 	DeletingAuthorization            = "deletingAuthorization"
 	DeleteAuthorizationFailed        = "deleteAuthorizationFailed"
 	DeletedAuthorization             = "deletedAuthorization"
@@ -129,6 +132,10 @@ const (
 	DeletingAuthorizationOfShow     ShowStatus = "删除授权中"
 	DeleteAuthorizationFailedOfShow ShowStatus = "删除授权失败"
 	DeletedAuthorizationOfShow      ShowStatus = "删除授权成功"
+	UpdatingAuthorizationOfShow     ShowStatus = "变更授权中"
+	UpdatingAuthorizationFailedOfShow     ShowStatus =  "变更授权失败"
+	UpdatingAuthorizationSuccessOfShow   ShowStatus = "变更授权成功"
+
 )
 
 // +kubebuilder:object:root=true
@@ -241,4 +248,8 @@ func initShowStatusMap() {
     ShowStatusMap[Authorizing] = AuthorizingOfShow
     ShowStatusMap[Authorized] = AuthorizedOfShow
     ShowStatusMap[AuthorizeFailed] = AuthorizeFailedOfShow
+    ShowStatusMap[UpdatingAuthorization] = UpdatingAuthorizationOfShow
+	ShowStatusMap[UpdatingAuthorizationFailed] = UpdatingAuthorizationFailedOfShow
+	ShowStatusMap[UpdatingAuthorizationSuccess] = UpdatingAuthorizationSuccessOfShow
+
 }

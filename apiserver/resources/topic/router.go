@@ -91,7 +91,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("modify permissions ").
-		To(r.grantPermissions).
+		To(r.modifyPermissions).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 	//删除用户授权
@@ -216,6 +216,12 @@ func (r *router) grantPermissions(request *restful.Request, response *restful.Re
 	code, result := r.controller.GrantPermissions(request)
 	response.WriteHeaderAndEntity(code, result)
 }
+
+func (r *router) modifyPermissions(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ModifyPermissions(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
 func (r *router) deletePermissions(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DeletePermissions(request)
 	response.WriteHeaderAndEntity(code, result)
