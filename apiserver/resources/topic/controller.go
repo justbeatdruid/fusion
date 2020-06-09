@@ -9,6 +9,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	v1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/go-restful"
@@ -133,7 +134,7 @@ const (
 )
 
 type GrantPermissionRequest struct {
-	Actions service.Actions `json:"actions"`
+	Actions v1.Actions `json:"actions"`
 }
 
 //重写Interface的len方法
@@ -814,6 +815,47 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 			Code:      2,
 			ErrorCode: tperror.ErrorGrantPermissions,
 			Message:   c.errMsg.Topic[tperror.ErrorGrantPermissions],
+			Detail:    fmt.Errorf("create database error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &GrantResponse{
+			Code:      success,
+			ErrorCode: tperror.Success,
+			Data:      tp,
+		}
+	}
+
+}
+
+
+func (c *controller) ModifyPermissions(req *restful.Request) (int, *GrantResponse) {
+	id := req.PathParameter("id")
+	authUserId := req.PathParameter("auth-user-id")
+
+	actions := &GrantPermissionRequest{}
+	if err := req.ReadEntity(actions); err != nil {
+		return http.StatusInternalServerError, &GrantResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorReadEntity,
+			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
+			Detail:    fmt.Sprintf("modify permissions error: %+v", err),
+		}
+	}
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &GrantResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Data:      nil,
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+	if tp, err := c.service.ModifyPermissions(id, authUserId, actions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &GrantResponse{
+			Code:      2,
+			ErrorCode: tperror.ErrorModifyPermissions,
+			Message:   c.errMsg.Topic[tperror.ErrorModifyPermissions],
 			Detail:    fmt.Errorf("create database error: %+v", err).Error(),
 		}
 	} else {

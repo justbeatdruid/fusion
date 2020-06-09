@@ -431,7 +431,7 @@ func (s *Service) GetPulsarClient() (pulsar.Client, error) {
 //
 //}
 
-func (s *Service) GrantPermissions(topicId string, authUserId string, actions Actions, opts ...util.OpOption) (*Topic, error) {
+func (s *Service) GrantPermissions(topicId string, authUserId string, actions v1.Actions, opts ...util.OpOption) (*Topic, error) {
 	//1.根据id查询topic
 	tp, err := s.Get(topicId, opts...)
 	if err != nil {
@@ -471,6 +471,55 @@ func (s *Service) GrantPermissions(topicId string, authUserId string, actions Ac
 	}
 	tp.Spec.Permissions = append(tp.Spec.Permissions, perm)
 	tp.Status.AuthorizationStatus = v1.Authorizing
+	v1Tp, err := s.UpdateStatus(tp)
+	if err != nil {
+		return nil, fmt.Errorf("cannot update object: %+v", err)
+	}
+
+	return ToModel(v1Tp), nil
+}
+
+func (s *Service) ModifyPermissions(topicId string, authUserId string, actions v1.Actions, opts ...util.OpOption) (*Topic, error) {
+	//1.根据id查询topic
+	tp, err := s.Get(topicId, opts...)
+	if err != nil {
+		klog.Errorf("error get crd: %+v", err)
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+
+	//2.处理actions
+	as := v1.Actions{}
+	for _, ac := range actions {
+		as = append(as, ac)
+	}
+	//3.给topic加auth id的标签，key：auth id
+	if tp.ObjectMeta.Labels == nil {
+		return nil, fmt.Errorf("not authorization:%+v", authUserId)
+	}
+
+	if _, ok := tp.ObjectMeta.Labels[authUserId]; !ok {
+		return nil, fmt.Errorf("not authorization:%+v", authUserId)
+	}
+
+	//4.根据auth id查询name
+	_, err = s.QueryAuthUserNameById(authUserId, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("grant permission error:%+v", err)
+	}
+
+
+	for i, p := range tp.Spec.Permissions {
+		if p.AuthUserID == authUserId {
+			p.Status.Status = v1.UpdatingAuthorization
+			p.Actions = actions
+			tp.Spec.Permissions[i] = p
+			break
+		}
+
+	}
+
+	tp.Status.AuthorizationStatus = v1.UpdatingAuthorization
+
 	v1Tp, err := s.UpdateStatus(tp)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update object: %+v", err)

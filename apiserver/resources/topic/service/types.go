@@ -151,12 +151,11 @@ type Message struct {
 	Size      int              `json:"size"`
 }
 
-type Actions []string
 
 type Permission struct {
 	AuthUserID   string    `json:"authUserId"`   //对应clientauth的ID
 	AuthUserName string    `json:"authUserName"` //对应clientauth的NAME
-	Actions      Actions   `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
+	Actions      v1.Actions   `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
 	Status       v1.Status `json:"status"`       //用户的授权状态，已授权、待删除、待授权
 	Token        string    `json:"token"`        //Token
 	Effective    bool      `json:"effective"`
