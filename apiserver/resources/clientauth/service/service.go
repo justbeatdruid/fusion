@@ -248,6 +248,7 @@ func (s *Service) RegenerateToken(ca *Clientauth) (*Clientauth, error) {
 	}
 	cad.Spec.IssuedAt = now
 	cad.Spec.Token = token
+	cad.Spec.IsPermanent = ca.IsPermanent
 	cad.Status.Status = v1.Updated
 	cad.Status.Message = "success"
 	cad, err = s.UpdateStatus(cad)
