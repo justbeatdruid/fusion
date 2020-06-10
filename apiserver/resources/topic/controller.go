@@ -9,6 +9,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	v1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/go-restful"
@@ -30,7 +31,7 @@ type controller struct {
 const (
 	//order        = `select * from (select row_number() over(order by __publish_time__ desc) __row__, * from pulsar."%s/%s"."%s" %s) as t where __row__ between %d and %d`
 	messageIdSql = `WHERE "__message_id__" = '%s' AND "__partition__" = %s`
-	keySql       = `WHERE "__key__" = '%s'`
+	keySql       = `WHERE "__key__" LIKE '%%%s%%'`
 	timeSql      = `WHERE "__publish_time__" BETWEEN timestamp '%s' AND timestamp '%s'`
 	order        = `WITH subquery_1 AS (
     SELECT count("__message_id__") as __count__ from pulsar."%s/%s"."%s" %s),
@@ -65,6 +66,7 @@ type CreateRequest = RequestWrapped
 type DeleteResponse = Wrapped
 type GrantResponse = Wrapped
 type ExportResponse = Wrapped
+type ResetPositionResponse = Wrapped
 type AddPartitions = Wrapped
 type SendMessagesResponse =ListResponse
 /*type DeleteResponse struct {
@@ -114,7 +116,6 @@ type BindOrReleaseResponse struct {
 	Code      int             `json:"code"`
 	ErrorCode string          `json:"errorCode"`
 	Message   string          `json:"message"`
-	Data      []service.Topic `json:"data"`
 	Detail    string          `json:"detail"`
 }
 
@@ -134,7 +135,7 @@ const (
 )
 
 type GrantPermissionRequest struct {
-	Actions service.Actions `json:"actions"`
+	Actions v1.Actions `json:"actions"`
 }
 
 //重写Interface的len方法
@@ -826,6 +827,47 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 	}
 
 }
+
+
+func (c *controller) ModifyPermissions(req *restful.Request) (int, *GrantResponse) {
+	id := req.PathParameter("id")
+	authUserId := req.PathParameter("auth-user-id")
+
+	actions := &GrantPermissionRequest{}
+	if err := req.ReadEntity(actions); err != nil {
+		return http.StatusInternalServerError, &GrantResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorReadEntity,
+			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
+			Detail:    fmt.Sprintf("modify permissions error: %+v", err),
+		}
+	}
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &GrantResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Data:      nil,
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+	if tp, err := c.service.ModifyPermissions(id, authUserId, actions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &GrantResponse{
+			Code:      2,
+			ErrorCode: tperror.ErrorModifyPermissions,
+			Message:   c.errMsg.Topic[tperror.ErrorModifyPermissions],
+			Detail:    fmt.Errorf("create database error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &GrantResponse{
+			Code:      success,
+			ErrorCode: tperror.Success,
+			Data:      tp,
+		}
+	}
+
+}
 func (c *controller) DeletePermissions(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	authUserId := req.PathParameter("auth-user-id")
@@ -1017,7 +1059,7 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 	if len(messageId) > 0 {
 		//通过pulsar客户端查出来的id格式为622:1:-1:0
 		//将冒号换成逗号
-		strings.ReplaceAll(messageId, ":", ",")
+		messageId = strings.ReplaceAll(messageId, ":", ",")
 		//两边没有括号就加上括号
 		h, m, ok := c.QueryParamterValidate(`^\(`, messageId)
 		if ok == 1 {
@@ -1258,7 +1300,6 @@ func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *BindOrRe
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
 			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
-			Data:      nil,
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
@@ -1269,8 +1310,7 @@ func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *BindOrRe
 			Code:      fail,
 			ErrorCode: tperror.ErrorReadEntity,
 			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
-			Data:      nil,
-			Detail:    fmt.Sprintf("bind or unbind topics error: %+v ", err),
+			Detail:    fmt.Sprintf("%+v topics error: %+v ", body.Operation, err),
 		}
 	}
 
@@ -1280,22 +1320,31 @@ func (c *controller) BatchBindOrReleaseApi(req *restful.Request) (int, *BindOrRe
 			Code:      fail,
 			ErrorCode: tperror.ErrorReadEntity,
 			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
-			Data:      nil,
-			Detail:    fmt.Sprintf("bind or unBind topics error: %+v", err),
+			Detail:    fmt.Sprintf("%+v topics error: %+v", body.Operation, err),
 		}
 	}
 
 	if err := c.service.BatchBindOrRelease(appid, body.Operation, body.Topics, util.WithNamespace(authUser.Namespace)); err != nil {
+
+		var errorCode string
+		if body.Operation == "bind" {
+			errorCode = tperror.ErrorBindTopicError
+		} else {
+			errorCode = tperror.ErrorUnBindTopicError
+		}
 		return http.StatusInternalServerError, &BindOrReleaseResponse{
 			Code:      fail,
-			ErrorCode: tperror.ErrorBindOrUnbindTopicError,
-			Message:   c.errMsg.Topic[tperror.ErrorBindOrUnbindTopicError],
-			Data:      nil,
-			Detail:    fmt.Sprintf("bind or unBind topics error: %+v", err),
+			ErrorCode: errorCode,
+			Message:   c.errMsg.Topic[errorCode],
+			Detail:    fmt.Sprintf("%+v topics error: %+v", body.Operation, err),
 		}
 	}
 
-	return 0, nil
+	return http.StatusOK, &BindOrReleaseResponse{
+		Code:      success,
+		ErrorCode: tperror.Success,
+		Detail:    "success",
+	}
 }
 
 func (c *controller) GetSubscriptionsOfTopic(req *restful.Request) (int, *SubscriptionsResponse) {
@@ -1373,4 +1422,48 @@ func (c *controller) SendMessages(req *restful.Request)  (int,*SendMessagesRespo
 		    Code:      success,
 		    Data:      messageId,
 	 }
+}
+
+func (c *controller) ResetPosition(req *restful.Request) (int, *ResetPositionResponse){
+     RP := &service.ResetPosition{}
+     if err := req.ReadEntity(RP);err!=nil{
+     	return http.StatusInternalServerError,&ResetPositionResponse{
+     		Code: fail,
+     		ErrorCode: tperror.ErrorReadEntity,
+     		Message: c.errMsg.Topic[tperror.ErrorReadEntity],
+     		Detail: fmt.Sprintf("cannot read entity: %+v", err),
+		}
+	 }
+	 authUser, err := auth.GetAuthUser(req)
+	 if err!=nil{
+		return http.StatusInternalServerError,&ResetPositionResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	 }
+	tp,err := c.service.GetTopic(RP.ID,util.WithNamespace(authUser.Namespace))
+	if err!=nil{
+		return http.StatusInternalServerError, &ResetPositionResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorGetTopicInfo,
+			Message:   c.errMsg.Topic[tperror.ErrorGetTopicInfo],
+			Detail:    fmt.Sprintf("get database error: %+v", err),
+		}
+	}
+	err = c.service.ResetPosition(RP,tp)
+	if err!=nil {
+		return http.StatusInternalServerError,&ResetPositionResponse{
+           Code:    fail,
+           ErrorCode: tperror.ErrorResetPosition,
+           Message:  c.errMsg.Topic[tperror.ErrorResetPosition],
+           Detail:  fmt.Sprintf("reset position error: %+v",err),
+		}
+	}else {
+		return http.StatusOK,&ResetPositionResponse{
+			Code:    success,
+			Message:  "success",
+		}
+	}
 }

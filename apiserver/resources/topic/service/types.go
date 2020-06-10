@@ -16,6 +16,7 @@ import (
 const (
 	Separator        = "/"
 	NameReg          = "^[-=:.\\w]{1,100}$"
+	MaxDescriptionLen = 1024
 )
 
 type Topic struct {
@@ -150,17 +151,17 @@ type Message struct {
 	Size      int              `json:"size"`
 }
 
-type Actions []string
 
 type Permission struct {
 	AuthUserID   string    `json:"authUserId"`   //对应clientauth的ID
 	AuthUserName string    `json:"authUserName"` //对应clientauth的NAME
-	Actions      Actions   `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
+	Actions      v1.Actions   `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
 	Status       v1.Status `json:"status"`       //用户的授权状态，已授权、待删除、待授权
 	Token        string    `json:"token"`        //Token
 	Effective    bool      `json:"effective"`
 	IssuedAt     int64     `json:"issuedAt"`
 	ExpireAt     int64     `json:"expireAt"`
+	ShowStatus   v1.ShowStatus `json:"showStatus"`
 }
 
 type Statistics struct {
@@ -176,6 +177,13 @@ type SendMessages struct {
 	ID string `json:"id"`
     Key string `json:"tag"`
 	MessageBody string `json:"messageBody"`
+}
+type ResetPosition struct {
+	ID string `json:"id"` //topicId
+	SubName string `json:"subName"` //订阅者的名称
+	LedgerId int64 `json:"ledgerId"`
+	EntryId  int64 `json:"entryId"`
+	PartitionIndex int64 `json:"partitionIndex"`
 }
 
 const (
@@ -218,7 +226,6 @@ func ToAPI(app *Topic) *v1.Topic {
 	}
 
 	crd.ObjectMeta.Labels = user.AddUsersLabels(app.Users, crd.ObjectMeta.Labels)
-
 	return crd
 }
 
@@ -234,6 +241,7 @@ func ToModel(obj *v1.Topic) *Topic {
 			AuthUserName: psm.AuthUserName,
 			Actions:      acs,
 			Status:       psm.Status.Status,
+			ShowStatus:   v1.ShowStatusMap[psm.Status.Status],
 		}
 		ps = append(ps, p)
 	}
@@ -294,7 +302,6 @@ func ParseFloat(s string) float64 {
 		return 0
 	}
 	return value
-
 }
 
 func ToConsumersModel(obj v1.ConsumerStat) ConsumerStat {
@@ -385,6 +392,12 @@ func (a *Topic) Validate() topicerr.TopicError {
 		}
 	}
 
+	if len([]rune(a.Description))> MaxDescriptionLen{
+		return topicerr.TopicError{
+			Err:       fmt.Errorf("description is not valid"),
+			ErrorCode: topicerr.ErrorBadRequest,
+		}
+	}
 	a.ID = names.NewID()
 	return topicerr.TopicError{
 		Err: nil,

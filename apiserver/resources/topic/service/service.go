@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/parnurzeal/gorequest"
+	"net/http"
 
 	"github.com/chinamobile/nlpt/apiserver/kubernetes"
 	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
@@ -43,9 +45,28 @@ type Service struct {
 	applicationClient dynamic.NamespaceableResourceInterface
 	errMsg            config.ErrorConfig
 	ip                string
-	host              int
+	port              int
 	authEnable        bool
 	adminToken        string
+}
+
+const ResetPositionUrl = "/admin/v2/persistent/%s/%s/%s/subscription/%s/resetcursor"
+type requestLogger struct {
+	prefix string
+}
+
+var logger = &requestLogger{}
+
+func (r *requestLogger) SetPrefix(prefix string) {
+	r.prefix = prefix
+}
+
+func (r *requestLogger) Printf(format string, v ...interface{}) {
+	klog.V(4).Infof(format, v...)
+}
+
+func (r *requestLogger) Println(v ...interface{}) {
+	klog.V(4).Infof("%+v", v)
 }
 
 func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topConfig *config.TopicConfig, errMsg config.ErrorConfig) *Service {
@@ -55,7 +76,7 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topCo
 		applicationClient: client.Resource(appv1.GetOOFSGVR()),
 		errMsg:            errMsg,
 		ip:                topConfig.Host,
-		host:              topConfig.Port,
+		port:              topConfig.Port,
 		authEnable:        topConfig.AuthEnable,
 		adminToken:        topConfig.AdminToken,
 		kubeClient:        kubeClient,
@@ -402,12 +423,12 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 func (s *Service) GetPulsarClient() (pulsar.Client, error) {
 	if s.authEnable {
 		return pulsar.NewClient(pulsar.ClientOptions{
-			URL:            "pulsar://" + s.ip + ":" + strconv.Itoa(s.host),
+			URL:            "pulsar://" + s.ip + ":" + strconv.Itoa(s.port),
 			Authentication: pulsar.NewAuthenticationToken(s.adminToken),
 		})
 	}
 	return pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://" + s.ip + ":" + strconv.Itoa(s.host),
+		URL: "pulsar://" + s.ip + ":" + strconv.Itoa(s.port),
 	})
 }
 
@@ -431,7 +452,7 @@ func (s *Service) GetPulsarClient() (pulsar.Client, error) {
 //
 //}
 
-func (s *Service) GrantPermissions(topicId string, authUserId string, actions Actions, opts ...util.OpOption) (*Topic, error) {
+func (s *Service) GrantPermissions(topicId string, authUserId string, actions v1.Actions, opts ...util.OpOption) (*Topic, error) {
 	//1.根据id查询topic
 	tp, err := s.Get(topicId, opts...)
 	if err != nil {
@@ -471,6 +492,55 @@ func (s *Service) GrantPermissions(topicId string, authUserId string, actions Ac
 	}
 	tp.Spec.Permissions = append(tp.Spec.Permissions, perm)
 	tp.Status.AuthorizationStatus = v1.Authorizing
+	v1Tp, err := s.UpdateStatus(tp)
+	if err != nil {
+		return nil, fmt.Errorf("cannot update object: %+v", err)
+	}
+
+	return ToModel(v1Tp), nil
+}
+
+func (s *Service) ModifyPermissions(topicId string, authUserId string, actions v1.Actions, opts ...util.OpOption) (*Topic, error) {
+	//1.根据id查询topic
+	tp, err := s.Get(topicId, opts...)
+	if err != nil {
+		klog.Errorf("error get crd: %+v", err)
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+
+	//2.处理actions
+	as := v1.Actions{}
+	for _, ac := range actions {
+		as = append(as, ac)
+	}
+	//3.给topic加auth id的标签，key：auth id
+	if tp.ObjectMeta.Labels == nil {
+		return nil, fmt.Errorf("not authorization:%+v", authUserId)
+	}
+
+	if _, ok := tp.ObjectMeta.Labels[authUserId]; !ok {
+		return nil, fmt.Errorf("not authorization:%+v", authUserId)
+	}
+
+	//4.根据auth id查询name
+	_, err = s.QueryAuthUserNameById(authUserId, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("grant permission error:%+v", err)
+	}
+
+
+	for i, p := range tp.Spec.Permissions {
+		if p.AuthUserID == authUserId {
+			p.Status.Status = v1.UpdatingAuthorization
+			p.Actions = actions
+			tp.Spec.Permissions[i] = p
+			break
+		}
+
+	}
+
+	tp.Status.AuthorizationStatus = v1.UpdatingAuthorization
+
 	v1Tp, err := s.UpdateStatus(tp)
 	if err != nil {
 		return nil, fmt.Errorf("cannot update object: %+v", err)
@@ -527,7 +597,11 @@ func (s *Service) AddPartitionsOfTopic(id string, partitionNum int, ops ...util.
 	if tp.Spec.PartitionNum>partitionNum {
 		return nil,errors.New("The number of partitions must be larger than the original ")
 	}
+	if tp.Spec.Partitioned == false{
+		return nil,errors.New("Topic is not partitioned topic ")
+	}
 	tp.Status.Status = v1.Updating
+	tp.Spec.OldPartitionNum = tp.Spec.PartitionNum
 	tp.Spec.PartitionNum = partitionNum
 	v1tp, err := s.UpdateStatus(tp)
 	if err != nil {
@@ -646,3 +720,30 @@ func (s *Service) SendMessages(topicUrl string,messagesBody string,key string) (
 	return messageId,nil
 }
 
+func (s *Service) ResetPosition(RP *ResetPosition,tp *Topic) error {
+	body:=make(map[string]interface{})
+	body["ledgerId"]=RP.LedgerId
+	body["entryId"]=RP.EntryId
+	body["partitionIndex"]=RP.PartitionIndex
+	topicGroup:=tp.TopicGroup
+	tenant:=tp.Namespace
+	topic:=tp.Name
+	subName:=RP.SubName
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
+	RPUrl := fmt.Sprintf(ResetPositionUrl,tenant,topicGroup,topic,subName)
+	url := fmt.Sprintf("%s://%s:%d%s", "http", s.ip, s.port,RPUrl)
+	request.Data=body
+	if s.authEnable {
+		request.Header.Set("Authorization", "Bearer "+ s.adminToken)
+	}
+	response, b, err := request.Post(url).End()
+	if err != nil {
+		return fmt.Errorf("reset position error: %+v", err)
+	}
+    if response.StatusCode == http.StatusNoContent{
+    	return nil
+	}else {
+		errMsg := fmt.Errorf("reset position error, url: %s, Error code: %d, Error Message: %+v", url, response.StatusCode, b)
+		return errMsg
+	}
+}

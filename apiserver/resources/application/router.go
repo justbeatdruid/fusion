@@ -146,7 +146,10 @@ func (r *router) changeOwner(request *restful.Request, response *restful.Respons
 }
 
 func (r *router) getUsers(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.GetUsers(request)
+	code, headers, result := r.controller.GetUsers(request)
+	for k, v := range headers {
+		response.AddHeader(k, v)
+	}
 	response.WriteHeaderAndEntity(code, result)
 }
 

@@ -65,7 +65,7 @@ func CreateCronJob(client *clientset.Clientset, name, schedule, iamgeName, conta
 									Name:            containerName,
 									Image:           iamgeName,
 									Command:         cmd,
-									ImagePullPolicy: v1.PullIfNotPresent,
+									ImagePullPolicy: v1.PullAlways,
 								},
 							},
 							RestartPolicy: v1.RestartPolicyNever,
@@ -76,7 +76,7 @@ func CreateCronJob(client *clientset.Clientset, name, schedule, iamgeName, conta
 			SuccessfulJobsHistoryLimit: new(int32),
 		},
 	}
-	*cronJob.Spec.SuccessfulJobsHistoryLimit = 1
+	*cronJob.Spec.SuccessfulJobsHistoryLimit = 0
 	result, err := jobsClient.Create(cronJob)
 	klog.Infof("create job: result %+v, err:%v", result, err)
 	if err != nil {

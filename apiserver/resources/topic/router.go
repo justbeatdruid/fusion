@@ -91,7 +91,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("modify permissions ").
-		To(r.grantPermissions).
+		To(r.modifyPermissions).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 	//删除用户授权
@@ -151,6 +151,15 @@ func (r *router) Install(ws *restful.WebService) {
 		Produces(restful.MIME_JSON).
 		Doc("send message to topic").
 		To(r.sendMessages).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	//根据messageID重置消费者订阅位置
+	ws.Route(ws.POST("/topics/messagePosition").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("send message to topic").
+		To(r.resetPosition).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 }
@@ -216,6 +225,12 @@ func (r *router) grantPermissions(request *restful.Request, response *restful.Re
 	code, result := r.controller.GrantPermissions(request)
 	response.WriteHeaderAndEntity(code, result)
 }
+
+func (r *router) modifyPermissions(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ModifyPermissions(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
 func (r *router) deletePermissions(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DeletePermissions(request)
 	response.WriteHeaderAndEntity(code, result)
@@ -238,4 +253,9 @@ func (r *router) getSubscriptionsOfTopic(request *restful.Request, response *res
 func (r *router) sendMessages(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.SendMessages(request)
 	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) resetPosition(request *restful.Request, response *restful.Response){
+	code, result := r.controller.ResetPosition(request)
+	response.WriteHeaderAndEntity(code,result)
 }

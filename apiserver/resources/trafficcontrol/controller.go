@@ -7,6 +7,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
 	"net/http"
+	"strings"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
@@ -96,6 +97,14 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 	body.Data.Users = user.InitWithOwner(authuser.Name)
 	body.Data.Namespace = authuser.Namespace
 	if db, err, code := c.service.CreateTrafficcontrol(body.Data); err != nil {
+		if strings.Contains(err.Error(), "必须小于每") {
+			comma := strings.Index(err.Error(), "每")
+			return http.StatusInternalServerError, &CreateResponse{
+				Code:      2,
+				ErrorCode: "012000014",
+				Message:   err.Error()[comma:],
+			}
+		}
 		if errors.IsNameDuplicated(err) {
 			code = "012000011"
 		}
@@ -171,6 +180,7 @@ func (c *controller) ListTrafficcontrol(req *restful.Request) (int, *ListRespons
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
 	name := req.QueryParameter("name")
+	apiId := req.QueryParameter("apiId")
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
@@ -180,7 +190,7 @@ func (c *controller) ListTrafficcontrol(req *restful.Request) (int, *ListRespons
 			Detail:    "auth model error",
 		}
 	}
-	if tc, err := c.service.ListTrafficcontrol(util.WithNameLike(name), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+	if tc, err := c.service.ListTrafficcontrol(util.WithNameLike(name), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace), util.WithId(apiId)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			ErrorCode: "012000007",

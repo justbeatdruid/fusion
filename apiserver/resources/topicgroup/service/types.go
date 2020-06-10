@@ -29,6 +29,7 @@ const (
 	None                    = "None"
 	Prefix                  = "Prefix"
 	NameReg                 = "^[-=:.\\w]{1,100}$"
+	MaxDescriptionLen = 1024
 )
 
 type Topicgroup struct {
@@ -606,6 +607,10 @@ func (a *Topicgroup) Validate() error {
 	//if err := p.Validate(); err != nil {
 	//	return err
 	//}
+
+	if len([]rune(a.Description))> MaxDescriptionLen{
+		return fmt.Errorf("description is not valid")
+	}
 	a.ID = names.NewID()
 	return nil
 }

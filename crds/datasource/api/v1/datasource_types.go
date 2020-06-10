@@ -146,8 +146,11 @@ type MessageQueue struct {
 }
 
 type MessageConnection struct {
-	Address  string `json:"address"`
-	Insecure bool   `json:"insecure"`
+	Address        string `json:"address"`
+	Insecure       bool   `json:"insecure"`
+	Namespace      string `json:"namespace"`
+	AuthEnabled    bool   `json:"authEnabled"`
+	NamespaceToken string `json:"token"`
 }
 
 // +kubebuilder:object:root=true

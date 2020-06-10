@@ -122,8 +122,9 @@ func CanExeAction(api *v1.Api, action v1.Action) error {
 		return fmt.Errorf("api status is running and retry latter")
 	}
 	switch action {
-	//API发布后不允许更新 发布 删除 解绑 只能先下线再操作最后重新发布 解绑是单独操作 发布后可执行
-	case v1.Update, v1.Publish, v1.Delete:
+	//API发布后不允删除，只能先下线再删除，解绑是单独操作 发布后可执行
+	//API发布后允许更新，再发布，更新后要提示发布才能生效
+	case v1.Delete:
 		if api.Status.PublishStatus == v1.Released {
 			klog.Infof("api status is not ok %s", api.Status.PublishStatus)
 			return fmt.Errorf("api has published and cannot exec")
@@ -596,6 +597,9 @@ func (s *Service) BindApi(apiid, appid string, opts ...util.OpOption) (*Api, err
 }
 
 func (s *Service) BatchBindApi(appid string, apis []v1.ApiBind, opts ...util.OpOption) error {
+	if len(apis) == 0 {
+		return fmt.Errorf("at least one api must select to bind")
+	}
 	//先校验是否所有API满足绑定条件，有一个不满足直接返回错误
 	for _, value := range apis {
 		api, err := s.Get(value.ID, opts...)
@@ -682,6 +686,9 @@ func (s *Service) ReleaseApi(apiid, appid string, opts ...util.OpOption) (*Api, 
 	return ToModel(api), err
 }
 func (s *Service) BatchReleaseApi(appid string, apis []v1.ApiBind, opts ...util.OpOption) error {
+	if len(apis) == 0 {
+		return fmt.Errorf("at least one api must select to unbind")
+	}
 	for _, value := range apis {
 		api, err := s.Get(value.ID, opts...)
 		if err != nil {

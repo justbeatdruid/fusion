@@ -94,9 +94,10 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		if err := r.Operator.AddPartitionsOfTopic(topic); err != nil {
 			topic.Status.Status = nlptv1.UpdateFailed
 			topic.Status.Message = fmt.Sprintf("add topic partition error: %+v ", err)
+			topic.Spec.PartitionNum = topic.Spec.OldPartitionNum
 		} else {
 			topic.Status.Status = nlptv1.Updated
-			topic.Status.Message = "message"
+			topic.Status.Message = "success"
 		}
 		if err := r.Update(ctx, topic); err != nil {
 			klog.Errorf("Update Topic Failed: %+v", *topic)
@@ -128,6 +129,32 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
+	if topic.Status.AuthorizationStatus == nlptv1.UpdatingAuthorization {
+		//klog.Infof("Start Grant Topic: %+v", *topic)
+		//授权操作
+		for i := 0; i < len(topic.Spec.Permissions); i++ {
+			p := topic.Spec.Permissions[i]
+			if p.Status.Status == nlptv1.UpdatingAuthorization {
+				if err := r.Operator.GrantPermission(topic, &p); err != nil {
+					p.Status.Status = nlptv1.UpdatingAuthorizationFailed
+					p.Status.Message = fmt.Sprintf("modify permission error: %+v", err)
+					topic.Status.AuthorizationStatus = nlptv1.UpdatingAuthorizationFailed
+
+					//TODO roll back
+
+				} else {
+					p.Status.Status = nlptv1.UpdatingAuthorizationSuccess
+					p.Status.Message = "success"
+					topic.Status.AuthorizationStatus = nlptv1.UpdatingAuthorizationSuccess
+				}
+				topic.Spec.Permissions[i] = p
+			}
+		}
+
+		if err := r.Update(ctx, topic); err != nil {
+			klog.Errorf("Update Topic Failed: %+v", *topic)
+		}
+	}
 	if topic.Status.AuthorizationStatus == nlptv1.Authorizing {
 		klog.Infof("Start Grant Topic: %+v", *topic)
 		//授权操作

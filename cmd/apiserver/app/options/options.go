@@ -14,8 +14,8 @@ import (
 	"k8s.io/klog"
 
 	"github.com/chinamobile/nlpt/apiserver/cache"
+	"github.com/chinamobile/nlpt/apiserver/concurrency"
 	"github.com/chinamobile/nlpt/apiserver/database"
-	"github.com/chinamobile/nlpt/apiserver/mutex"
 	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/audit"
 	"github.com/chinamobile/nlpt/pkg/auth/cas"
@@ -62,7 +62,7 @@ func NewServerRunOptions() *ServerRunOptions {
 	}
 
 	if len(s.CrdNamespace) == 0 {
-		klog.Infof("cannot find environmnent MY_POD_NAMESPACE, use default")
+		klog.V(4).Infof("cannot find environmnent MY_POD_NAMESPACE, use default")
 		s.CrdNamespace = "default"
 	}
 
@@ -156,9 +156,13 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 	if err = s.Topic.ParsePulsarSecret(); err != nil {
 		return nil, fmt.Errorf("parse pulsar secret error: %+v", err)
 	}
-	mtx, err := mutex.NewEtcdMutex(s.Etcd.Endpoints, s.Etcd.CertFile, s.Etcd.KeyFile, s.Etcd.CAFile, s.Etcd.Timeout)
+	mtx, err := concurrency.NewEtcdMutex(s.Etcd.Endpoints, s.Etcd.CertFile, s.Etcd.KeyFile, s.Etcd.CAFile, s.Etcd.Timeout)
 	if err != nil {
-		return nil, fmt.Errorf("cannot create etcd client: %+v", err)
+		return nil, fmt.Errorf("cannot create etcd mutex: %+v", err)
+	}
+	elector, err := concurrency.NewEtcdElector(s.Etcd.Endpoints, s.Etcd.CertFile, s.Etcd.KeyFile, s.Etcd.CAFile, s.Etcd.Timeout)
+	if err != nil {
+		return nil, fmt.Errorf("cannot create etcd elector: %+v", err)
 	}
 	db, err := database.NewDatabaseConnection(s.Database.Enabled, s.Database.Type, s.Database.Host, s.Database.Port, s.Database.Username, s.Database.Password,
 		s.Database.Database, s.Database.Schema)
@@ -179,7 +183,8 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		SyncMode:      s.SyncMode,
 		LocalConfig:   *errConfig,
 
-		Mutex: mtx,
+		Mutex:   mtx,
+		Elector: elector,
 
 		Database: db,
 	}
