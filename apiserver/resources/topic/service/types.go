@@ -178,6 +178,13 @@ type SendMessages struct {
     Key string `json:"tag"`
 	MessageBody string `json:"messageBody"`
 }
+type ResetPosition struct {
+	ID string `json:"id"` //topicId
+	SubName string `json:"subName"` //订阅者的名称
+	LedgerId int64 `json:"ledgerId"`
+	EntryId  int64 `json:"entryId"`
+	PartitionIndex int64 `json:"partitionIndex"`
+}
 
 const (
 	Consume = "consume"

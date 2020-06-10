@@ -38,6 +38,7 @@ const (
 	ErrorQuerySubscriptionsInfo           = "010000030" //查询Topic订阅关系失败
 	ErrorUnBindTopicError = "010000031" //应用与Topic解绑定失败
 	ErrorModifyPermissions = "010000032" //修改权限失败
+	ErrorResetPosition = "010000033" //重置消费位置失败
 )
 
 type TopicError struct {
