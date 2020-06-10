@@ -296,7 +296,8 @@ func NewFlinkxReq() FlinkxReq {
 							Password: "12345",
 							//Column:   []string{"id", "name"},
 							Column: []string{},
-							Where:  "id>1",
+							//Where:  "id>1",
+							Where: "",
 							Connection: []Connection{Connection{
 								Table:   []string{"testreader"},
 								JdbcURL: []string{"jdbc:mysql://nlstore-mysql:3306/testreader"},

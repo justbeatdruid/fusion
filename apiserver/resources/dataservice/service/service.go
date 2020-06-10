@@ -66,17 +66,10 @@ func (s *Service) CreateDataservice(dataService *Dataservice, userId, namespace 
 	}
 	dataService.ID = int(id)
 
-	// if err == nil {
-	// 	errJob := s.CreateJob(dataService.DagID, dataService.Name+"-"+dataService.DagID, dataService.SchedualPlanConfig.QuartzCronExpression, "registry.cmcc.com/library/smallcurl:1.0")
-	// 	klog.Errorf("errJob:%v", errJob)
-	// }
-
-	// klog.Errorf("DeleteCronJob errJob:%v", err)
-
 	return dataService, err
 }
 
-//CreateDataservice ...
+//OperationDataservice ...
 func (s *Service) OperationDataservice(operationReq *OperationReq, userId, namespace string) error {
 
 	if err := operationReq.Validate(); err != nil {
@@ -90,6 +83,7 @@ func (s *Service) OperationDataservice(operationReq *OperationReq, userId, names
 				if errCronjob := k8s.DeleteCronJob(s.kubeClient, task[i].Job, crdNamespace); errCronjob != nil {
 					klog.Errorf("errJob:%v, task:%v", errCronjob, task[i])
 				}
+				model.DeleteTbMetadataByDagId(task[i].DagId)
 			}
 		}(task)
 
@@ -113,6 +107,8 @@ func (s *Service) ListDataservice(offet, limit int, name, userId, namespace stri
 
 	return body, nil
 }
+
+//GetDataSource ...
 func (s *Service) GetDataSource(id string, opts ...util.OpOption) (*dsv1.Datasource, string, error) {
 	crdNamespace := util.OpList(opts...).Namespace()
 	if len(crdNamespace) == 0 {
@@ -146,6 +142,7 @@ func (s *Service) DeleteDataservice(id, userId, namespace string) error {
 	task, err := model.DeleteTaskByDagId(id, userId, namespace)
 	if err == nil {
 		errCronjob := k8s.DeleteCronJob(s.kubeClient, task.Job, crdNamespace)
+		model.DeleteTbMetadataByDagId(id)
 		klog.Errorf("errJob:%v", errCronjob)
 	}
 	return err
@@ -191,23 +188,10 @@ func (s *Service) GetCmd(task model.Task) ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
-	//url := "http://flinkx-rest:9080/flinkx/task/start?options=" + options + "&isAll=0&maxValue=100&metaId=asdfasdfasdf"
-	//curl localhost:9080/api/v1/apis -H 'content-type:application/json'  \
-	//-d'
-	// {
-	//   "options": ""
-	// }'
-	// body := map[string]string{
-	// 	"options": options,
-	// }
-	// byetes, _ := json.Marshal(body)
-
-	//return []string{"curl", url, "-H", "'content-type:application/json'"}, nil
-	// return []string{"curl", url}, nil
 	config, err := json.Marshal(task)
 	if err != nil {
 		klog.Errorf("json Marshal failed,err:%v, task:%v", err, task)
-		//return "", err
+		return []string{}, err
 	}
 	return []string{"./curlflinkx", options, string(config)}, nil
 
@@ -217,10 +201,7 @@ func (s *Service) GetCmd(task model.Task) ([]string, error) {
 func (s *Service) GetFlinkxBody(ds model.Task) (string, error) {
 	flinkJob := NewFlinkxReq()
 
-	// ds, err := model.GetTaskByDagId(jobID, userId, namespace)
-	// if err != nil {
-	// 	return "", fmt.Errorf("cannot get object: %+v", err)
-	// }
+	flinkJob.Job.Setting.Dirty = map[string]interface{}{"path": "/tmp/" + ds.DagId}
 	dataSource := DataSource{}
 	err := json.Unmarshal([]byte(ds.DataSourceConfig), &dataSource)
 	if err != nil {
@@ -282,7 +263,6 @@ func (s *Service) GetFlinkxBody(ds model.Task) (string, error) {
 		klog.Errorf("Marshal flinkxBody failed:err:%v", err)
 		return "", err
 	}
-	//return base64.StdEncoding.EncodeToString(flinkxBytes), nil
 	return string(flinkxBytes), nil
 }
 
@@ -298,6 +278,7 @@ func (s *Service) CreateJob(imageName string, task model.Task) error {
 		klog.Errorf("get schedual failed,err:%v", err)
 		return err
 	}
+	s.insertAddFlag(task)
 	err = k8s.CreateCronJob(s.kubeClient, task.Name+"-"+task.DagId, schedule, imageName, task.DagId, crdNamespace, cmd)
 	if err != nil {
 		klog.Errorf("Create Job failed,err:%v", err)
@@ -355,4 +336,32 @@ func (s *Service) dealIntegrationTask() {
 		}
 	}
 	return
+}
+
+func (s *Service) insertAddFlag(task model.Task) {
+	var datasource DataSource
+	err := json.Unmarshal([]byte(task.DataSourceConfig), &datasource)
+	if err := json.Unmarshal([]byte(task.DataSourceConfig), &datasource); err != nil {
+		klog.Errorf("Unmarshal falied ,err:%v, sourceconfig:%v", err, task.DataSourceConfig)
+		return
+	}
+	if datasource.RelationalDb.IncrementalMigration {
+		td := model.TbMetadata{
+			ColId:      task.DagId,
+			TableName:  datasource.RelationalDb.SourceTable,
+			ColumnName: datasource.RelationalDb.Timestamp,
+			IsAdd:      1,
+			AddValue:   datasource.RelationalDb.TimestampInitialValue,
+			ColumnType: "time",
+			CreateTime: time.Now(),
+			UpdataTime: time.Now(),
+		}
+
+		if err = model.AddTbMetadata(&td); err != nil {
+			klog.Errorf("AddTbMetadata falied ,err:%v", err)
+		}
+	}
+
+	return
+
 }
