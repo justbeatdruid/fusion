@@ -164,8 +164,8 @@ func (s *Service) UpdateDateService(reqData map[string]interface{}, dagId, userI
 	}
 
 	if _, ok := reqData["Name"]; ok {
-		_, err = model.GetTaskByName(taskdb.Name, userId, namespace)
-		if err == nil {
+		task, err := model.GetTaskByName(taskdb.Name, userId, namespace)
+		if err == nil && task.DagId != dagId {
 			return nil, fmt.Errorf("name duplicated")
 		}
 	}

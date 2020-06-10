@@ -7,7 +7,6 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/database/model"
 	"github.com/chinamobile/nlpt/pkg/util"
-	"k8s.io/klog"
 )
 
 //SchedualPlan ...
@@ -126,25 +125,55 @@ func (ds *Dataservice) Validate(service *Service, opts ...util.OpOption) error {
 	if ds.Type != "realtime" && ds.Type != "periodic" {
 		return fmt.Errorf("type is error value,The value range of type is realtime or periodic,type:%v", ds.Type)
 	}
+
+	if ds.Type == "periodic" {
+		if ds.SchedualPlanConfig.QuartzCron {
+			if ds.SchedualPlanConfig.QuartzCronExpression == "" {
+				return fmt.Errorf("SchedualPlanConfig quarz cron expression is null value,please config quarz cron expression")
+			}
+		} else {
+			if ds.SchedualPlanConfig.SchedualPeriod < 0 {
+				return fmt.Errorf("SchedualPlanConfig SchedualPeriod is error,please config correct SchedualPeriod :%v", ds.SchedualPlanConfig.SchedualPeriod)
+			}
+			if ds.SchedualPlanConfig.TimeUnit != "minute" && ds.SchedualPlanConfig.TimeUnit != "hour" && ds.SchedualPlanConfig.TimeUnit != "day" && ds.SchedualPlanConfig.TimeUnit != "month" && ds.SchedualPlanConfig.TimeUnit != "week" {
+				return fmt.Errorf("SchedualPlanConfig TimeUnit (minite,hour,day,month,week) is error,please config correct TimeUnit :%v", ds.SchedualPlanConfig.TimeUnit)
+			}
+
+		}
+
+	}
 	if ds.DataSourceConfig.RelationalDb.SourceID == "" || ds.DataTargetConfig.RelationalDbTarget.TargetID == "" {
 		return fmt.Errorf("SourceID or TargetID is error value,SourceID:%v,TargetID:%v", ds.DataSourceConfig.RelationalDb.SourceID, ds.DataTargetConfig.RelationalDbTarget.TargetID)
 	}
-	dataSource, _, err := service.GetDataSource(ds.DataSourceConfig.RelationalDb.SourceID, opts...)
-	klog.Errorf("dataSource:%v,err:%v", dataSource, err)
-	if err != nil {
+
+	if _, _, err := service.GetDataSource(ds.DataSourceConfig.RelationalDb.SourceID, opts...); err != nil {
 		return fmt.Errorf("find dataSource failed by SourceID ,sourceID:%v.", ds.DataSourceConfig.RelationalDb.SourceID)
 	}
-	dataSource, _, err = service.GetDataSource(ds.DataTargetConfig.RelationalDbTarget.TargetID, opts...)
-	klog.Errorf("dataSource:%v,err:%v", dataSource, err)
-	if err != nil {
+
+	if _, _, err := service.GetDataSource(ds.DataTargetConfig.RelationalDbTarget.TargetID, opts...); err != nil {
 		return fmt.Errorf("find dataSource failed by TargetID ,sourceID:%v.", ds.DataTargetConfig.RelationalDbTarget.TargetID)
 	}
-	if _, err = time.Parse(TimeStr, ds.StartTime); err != nil {
+	if _, err := time.Parse(TimeStr, ds.StartTime); err != nil {
 		return fmt.Errorf("StartTime error,:err:%v,startTime:%v", err, ds.StartTime)
 	}
-	if _, err = time.Parse(TimeStr, ds.DataSourceConfig.RelationalDb.TimestampInitialValue); err != nil {
-		return fmt.Errorf("StartTime error,:err:%v,TimestampInitialValue:%v", err, ds.DataSourceConfig.RelationalDb.TimestampInitialValue)
+
+	if ds.DataSourceConfig.RelationalDb.SourceTable == "" {
+		return fmt.Errorf("SourceTable :%v, please config SourceTable ", ds.DataSourceConfig.RelationalDb.SourceTable)
 	}
+	if ds.DataSourceConfig.RelationalDb.IncrementalMigration {
+		if ds.DataSourceConfig.RelationalDb.Timestamp == "" {
+			return fmt.Errorf("Timestamp :%v, please config Timestamp ", ds.DataSourceConfig.RelationalDb.Timestamp)
+		}
+		if _, err := time.Parse(TimeStr, ds.DataSourceConfig.RelationalDb.TimestampInitialValue); err != nil {
+			return fmt.Errorf("StartTime error,:err:%v,TimestampInitialValue:%v", err, ds.DataSourceConfig.RelationalDb.TimestampInitialValue)
+		}
+
+	}
+
+	if ds.DataSourceConfig.RelationalDb.TimeCompensation < 0 {
+		return fmt.Errorf("TimeCompensation  error TimeCompensation:%v", ds.DataSourceConfig.RelationalDb.TimeCompensation)
+	}
+
 	return nil
 }
 
