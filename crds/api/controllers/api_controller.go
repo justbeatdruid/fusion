@@ -246,8 +246,8 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		return ctrl.Result{}, nil
 	}
 
-	//发布后的API需要修改 需要先将API下线 之后更新 然后再执行发布  已下线-->执行更新然后发布-->已发布
-	if api.Status.Action == nlptv1.Publish && api.Status.PublishStatus == nlptv1.Offlined {
+	//发布API不限制状态  已发布，已下线的API都可以再次发布，未发布的走create流程，其他走update流程
+	if api.Status.Action == nlptv1.Publish && api.Status.PublishStatus != nlptv1.UnRelease {
 		api.Status.Status = nlptv1.Running
 		// call kong api update
 		if err := r.Operator.UpdateRouteByKong(api); err != nil {
