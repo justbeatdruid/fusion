@@ -260,6 +260,9 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Application, err
 			return nil, fmt.Errorf("write permission denied")
 		}
 	}
+	if len(app.Spec.APIs)>0{
+		return nil,fmt.Errorf("Binding api,can not delete")
+	}
 	//TODO need check status !!!
 	app.Status.Status = v1.Delete
 	(*app).Spec.Result = v1.DELETING
