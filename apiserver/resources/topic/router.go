@@ -153,6 +153,15 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.sendMessages).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	//根据messageID重置消费者订阅位置
+	ws.Route(ws.POST("/topics/messagePosition").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("send message to topic").
+		To(r.resetPosition).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func (r *router) createTopic(request *restful.Request, response *restful.Response) {
@@ -244,4 +253,9 @@ func (r *router) getSubscriptionsOfTopic(request *restful.Request, response *res
 func (r *router) sendMessages(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.SendMessages(request)
 	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) resetPosition(request *restful.Request, response *restful.Response){
+	code, result := r.controller.ResetPosition(request)
+	response.WriteHeaderAndEntity(code,result)
 }

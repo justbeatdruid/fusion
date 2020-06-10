@@ -66,6 +66,7 @@ type CreateRequest = RequestWrapped
 type DeleteResponse = Wrapped
 type GrantResponse = Wrapped
 type ExportResponse = Wrapped
+type ResetPositionResponse = Wrapped
 type AddPartitions = Wrapped
 type SendMessagesResponse =ListResponse
 /*type DeleteResponse struct {
@@ -1421,4 +1422,48 @@ func (c *controller) SendMessages(req *restful.Request)  (int,*SendMessagesRespo
 		    Code:      success,
 		    Data:      messageId,
 	 }
+}
+
+func (c *controller) ResetPosition(req *restful.Request) (int, *ResetPositionResponse){
+     RP := &service.ResetPosition{}
+     if err := req.ReadEntity(RP);err!=nil{
+     	return http.StatusInternalServerError,&ResetPositionResponse{
+     		Code: fail,
+     		ErrorCode: tperror.ErrorReadEntity,
+     		Message: c.errMsg.Topic[tperror.ErrorReadEntity],
+     		Detail: fmt.Sprintf("cannot read entity: %+v", err),
+		}
+	 }
+	 authUser, err := auth.GetAuthUser(req)
+	 if err!=nil{
+		return http.StatusInternalServerError,&ResetPositionResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	 }
+	tp,err := c.service.GetTopic(RP.ID,util.WithNamespace(authUser.Namespace))
+	if err!=nil{
+		return http.StatusInternalServerError, &ResetPositionResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorGetTopicInfo,
+			Message:   c.errMsg.Topic[tperror.ErrorGetTopicInfo],
+			Detail:    fmt.Sprintf("get database error: %+v", err),
+		}
+	}
+	err = c.service.ResetPosition(RP,tp)
+	if err!=nil {
+		return http.StatusInternalServerError,&ResetPositionResponse{
+           Code:    fail,
+           ErrorCode: tperror.ErrorResetPosition,
+           Message:  c.errMsg.Topic[tperror.ErrorResetPosition],
+           Detail:  fmt.Sprintf("reset position error: %+v",err),
+		}
+	}else {
+		return http.StatusOK,&ResetPositionResponse{
+			Code:    success,
+			Message:  "success",
+		}
+	}
 }

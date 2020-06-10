@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/parnurzeal/gorequest"
+	"net/http"
 
 	"github.com/chinamobile/nlpt/apiserver/kubernetes"
 	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
@@ -43,9 +45,28 @@ type Service struct {
 	applicationClient dynamic.NamespaceableResourceInterface
 	errMsg            config.ErrorConfig
 	ip                string
-	host              int
+	port              int
 	authEnable        bool
 	adminToken        string
+}
+
+const ResetPositionUrl = "/admin/v2/persistent/%s/%s/%s/subscription/%s/resetcursor"
+type requestLogger struct {
+	prefix string
+}
+
+var logger = &requestLogger{}
+
+func (r *requestLogger) SetPrefix(prefix string) {
+	r.prefix = prefix
+}
+
+func (r *requestLogger) Printf(format string, v ...interface{}) {
+	klog.V(4).Infof(format, v...)
+}
+
+func (r *requestLogger) Println(v ...interface{}) {
+	klog.V(4).Infof("%+v", v)
 }
 
 func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topConfig *config.TopicConfig, errMsg config.ErrorConfig) *Service {
@@ -55,7 +76,7 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topCo
 		applicationClient: client.Resource(appv1.GetOOFSGVR()),
 		errMsg:            errMsg,
 		ip:                topConfig.Host,
-		host:              topConfig.Port,
+		port:              topConfig.Port,
 		authEnable:        topConfig.AuthEnable,
 		adminToken:        topConfig.AdminToken,
 		kubeClient:        kubeClient,
@@ -402,12 +423,12 @@ func (s *Service) ListTopicMessages(topicUrls []string) ([]Message, error) {
 func (s *Service) GetPulsarClient() (pulsar.Client, error) {
 	if s.authEnable {
 		return pulsar.NewClient(pulsar.ClientOptions{
-			URL:            "pulsar://" + s.ip + ":" + strconv.Itoa(s.host),
+			URL:            "pulsar://" + s.ip + ":" + strconv.Itoa(s.port),
 			Authentication: pulsar.NewAuthenticationToken(s.adminToken),
 		})
 	}
 	return pulsar.NewClient(pulsar.ClientOptions{
-		URL: "pulsar://" + s.ip + ":" + strconv.Itoa(s.host),
+		URL: "pulsar://" + s.ip + ":" + strconv.Itoa(s.port),
 	})
 }
 
@@ -699,3 +720,30 @@ func (s *Service) SendMessages(topicUrl string,messagesBody string,key string) (
 	return messageId,nil
 }
 
+func (s *Service) ResetPosition(RP *ResetPosition,tp *Topic) error {
+	body:=make(map[string]interface{})
+	body["ledgerId"]=RP.LedgerId
+	body["entryId"]=RP.EntryId
+	body["partitionIndex"]=RP.PartitionIndex
+	topicGroup:=tp.TopicGroup
+	tenant:=tp.Namespace
+	topic:=tp.Name
+	subName:=RP.SubName
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
+	RPUrl := fmt.Sprintf(ResetPositionUrl,tenant,topicGroup,topic,subName)
+	url := fmt.Sprintf("%s://%s:%d%s", "http", s.ip, s.port,RPUrl)
+	request.Data=body
+	if s.authEnable {
+		request.Header.Set("Authorization", "Bearer "+ s.adminToken)
+	}
+	response, b, err := request.Post(url).End()
+	if err != nil {
+		return fmt.Errorf("reset position error: %+v", err)
+	}
+    if response.StatusCode == http.StatusNoContent{
+    	return nil
+	}else {
+		errMsg := fmt.Errorf("reset position error, url: %s, Error code: %d, Error Message: %+v", url, response.StatusCode, b)
+		return errMsg
+	}
+}

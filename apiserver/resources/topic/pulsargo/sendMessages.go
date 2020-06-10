@@ -9,7 +9,6 @@ func SendMessages(client pulsar.Client,topicUrl string,messagesBody string,key s
 	defer client.Close()
     produce,err := client.CreateProducer(pulsar.ProducerOptions{
 		Topic:                   topicUrl,
-		Name:                    "",
 	})
     defer produce.Close()
 	if err!=nil {
