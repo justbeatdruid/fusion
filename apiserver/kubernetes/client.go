@@ -76,7 +76,7 @@ func CreateCronJob(client *clientset.Clientset, name, schedule, iamgeName, conta
 			SuccessfulJobsHistoryLimit: new(int32),
 		},
 	}
-	*cronJob.Spec.SuccessfulJobsHistoryLimit = 1
+	*cronJob.Spec.SuccessfulJobsHistoryLimit = 0
 	result, err := jobsClient.Create(cronJob)
 	klog.Infof("create job: result %+v, err:%v", result, err)
 	if err != nil {

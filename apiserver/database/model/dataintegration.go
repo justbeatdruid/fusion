@@ -28,7 +28,8 @@ type Task struct {
 
 //TbDagRun ...
 type TbDagRun struct {
-	DagId     string `orm:"pk;unique"`
+	Id        int `orm:"pk;auto"`
+	DagId     string
 	ExecDate  time.Time
 	StartDate time.Time
 	EndDate   time.Time
@@ -38,7 +39,7 @@ type TbDagRun struct {
 
 //TbMetadata ...
 type TbMetadata struct {
-	DagId           string `orm:"pk;unique"`
+	ColId           string `orm:"pk;unique"`
 	DbId            string
 	Owner           string
 	TableName       string `orm:"size(128)"`
@@ -60,7 +61,13 @@ func AddTbMetadata(md *TbMetadata) error {
 	o := orm.NewOrm()
 	_, err := o.Insert(md)
 	return err
+}
 
+// DeleteTbMetadataByDagId ...
+func DeleteTbMetadataByDagId(dagId string) (err error) {
+	o := orm.NewOrm()
+	_, err = o.QueryTable("TbMetadata").Filter("ColId", dagId).Delete()
+	return
 }
 
 // AddTask ...
@@ -184,10 +191,12 @@ func OperationTaskStatus(operation, userId, namespace string, ids []string) (tas
 			return task, err
 		}
 
-	}
-	_, err = o.QueryTable("Task").Filter("DagId__in", ids).Filter("UserId", userId).Filter("Namespace", namespace).Filter("Status", false).All(&task)
-	if err != nil {
-		return task, err
+	} else {
+		_, err = o.QueryTable("Task").Filter("DagId__in", ids).Filter("UserId", userId).Filter("Namespace", namespace).Filter("Status", false).All(&task)
+		if err != nil {
+			return task, err
+		}
+
 	}
 
 	p, err := o.Raw("UPDATE task SET status = ? , job = ? WHERE dag_id = ? and user_id = ? and namespace = ? and status = ?").Prepare()
