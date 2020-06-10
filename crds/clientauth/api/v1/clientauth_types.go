@@ -34,6 +34,7 @@ type ClientauthSpec struct {
 	Token         string          `json:"token"`
 	AuthorizedMap *map[string]int `json:"authorizedMap,omitempty"` //已授权topic id列表
 	Description   string          `json:"description,omitempty"`   //描述
+	IsPermanent   bool            `json:"isPermanent"` //token是否永久有效
 }
 
 // ClientauthStatus defines the observed state of Clientauth

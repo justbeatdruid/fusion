@@ -47,6 +47,7 @@ func ToAPI(app *Clientauth) *v1.Clientauth {
 		ExipreAt:    app.ExpireAt,
 		IssuedAt:    app.IssuedAt,
 		Description: app.Description,
+		IsPermanent: app.IsPermanent,
 	}
 	if len(crd.Namespace) == 0 {
 		crd.Namespace = DefaultNamespace
