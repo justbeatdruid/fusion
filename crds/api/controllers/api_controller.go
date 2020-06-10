@@ -275,14 +275,6 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		r.Update(ctx, api)
 		return ctrl.Result{}, nil
 	}
-	//未发布API更新 已下线API更新
-	if api.Status.Action == nlptv1.Update && (api.Status.PublishStatus == nlptv1.UnRelease ||
-		api.Status.PublishStatus == nlptv1.Offlined) {
-		api.Status.Status = nlptv1.Success
-		klog.Infof("update api : %s %s, status %s", api.Spec.Name, api.ObjectMeta.Name, api.Status.PublishStatus)
-		r.Update(ctx, api)
-		return ctrl.Result{}, nil
-	}
 	//已下线删除 已下线时route已经删除
 	if api.Status.Action == nlptv1.Delete && api.Status.PublishStatus == nlptv1.Offlined {
 		api.Status.Status = nlptv1.Running
