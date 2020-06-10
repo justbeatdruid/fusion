@@ -188,6 +188,7 @@ func (s *Service) List(opts ...util.OpOption) (*v1.TrafficcontrolList, error) {
 	op := util.OpList(opts...)
 	u := op.User()
 	ns := op.Namespace()
+	apiId := op.Id()
 	var labels []string
 	var crdNamespace = defaultNamespace
 	if s.tenantEnabled {
@@ -200,6 +201,11 @@ func (s *Service) List(opts ...util.OpOption) (*v1.TrafficcontrolList, error) {
 			labels = append(labels, user.GetLabelSelector(u))
 		}
 	}
+
+	if len(apiId) > 0 {
+		labels = append(labels, fmt.Sprintf("%s=%s", apiId, "true"))
+	}
+
 	options.LabelSelector = strings.Join(labels, ",")
 	klog.V(5).Infof("list with label selector: %s", options.LabelSelector)
 	crd, err := s.client.Namespace(crdNamespace).List(options)
