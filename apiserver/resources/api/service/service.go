@@ -596,6 +596,9 @@ func (s *Service) BindApi(apiid, appid string, opts ...util.OpOption) (*Api, err
 }
 
 func (s *Service) BatchBindApi(appid string, apis []v1.ApiBind, opts ...util.OpOption) error {
+	if len(apis) == 0 {
+		return fmt.Errorf("at least one api must select to bind")
+	}
 	//先校验是否所有API满足绑定条件，有一个不满足直接返回错误
 	for _, value := range apis {
 		api, err := s.Get(value.ID, opts...)
@@ -682,6 +685,9 @@ func (s *Service) ReleaseApi(apiid, appid string, opts ...util.OpOption) (*Api, 
 	return ToModel(api), err
 }
 func (s *Service) BatchReleaseApi(appid string, apis []v1.ApiBind, opts ...util.OpOption) error {
+	if len(apis) == 0 {
+		return fmt.Errorf("at least one api must select to unbind")
+	}
 	for _, value := range apis {
 		api, err := s.Get(value.ID, opts...)
 		if err != nil {
