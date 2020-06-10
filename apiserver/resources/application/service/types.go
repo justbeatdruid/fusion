@@ -8,9 +8,12 @@ import (
 	"github.com/chinamobile/nlpt/pkg/errors"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
+	"regexp"
 	"strings"
 )
-
+const (
+	NameReg = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]{2,64}$"
+)
 type Application struct {
 	ID        string     `json:"id"`
 	Name      string     `json:"name"`
@@ -168,9 +171,22 @@ func ToListModel(items *v1.ApplicationList, groups map[string]string, opts ...ut
 func (s *Service) Validate(a *Application) error {
 	for k, v := range map[string]string{
 		"name": a.Name,
+		"description": a.Description,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
+		}
+		if k =="name"{
+			if len(v)==0{
+				return fmt.Errorf("%s is null", k)
+			}else if ok, _ := regexp.MatchString(NameReg, v); !ok {
+				return fmt.Errorf("name is illegal: %v ", v)
+			}
+		}
+		if k=="description"{
+			if len(v)>1024{
+				return fmt.Errorf("%s Cannot exceed 1024 characters", k)
+			}
 		}
 	}
 	appList, errs := s.List(util.WithNamespace(a.Namespace))
@@ -226,9 +242,16 @@ func (s *Service) assignment(target *v1.Application, reqData interface{}) error 
 		}
 		target.Spec.Name = source.Name
 
+		if ok, _ := regexp.MatchString(NameReg, target.Spec.Name); !ok {
+			return fmt.Errorf("name is illegal: %v ", target.Spec.Name)
+		}
+
 	}
 	if _, ok := data["description"]; ok {
 		target.Spec.Description = source.Description
+		if len(target.Spec.Description)>1024{
+			return fmt.Errorf("%s Cannot exceed 1024 characters", target.Spec.Description)
+		}
 	}
 	if _, ok := data["group"]; ok {
 		if target.ObjectMeta.Labels == nil {
