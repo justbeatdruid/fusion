@@ -11,10 +11,13 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
 	"net"
+	"regexp"
 	"strings"
 	"time"
 )
-
+const (
+	NameReg = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]{2,64}$"
+)
 type Restriction struct {
 	ID        string        `json:"id"`
 	Name      string        `json:"name"`
@@ -24,6 +27,7 @@ type Restriction struct {
 	Config    v1.ConfigInfo `json:"config"`
 	Users     user.Users    `json:"users"`
 	Apis      []v1.Api      `json:"apis"`
+	Description string        `json:"description"`
 	CreatedAt time.Time     `json:"createdAt"`
 
 	Status    v1.Status   `json:"status"`
@@ -47,6 +51,7 @@ func ToAPI(app *Restriction) *v1.Restriction {
 		Action: app.Action,
 		Config: app.Config,
 		Apis:   app.Apis,
+		Description: app.Description,
 	}
 	if crd.Spec.Apis == nil {
 		crd.Spec.Apis = make([]v1.Api, 0)
@@ -107,6 +112,7 @@ func ToModel(obj *v1.Restriction) *Restriction {
 		Config:    obj.Spec.Config,
 		Apis:      obj.Spec.Apis,
 		CreatedAt: obj.ObjectMeta.CreationTimestamp.Time,
+		Description: obj.Spec.Description,
 
 		Status:    obj.Status.Status,
 		UpdatedAt: obj.Status.UpdatedAt,
@@ -143,9 +149,19 @@ func ToListModel(items *v1.RestrictionList, opts ...util.OpOption) []*Restrictio
 func (s *Service) Validate(a *Restriction) error {
 	for k, v := range map[string]string{
 		"name": a.Name,
+		"description":a.Description,
 	} {
-		if len(v) == 0 {
-			return fmt.Errorf("%s is null", k)
+		if k == "name" {
+			if len(v) == 0 {
+				return fmt.Errorf("%s is null", k)
+			} else if ok, _ := regexp.MatchString(NameReg, v); !ok {
+				return fmt.Errorf("name is illegal: %v ", v)
+			}
+		}
+		if k == "description" {
+			if len(v) > 1024 {
+				return fmt.Errorf("%s Cannot exceed 1024 characters", k)
+			}
 		}
 	}
 	switch a.Action {
@@ -225,6 +241,15 @@ func (s *Service) assignment(target *v1.Restriction, reqData interface{}) error 
 			}
 		}
 		target.Spec.Name = source.Name
+		if ok, _ := regexp.MatchString(NameReg, target.Spec.Name); !ok {
+			return fmt.Errorf("name is illegal: %v ", target.Spec.Name)
+		}
+	}
+	if _, ok = data["description"]; ok {
+		target.Spec.Description = source.Description
+		if len(target.Spec.Description) > 1024 {
+			return fmt.Errorf("%s Cannot exceed 1024 characters", target.Spec.Description)
+		}
 	}
 	if _, ok = data["namespace"]; ok {
 		target.ObjectMeta.Namespace = source.Namespace
