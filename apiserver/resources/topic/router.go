@@ -162,6 +162,16 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.resetPosition).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	//从最新位置开始消费接口开发
+	ws.Route(ws.POST("/topics/{id}/subscription/{subName}/skip_all").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("Completely clears the backlog on the subscription.").
+		To(r.skipAllMessages).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 }
 
 func (r *router) createTopic(request *restful.Request, response *restful.Response) {
@@ -257,5 +267,10 @@ func (r *router) sendMessages(request *restful.Request, response *restful.Respon
 
 func (r *router) resetPosition(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ResetPosition(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) skipAllMessages(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.SkipAllMessages(request)
 	response.WriteHeaderAndEntity(code, result)
 }
