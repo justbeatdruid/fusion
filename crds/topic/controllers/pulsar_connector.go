@@ -89,15 +89,15 @@ type SubscriptionStat struct {
 }
 
 type ConsumerStat struct {
-	MsgRateOut float64 `json:"msgRateOut"`
-	MsgThroughputOut float64 `json:"msgThroughputOut"`
-	ConsumerName string `json:"consumerName"`
-	AvailablePermits int `json:"availablePermits"`
-	UnackedMessages int `json:"unackedMessages"`
-	LastAckedTimestamp int64 `json:"lastAckedTimestamp"`
-	LastConsumedTimestamp int64 `json:"lastConsumedTimestamp"`
-	ConnectedSince string `json:"connectedSince"`
-	Address string `json:"address"`
+	MsgRateOut            float64 `json:"msgRateOut"`
+	MsgThroughputOut      float64 `json:"msgThroughputOut"`
+	ConsumerName          string  `json:"consumerName"`
+	AvailablePermits      int     `json:"availablePermits"`
+	UnackedMessages       int     `json:"unackedMessages"`
+	LastAckedTimestamp    int64   `json:"lastAckedTimestamp"`
+	LastConsumedTimestamp int64   `json:"lastConsumedTimestamp"`
+	ConnectedSince        string  `json:"connectedSince"`
+	Address               string  `json:"address"`
 }
 
 //CreateTopic 调用Pulsar的Restful Admin API，创建Topic
@@ -221,7 +221,7 @@ func (r *Connector) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err er
 
 func (r *Connector) AddTokenToHeader(request *gorequest.SuperAgent) *gorequest.SuperAgent {
 	if r.AuthEnable {
-		request.Header.Set("Authorization", "Bearer "+ r.SuperUserToken)
+		request.Header.Set("Authorization", "Bearer "+r.SuperUserToken)
 	}
 	return request
 }

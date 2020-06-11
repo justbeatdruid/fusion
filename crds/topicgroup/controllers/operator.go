@@ -105,7 +105,7 @@ func (r *Operator) CreateNamespace(namespace *v1.Topicgroup) error {
 	url := r.getUrl(namespace)
 
 	response, _, err := request.Put(url).Send("").End()
-	if response.StatusCode == http.StatusNoContent || response.StatusCode == http.StatusConflict{
+	if response.StatusCode == http.StatusNoContent || response.StatusCode == http.StatusConflict {
 		return nil
 	} else {
 		klog.Errorf("Create Topicgroup error, error: %+v, response code: %+v", err, response.StatusCode)

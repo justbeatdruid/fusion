@@ -168,7 +168,7 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 			var list2 []int
 			for i, _ := range list {
 				if list[i] != 0 {
-					list2 = append(list2,i)
+					list2 = append(list2, i)
 				}
 			}
 			var atime [6]string
@@ -178,9 +178,9 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 			atime[3] = "日"
 			atime[4] = "月"
 			atime[5] = "年"
-			for i:=0; i<len(list2)-1;i++ {
+			for i := 0; i < len(list2)-1; i++ {
 				if list[list2[i]] > list[list2[i+1]] {
-					return fmt.Errorf("每%s的次数必须小于每%s的次数",atime[list2[i]],atime[list2[i+1]])
+					return fmt.Errorf("每%s的次数必须小于每%s的次数", atime[list2[i]], atime[list2[i+1]])
 				}
 			}
 		}

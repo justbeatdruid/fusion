@@ -30,18 +30,18 @@ type TopicSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Topic. Edit Topic_types.go to remove/update
-	Name          string        `json:"name"`
-	TopicGroup    string        `json:"topicGroup"`   //topic分组ID
-	PartitionNum  int           `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
-	OldPartitionNum int         `json:"oldPartitionNum"` //保存修改前的分区数，用于更新失败回滚
-	Partitioned   bool          `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
-	Persistent    bool          `json:"persistent"`   //是否持久化，默认为true，非必填
-	Url           string        `json:"url"`          //Topic url
-	Permissions   []Permission  `json:"permissions"`
-	Stats         Stats         `json:"stats"`        //Topic的统计数据
-	Applications  []Application `json:"applications"` //已绑定的应用ID列表
-	Description   string        `json:"description"`  //描述
-	DisplayStatus ShowStatus    `json:"disStatus"`
+	Name            string        `json:"name"`
+	TopicGroup      string        `json:"topicGroup"`      //topic分组ID
+	PartitionNum    int           `json:"partitionNum"`    //topic的分区数量，partitioned为true时，需要指定。默认为1
+	OldPartitionNum int           `json:"oldPartitionNum"` //保存修改前的分区数，用于更新失败回滚
+	Partitioned     bool          `json:"partitioned"`     //是否多分区，默认为false。true：代表多分区Topic
+	Persistent      bool          `json:"persistent"`      //是否持久化，默认为true，非必填
+	Url             string        `json:"url"`             //Topic url
+	Permissions     []Permission  `json:"permissions"`
+	Stats           Stats         `json:"stats"`        //Topic的统计数据
+	Applications    []Application `json:"applications"` //已绑定的应用ID列表
+	Description     string        `json:"description"`  //描述
+	DisplayStatus   ShowStatus    `json:"disStatus"`
 }
 
 type Application struct {
@@ -94,48 +94,47 @@ const (
 	Deleting     Status = "deleting"
 	DeleteFailed Status = "deleteFailed"
 	//Error    Status = "error"
-	Updating                  Status = "updating"
-	Updated                   Status = "updated"
-	UpdateFailed              Status = "updateFailed"
-	AuthorizeFailed           Status = "authorizeFailed"
-	Authorizing               Status = "authorizing"
-	Authorized                Status = "authorized"
-	UpdatingAuthorization       Status = "updatingAuthorization"
-	UpdatingAuthorizationFailed       Status = "updatingAuthorizationFailed"
-	UpdatingAuthorizationSuccess       Status = "updatingAuthorizationSuccess"
-	DeletingAuthorization            = "deletingAuthorization"
-	DeleteAuthorizationFailed        = "deleteAuthorizationFailed"
-	DeletedAuthorization             = "deletedAuthorization"
-	BindingOrUnBinding               = "bindingOrUnbinding"
-	Binding                   Status = "binding"
-	Bound                     Status = "bound"
-	BindFailed                Status = "bindFailed"
-	Unbinding                 Status = "unBinding"
-	UnbindFailed              Status = "unBindFailed"
-	UnbindSuccess             Status = "unBindSuccess"
+	Updating                     Status = "updating"
+	Updated                      Status = "updated"
+	UpdateFailed                 Status = "updateFailed"
+	AuthorizeFailed              Status = "authorizeFailed"
+	Authorizing                  Status = "authorizing"
+	Authorized                   Status = "authorized"
+	UpdatingAuthorization        Status = "updatingAuthorization"
+	UpdatingAuthorizationFailed  Status = "updatingAuthorizationFailed"
+	UpdatingAuthorizationSuccess Status = "updatingAuthorizationSuccess"
+	DeletingAuthorization               = "deletingAuthorization"
+	DeleteAuthorizationFailed           = "deleteAuthorizationFailed"
+	DeletedAuthorization                = "deletedAuthorization"
+	BindingOrUnBinding                  = "bindingOrUnbinding"
+	Binding                      Status = "binding"
+	Bound                        Status = "bound"
+	BindFailed                   Status = "bindFailed"
+	Unbinding                    Status = "unBinding"
+	UnbindFailed                 Status = "unBindFailed"
+	UnbindSuccess                Status = "unBindSuccess"
 )
 
 type ShowStatus string
 
 const (
-	CreatingOfShow                  ShowStatus = "创建中"
-	CreatedOfShow                   ShowStatus = "创建成功"
-	CreateFailedOfShow              ShowStatus = "创建失败"
-	UpdatingOfShow                  ShowStatus = "更新中"
-	UpdatedOfShow                   ShowStatus = "更新成功"
-	UpdateFailedOfShow              ShowStatus = "更新失败"
-	DeletingOfShow                  ShowStatus = "删除中"
-	DeleteFailedOfShow              ShowStatus = "删除失败"
-	AuthorizingOfShow               ShowStatus = "授权中"
-	AuthorizeFailedOfShow           ShowStatus = "授权失败"
-	AuthorizedOfShow                ShowStatus = "授权成功"
-	DeletingAuthorizationOfShow     ShowStatus = "删除授权中"
-	DeleteAuthorizationFailedOfShow ShowStatus = "删除授权失败"
-	DeletedAuthorizationOfShow      ShowStatus = "删除授权成功"
-	UpdatingAuthorizationOfShow     ShowStatus = "变更授权中"
-	UpdatingAuthorizationFailedOfShow     ShowStatus =  "变更授权失败"
-	UpdatingAuthorizationSuccessOfShow   ShowStatus = "变更授权成功"
-
+	CreatingOfShow                     ShowStatus = "创建中"
+	CreatedOfShow                      ShowStatus = "创建成功"
+	CreateFailedOfShow                 ShowStatus = "创建失败"
+	UpdatingOfShow                     ShowStatus = "更新中"
+	UpdatedOfShow                      ShowStatus = "更新成功"
+	UpdateFailedOfShow                 ShowStatus = "更新失败"
+	DeletingOfShow                     ShowStatus = "删除中"
+	DeleteFailedOfShow                 ShowStatus = "删除失败"
+	AuthorizingOfShow                  ShowStatus = "授权中"
+	AuthorizeFailedOfShow              ShowStatus = "授权失败"
+	AuthorizedOfShow                   ShowStatus = "授权成功"
+	DeletingAuthorizationOfShow        ShowStatus = "删除授权中"
+	DeleteAuthorizationFailedOfShow    ShowStatus = "删除授权失败"
+	DeletedAuthorizationOfShow         ShowStatus = "删除授权成功"
+	UpdatingAuthorizationOfShow        ShowStatus = "变更授权中"
+	UpdatingAuthorizationFailedOfShow  ShowStatus = "变更授权失败"
+	UpdatingAuthorizationSuccessOfShow ShowStatus = "变更授权成功"
 )
 
 // +kubebuilder:object:root=true
@@ -200,15 +199,15 @@ type SubscriptionStat struct {
 }
 
 type ConsumerStat struct {
-	MsgRateOut string `json:"msgRateOut"`
-	MsgThroughputOut string `json:"msgThroughputOut"`
-	ConsumerName string `json:"consumerName"`
-	AvailablePermits int `json:"availablePermits"`
-	UnackedMessages int `json:"unackedMessages"`
-	LastAckedTimestamp int64 `json:"lastAckedTimestamp"`
-	LastConsumedTimestamp int64 `json:"lastConsumedTimestamp"`
-	ConnectedSince string `json:"connectedSince"`
-	Address string `json:"address"`
+	MsgRateOut            string `json:"msgRateOut"`
+	MsgThroughputOut      string `json:"msgThroughputOut"`
+	ConsumerName          string `json:"consumerName"`
+	AvailablePermits      int    `json:"availablePermits"`
+	UnackedMessages       int    `json:"unackedMessages"`
+	LastAckedTimestamp    int64  `json:"lastAckedTimestamp"`
+	LastConsumedTimestamp int64  `json:"lastConsumedTimestamp"`
+	ConnectedSince        string `json:"connectedSince"`
+	Address               string `json:"address"`
 }
 
 func init() {
@@ -245,10 +244,10 @@ func initShowStatusMap() {
 	ShowStatusMap[UpdateFailed] = UpdateFailedOfShow
 	ShowStatusMap[Deleting] = DeletingOfShow
 	ShowStatusMap[DeleteFailed] = DeleteFailedOfShow
-    ShowStatusMap[Authorizing] = AuthorizingOfShow
-    ShowStatusMap[Authorized] = AuthorizedOfShow
-    ShowStatusMap[AuthorizeFailed] = AuthorizeFailedOfShow
-    ShowStatusMap[UpdatingAuthorization] = UpdatingAuthorizationOfShow
+	ShowStatusMap[Authorizing] = AuthorizingOfShow
+	ShowStatusMap[Authorized] = AuthorizedOfShow
+	ShowStatusMap[AuthorizeFailed] = AuthorizeFailedOfShow
+	ShowStatusMap[UpdatingAuthorization] = UpdatingAuthorizationOfShow
 	ShowStatusMap[UpdatingAuthorizationFailed] = UpdatingAuthorizationFailedOfShow
 	ShowStatusMap[UpdatingAuthorizationSuccess] = UpdatingAuthorizationSuccessOfShow
 

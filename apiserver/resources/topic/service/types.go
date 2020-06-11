@@ -14,8 +14,8 @@ import (
 )
 
 const (
-	Separator        = "/"
-	NameReg          = "^[-=:.\\w]{1,100}$"
+	Separator         = "/"
+	NameReg           = "^[-=:.\\w]{1,100}$"
 	MaxDescriptionLen = 1024
 )
 
@@ -94,29 +94,28 @@ type SubscriptionStat struct {
             "metadata": {},
             "connectedSince": "2020-06-01T18:11:56.981+08:00",
             "address": "/10.233.91.230:55424"
- */
+*/
 type ConsumerStat struct {
-	MsgRateOut float64 `json:"msgRateOut"`
-	MsgThroughputOut float64 `json:"msgThroughputOut"`
-	ConsumerName string `json:"consumerName"`
-	AvailablePermits int `json:"availablePermits"`
-	UnackedMessages int `json:"unackedMessages"`
-	LastAckedTimestamp int64 `json:"lastAckedTimestamp"`
-	LastConsumedTimestamp int64 `json:"lastConsumedTimestamp"`
-	ConnectedSince string `json:"connectedSince"`
-	Address string `json:"address"`
+	MsgRateOut            float64 `json:"msgRateOut"`
+	MsgThroughputOut      float64 `json:"msgThroughputOut"`
+	ConsumerName          string  `json:"consumerName"`
+	AvailablePermits      int     `json:"availablePermits"`
+	UnackedMessages       int     `json:"unackedMessages"`
+	LastAckedTimestamp    int64   `json:"lastAckedTimestamp"`
+	LastConsumedTimestamp int64   `json:"lastConsumedTimestamp"`
+	ConnectedSince        string  `json:"connectedSince"`
+	Address               string  `json:"address"`
 }
 
-type SubscriptionsInfo struct{
-	AverageMsgSize      float64                     `json:"averageMsgSize"`
-	StorageSize         int64                       `json:"storageSize"`
-	BacklogSize         int64                       `json:"backlogSize"`
-	Subscriptions       []Subscription              `json:"subscriptions"`
-
+type SubscriptionsInfo struct {
+	AverageMsgSize float64        `json:"averageMsgSize"`
+	StorageSize    int64          `json:"storageSize"`
+	BacklogSize    int64          `json:"backlogSize"`
+	Subscriptions  []Subscription `json:"subscriptions"`
 }
 
 type Subscription struct {
-	Name string `json:"name"`
+	Name                             string         `json:"name"`
 	MsgRateOut                       float64        `json:"msgRateOut"`
 	MsgThroughputOut                 float64        `json:"msgThroughputOut"`
 	MsgRateRedeliver                 float64        `json:"msgRateRedeliver"`
@@ -151,16 +150,15 @@ type Message struct {
 	Size      int              `json:"size"`
 }
 
-
 type Permission struct {
-	AuthUserID   string    `json:"authUserId"`   //对应clientauth的ID
-	AuthUserName string    `json:"authUserName"` //对应clientauth的NAME
-	Actions      v1.Actions   `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
-	Status       v1.Status `json:"status"`       //用户的授权状态，已授权、待删除、待授权
-	Token        string    `json:"token"`        //Token
-	Effective    bool      `json:"effective"`
-	IssuedAt     int64     `json:"issuedAt"`
-	ExpireAt     int64     `json:"expireAt"`
+	AuthUserID   string        `json:"authUserId"`   //对应clientauth的ID
+	AuthUserName string        `json:"authUserName"` //对应clientauth的NAME
+	Actions      v1.Actions    `json:"actions"`      //授权的操作：发布、订阅或者发布+订阅
+	Status       v1.Status     `json:"status"`       //用户的授权状态，已授权、待删除、待授权
+	Token        string        `json:"token"`        //Token
+	Effective    bool          `json:"effective"`
+	IssuedAt     int64         `json:"issuedAt"`
+	ExpireAt     int64         `json:"expireAt"`
 	ShowStatus   v1.ShowStatus `json:"showStatus"`
 }
 
@@ -174,16 +172,17 @@ type BindInfo struct {
 	ID string `json:"id"`
 }
 type SendMessages struct {
-	ID string `json:"id"`
-    Key string `json:"tag"`
+	ID          string `json:"id"`
+	Key         string `json:"tag"`
 	MessageBody string `json:"messageBody"`
 }
 type ResetPosition struct {
-	ID string `json:"id"` //topicId
-	SubName string `json:"subName"` //订阅者的名称
-	LedgerId int64 `json:"ledgerId"`
-	EntryId  int64 `json:"entryId"`
-	PartitionIndex int64 `json:"partitionIndex"`
+	ID             string `json:"id"`      //topicId
+	SubName        string `json:"subName"` //订阅者的名称
+	LedgerId       int64  `json:"ledgerId"`
+	EntryId        int64  `json:"entryId"`
+	PartitionIndex int64  `json:"partitionIndex"`
+	Timestamp      int64  `json:"timestamp"` //以ms为单位
 }
 
 const (
@@ -306,17 +305,15 @@ func ParseFloat(s string) float64 {
 
 func ToConsumersModel(obj v1.ConsumerStat) ConsumerStat {
 	return ConsumerStat{
-		MsgRateOut: ParseFloat(obj.MsgRateOut),
-		MsgThroughputOut: ParseFloat(obj.MsgThroughputOut),
-		ConnectedSince:obj.ConnectedSince,
-		ConsumerName: obj.ConsumerName,
-		AvailablePermits: obj.AvailablePermits,
-		Address: obj.Address,
-		UnackedMessages: obj.UnackedMessages,
-		LastAckedTimestamp: obj.LastAckedTimestamp,
+		MsgRateOut:            ParseFloat(obj.MsgRateOut),
+		MsgThroughputOut:      ParseFloat(obj.MsgThroughputOut),
+		ConnectedSince:        obj.ConnectedSince,
+		ConsumerName:          obj.ConsumerName,
+		AvailablePermits:      obj.AvailablePermits,
+		Address:               obj.Address,
+		UnackedMessages:       obj.UnackedMessages,
+		LastAckedTimestamp:    obj.LastAckedTimestamp,
 		LastConsumedTimestamp: obj.LastConsumedTimestamp,
-
-
 	}
 }
 
@@ -392,7 +389,7 @@ func (a *Topic) Validate() topicerr.TopicError {
 		}
 	}
 
-	if len([]rune(a.Description))> MaxDescriptionLen{
+	if len([]rune(a.Description)) > MaxDescriptionLen {
 		return topicerr.TopicError{
 			Err:       fmt.Errorf("description is not valid"),
 			ErrorCode: topicerr.ErrorBadRequest,
@@ -439,7 +436,6 @@ func (p *Permission) Validate() error {
 
 	return nil
 }
-
 
 func (a *Topic) ToSubscriptionsModel() *SubscriptionsInfo {
 	if a.Stats == nil {

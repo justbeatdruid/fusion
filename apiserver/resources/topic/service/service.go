@@ -50,7 +50,11 @@ type Service struct {
 	adminToken        string
 }
 
-const ResetPositionUrl = "/admin/v2/persistent/%s/%s/%s/subscription/%s/resetcursor"
+const (
+	ResetPositionByIdUrl = "/admin/v2/persistent/%s/%s/%s/subscription/%s/resetcursor"
+	ResetPositionByTimeUrl = "/admin/v2/persistent/%s/%s/%s/subscription/%s/resetcursor/%d"
+)
+
 type requestLogger struct {
 	prefix string
 }
@@ -528,7 +532,6 @@ func (s *Service) ModifyPermissions(topicId string, authUserId string, actions v
 		return nil, fmt.Errorf("grant permission error:%+v", err)
 	}
 
-
 	for i, p := range tp.Spec.Permissions {
 		if p.AuthUserID == authUserId {
 			p.Status.Status = v1.UpdatingAuthorization
@@ -594,11 +597,11 @@ func (s *Service) AddPartitionsOfTopic(id string, partitionNum int, ops ...util.
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
-	if tp.Spec.PartitionNum>partitionNum {
-		return nil,errors.New("The number of partitions must be larger than the original ")
+	if tp.Spec.PartitionNum > partitionNum {
+		return nil, errors.New("The number of partitions must be larger than the original ")
 	}
-	if tp.Spec.Partitioned == false{
-		return nil,errors.New("Topic is not partitioned topic ")
+	if tp.Spec.Partitioned == false {
+		return nil, errors.New("Topic is not partitioned topic ")
 	}
 	tp.Status.Status = v1.Updating
 	tp.Spec.OldPartitionNum = tp.Spec.PartitionNum
@@ -705,44 +708,68 @@ func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.
 	return nil
 }
 
-func (s *Service) GetSubscriptionsOfTopic(topic *Topic) *SubscriptionsInfo{
+func (s *Service) GetSubscriptionsOfTopic(topic *Topic) *SubscriptionsInfo {
 	return topic.ToSubscriptionsModel()
 }
-func (s *Service) SendMessages(topicUrl string,messagesBody string,key string) (pulsar.MessageID,error){
-	client,err := s.GetPulsarClient()
-	if err!=nil {
-		return nil,fmt.Errorf("create pulsar client error: %s",err)
+func (s *Service) SendMessages(topicUrl string, messagesBody string, key string) (pulsar.MessageID, error) {
+	client, err := s.GetPulsarClient()
+	if err != nil {
+		return nil, fmt.Errorf("create pulsar client error: %s", err)
 	}
-	messageId,err := pulsargo.SendMessages(client,topicUrl,messagesBody,key)
-    if err!=nil{
-    	return nil,fmt.Errorf("SendMessages error %s",err)
+	messageId, err := pulsargo.SendMessages(client, topicUrl, messagesBody, key)
+	if err != nil {
+		return nil, fmt.Errorf("SendMessages error %s", err)
 	}
-	return messageId,nil
+	return messageId, nil
 }
 
-func (s *Service) ResetPosition(RP *ResetPosition,tp *Topic) error {
-	body:=make(map[string]interface{})
-	body["ledgerId"]=RP.LedgerId
-	body["entryId"]=RP.EntryId
-	body["partitionIndex"]=RP.PartitionIndex
-	topicGroup:=tp.TopicGroup
-	tenant:=tp.Namespace
-	topic:=tp.Name
-	subName:=RP.SubName
+func (s *Service) ResetPositionById(RP *ResetPosition, tp *Topic) error {
+	body := make(map[string]interface{})
+	body["ledgerId"] = RP.LedgerId
+	body["entryId"] = RP.EntryId
+	body["partitionIndex"] = RP.PartitionIndex
+	topicGroup := tp.TopicGroup
+	tenant := tp.Namespace
+	topic := tp.Name
+	subName := RP.SubName
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
-	RPUrl := fmt.Sprintf(ResetPositionUrl,tenant,topicGroup,topic,subName)
-	url := fmt.Sprintf("%s://%s:%d%s", "http", s.ip, s.port,RPUrl)
-	request.Data=body
+	RPUrl := fmt.Sprintf(ResetPositionByIdUrl, tenant, topicGroup, topic, subName)
+	url := fmt.Sprintf("%s://%s:%d%s", "http", s.ip, s.port, RPUrl)
+	request.Data = body
 	if s.authEnable {
-		request.Header.Set("Authorization", "Bearer "+ s.adminToken)
+		request.Header.Set("Authorization", "Bearer "+s.adminToken)
 	}
 	response, b, err := request.Post(url).End()
 	if err != nil {
 		return fmt.Errorf("reset position error: %+v", err)
 	}
-    if response.StatusCode == http.StatusNoContent{
-    	return nil
-	}else {
+	if response.StatusCode == http.StatusNoContent {
+		return nil
+	} else {
+		errMsg := fmt.Errorf("reset position error, url: %s, Error code: %d, Error Message: %+v", url, response.StatusCode, b)
+		return errMsg
+	}
+}
+
+func (s *Service) ResetPositionByTime(RP *ResetPosition, tp *Topic) error {
+	timestamp := RP.Timestamp
+	topicGroup := tp.TopicGroup
+	tenant := tp.Namespace
+	topic := tp.Name
+	subName := RP.SubName
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
+	RPUrl := fmt.Sprintf(ResetPositionByTimeUrl, tenant, topicGroup, topic, subName, timestamp)
+	url := fmt.Sprintf("%s://%s:%d%s", "http", s.ip, s.port, RPUrl)
+	if s.authEnable {
+		request.Header.Set("Authorization", "Bearer "+s.adminToken)
+	}
+	response, b, err := request.Post(url).End()
+	if err != nil {
+		return fmt.Errorf("reset position error: %+v", err)
+	}
+	if response.StatusCode == http.StatusNoContent {
+		return nil
+	} else {
 		errMsg := fmt.Errorf("reset position error, url: %s, Error code: %d, Error Message: %+v", url, response.StatusCode, b)
 		return errMsg
 	}

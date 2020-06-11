@@ -255,7 +255,7 @@ func (r *router) sendMessages(request *restful.Request, response *restful.Respon
 	response.WriteHeaderAndEntity(code, result)
 }
 
-func (r *router) resetPosition(request *restful.Request, response *restful.Response){
+func (r *router) resetPosition(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ResetPosition(request)
-	response.WriteHeaderAndEntity(code,result)
+	response.WriteHeaderAndEntity(code, result)
 }

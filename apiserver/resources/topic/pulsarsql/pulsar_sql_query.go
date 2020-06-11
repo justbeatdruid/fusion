@@ -73,26 +73,26 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 					}
 
 					if m.Message == nil {
-						msgJson,err:=json.Marshal(msg)
-						if err!=nil {
-							return nil,fmt.Errorf("msg to json error: %s",msgJson)
+						msgJson, err := json.Marshal(msg)
+						if err != nil {
+							return nil, fmt.Errorf("msg to json error: %s", msgJson)
 						}
-						msgString:=string(msgJson)
+						msgString := string(msgJson)
 						size = len(msgString)
-                      	m.Message = msg
+						m.Message = msg
 					}
 
-                    id := m.ID.(string)
-                    partition := m.Partition.(float64)
-                    par := strconv.FormatFloat(partition,'f',-1,64)
-                    ids := strings.Split(id,",")
-                    ids = append(ids[0:2], par,ids[2])
-                    id = strings.Join(ids,",")
-                    id = strings.Trim(id,"(")
-                    id = strings.Trim(id,")")
-                    id = strings.ReplaceAll(id,",",":")
-                    m.ID = id
-                    m.Size = size
+					id := m.ID.(string)
+					partition := m.Partition.(float64)
+					par := strconv.FormatFloat(partition, 'f', -1, 64)
+					ids := strings.Split(id, ",")
+					ids = append(ids[0:2], par, ids[2])
+					id = strings.Join(ids, ",")
+					id = strings.Trim(id, "(")
+					id = strings.Trim(id, ")")
+					id = strings.ReplaceAll(id, ",", ":")
+					m.ID = id
+					m.Size = size
 					M = append(M, m)
 				}
 				return M, nil

@@ -145,36 +145,36 @@ func NewOperator(host string, port int, cafile string) (*Operator, error) {
 
 func (r *Operator) getRequestBody(spec nlptv1.TrafficcontrolSpec) *RateLimitingRequestBody {
 	requestBody := &RateLimitingRequestBody{}
-		requestBody.Name = "rate-limiting"
-		requestBody.Config = make(map[string]interface{})
-		switch spec.Type {
-		case nlptv1.APIC:
-			requestBody.Config["limit_by"] = "service"
-		case nlptv1.IPC:
-			requestBody.Config["limit_by"] = "ip"
-		case nlptv1.APPC:
-			requestBody.Config["limit_by"] = "consumer"
-		default:
-			requestBody.Config["limit_by"] = "consumer"
-		}
+	requestBody.Name = "rate-limiting"
+	requestBody.Config = make(map[string]interface{})
+	switch spec.Type {
+	case nlptv1.APIC:
+		requestBody.Config["limit_by"] = "service"
+	case nlptv1.IPC:
+		requestBody.Config["limit_by"] = "ip"
+	case nlptv1.APPC:
+		requestBody.Config["limit_by"] = "consumer"
+	default:
+		requestBody.Config["limit_by"] = "consumer"
+	}
 
-		if spec.Config.Year != 0 {
-			requestBody.Config["year"] = spec.Config.Year
-		}
-		if spec.Config.Month != 0 {
-			requestBody.Config["month"] = spec.Config.Month
-		}
-		if spec.Config.Day != 0 {
-			requestBody.Config["day"] = spec.Config.Day
-		}
-		if spec.Config.Hour != 0 {
-			requestBody.Config["hour"] = spec.Config.Hour
-		}
-		if spec.Config.Minute != 0 {
-			requestBody.Config["minute"] = spec.Config.Minute
-		}
-		if spec.Config.Second != 0 {
-			requestBody.Config["second"] = spec.Config.Second
+	if spec.Config.Year != 0 {
+		requestBody.Config["year"] = spec.Config.Year
+	}
+	if spec.Config.Month != 0 {
+		requestBody.Config["month"] = spec.Config.Month
+	}
+	if spec.Config.Day != 0 {
+		requestBody.Config["day"] = spec.Config.Day
+	}
+	if spec.Config.Hour != 0 {
+		requestBody.Config["hour"] = spec.Config.Hour
+	}
+	if spec.Config.Minute != 0 {
+		requestBody.Config["minute"] = spec.Config.Minute
+	}
+	if spec.Config.Second != 0 {
+		requestBody.Config["second"] = spec.Config.Second
 	}
 	return requestBody
 }

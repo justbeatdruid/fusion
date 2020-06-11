@@ -319,7 +319,7 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 	for _, cla := range ca {
 		if cla.ExpireAt > util.Now().Unix() {
 			cla.Effective = true
-		} else if cla.ExpireAt == 0{
+		} else if cla.ExpireAt == 0 {
 			cla.Effective = true
 		} else {
 			cla.Effective = false

@@ -11,9 +11,11 @@ import (
 	"regexp"
 	"strings"
 )
+
 const (
 	NameReg = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]{2,64}$"
 )
+
 type Application struct {
 	ID        string     `json:"id"`
 	Name      string     `json:"name"`
@@ -170,21 +172,21 @@ func ToListModel(items *v1.ApplicationList, groups map[string]string, opts ...ut
 
 func (s *Service) Validate(a *Application) error {
 	for k, v := range map[string]string{
-		"name": a.Name,
+		"name":        a.Name,
 		"description": a.Description,
 	} {
 		if len(v) == 0 {
 			return fmt.Errorf("%s is null", k)
 		}
-		if k =="name"{
-			if len(v)==0{
+		if k == "name" {
+			if len(v) == 0 {
 				return fmt.Errorf("%s is null", k)
-			}else if ok, _ := regexp.MatchString(NameReg, v); !ok {
+			} else if ok, _ := regexp.MatchString(NameReg, v); !ok {
 				return fmt.Errorf("name is illegal: %v ", v)
 			}
 		}
-		if k=="description"{
-			if len(v)>1024{
+		if k == "description" {
+			if len(v) > 1024 {
 				return fmt.Errorf("%s Cannot exceed 1024 characters", k)
 			}
 		}
@@ -249,7 +251,7 @@ func (s *Service) assignment(target *v1.Application, reqData interface{}) error 
 	}
 	if _, ok := data["description"]; ok {
 		target.Spec.Description = source.Description
-		if len(target.Spec.Description)>1024{
+		if len(target.Spec.Description) > 1024 {
 			return fmt.Errorf("%s Cannot exceed 1024 characters", target.Spec.Description)
 		}
 	}

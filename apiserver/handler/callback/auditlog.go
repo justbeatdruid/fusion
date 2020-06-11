@@ -88,7 +88,7 @@ var accepted = []selector{
 	{"/api/v1/topics/{id}/permissions/{auth-user-id}", DELETE},
 	{"/api/v1/topics/{id}/partitions/{partitions}", PUT},
 	{"/api/v1/topics/applications/{app-id}", POST},
-	{"/api/v1/topics/messages",POST},
+	{"/api/v1/topics/messages", POST},
 
 	//topicgroup
 	{"/api/v1/topicgroups", POST},

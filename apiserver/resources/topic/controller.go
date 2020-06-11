@@ -68,7 +68,8 @@ type GrantResponse = Wrapped
 type ExportResponse = Wrapped
 type ResetPositionResponse = Wrapped
 type AddPartitions = Wrapped
-type SendMessagesResponse =ListResponse
+type SendMessagesResponse = ListResponse
+
 /*type DeleteResponse struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`
@@ -113,18 +114,18 @@ type BindOrReleaseRequest struct {
 	Topics    []service.BindInfo `json:"topics"`
 }
 type BindOrReleaseResponse struct {
-	Code      int             `json:"code"`
-	ErrorCode string          `json:"errorCode"`
-	Message   string          `json:"message"`
-	Detail    string          `json:"detail"`
+	Code      int    `json:"code"`
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message"`
+	Detail    string `json:"detail"`
 }
 
 type SubscriptionsResponse struct {
-	Code      int             `json:"code"`
-	ErrorCode string          `json:"errorCode"`
-	Message   string          `json:"message"`
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Message   string      `json:"message"`
 	Data      interface{} `json:"data"`
-	Detail    string          `json:"detail"`
+	Detail    string      `json:"detail"`
 }
 type TopicSlice TopicList
 type MessageSlice MessageList
@@ -828,7 +829,6 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 
 }
 
-
 func (c *controller) ModifyPermissions(req *restful.Request) (int, *GrantResponse) {
 	id := req.PathParameter("id")
 	authUserId := req.PathParameter("auth-user-id")
@@ -1142,13 +1142,13 @@ func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
 			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	}
-	if messages!=nil {
+	if messages != nil {
 		return http.StatusOK, &MessageResponse{
 			Code:      success,
 			Data:      messages,
 			TotalSize: messages[0].Total,
 		}
-	}else {
+	} else {
 		return http.StatusOK, &MessageResponse{
 			Code:      success,
 			Data:      messages,
@@ -1378,73 +1378,73 @@ func (c *controller) GetSubscriptionsOfTopic(req *restful.Request) (int, *Subscr
 		Detail:    fmt.Sprintf("query subscription success"),
 	}
 }
-func (c *controller) SendMessages(req *restful.Request)  (int,*SendMessagesResponse){
-	 sM := &service.SendMessages{}
-	 if err := req.ReadEntity(sM);err!=nil{
-	 	return http.StatusInternalServerError,&SendMessagesResponse{
+func (c *controller) SendMessages(req *restful.Request) (int, *SendMessagesResponse) {
+	sM := &service.SendMessages{}
+	if err := req.ReadEntity(sM); err != nil {
+		return http.StatusInternalServerError, &SendMessagesResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorReadEntity,
 			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
 			Data:      nil,
 			Detail:    fmt.Sprintf("cannot read entity: %+v", err),
 		}
-	 }
-     topicId := sM.ID
-     authUser,err := auth.GetAuthUser(req)
-     if err!=nil{
-     	return http.StatusInternalServerError,&SendMessagesResponse{
+	}
+	topicId := sM.ID
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &SendMessagesResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
 			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 			Data:      nil,
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
-	 }
-      tp,err := c.service.GetTopic(topicId,util.WithNamespace(authUser.Namespace));
-      if err!=nil{
-		 return http.StatusInternalServerError, &SendMessagesResponse{
-			 Code:      fail,
-			 ErrorCode: tperror.ErrorGetTopicInfo,
-			 Message:   c.errMsg.Topic[tperror.ErrorGetTopicInfo],
-			 Detail:    fmt.Sprintf("get database error: %+v", err),
-		 }
-	 }
-     messageId,err := c.service.SendMessages(tp.URL,sM.MessageBody,sM.Key)
-     if err!=nil{
-		 return http.StatusInternalServerError, &SendMessagesResponse{
-			 Code:      fail,
-			 ErrorCode: tperror.ErrorSendMessagesError,
-			 Message:   c.errMsg.Topic[tperror.ErrorSendMessagesError],
-			 Detail:    fmt.Sprintf("send message error: %+v", err),
-		 }
-	 }
-	 return http.StatusOK,&SendMessagesResponse{
-		    Code:      success,
-		    Data:      messageId,
-	 }
+	}
+	tp, err := c.service.GetTopic(topicId, util.WithNamespace(authUser.Namespace))
+	if err != nil {
+		return http.StatusInternalServerError, &SendMessagesResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorGetTopicInfo,
+			Message:   c.errMsg.Topic[tperror.ErrorGetTopicInfo],
+			Detail:    fmt.Sprintf("get database error: %+v", err),
+		}
+	}
+	messageId, err := c.service.SendMessages(tp.URL, sM.MessageBody, sM.Key)
+	if err != nil {
+		return http.StatusInternalServerError, &SendMessagesResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorSendMessagesError,
+			Message:   c.errMsg.Topic[tperror.ErrorSendMessagesError],
+			Detail:    fmt.Sprintf("send message error: %+v", err),
+		}
+	}
+	return http.StatusOK, &SendMessagesResponse{
+		Code: success,
+		Data: messageId,
+	}
 }
 
-func (c *controller) ResetPosition(req *restful.Request) (int, *ResetPositionResponse){
-     RP := &service.ResetPosition{}
-     if err := req.ReadEntity(RP);err!=nil{
-     	return http.StatusInternalServerError,&ResetPositionResponse{
-     		Code: fail,
-     		ErrorCode: tperror.ErrorReadEntity,
-     		Message: c.errMsg.Topic[tperror.ErrorReadEntity],
-     		Detail: fmt.Sprintf("cannot read entity: %+v", err),
+func (c *controller) ResetPosition(req *restful.Request) (int, *ResetPositionResponse) {
+	RP := &service.ResetPosition{}
+	if err := req.ReadEntity(RP); err != nil {
+		return http.StatusInternalServerError, &ResetPositionResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorReadEntity,
+			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
+			Detail:    fmt.Sprintf("cannot read entity: %+v", err),
 		}
-	 }
-	 authUser, err := auth.GetAuthUser(req)
-	 if err!=nil{
-		return http.StatusInternalServerError,&ResetPositionResponse{
+	}
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ResetPositionResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
 			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
-	 }
-	tp,err := c.service.GetTopic(RP.ID,util.WithNamespace(authUser.Namespace))
-	if err!=nil{
+	}
+	tp, err := c.service.GetTopic(RP.ID, util.WithNamespace(authUser.Namespace))
+	if err != nil {
 		return http.StatusInternalServerError, &ResetPositionResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorGetTopicInfo,
@@ -1452,18 +1452,22 @@ func (c *controller) ResetPosition(req *restful.Request) (int, *ResetPositionRes
 			Detail:    fmt.Sprintf("get database error: %+v", err),
 		}
 	}
-	err = c.service.ResetPosition(RP,tp)
-	if err!=nil {
-		return http.StatusInternalServerError,&ResetPositionResponse{
-           Code:    fail,
-           ErrorCode: tperror.ErrorResetPosition,
-           Message:  c.errMsg.Topic[tperror.ErrorResetPosition],
-           Detail:  fmt.Sprintf("reset position error: %+v",err),
-		}
+	if RP.Timestamp>0 {
+		err = c.service.ResetPositionByTime(RP,tp)
 	}else {
-		return http.StatusOK,&ResetPositionResponse{
+		err = c.service.ResetPositionById(RP, tp)
+	}
+	if err != nil {
+		return http.StatusInternalServerError, &ResetPositionResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorResetPosition,
+			Message:   c.errMsg.Topic[tperror.ErrorResetPosition],
+			Detail:    fmt.Sprintf("reset position error: %+v", err),
+		}
+	} else {
+		return http.StatusOK, &ResetPositionResponse{
 			Code:    success,
-			Message:  "success",
+			Message: "success",
 		}
 	}
 }
