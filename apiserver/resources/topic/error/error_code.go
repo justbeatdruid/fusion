@@ -33,12 +33,12 @@ const (
 	ErrorQueryParameterError              = "010000025" //查询信息失败，原因：查询参数不正确
 	ErrorPartitionTopicPartitionEqualZero = "010000026" //创建Topic失败，原因：多分区Topic的分区数不能为0
 	ErrorAddPartitionsOfTopicError        = "010000027" //增加topic分区失败
-	ErrorBindTopicError           = "010000028" //应用与Topic绑定/解绑定失败
-    ErrorSendMessagesError                = "010000029" //发送消息失败
+	ErrorBindTopicError                   = "010000028" //应用与Topic绑定/解绑定失败
+	ErrorSendMessagesError                = "010000029" //发送消息失败
 	ErrorQuerySubscriptionsInfo           = "010000030" //查询Topic订阅关系失败
-	ErrorUnBindTopicError = "010000031" //应用与Topic解绑定失败
-	ErrorModifyPermissions = "010000032" //修改权限失败
-	ErrorResetPosition = "010000033" //重置消费位置失败
+	ErrorUnBindTopicError                 = "010000031" //应用与Topic解绑定失败
+	ErrorModifyPermissions                = "010000032" //修改权限失败
+	ErrorResetPosition                    = "010000033" //重置消费位置失败
 )
 
 type TopicError struct {

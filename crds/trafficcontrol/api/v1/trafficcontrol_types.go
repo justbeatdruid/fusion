@@ -71,12 +71,12 @@ const MAXNUM int = 5
 
 type Special struct {
 	ID     string `json:"id"`
-	Year	int		`json:"year"`
-	Month int    `json:"month"`
-	Day	int		`json:"day"`
-	Hour int    `json:"hour"`
+	Year   int    `json:"year"`
+	Month  int    `json:"month"`
+	Day    int    `json:"day"`
+	Hour   int    `json:"hour"`
 	Minute int    `json:"minute"`
-	Second	int		`json:"second"`
+	Second int    `json:"second"`
 }
 
 // TrafficcontrolSpec defines the desired state of Trafficcontrol
