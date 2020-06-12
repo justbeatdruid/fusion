@@ -157,9 +157,10 @@ func (c *controller) GetClientauth(req *restful.Request) (int, *GetResponse) {
 	} else {
 		if ca.ExpireAt > util.Now().Unix() {
 			ca.Effective = true
-		} else {
-			ca.Effective = false
+		} else if ca.ExpireAt == 0{
+			ca.Effective = true
 		}
+		ca.Effective = false
 		return http.StatusOK, &GetResponse{
 			Code: success,
 			Data: ca,
