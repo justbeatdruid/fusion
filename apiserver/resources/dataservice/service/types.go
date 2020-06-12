@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"time"
 
 	"github.com/chinamobile/nlpt/apiserver/database/model"
@@ -33,7 +34,7 @@ type RelationalDbConfig struct {
 	SortField             string
 	SortMode              string
 	IncrementalMigration  bool
-	TimeZone              Zone
+	TimeZone              string
 	Timestamp             string
 	TimestampInitialValue string
 	TimeCompensation      int
@@ -43,12 +44,6 @@ type RelationalDbConfig struct {
 type ExecSql struct {
 	ExecSqlFlag  bool
 	ExecSqlWords string
-}
-
-//Zone ...
-type Zone struct {
-	Name  string
-	Offet int
 }
 
 //ConditionConfig ...
@@ -142,6 +137,7 @@ func (ds *Dataservice) Validate(service *Service, opts ...util.OpOption) error {
 		}
 
 	}
+
 	if ds.DataSourceConfig.RelationalDb.SourceID == "" || ds.DataTargetConfig.RelationalDbTarget.TargetID == "" {
 		return fmt.Errorf("SourceID or TargetID is error value,SourceID:%v,TargetID:%v", ds.DataSourceConfig.RelationalDb.SourceID, ds.DataTargetConfig.RelationalDbTarget.TargetID)
 	}
@@ -171,7 +167,14 @@ func (ds *Dataservice) Validate(service *Service, opts ...util.OpOption) error {
 	}
 
 	if ds.DataSourceConfig.RelationalDb.TimeCompensation < 0 {
-		return fmt.Errorf("TimeCompensation  error TimeCompensation:%v", ds.DataSourceConfig.RelationalDb.TimeCompensation)
+		return fmt.Errorf("TimeCompensation error, TimeCompensation:%v", ds.DataSourceConfig.RelationalDb.TimeCompensation)
+	}
+
+	if ds.DataSourceConfig.RelationalDb.TimeZone != "" {
+		matched, err := regexp.MatchString(TimeZoneStr, ds.DataSourceConfig.RelationalDb.TimeZone)
+		if err != nil || !matched {
+			return fmt.Errorf("TimeZone format error, timezone:%v", ds.DataSourceConfig.RelationalDb.TimeZone)
+		}
 	}
 
 	return nil
@@ -196,6 +199,7 @@ const (
 	DefaultOffset = 0
 	DefaultPage   = 1
 	TimeStr       = "2006-01-02 15:04:05"
+	TimeZoneStr   = `^UTC(\-|\+)?[0-1][0-9]:[0-5][0-9]$`
 )
 
 // ToAPI  only used in creation options

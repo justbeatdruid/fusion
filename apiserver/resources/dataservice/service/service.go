@@ -361,7 +361,5 @@ func (s *Service) insertAddFlag(task model.Task) {
 			klog.Errorf("AddTbMetadata falied ,err:%v", err)
 		}
 	}
-
 	return
-
 }
