@@ -35,6 +35,8 @@ type ConsumerRequestBody struct {
 
 type ConsumerCreBody struct {
 	Algorithm string `json:"algorithm"`
+	Key       string `json:"key,omitempty"`
+	Secret    string `json:"secret,omitempty"`
 }
 
 type ConsumerResponseBody struct {
@@ -82,6 +84,31 @@ type FailMsg struct {
 
 type requestLogger struct {
 	prefix string
+}
+
+type ResponseConsumerBody struct {
+	CustomID  string      `json:"custom_id"`
+	CreatedAt int         `json:"created_at"`
+	ID        string      `json:"id"`
+	Tags      interface{} `json:"tags"`
+	Username  string      `json:"username"`
+}
+
+type AddWhiteRequestBody struct {
+	Group string `json:"group"`
+}
+
+type AddWhiteResponseBody struct {
+	CreatedAt int `json:"created_at"`
+	Consumer  struct {
+		ID string `json:"id"`
+	} `json:"consumer"`
+	ID      string      `json:"id"`
+	Group   string      `json:"group"`
+	Tags    interface{} `json:"tags"`
+	Message string      `json:"message"`
+	Fields  interface{} `json:"fields"`
+	Code    int         `json:"code"`
 }
 
 var logger = &requestLogger{}
@@ -233,4 +260,102 @@ func (r *Operator) CreateTopicToken(username string) (string, error) {
 		return "", err
 	}
 	return ts, nil
+}
+
+func (r *Operator) ResumeConsumerInfoFromKong(db *nlptv1.Application) (err error) {
+	klog.Infof("begin resume consumer info from kong %s", db.Spec.Name)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	responseBody := &ResponseConsumerBody{}
+	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/consumers", db.Spec.ConsumerInfo.ConsumerID)).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Errorf("request for get consumer info from kong error: %+v", errs)
+		return fmt.Errorf("request for get consumer info from kong error: %+v", errs)
+
+	}
+	klog.V(5).Infof("getConsumerInfoFromKong: %d %s", response.StatusCode, string(body))
+	klog.V(5).Infof("getConsumerInfoFromKong custom id: %s", responseBody.CustomID)
+	klog.V(5).Infof("getConsumerInfoFromKong user name: %s", responseBody.Username)
+	if response.StatusCode == 404 {
+		klog.Warning("the consumer can not find from kong and need resume: code = %d status = %s", response.StatusCode, response.Status)
+		if err := r.CreateConsumerByKong(db); err != nil {
+			klog.Errorf("resume consumer failed %s", response.StatusCode, response.Status)
+		}
+		if err := r.ResumeConsumerCredentials(db); err != nil {
+			klog.Errorf("resume consumer credentials failed %s", response.StatusCode, response.Status)
+		}
+		if err := r.ResumeConsumerToAcl(db); err != nil {
+			klog.Errorf("resume consumer groups failed %s", response.StatusCode, response.Status)
+		}
+	} else {
+		klog.V(5).Infof("no need resume consumer")
+	}
+	return nil
+}
+
+func (r *Operator) ResumeConsumerCredentials(db *nlptv1.Application) (err error) {
+	id := db.Spec.ConsumerInfo.ConsumerID
+	klog.Infof("begin resume credentials id %s", id)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s/%s/jwt", schema, r.Host, r.Port, path, id))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+
+	requestBody := &ConsumerCreBody{
+		Algorithm: "HS256", //加密算法
+		Key:       db.Spec.ConsumerInfo.Key,
+		Secret:    db.Spec.ConsumerInfo.Secret,
+	}
+	responseBody := &ConsumerCreRspBody{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return fmt.Errorf("request for resume consumer credentials error: %+v", errs)
+	}
+	klog.V(5).Infof("create resume credentials rsp: code %d body %s", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		return fmt.Errorf("request for resume consumer credentials error: receive wrong status code: %s", string(body))
+	}
+
+	if err != nil {
+		return fmt.Errorf("create consumer error %s", responseBody.Message)
+	}
+	return nil
+}
+
+func (r *Operator) ResumeConsumerToAcl(db *nlptv1.Application) (err error) {
+	for _, v := range db.Spec.APIs {
+		id := v.ID
+		klog.Infof("begin add consumer to acl %s", v.ID)
+		request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+		schema := "http"
+		request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/consumers/", db.ObjectMeta.Name, "/acls"))
+		for k, v := range headers {
+			request = request.Set(k, v)
+		}
+		request = request.Retry(3, 5*time.Second, retryStatus...)
+		requestBody := &AddWhiteRequestBody{
+			Group: id, //whilte list group name
+		}
+		responseBody := &AddWhiteResponseBody{}
+		response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+		if len(errs) > 0 {
+			return fmt.Errorf("request for add consumer to acl error: %+v", errs)
+		}
+		klog.V(5).Infof("add consumer to acl whitelist code: %d, body: %s ", response.StatusCode, string(body))
+		if response.StatusCode != 201 {
+			klog.V(5).Infof("add consumer to acl failed msg: %s\n", responseBody.Message)
+			return fmt.Errorf("request for add consumer to acl error: receive wrong status code: %s", string(body))
+		}
+		klog.V(5).Infof("acl consumer id: %s\n", responseBody.ID)
+
+		if err != nil {
+			return fmt.Errorf("create acl error %s", responseBody.Message)
+		}
+
+	}
+
+	return nil
 }
