@@ -311,6 +311,9 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Serviceunit, err
 			return nil, fmt.Errorf("write permission denied")
 		}
 	}
+	if len(su.Spec.APIs) > 0 {
+		return nil, fmt.Errorf("api existing")
+	}
 
 	//TODO need check status !!!
 	su.Status.Status = v1.Delete

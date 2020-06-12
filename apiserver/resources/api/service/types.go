@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"regexp"
 	"strings"
 
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
@@ -15,6 +16,10 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
 	"k8s.io/klog"
+)
+
+const (
+	NameReg = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]{2,255}$"
 )
 
 type Api struct {
@@ -313,6 +318,11 @@ func ToListModel(items *v1.ApiList, publishedOnly bool, status string, opts ...u
 func (s *Service) Validate(a *Api) error {
 	if len(a.Name) == 0 {
 		return fmt.Errorf("name is null")
+	} else if ok, _ := regexp.MatchString(NameReg, a.Name); !ok {
+		return fmt.Errorf("name is illegal: %v", a.Name)
+	}
+	if len(a.Description) > 255 {
+		return fmt.Errorf("%s cannot exceed 255 characters", a.Description)
 	}
 	klog.V(5).Infof("validate namespace is : %s", a.Namespace)
 	apiList, err := s.ListApis(a.Namespace)
@@ -466,6 +476,9 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		return fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
 	if _, ok := data["name"]; ok {
+		if ok, _ := regexp.MatchString(NameReg, source.Name); !ok {
+			return fmt.Errorf("name is illegal: %v", source.Name)
+		}
 		if target.Spec.Name != source.Name {
 			apiList, err := s.ListApis(target.ObjectMeta.Namespace)
 			if err != nil {
@@ -486,6 +499,9 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		target.Spec.Applications = source.Applications
 	}
 	if _, ok := data["description"]; ok {
+		if len(source.Description) > 255 {
+			return fmt.Errorf("%s cannot exceed 255 characters", source.Description)
+		}
 		target.Spec.Description = source.Description
 	}
 	/*
@@ -523,6 +539,11 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	}
 	if _, ok = data["authType"]; ok {
 		target.Spec.AuthType = source.AuthType
+	}
+	if _, ok = data["serviceunit"]; ok {
+		if target.Spec.Serviceunit.ID != source.Serviceunit.ID {
+			return fmt.Errorf("serviceunit cannot be modified")
+		}
 	}
 
 	if apiInfo, ok := data["apiDefineInfo"]; ok {

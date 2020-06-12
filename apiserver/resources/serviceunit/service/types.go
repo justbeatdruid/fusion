@@ -3,6 +3,7 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"regexp"
 	"strings"
 
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
@@ -13,6 +14,10 @@ import (
 	"github.com/chinamobile/nlpt/pkg/util"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+)
+
+const (
+	NameReg = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]{2,64}$"
 )
 
 type Serviceunit struct {
@@ -239,10 +244,24 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[
 func (s *Service) Validate(a *Serviceunit) error {
 	for k, v := range map[string]string{
 		"name": a.Name,
+		"description": a.Description,
 	} {
-		if len(v) == 0 {
-			return fmt.Errorf("%s is null", k)
+		if k == "name" {
+			if len(v) == 0 {
+				return fmt.Errorf("%s is null", k)
+			} else if ok, _ := regexp.MatchString(NameReg, v); !ok {
+				return fmt.Errorf("name is illegal: %v", v)
+			}
 		}
+		if k == "description" {
+			if len(v) > 1024 {
+				return fmt.Errorf("%s cannot exceed 1024 characters", k)
+			}
+		}
+	}
+
+	if len(a.Name) == 0 {
+		return fmt.Errorf("name is null")
 	}
 	suList, errs := s.List(util.WithNamespace(a.Namespace))
 	if errs != nil {
@@ -334,6 +353,9 @@ func (s *Service) assignment(target *v1.Serviceunit, reqData interface{}) error 
 		return fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
 	if _, ok := data["name"]; ok {
+		if ok, _ := regexp.MatchString(NameReg, source.Name); !ok {
+			return fmt.Errorf("name is illegal: %v", source.Name)
+		}
 		if target.Spec.Name != source.Name {
 			suList, errs := s.List(util.WithNamespace(target.ObjectMeta.Namespace))
 			if errs != nil {
@@ -348,6 +370,9 @@ func (s *Service) assignment(target *v1.Serviceunit, reqData interface{}) error 
 		target.Spec.Name = source.Name
 	}
 	if _, ok := data["description"]; ok {
+		if len(source.Description) > 1024 {
+			return fmt.Errorf("%s cannot exceed 1024 characters", source.Description)
+		}
 		target.Spec.Description = source.Description
 	}
 	if _, ok := data["group"]; ok {
