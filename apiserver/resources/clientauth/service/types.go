@@ -77,6 +77,7 @@ func ToModel(obj *v1.Clientauth) *Clientauth {
 		Status:      obj.Status.Status,
 		Message:     obj.Status.Message,
 		Description: obj.Spec.Description,
+		IsPermanent: obj.Spec.IsPermanent,
 	}
 
 	if obj.Spec.AuthorizedMap != nil {
