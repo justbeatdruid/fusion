@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -14,6 +15,10 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/klog"
+)
+
+const (
+	NameReg = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]{2,64}$"
 )
 
 type Trafficcontrol struct {
@@ -124,9 +129,19 @@ func ToListModel(items *v1.TrafficcontrolList, opts ...util.OpOption) []*Traffic
 func (s *Service) Validate(a *Trafficcontrol) error {
 	for k, v := range map[string]string{
 		"name": a.Name,
+		"description": a.Description,
 	} {
-		if len(v) == 0 {
-			return fmt.Errorf("%s is null", k)
+		if k == "name" {
+			if len(v) == 0 {
+				return fmt.Errorf("%s is null", k)
+			} else if ok, _ := regexp.MatchString(NameReg, v); !ok {
+				return fmt.Errorf("name is illegal: %v", v)
+			}
+		}
+		if k == "description" {
+			if len(v) > 255 {
+				return fmt.Errorf("%s cannot exceed 255 characters", k)
+			}
 		}
 	}
 	trafficList, errs := s.List(util.WithNamespace(a.Namespace))
@@ -252,6 +267,9 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 	}
 	klog.V(5).Infof("get update data : %+v", data)
 	if _, ok = data["name"]; ok {
+		if ok, _ := regexp.MatchString(NameReg, source.Name); !ok {
+			return fmt.Errorf("name is illegal: %v", source.Name)
+		}
 		if target.Spec.Name != source.Name {
 			trafficList, errs := s.List(util.WithNamespace(target.ObjectMeta.Namespace))
 			if errs != nil {
@@ -319,6 +337,9 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 		target.Status.APICount = source.APICount
 	}
 	if _, ok = data["description"]; ok {
+		if len(source.Description) > 255 {
+			return fmt.Errorf("%s cannot exceed 255 characters", source.Description)
+		}
 		target.Spec.Description = source.Description
 	}
 	if _, ok := data["apis"]; ok {

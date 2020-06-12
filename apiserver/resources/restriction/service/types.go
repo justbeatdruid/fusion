@@ -15,9 +15,11 @@ import (
 	"strings"
 	"time"
 )
+
 const (
 	NameReg = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]{2,64}$"
 )
+
 type Restriction struct {
 	ID        string        `json:"id"`
 	Name      string        `json:"name"`
@@ -159,8 +161,8 @@ func (s *Service) Validate(a *Restriction) error {
 			}
 		}
 		if k == "description" {
-			if len(v) > 1024 {
-				return fmt.Errorf("%s Cannot exceed 1024 characters", k)
+			if len(v) > 255 {
+				return fmt.Errorf("%s Cannot exceed 255 characters", k)
 			}
 		}
 	}
@@ -229,6 +231,9 @@ func (s *Service) assignment(target *v1.Restriction, reqData interface{}) error 
 		return fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
 	if _, ok = data["name"]; ok {
+		if len(source.Description) > 255 {
+			return fmt.Errorf("%s cannot exceed 255 characters", source.Description)
+		}
 		if target.Spec.Name != source.Name {
 			resList, errs := s.List(util.WithNamespace(target.ObjectMeta.Namespace))
 			if errs != nil {
@@ -247,8 +252,8 @@ func (s *Service) assignment(target *v1.Restriction, reqData interface{}) error 
 	}
 	if _, ok = data["description"]; ok {
 		target.Spec.Description = source.Description
-		if len(target.Spec.Description) > 1024 {
-			return fmt.Errorf("%s Cannot exceed 1024 characters", target.Spec.Description)
+		if len(target.Spec.Description) > 255 {
+			return fmt.Errorf("%s Cannot exceed 255 characters", target.Spec.Description)
 		}
 	}
 	if _, ok = data["namespace"]; ok {
