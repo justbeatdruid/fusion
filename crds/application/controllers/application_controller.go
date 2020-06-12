@@ -64,6 +64,17 @@ func (r *ApplicationReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		return ctrl.Result{}, nil
 	}
 
+	// resume consumer
+	if application.Status.Status == nlptv1.Created && len(application.Spec.ConsumerInfo.Token) != 0 {
+		klog.Infof("begin to check consumer info: %+v", *application)
+		err := r.Operator.ResumeConsumerInfoFromKong(application)
+		if err != nil {
+			klog.Errorf("cannot resume consumer: %+v", err)
+		}
+		r.Update(ctx, application)
+		return ctrl.Result{}, nil
+	}
+
 	// your logic here
 	if application.Status.Status == nlptv1.Init {
 		// call kong api create
