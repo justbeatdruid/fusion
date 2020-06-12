@@ -175,9 +175,6 @@ func (s *Service) Validate(a *Application) error {
 		"name":        a.Name,
 		"description": a.Description,
 	} {
-		if len(v) == 0 {
-			return fmt.Errorf("%s is null", k)
-		}
 		if k == "name" {
 			if len(v) == 0 {
 				return fmt.Errorf("%s is null", k)
