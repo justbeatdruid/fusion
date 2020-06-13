@@ -1517,3 +1517,59 @@ func (c *controller) SkipAllMessages(req *restful.Request) (int, *ResetPositionR
 	}
 
 }
+
+func (c *controller) SkipMessages(req *restful.Request) (int, *ResetPositionResponse) {
+	id := req.PathParameter("id")
+	subName := req.PathParameter("subName")
+	numMessages := req.PathParameter("numMessages")
+
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ResetPositionResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+
+
+	crd, err := c.service.Get(id, util.WithNamespace(authUser.Namespace))
+	if err != nil {
+		return http.StatusInternalServerError, &ResetPositionResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorResetPosition,
+			Message:   c.errMsg.Topic[tperror.ErrorResetPosition],
+			Detail:    fmt.Sprintf("reset cursor error: %+v", err),
+		}
+	}
+
+
+	numM, err := strconv.ParseInt(numMessages, 10, 32)
+	if err != nil {
+		return http.StatusInternalServerError, &ResetPositionResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorResetPosition,
+			Message:   c.errMsg.Topic[tperror.ErrorResetPosition],
+			Detail:    fmt.Sprintf("reset cursor error: %+v", err),
+		}
+	}
+
+	connector := service.NewConnector(c.tpConfig)
+	if err = connector.SkipMessages(crd, subName, numM); err != nil {
+		return http.StatusInternalServerError, &ResetPositionResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorResetPosition,
+			Message:   c.errMsg.Topic[tperror.ErrorResetPosition],
+			Detail:    fmt.Sprintf("reset cursor error: %+v", err),
+		}
+	}
+
+	return http.StatusOK, &ResetPositionResponse{
+		Code:      success,
+		ErrorCode: tperror.Success,
+		Message:   "success",
+		Detail:    "success",
+	}
+
+}
