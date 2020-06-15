@@ -456,6 +456,10 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topicgroup, erro
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
+
+	if s.GetTopicCountOfTopicgroup(tg.Spec.Name, opts...) > 0 {
+		return nil, fmt.Errorf("error delete crd: %+v", "topic group is not empty")
+	}
 	tg.Status.Status = v1.Deleting
 	tg.Status.Message = "deleting"
 	return s.UpdateStatus(tg)
