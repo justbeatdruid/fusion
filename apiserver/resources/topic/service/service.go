@@ -51,7 +51,7 @@ type Service struct {
 }
 
 const (
-	ResetPositionByIdUrl = "/admin/v2/persistent/%s/%s/%s/subscription/%s/resetcursor"
+	ResetPositionByIdUrl   = "/admin/v2/persistent/%s/%s/%s/subscription/%s/resetcursor"
 	ResetPositionByTimeUrl = "/admin/v2/persistent/%s/%s/%s/subscription/%s/resetcursor/%d"
 )
 

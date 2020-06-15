@@ -157,7 +157,7 @@ func (c *controller) GetClientauth(req *restful.Request) (int, *GetResponse) {
 	} else {
 		if ca.ExpireAt > util.Now().Unix() {
 			ca.Effective = true
-		} else if ca.ExpireAt == 0{
+		} else if ca.ExpireAt == 0 {
 			ca.Effective = true
 		} else {
 			ca.Effective = false
