@@ -184,6 +184,10 @@ type ResetPosition struct {
 	PartitionIndex int64  `json:"partitionIndex"`
 	Timestamp      int64  `json:"timestamp"` //以ms为单位
 }
+type GrantPermissions struct {
+	ID      string     `json:"id"`      //认证用户的id
+	Actions v1.Actions `json:"actions"` //认证用户的权限
+}
 
 const (
 	Consume = "consume"

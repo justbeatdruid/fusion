@@ -20,7 +20,7 @@ type Connector struct {
 	SuperUserToken string
 }
 
-func NewConnector(tpConfig *config.TopicConfig) *Connector{
+func NewConnector(tpConfig *config.TopicConfig) *Connector {
 	return &Connector{
 		Host:           tpConfig.Host,
 		Port:           tpConfig.Port,
@@ -62,4 +62,3 @@ func (r *Connector) SkipAllMessages(tp *v1.Topic, subscriptionName string) error
 
 	return nil
 }
-

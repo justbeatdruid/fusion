@@ -69,6 +69,7 @@ type ExportResponse = Wrapped
 type ResetPositionResponse = Wrapped
 type AddPartitions = Wrapped
 type SendMessagesResponse = ListResponse
+type BatchGrantResponse = ListResponse
 
 /*type DeleteResponse struct {
 	Code    int    `json:"code"`
@@ -137,6 +138,9 @@ const (
 
 type GrantPermissionRequest struct {
 	Actions v1.Actions `json:"actions"`
+}
+type BatchGrantPermissionRequest struct {
+	ClientAuths []service.GrantPermissions `json:"clientAuths"`
 }
 
 //重写Interface的len方法
@@ -817,7 +821,7 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 			Code:      2,
 			ErrorCode: tperror.ErrorGrantPermissions,
 			Message:   c.errMsg.Topic[tperror.ErrorGrantPermissions],
-			Detail:    fmt.Errorf("create database error: %+v", err).Error(),
+			Detail:    fmt.Errorf("grant permissions error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GrantResponse{
@@ -1452,9 +1456,9 @@ func (c *controller) ResetPosition(req *restful.Request) (int, *ResetPositionRes
 			Detail:    fmt.Sprintf("get database error: %+v", err),
 		}
 	}
-	if RP.Timestamp>0 {
-		err = c.service.ResetPositionByTime(RP,tp)
-	}else {
+	if RP.Timestamp > 0 {
+		err = c.service.ResetPositionByTime(RP, tp)
+	} else {
 		err = c.service.ResetPositionById(RP, tp)
 	}
 	if err != nil {
@@ -1477,7 +1481,6 @@ func (c *controller) SkipAllMessages(req *restful.Request) (int, *ResetPositionR
 	id := req.PathParameter("id")
 	subName := req.PathParameter("subName")
 
-
 	authUser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ResetPositionResponse{
@@ -1498,7 +1501,6 @@ func (c *controller) SkipAllMessages(req *restful.Request) (int, *ResetPositionR
 		}
 	}
 
-
 	connector := service.NewConnector(c.tpConfig)
 	if err = connector.SkipAllMessages(crd, subName); err != nil {
 		return http.StatusInternalServerError, &ResetPositionResponse{
@@ -1514,6 +1516,47 @@ func (c *controller) SkipAllMessages(req *restful.Request) (int, *ResetPositionR
 		ErrorCode: tperror.Success,
 		Message:   "success",
 		Detail:    "success",
+	}
+
+}
+
+func (c *controller) BatchGrantPermissions(req *restful.Request) (int, *BatchGrantResponse) {
+	var topic *service.Topic
+	id := req.PathParameter("id")
+	BGP := &BatchGrantPermissionRequest{}
+	if err := req.ReadEntity(BGP); err != nil {
+		return http.StatusInternalServerError, &BatchGrantResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorReadEntity,
+			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
+			Detail:    fmt.Sprintf("cannot read entity: %+v", err),
+		}
+	}
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &BatchGrantResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+	for _, GrantPermissions := range BGP.ClientAuths {
+		if tp, err := c.service.GrantPermissions(id, GrantPermissions.ID, GrantPermissions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
+			return http.StatusInternalServerError, &BatchGrantResponse{
+				Code:      fail,
+				ErrorCode: tperror.ErrorGrantPermissions,
+				Message:   c.errMsg.Topic[tperror.ErrorGrantPermissions],
+				Detail:    fmt.Errorf("grant %s permissions error: %+v", GrantPermissions.ID, err).Error(),
+			}
+		} else {
+			topic = tp
+		}
+	}
+	return http.StatusOK, &BatchGrantResponse{
+		Code:    success,
+		Message: "success",
+		Data:    topic,
 	}
 
 }

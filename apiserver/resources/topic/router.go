@@ -154,11 +154,11 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	//根据messageID重置消费者订阅位置
+	//重置消费者订阅位置
 	ws.Route(ws.POST("/topics/messagePosition").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
-		Doc("send message to topic").
+		Doc("reset position").
 		To(r.resetPosition).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
@@ -169,6 +169,15 @@ func (r *router) Install(ws *restful.WebService) {
 		Produces(restful.MIME_JSON).
 		Doc("Completely clears the backlog on the subscription.").
 		To(r.skipAllMessages).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	//批量设置用户权限
+	ws.Route(ws.POST("/topics/{id}/permissions").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("batch grant permissions ").
+		To(r.batchGrantPermissions).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
@@ -272,5 +281,10 @@ func (r *router) resetPosition(request *restful.Request, response *restful.Respo
 
 func (r *router) skipAllMessages(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.SkipAllMessages(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) batchGrantPermissions(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.BatchGrantPermissions(request)
 	response.WriteHeaderAndEntity(code, result)
 }
