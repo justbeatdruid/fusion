@@ -159,8 +159,9 @@ func (c *controller) GetClientauth(req *restful.Request) (int, *GetResponse) {
 			ca.Effective = true
 		} else if ca.ExpireAt == 0{
 			ca.Effective = true
+		} else {
+			ca.Effective = false
 		}
-		ca.Effective = false
 		return http.StatusOK, &GetResponse{
 			Code: success,
 			Data: ca,
