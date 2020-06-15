@@ -17,7 +17,6 @@ limitations under the License.
 package v1
 
 import (
-	"github.com/chinamobile/nlpt/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,12 +28,12 @@ type Api struct {
 	//app api ip user 类型记录的kong插件id
 	TrafficID string `json:"trafficID"`
 	//特殊应用 记录的kong插件id列表
-	SpecialID     []string  `json:"specialID"`
-	KongID        string    `json:"kongID"`
-	Result        Result    `json:"result"`
-	DisplayStatus DisStatus `json:"disStatus"`
-	Detail        string    `json:"detail"`
-	BindedAt      util.Time `json:"bindedAt"`
+	SpecialID     []string    `json:"specialID"`
+	KongID        string      `json:"kongID"`
+	Result        Result      `json:"result"`
+	DisplayStatus DisStatus   `json:"disStatus"`
+	Detail        string      `json:"detail"`
+	BindedAt      metav1.Time `json:"bindedAt"`
 }
 type Result string
 
