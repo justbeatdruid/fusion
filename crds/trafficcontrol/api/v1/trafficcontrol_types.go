@@ -63,8 +63,16 @@ type ConfigInfo struct {
 	Hour    int       `json:"hour"`
 	Minute  int       `json:"minute"`
 	Second  int       `json:"second"`
+	Operation Operation `json:"operation"`
 	Special []Special `json:"special"`
 }
+
+type Operation string
+const (
+	AddSpecApp Operation = "addSpecApp"
+	DelSpecApp Operation = "delSpecApp"
+	UpdateSpecApp Operation = "updateSpecApp"
+)
 
 const MAXNUM int = 5
 

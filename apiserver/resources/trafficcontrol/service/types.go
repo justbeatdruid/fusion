@@ -64,6 +64,13 @@ func ToAPI(app *Trafficcontrol) *v1.Trafficcontrol {
 		APICount:  0,
 		Published: false,
 	}
+	if crd.Spec.Apis == nil {
+		crd.Spec.Apis = make([]v1.Api, 0)
+	}
+
+	if crd.Spec.Config.Special == nil {
+		crd.Spec.Config.Special = make([]v1.Special, 0)
+	}
 	// add user labels
 	crd.ObjectMeta.Labels = user.AddUsersLabels(app.Users, crd.ObjectMeta.Labels)
 	return crd
@@ -287,9 +294,14 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 		target.ObjectMeta.Namespace = source.Namespace
 	}
 	if _, ok = data["type"]; ok {
-		target.Spec.Type = source.Type
-		switch target.Spec.Type {
+		//target.Spec.Type = source.Type
+		switch source.Type {
 		case v1.APIC, v1.APPC, v1.IPC, v1.USERC:
+			if target.Spec.Type != v1.SPECAPPC {
+				target.Spec.Type = source.Type
+			} else {
+				return fmt.Errorf("special application type cannot be changed to other types")
+			}
 			if reqConfig, ok := data["config"]; ok {
 				klog.V(5).Infof("get config : %+v", reqConfig)
 				if config, ok := reqConfig.(map[string]interface{}); ok {
@@ -315,19 +327,38 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 				target.Spec.Config.Special = make([]v1.Special, 0)
 			}
 		case v1.SPECAPPC:
+			if target.Spec.Type != v1.SPECAPPC {
+				return fmt.Errorf("other types cannot be changed to special application type")
+			}
 			if reqConfig, ok := data["config"]; ok {
 				klog.V(5).Infof("get special config : %+v", reqConfig)
 				if config, ok := reqConfig.(map[string]interface{}); ok {
+					/*
 					if _, ok = config["special"]; ok {
 						target.Spec.Config.Special = source.Config.Special
 						klog.V(5).Infof("get special config : %+v", target.Spec.Config.Special)
 					}
-					target.Spec.Config.Year = 0
-					target.Spec.Config.Month = 0
-					target.Spec.Config.Day = 0
-					target.Spec.Config.Hour = 0
-					target.Spec.Config.Minute = 0
-					target.Spec.Config.Second = 0
+					 */
+					if _, ok := config["operation"]; ok {
+						if _, ok = config["special"]; !ok {
+							return fmt.Errorf("special application do not exist")
+						}
+						target.Spec.Config.Operation = source.Config.Operation
+						switch target.Spec.Config.Operation {
+						case v1.AddSpecApp:
+							if target, err = s.addSpecApp(target, source); err != nil {
+								return fmt.Errorf("add special application failed: +%v", err)
+							}
+						case v1.DelSpecApp:
+							if target, err = s.delSpecApp(target, source); err != nil {
+								return fmt.Errorf("delete special application failed: +%v", err)
+							}
+						case v1.UpdateSpecApp:
+							if target, err = s.updateSpecApp(target, source); err != nil {
+								return fmt.Errorf("update special application failed: +%v", err)
+							}
+						}
+					}
 				}
 			}
 		}
@@ -348,4 +379,43 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 
 	target.Status.UpdatedAt = metav1.Now()
 	return nil
+}
+
+func (s *Service) addSpecApp(target *v1.Trafficcontrol, source Trafficcontrol) (*v1.Trafficcontrol, error) {
+	if len (source.Config.Special) > 1 {
+		return target, fmt.Errorf("only one application can be added at a time")
+	}
+	for _, spec := range target.Spec.Config.Special {
+		if spec.ID == source.Config.Special[0].ID {
+			return target, fmt.Errorf("Applications already exist ")
+		}
+	}
+	target.Spec.Config.Special = append(target.Spec.Config.Special, source.Config.Special[0])
+	return target, nil
+}
+
+func (s *Service) delSpecApp(target *v1.Trafficcontrol, source Trafficcontrol) (*v1.Trafficcontrol, error) {
+	if len (source.Config.Special) > 1 {
+		return target, fmt.Errorf("only one application can be delete at a time")
+	}
+	for k, spec := range target.Spec.Config.Special {
+		if spec.ID == source.Config.Special[0].ID {
+			target.Spec.Config.Special = append(target.Spec.Config.Special[:k], target.Spec.Config.Special[k+1:]...)
+			return target, nil
+		}
+	}
+	return target, fmt.Errorf("application not available")
+}
+
+func (s *Service) updateSpecApp(target *v1.Trafficcontrol, source Trafficcontrol) (*v1.Trafficcontrol, error) {
+	if len (source.Config.Special) > 1 {
+		return target, fmt.Errorf("only one application can be update at a time")
+	}
+	for k, spec := range target.Spec.Config.Special {
+		if spec.ID == source.Config.Special[0].ID {
+			target.Spec.Config.Special[k] = source.Config.Special[0]
+			return target, nil
+		}
+	}
+	return target, fmt.Errorf("application not available")
 }
