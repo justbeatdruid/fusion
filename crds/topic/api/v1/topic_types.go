@@ -103,10 +103,10 @@ const (
 	UpdatingAuthorization        Status = "updatingAuthorization"
 	UpdatingAuthorizationFailed  Status = "updatingAuthorizationFailed"
 	UpdatingAuthorizationSuccess Status = "updatingAuthorizationSuccess"
-	DeletingAuthorization               = "deletingAuthorization"
-	DeleteAuthorizationFailed           = "deleteAuthorizationFailed"
-	DeletedAuthorization                = "deletedAuthorization"
-	BindingOrUnBinding                  = "bindingOrUnbinding"
+	DeletingAuthorization        Status = "deletingAuthorization"
+	DeleteAuthorizationFailed    Status = "deleteAuthorizationFailed"
+	DeletedAuthorization         Status = "deletedAuthorization"
+	BindingOrUnBinding           Status = "bindingOrUnbinding"
 	Binding                      Status = "binding"
 	Bound                        Status = "bound"
 	BindFailed                   Status = "bindFailed"
@@ -250,5 +250,7 @@ func initShowStatusMap() {
 	ShowStatusMap[UpdatingAuthorization] = UpdatingAuthorizationOfShow
 	ShowStatusMap[UpdatingAuthorizationFailed] = UpdatingAuthorizationFailedOfShow
 	ShowStatusMap[UpdatingAuthorizationSuccess] = UpdatingAuthorizationSuccessOfShow
-
+    ShowStatusMap[DeletingAuthorization] = DeletingAuthorizationOfShow
+    ShowStatusMap[DeleteAuthorizationFailed] = DeleteAuthorizationFailedOfShow
+    ShowStatusMap[DeletedAuthorization] = DeletedAuthorizationOfShow
 }
