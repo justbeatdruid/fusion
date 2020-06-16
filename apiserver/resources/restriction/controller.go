@@ -8,6 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/errors"
 	"k8s.io/klog"
 	"net/http"
+	"strings"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/restriction/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
@@ -97,6 +98,14 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 	body.Data.Users = user.InitWithOwner(authuser.Name)
 	body.Data.Namespace = authuser.Namespace
 	if db, err, code := c.service.CreateRestriction(body.Data); err != nil {
+		if strings.Contains(err.Error(),"必须小于每"){
+			comma :=strings.Index(err.Error(), "每")
+			return http.StatusInternalServerError, &CreateResponse{
+				Code:2,
+				ErrorCode:"012000014",
+				Message:err.Error()[comma:],
+			}
+		}
 		if errors.IsNameDuplicated(err) {
 			code = "007000011"
 		}
@@ -172,6 +181,7 @@ func (c *controller) ListRestriction(req *restful.Request) (int, *ListResponse) 
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
 	name := req.QueryParameter("name")
+	apiId:= req.QueryParameter("apiId")
 
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
@@ -183,7 +193,8 @@ func (c *controller) ListRestriction(req *restful.Request) (int, *ListResponse) 
 		}
 	}
 
-	if tc, err := c.service.ListRestriction(util.WithNameLike(name), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+	if tc, err := c.service.ListRestriction(util.WithNameLike(name), util.WithUser(authuser.Name),
+		util.WithNamespace(authuser.Namespace),util.WithId(apiId)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			ErrorCode: "007000006",
