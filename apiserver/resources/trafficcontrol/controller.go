@@ -263,6 +263,14 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 	if db, err := c.service.UpdateTrafficcontrol(req.PathParameter("id"), data,
 		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		code := "012000009"
+		if strings.Contains(err.Error(), "必须小于每") {
+			comma := strings.Index(err.Error(), "每")
+			return http.StatusInternalServerError, &CreateResponse{
+				Code:      2,
+				ErrorCode: "012000014",
+				Message:   err.Error()[comma:],
+			}
+		}
 		if errors.IsNameDuplicated(err) {
 			code = "012000011"
 		}

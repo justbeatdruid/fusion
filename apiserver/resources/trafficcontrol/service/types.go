@@ -6,7 +6,6 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
 	"regexp"
-	"sort"
 	"strings"
 
 	v1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
@@ -194,9 +193,9 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 				}
 			}
 			var atime [6]string
-			atime[0] = "秒钟"
-			atime[1] = "分钟"
-			atime[2] = "小时"
+			atime[0] = "秒"
+			atime[1] = "分"
+			atime[2] = "时"
 			atime[3] = "日"
 			atime[4] = "月"
 			atime[5] = "年"
@@ -221,31 +220,30 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 			if (spec.Year + spec.Month + spec.Day + spec.Hour + spec.Minute + spec.Second) == 0 {
 				return fmt.Errorf("at least one limit config must exist.")
 			} else {
+				//list存秒分时日月年，list2存list的index
 				var list []int
-				if spec.Second > 0 {
-					list = append(list, spec.Second)
+				list = append(list, spec.Second)
+				list = append(list, spec.Minute)
+				list = append(list, spec.Hour)
+				list = append(list, spec.Day)
+				list = append(list, spec.Month)
+				list = append(list, spec.Year)
+				var list2 []int
+				for i, _ := range list {
+					if list[i] != 0 {
+						list2 = append(list2, i)
+					}
 				}
-				if spec.Minute > 0 {
-					list = append(list, spec.Minute)
-				}
-				if spec.Hour > 0 {
-					list = append(list, spec.Hour)
-				}
-				if spec.Day > 0 {
-					list = append(list, spec.Day)
-				}
-				if spec.Month > 0 {
-					list = append(list, spec.Month)
-				}
-				if spec.Year > 0 {
-					list = append(list, spec.Year)
-				}
-				var list2 = make([]int, len(list[:len(list):len(list)]))
-				copy(list2, list[:len(list):len(list)])
-				sort.Ints(list)
-				for index, _ := range list {
-					if list[index] != list2[index] {
-						return fmt.Errorf("the number per minute must be greater than the number per second... for special")
+				var atime [6]string
+				atime[0] = "秒"
+				atime[1] = "分"
+				atime[2] = "时"
+				atime[3] = "日"
+				atime[4] = "月"
+				atime[5] = "年"
+				for i := 0; i < len(list2)-1; i++ {
+					if list[list2[i]] > list[list2[i+1]] {
+						return fmt.Errorf("每%s的次数必须小于每%s的次数", atime[list2[i]], atime[list2[i+1]])
 					}
 				}
 			}
@@ -390,6 +388,38 @@ func (s *Service) addSpecApp(target *v1.Trafficcontrol, source Trafficcontrol) (
 			return target, fmt.Errorf("Applications already exist ")
 		}
 	}
+	if (source.Config.Special[0].Year + source.Config.Special[0].Month + source.Config.Special[0].Day +
+		source.Config.Special[0].Hour + source.Config.Special[0].Minute + source.Config.Special[0].Second) == 0 {
+		return target, fmt.Errorf("at least one limit config must exist for special.")
+	} else {
+		//list存秒分时日月年，list2存list的index
+		var list []int
+		list = append(list, source.Config.Special[0].Second)
+		list = append(list, source.Config.Special[0].Minute)
+		list = append(list, source.Config.Special[0].Hour)
+		list = append(list, source.Config.Special[0].Day)
+		list = append(list, source.Config.Special[0].Month)
+		list = append(list, source.Config.Special[0].Year)
+		var list2 []int
+		for i, _ := range list {
+			if list[i] != 0 {
+				list2 = append(list2, i)
+			}
+		}
+		var atime [6]string
+		atime[0] = "秒"
+		atime[1] = "分"
+		atime[2] = "时"
+		atime[3] = "日"
+		atime[4] = "月"
+		atime[5] = "年"
+		for i := 0; i < len(list2)-1; i++ {
+			if list[list2[i]] > list[list2[i+1]] {
+				return target, fmt.Errorf("每%s的次数必须小于每%s的次数", atime[list2[i]], atime[list2[i+1]])
+			}
+		}
+	}
+
 	target.Spec.Config.Special = append(target.Spec.Config.Special, source.Config.Special[0])
 	return target, nil
 }
@@ -397,6 +427,9 @@ func (s *Service) addSpecApp(target *v1.Trafficcontrol, source Trafficcontrol) (
 func (s *Service) delSpecApp(target *v1.Trafficcontrol, source Trafficcontrol) (*v1.Trafficcontrol, error) {
 	if len (source.Config.Special) > 1 {
 		return target, fmt.Errorf("only one application can be delete at a time")
+	}
+	if len(target.Spec.Config.Special) == 1 {
+		return target, fmt.Errorf("at least one special application")
 	}
 	for k, spec := range target.Spec.Config.Special {
 		if spec.ID == source.Config.Special[0].ID {
@@ -410,6 +443,37 @@ func (s *Service) delSpecApp(target *v1.Trafficcontrol, source Trafficcontrol) (
 func (s *Service) updateSpecApp(target *v1.Trafficcontrol, source Trafficcontrol) (*v1.Trafficcontrol, error) {
 	if len (source.Config.Special) > 1 {
 		return target, fmt.Errorf("only one application can be update at a time")
+	}
+	if (source.Config.Special[0].Year + source.Config.Special[0].Month + source.Config.Special[0].Day +
+		source.Config.Special[0].Hour + source.Config.Special[0].Minute + source.Config.Special[0].Second) == 0 {
+		return target, fmt.Errorf("at least one limit config must exist for special.")
+	} else {
+		//list存秒分时日月年，list2存list的index
+		var list []int
+		list = append(list, source.Config.Special[0].Second)
+		list = append(list, source.Config.Special[0].Minute)
+		list = append(list, source.Config.Special[0].Hour)
+		list = append(list, source.Config.Special[0].Day)
+		list = append(list, source.Config.Special[0].Month)
+		list = append(list, source.Config.Special[0].Year)
+		var list2 []int
+		for i, _ := range list {
+			if list[i] != 0 {
+				list2 = append(list2, i)
+			}
+		}
+		var atime [6]string
+		atime[0] = "秒"
+		atime[1] = "分"
+		atime[2] = "时"
+		atime[3] = "日"
+		atime[4] = "月"
+		atime[5] = "年"
+		for i := 0; i < len(list2)-1; i++ {
+			if list[list2[i]] > list[list2[i+1]] {
+				return target, fmt.Errorf("每%s的次数必须小于每%s的次数", atime[list2[i]], atime[list2[i+1]])
+			}
+		}
 	}
 	for k, spec := range target.Spec.Config.Special {
 		if spec.ID == source.Config.Special[0].ID {
