@@ -98,14 +98,6 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 	body.Data.Users = user.InitWithOwner(authuser.Name)
 	body.Data.Namespace = authuser.Namespace
 	if db, err, code := c.service.CreateRestriction(body.Data); err != nil {
-		if strings.Contains(err.Error(),"必须小于每"){
-			comma :=strings.Index(err.Error(), "每")
-			return http.StatusInternalServerError, &CreateResponse{
-				Code:2,
-				ErrorCode:"012000014",
-				Message:err.Error()[comma:],
-			}
-		}
 		if errors.IsNameDuplicated(err) {
 			code = "007000011"
 		}
