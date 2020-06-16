@@ -2,6 +2,8 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+	"os"
 
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 
@@ -140,6 +142,15 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.doStatisticsOnApis).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	//api export
+	ws.Route(ws.POST("/apis/export").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("export information of apis ").
+		To(r.exportApis).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func process(f func(*restful.Request) (int, interface{}), request *restful.Request, response *restful.Response) {
@@ -201,4 +212,12 @@ func (r *router) testApi(request *restful.Request, response *restful.Response) {
 func (r *router) doStatisticsOnApis(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DoStatisticsOncApis(request)
 	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) exportApis(request *restful.Request, response *restful.Response) {
+	r.controller.ExportApis(request)
+	response.Header().Add("Content-Disposition", "attachment;filename=api.xlsx")
+	response.Header().Add("Content-Type", "application/vnd.ms-excel")
+	http.ServeFile(response.ResponseWriter, request.Request, "./tmp/api.xlsx")
+	defer os.Remove("./tmp/api.xlsx")
 }

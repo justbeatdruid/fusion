@@ -2,10 +2,13 @@ package api
 
 import (
 	"fmt"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/360EntSecGroup-Skylar/excelize"
 	v1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	"k8s.io/klog"
-	"net/http"
-	"time"
 
 	"github.com/chinamobile/nlpt/apiserver/concurrency"
 	"github.com/chinamobile/nlpt/apiserver/resources/api/service"
@@ -87,6 +90,14 @@ type StatisticsResponse = struct {
 	Message   string             `json:"message"`
 	Data      service.Statistics `json:"data"`
 	Detail    string             `json:"detail"`
+}
+
+type ExportRequest = struct {
+	Code      int            `json:"code"`
+	ErrorCode string         `json:"errorCode"`
+	Message   string         `json:"message"`
+	Data      service.Export `json:"data"`
+	Detail    string         `json:"detail"`
 }
 
 func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
@@ -676,6 +687,66 @@ func (c *controller) CountApisIncrement(apis []v1.Api) (int, int) {
 	}
 
 	return increment, totalCalled
+}
+
+//ExportApis export apis
+func (c *controller) ExportApis(req *restful.Request) (int, *ExportRequest) {
+	body := &ExportRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &ExportRequest{
+			Code:      1,
+			ErrorCode: "001000001",
+			Message:   c.errMsg.Api["001000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ExportRequest{
+			Code:      1,
+			ErrorCode: "001000003",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
+		}
+	}
+
+	file := excelize.NewFile()
+	index := file.NewSheet("apis")
+	s := []string{"ID", "Namespace", "Name", "Description"}
+
+	for i := range s {
+		file.SetCellValue("apis", string(i+65)+"1", s[i])
+	}
+
+	row := 1
+	for i := range body.Data.IDs {
+		api, err := c.service.GetApi(body.Data.IDs[i], util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace))
+		if err != nil {
+			klog.Errorf("get Api failed, err: %+v", err)
+			continue
+		}
+		row++
+		file.SetCellValue("apis", string(65)+strconv.Itoa(row), api.ID)
+		file.SetCellValue("apis", string(66)+strconv.Itoa(row), api.Namespace)
+		file.SetCellValue("apis", string(67)+strconv.Itoa(row), api.Name)
+		file.SetCellValue("apis", string(68)+strconv.Itoa(row), api.Description)
+	}
+
+	file.SetActiveSheet(index)
+	err = file.SaveAs("./tmp/api.xlsx")
+	if err != nil {
+		return http.StatusInternalServerError, &ExportRequest{
+			Code:      1,
+			ErrorCode: "001000003",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    fmt.Sprintf("save file error: %+v", err),
+		}
+	}
+	return http.StatusOK, &ExportRequest{
+		Code:      0,
+		ErrorCode: "",
+		Message:   "",
+	}
 }
 
 func returns200(b *restful.RouteBuilder) {

@@ -601,3 +601,7 @@ type Data struct {
 	Columns map[string]string   `json:"columns"`
 	Data    []map[string]string `json:"data"`
 }
+
+type Export struct {
+	IDs []string `json:"ids"`
+}
