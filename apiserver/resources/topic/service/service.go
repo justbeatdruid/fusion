@@ -310,7 +310,7 @@ func (s *Service) DeletePer(id string, authUserId string, opts ...util.OpOption)
 			break
 		}
 	}
-	tp.Status.Status = v1.DeletingAuthorization
+	tp.Status.AuthorizationStatus = v1.DeletingAuthorization
 	return s.UpdateStatus(tp)
 }
 
