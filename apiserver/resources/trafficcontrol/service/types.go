@@ -128,7 +128,7 @@ func ToListModel(items *v1.TrafficcontrolList, opts ...util.OpOption) []*Traffic
 // check create parameters
 func (s *Service) Validate(a *Trafficcontrol) error {
 	for k, v := range map[string]string{
-		"name": a.Name,
+		"name":        a.Name,
 		"description": a.Description,
 	} {
 		if k == "name" {
@@ -281,7 +281,7 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 				}
 			}
 		}
-		target.ObjectMeta.Name = source.Name
+		target.Spec.Name = source.Name
 	}
 	if _, ok = data["namespace"]; ok {
 		target.ObjectMeta.Namespace = source.Namespace
