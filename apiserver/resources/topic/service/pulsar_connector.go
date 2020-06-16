@@ -63,8 +63,6 @@ func (r *Connector) SkipAllMessages(tp *v1.Topic, subscriptionName string) error
 
 	return nil
 }
-<<<<<<< HEAD
-=======
 
 func (r *Connector) SkipMessages(tp *v1.Topic, subscriptionName string, numMessage int64) error {
 
@@ -87,4 +85,4 @@ func (r *Connector) SkipMessages(tp *v1.Topic, subscriptionName string, numMessa
 
 	return nil
 }
->>>>>>> master
+
