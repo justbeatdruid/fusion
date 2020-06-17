@@ -1,6 +1,8 @@
 package model
 
 import (
+	"sort"
+
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 )
 
@@ -43,5 +45,31 @@ func Equal(u1, u2 []UserRelation) bool {
 	if len(u1) != len(u2) {
 		return false
 	}
+	var url1 UserRelationList = u1
+	var url2 UserRelationList = u2
+	sort.Sort(url1)
+	sort.Sort(url2)
+	for i := 0; i < len(u1); i++ {
+		if url1[i].UserId != url2[i].UserId {
+			return false
+		}
+		if url1[i].Role != url2[i].Role {
+			return false
+		}
+	}
 	return true
+}
+
+type UserRelationList []UserRelation
+
+func (url UserRelationList) Len() int {
+	return len(url)
+}
+
+func (url UserRelationList) Less(i, j int) bool {
+	return url[i].UserId+"/"+url[i].Role < url[j].UserId+"/"+url[j].Role
+}
+
+func (url UserRelationList) Swap(i, j int) {
+	url[i], url[j] = url[j], url[i]
 }

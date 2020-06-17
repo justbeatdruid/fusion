@@ -47,6 +47,7 @@ type TopicSpec struct {
 type Application struct {
 	ID     string `json:"id"`
 	Status Status `json:"status"`
+	Actions Actions `json:"actions"`
 }
 type Actions []string
 
