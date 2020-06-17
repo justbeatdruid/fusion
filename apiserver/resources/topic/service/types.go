@@ -170,6 +170,7 @@ type Statistics struct {
 
 type BindInfo struct {
 	ID string `json:"id"`
+	Actions v1.Actions `json:"actions"`
 }
 type SendMessages struct {
 	ID          string `json:"id"`
