@@ -25,6 +25,7 @@ import (
 	trav1 "github.com/chinamobile/nlpt/crds/trafficcontrol/api/v1"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"github.com/go-logr/logr"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/klog"
@@ -408,7 +409,7 @@ func (r *ApiReconciler) UpdateTrafficStatus(ctx context.Context, req ctrl.Reques
 			Name:     api.Spec.Name,
 			KongID:   api.Spec.KongApi.KongID,
 			Result:   trav1.BINDING,
-			BindedAt: util.Now(),
+			BindedAt: metav1.Now(),
 		})
 	}
 	klog.Infof("update traffic apis: %+v", tra.Spec.Apis)
