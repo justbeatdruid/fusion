@@ -52,9 +52,9 @@ type Policies struct {
 	MessageTtlInSeconds         *int                      `json:"messageTtlInSeconds"`         //未确认消息的最长保留时长
 	BacklogQuota                *map[string]BacklogQuota  `json:"backlog_quota_map"`
 	Bundles                     *Bundles                  `json:"bundles"` //key:destination_storage
-	TopicDispatchRate           *map[string]DispatchRate  `json:"topicDispatchRate"`
-	SubscriptionDispatchRate    *map[string]DispatchRate  `json:"subscriptionDispatchRate"`
-	ClusterSubscribeRate        *map[string]SubscribeRate `json:"clusterSubscribeRate"`
+	TopicDispatchRate           *DispatchRate  			  `json:"topicDispatchRate"`
+	SubscriptionDispatchRate    *DispatchRate 			  `json:"subscriptionDispatchRate"`
+	ClusterSubscribeRate        *SubscribeRate 			  `json:"clusterSubscribeRate"`
 	Persistence                 *PersistencePolicies      `json:"persistence"` //Configuration of bookkeeper persistence policies.
 	DeduplicationEnabled        *bool                     `json:"deduplicationEnabled"`
 	EncryptionRequired          *bool                     `json:"encryption_required"`
@@ -91,23 +91,6 @@ type DispatchRate struct {
 
 }
 
-type AuthPolices struct {
-	NamespaceAuth         NamespaceAuth         `json:"namespace_auth"`
-	DestinationAuth       DestinationAuth       `json:"destination_auth"`
-	SubscriptionAuthRoles SubscriptionAuthRoles `json:"subscription_auth_roles"`
-}
-
-type NamespaceAuth struct {
-	//TODO 待补充
-}
-
-type DestinationAuth struct {
-	//TODO 待补充
-}
-
-type SubscriptionAuthRoles struct {
-	//TODO 待补充
-}
 
 type RetentionPolicies struct {
 	RetentionTimeInMinutes int   `json:"retentionTimeInMinutes"`
@@ -223,8 +206,8 @@ func ToPolicesModel(obj *v1.Policies) *Policies {
 		SubscriptionAuthMode:        obj.SubscriptionAuthMode,
 		EncryptionRequired:          obj.EncryptionRequired,
 		Persistence:                 persistent,
-		SubscriptionDispatchRate:    &sRate,
 		ClusterSubscribeRate:        &cRate,
+		SubscriptionDispatchRate:    &sRate,
 		TopicDispatchRate:           &tRate,
 		DeduplicationEnabled:        obj.DeduplicationEnabled,
 	}
@@ -253,40 +236,26 @@ func ToBacklogQuotaModel(obj *v1.Policies) map[string]BacklogQuota {
 	return bMap
 }
 
-func ToDispatchRateModel(obj *v1.Policies) (map[string]SubscribeRate, map[string]DispatchRate, map[string]DispatchRate) {
-	cRate := make(map[string]SubscribeRate)
-	if obj != nil && obj.ClusterSubscribeRate != nil {
-		for k, v := range *obj.ClusterSubscribeRate {
-			cRate[k] = SubscribeRate{
-				SubscribeThrottlingRatePerConsumer: v.SubscribeThrottlingRatePerConsumer,
-				RatePeriodInSecond:                 v.RatePeriodInSecond,
-			}
-		}
+func ToDispatchRateModel(obj *v1.Policies) (SubscribeRate, DispatchRate, DispatchRate) {
+    cRate := SubscribeRate{
+		SubscribeThrottlingRatePerConsumer: obj.ClusterSubscribeRate.SubscribeThrottlingRatePerConsumer,
+		RatePeriodInSecond:                 obj.ClusterSubscribeRate.RatePeriodInSecond,
+	}
+	sRate := DispatchRate{
+		DispatchThrottlingRateInMsg:  obj.SubscriptionDispatchRate.DispatchThrottlingRateInMsg,
+		DispatchThrottlingRateInByte: obj.SubscriptionDispatchRate.DispatchThrottlingRateInByte,
+		RelativeToPublishRate:        obj.SubscriptionDispatchRate.RelativeToPublishRate,
+		RatePeriodInSecond:           obj.SubscriptionDispatchRate.RatePeriodInSecond,
 	}
 
-	sRate := make(map[string]DispatchRate)
-	if obj != nil && obj.SubscriptionDispatchRate != nil {
-		for k, v := range *obj.SubscriptionDispatchRate {
-			sRate[k] = DispatchRate{
-				DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
-				DispatchThrottlingRateInByte: v.DispatchThrottlingRateInByte,
-				RelativeToPublishRate:        v.RelativeToPublishRate,
-				RatePeriodInSecond:           v.RatePeriodInSecond,
-			}
-		}
+
+	tRate := DispatchRate{
+		DispatchThrottlingRateInMsg:  obj.TopicDispatchRate.DispatchThrottlingRateInMsg,
+		DispatchThrottlingRateInByte: obj.TopicDispatchRate.DispatchThrottlingRateInByte,
+		RelativeToPublishRate:        obj.TopicDispatchRate.RelativeToPublishRate,
+		RatePeriodInSecond:           obj.TopicDispatchRate.RatePeriodInSecond,
 	}
 
-	tRate := make(map[string]DispatchRate)
-	if obj != nil && obj.TopicDispatchRate != nil {
-		for k, v := range *obj.TopicDispatchRate {
-			tRate[k] = DispatchRate{
-				DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
-				DispatchThrottlingRateInByte: v.DispatchThrottlingRateInByte,
-				RelativeToPublishRate:        v.RelativeToPublishRate,
-				RatePeriodInSecond:           v.RatePeriodInSecond,
-			}
-		}
-	}
 	return cRate, sRate, tRate
 }
 
@@ -314,7 +283,7 @@ func ToPolicesApi(policies *Policies) *v1.Policies {
 		return nil
 	}
 
-	cRate, sRate, tRate := ToDispatchRate(policies)
+	 cRate, sRate, tRate := ToDispatchRate(policies)
 
 	bMap := make(map[string]v1.BacklogQuota)
 	if policies.BacklogQuota != nil {
@@ -342,9 +311,8 @@ func ToPolicesApi(policies *Policies) *v1.Policies {
 		OffloadThreshold:            policies.OffloadThreshold,
 		SubscriptionAuthMode:        policies.SubscriptionAuthMode,
 		EncryptionRequired:          policies.EncryptionRequired,
-
+		ClusterSubscribeRate:      &cRate,
 		SubscriptionDispatchRate: &sRate,
-		ClusterSubscribeRate:     &cRate,
 		TopicDispatchRate:        &tRate,
 		DeduplicationEnabled:     policies.DeduplicationEnabled,
 	}
@@ -368,42 +336,24 @@ func ToPolicesApi(policies *Policies) *v1.Policies {
 	return &crd
 }
 
-func ToDispatchRate(policies *Policies) (map[string]v1.SubscribeRate, map[string]v1.DispatchRate, map[string]v1.DispatchRate) {
-	cRate := make(map[string]v1.SubscribeRate)
-
-	if policies.ClusterSubscribeRate != nil {
-		for k, v := range *policies.ClusterSubscribeRate {
-			cRate[k] = v1.SubscribeRate{
-				SubscribeThrottlingRatePerConsumer: v.SubscribeThrottlingRatePerConsumer,
-				RatePeriodInSecond:                 v.RatePeriodInSecond,
-			}
-		}
+func ToDispatchRate(policies *Policies) (v1.SubscribeRate, v1.DispatchRate, v1.DispatchRate) {
+	cRate := v1.SubscribeRate{
+		SubscribeThrottlingRatePerConsumer: policies.ClusterSubscribeRate.SubscribeThrottlingRatePerConsumer,
+		RatePeriodInSecond:                 policies.ClusterSubscribeRate.RatePeriodInSecond,
+	}
+	sRate := v1.DispatchRate{
+		DispatchThrottlingRateInMsg:  policies.SubscriptionDispatchRate.DispatchThrottlingRateInMsg,
+		DispatchThrottlingRateInByte: policies.SubscriptionDispatchRate.DispatchThrottlingRateInByte,
+		RelativeToPublishRate:        policies.SubscriptionDispatchRate.RelativeToPublishRate,
+		RatePeriodInSecond:           policies.SubscriptionDispatchRate.RatePeriodInSecond,
 	}
 
-	sRate := make(map[string]v1.DispatchRate)
-	if policies.SubscriptionDispatchRate != nil {
-		for k, v := range *policies.SubscriptionDispatchRate {
-			sRate[k] = v1.DispatchRate{
-				DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
-				DispatchThrottlingRateInByte: v.DispatchThrottlingRateInByte,
-				RelativeToPublishRate:        v.RelativeToPublishRate,
-				RatePeriodInSecond:           v.RatePeriodInSecond,
-			}
-		}
 
-	}
-
-	tRate := make(map[string]v1.DispatchRate)
-	if policies.TopicDispatchRate != nil {
-		for k, v := range *policies.TopicDispatchRate {
-			tRate[k] = v1.DispatchRate{
-				DispatchThrottlingRateInMsg:  v.DispatchThrottlingRateInMsg,
-				DispatchThrottlingRateInByte: v.DispatchThrottlingRateInByte,
-				RelativeToPublishRate:        v.RelativeToPublishRate,
-				RatePeriodInSecond:           v.RatePeriodInSecond,
-			}
-		}
-
+	tRate := v1.DispatchRate{
+		DispatchThrottlingRateInMsg:  policies.TopicDispatchRate.DispatchThrottlingRateInMsg,
+		DispatchThrottlingRateInByte: policies.TopicDispatchRate.DispatchThrottlingRateInByte,
+		RelativeToPublishRate:        policies.TopicDispatchRate.RelativeToPublishRate,
+		RatePeriodInSecond:           policies.TopicDispatchRate.RatePeriodInSecond,
 	}
 	return cRate, sRate, tRate
 }

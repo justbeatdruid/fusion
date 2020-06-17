@@ -39,9 +39,10 @@ type Policies struct {
 	MessageTtlInSeconds         *int                      `json:"message_ttl_in_seconds,omitempty"` //未确认消息的最长保留时长
 	BacklogQuota                *map[string]BacklogQuota  `json:"backlog_quota_map,omitempty"`
 	Bundles                     *Bundles                  `json:"bundles,omitempty"` //key:destination_storage
-	TopicDispatchRate           *map[string]DispatchRate  `json:"topicDispatchRate,omitempty"`
-	SubscriptionDispatchRate    *map[string]DispatchRate  `json:"subscriptionDispatchRate,omitempty"`
-	ClusterSubscribeRate        *map[string]SubscribeRate `json:"clusterSubscribeRate,omitempty"`
+	TopicDispatchRate           *DispatchRate  `json:"topicDispatchRate,omitempty"`
+	SubscriptionDispatchRate    *DispatchRate  `json:"subscriptionDispatchRate,omitempty"`
+	ClusterSubscribeRate        *SubscribeRate `json:"clusterSubscribeRate"`
+
 	Persistence                 *PersistencePolicies      `json:"persistence,omitempty"` //Configuration of bookkeeper persistence policies.
 	DeduplicationEnabled        *bool                     `json:"deduplicationEnabled,omitempty"`
 	EncryptionRequired          *bool                     `json:"encryption_required,omitempty"`

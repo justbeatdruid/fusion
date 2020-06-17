@@ -398,9 +398,21 @@ func toCrdModel(policies *Policies) *v1.Policies {
 		RetentionPolicies:           policies.RetentionPolicies,
 		Bundles:                     policies.Bundles,
 		BacklogQuota:                policies.BacklogQuota,
-		TopicDispatchRate:           policies.TopicDispatchRate,
-		SubscriptionDispatchRate:    policies.SubscriptionDispatchRate,
-		ClusterSubscribeRate:        policies.ClusterSubscribeRate,
+	}
+
+	for _, v := range *policies.TopicDispatchRate {
+		crd.TopicDispatchRate = &v
+		break
+	}
+
+	for _, v := range *policies.SubscriptionDispatchRate {
+		crd.SubscriptionDispatchRate = &v
+		break
+	}
+
+	for _, v := range *policies.ClusterSubscribeRate {
+		crd.ClusterSubscribeRate = &v
+		break
 	}
 	if crd.DeduplicationEnabled == nil {
 		var deduplication = false
