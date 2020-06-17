@@ -8,7 +8,6 @@ import (
 	"github.com/chinamobile/nlpt/pkg/errors"
 	"k8s.io/klog"
 	"net/http"
-	"strings"
 
 	"github.com/chinamobile/nlpt/apiserver/resources/restriction/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
