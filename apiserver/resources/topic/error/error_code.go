@@ -31,7 +31,7 @@ const (
 	ErrorTopicGroupIdError                = "010000023" //查询消息失败：原因：topicGroup字段不能为空
 	ErrorGetTopicGroupInfo                = "010000024" //查询TopicGroup详情失败
 	ErrorQueryParameterError              = "010000025" //查询信息失败，原因：查询参数不正确
-	ErrorPartitionTopicPartitionEqualZero = "010000026" //创建Topic失败，原因：多分区Topic的分区数不能为0
+	ErrorPartitionTopicPartitionEqualZero = "010000026" //创建Topic失败，原因：多分区Topic的分区数只能为1～20之间的整数
 	ErrorAddPartitionsOfTopicError        = "010000027" //增加topic分区失败
 	ErrorBindTopicError                   = "010000028" //应用与Topic绑定/解绑定失败
 	ErrorSendMessagesError                = "010000029" //发送消息失败
