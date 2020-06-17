@@ -19,6 +19,7 @@ import (
 	"context"
 	"fmt"
 	"k8s.io/klog"
+	"strconv"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -188,7 +189,7 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 		//更新SchemaCompatibilityStrategy
 		//TODO 报错：415
-		if err = r.Operator.SetPolicy(schemaCompatibilityStrategySuffix, namespace, namespace.Spec.Policies.SchemaCompatibilityStrategy, put); err != nil {
+		if err = r.Operator.SetPolicy(schemaCompatibilityStrategySuffix, namespace, strconv.Quote(*namespace.Spec.Policies.SchemaCompatibilityStrategy), put); err != nil {
 			namespace.Status.Status = nlptv1.UpdateFailed
 			namespace.Status.Message = fmt.Sprintf("set SchemaCompatibilityStrategy: %+v", err)
 		}
@@ -213,9 +214,8 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			namespace.Status.Message = fmt.Sprintf("set EncryptionRequired: %+v", err)
 		}
 
-		//更新SubscriptionAuthMode
-		//TODO 报错：415
-		if err = r.Operator.SetPolicy(subscriptionAuthModeSuffix, namespace, namespace.Spec.Policies.SubscriptionAuthMode, post); err != nil {
+		//更新SubscriptionAuthMode,需要在value上加双引号
+		if err = r.Operator.SetPolicy(subscriptionAuthModeSuffix, namespace, strconv.Quote(*namespace.Spec.Policies.SubscriptionAuthMode), post); err != nil {
 			namespace.Status.Status = nlptv1.UpdateFailed
 			namespace.Status.Message = fmt.Sprintf("set SubscriptionAuthMode: %+v", err)
 		}
