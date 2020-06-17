@@ -386,12 +386,15 @@ func (a *Topic) Validate() topicerr.TopicError {
 		}
 	}
 
-	if *a.Partitioned && a.PartitionNum == 0 {
-		return topicerr.TopicError{
-			Err:       fmt.Errorf("parition number of partitioned topic must be greater than 0"),
-			ErrorCode: topicerr.ErrorPartitionTopicPartitionEqualZero,
+	if *a.Partitioned{
+		if a.PartitionNum <= 0 || a.PartitionNum > 20{
+			return topicerr.TopicError{
+				Err:       fmt.Errorf("parition number of partitioned topic must be greater than 0 and less than 20"),
+				ErrorCode: topicerr.ErrorPartitionTopicPartitionEqualZero,
+			}
 		}
 	}
+
 
 	if len([]rune(a.Description)) > MaxDescriptionLen {
 		return topicerr.TopicError{
