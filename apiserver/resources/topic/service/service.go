@@ -73,6 +73,11 @@ func (r *requestLogger) Println(v ...interface{}) {
 	klog.V(4).Infof("%+v", v)
 }
 
+
+func (s *Service) GetClient() dynamic.NamespaceableResourceInterface {
+	return s.client
+}
+
 func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topConfig *config.TopicConfig, errMsg config.ErrorConfig) *Service {
 	return &Service{client: client.Resource(oofsGVR),
 		clientAuthClient:  client.Resource(clientauthv1.GetOOFSGVR()),
@@ -120,6 +125,8 @@ func (s *Service) DeleteTopic(id string, opts ...util.OpOption) (*Topic, error) 
 	if err != nil {
 		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
 	}
+
+	util.WaitDelete(s, tp.ObjectMeta)
 	return ToModel(tp), nil
 }
 
