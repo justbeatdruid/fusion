@@ -127,6 +127,7 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		return nil, err
 	}
 	if s.SyncMode {
+		s.Database.Enabled = true
 		db, err := database.NewDatabaseConnection(s.Database.Enabled, s.Database.Type, s.Database.Host, s.Database.Port, s.Database.Username, s.Database.Password,
 			s.Database.Database, s.Database.Schema)
 		if err != nil {

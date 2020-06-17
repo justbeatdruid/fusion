@@ -42,6 +42,9 @@ spec:
                   NOTE: json tags are required.  Any new fields you add must have
                   json tags for the fields to be serialized.'
                 properties:
+                  bindedAt:
+                    format: date-time
+                    type: string
                   detail:
                     type: string
                   disStatus:
@@ -63,6 +66,7 @@ spec:
                     description: app api ip user 类型记录的kong插件id
                     type: string
                 required:
+                - bindedAt
                 - detail
                 - disStatus
                 - id
@@ -88,13 +92,28 @@ spec:
                 special:
                   items:
                     properties:
+                      day:
+                        type: integer
+                      hour:
+                        type: integer
                       id:
                         type: string
                       minute:
                         type: integer
+                      month:
+                        type: integer
+                      second:
+                        type: integer
+                      year:
+                        type: integer
                     required:
+                    - day
+                    - hour
                     - id
                     - minute
+                    - month
+                    - second
+                    - year
                     type: object
                   type: array
                 year:
