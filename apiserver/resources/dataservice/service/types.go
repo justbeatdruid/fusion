@@ -133,13 +133,18 @@ func (ds *Dataservice) Validate(service *Service, opts ...util.OpOption) error {
 			if ds.SchedualPlanConfig.TimeUnit != "minute" && ds.SchedualPlanConfig.TimeUnit != "hour" && ds.SchedualPlanConfig.TimeUnit != "day" && ds.SchedualPlanConfig.TimeUnit != "month" && ds.SchedualPlanConfig.TimeUnit != "week" {
 				return fmt.Errorf("SchedualPlanConfig TimeUnit (minite,hour,day,month,week) is error,please config correct TimeUnit :%v", ds.SchedualPlanConfig.TimeUnit)
 			}
-
 		}
+	}
 
+	if ds.DataSourceConfig.Type != "MySql" && ds.DataSourceConfig.Type != "PostgreSQL" {
+		return fmt.Errorf("DataSourceConfig Type is error,please config correct Type :%v", ds.DataSourceConfig.Type)
 	}
 
 	if ds.DataSourceConfig.RelationalDb.SourceID == "" || ds.DataTargetConfig.RelationalDbTarget.TargetID == "" {
 		return fmt.Errorf("SourceID or TargetID is error value,SourceID:%v,TargetID:%v", ds.DataSourceConfig.RelationalDb.SourceID, ds.DataTargetConfig.RelationalDbTarget.TargetID)
+	}
+	if ds.DataTargetConfig.Type != "MySql" && ds.DataTargetConfig.Type != "PostgreSQL" {
+		return fmt.Errorf("DataTargetConfig Type is error,please config correct Type :%v", ds.DataTargetConfig.Type)
 	}
 
 	if _, _, err := service.GetDataSource(ds.DataSourceConfig.RelationalDb.SourceID, opts...); err != nil {

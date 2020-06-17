@@ -226,17 +226,31 @@ func (s *Service) GetFlinkxBody(ds model.Task) (string, error) {
 		return "", err
 	}
 
+	source := "mysql"
+	if dataSource.Type == "PostgreSQL" {
+		source = "postgresql"
+
+	}
+	target := "mysql"
+	if dataTarget.Type == "PostgreSQL" {
+		target = "postgresql"
+
+	}
+
+	flinkJob.Job.Content[0].Reader.Name = source + "reader"
 	flinkJob.Job.Content[0].Reader.Parameter.UserName = sourceDB.Spec.RDB.Connect.Username
 	flinkJob.Job.Content[0].Reader.Parameter.Password = sourceDB.Spec.RDB.Connect.Password
 	flinkJob.Job.Content[0].Reader.Parameter.Connection[0].Table = []string{dataSource.RelationalDb.SourceTable}
 
-	flinkJob.Job.Content[0].Reader.Parameter.Connection[0].JdbcURL = []string{"jdbc:mysql://" + sourceDB.Spec.RDB.Connect.Host + ":" + strconv.Itoa(sourceDB.Spec.RDB.Connect.Port) + "/" + sourceDB.Spec.RDB.Database}
+	flinkJob.Job.Content[0].Reader.Parameter.Connection[0].JdbcURL = []string{"jdbc:" + source + "://" + sourceDB.Spec.RDB.Connect.Host + ":" + strconv.Itoa(sourceDB.Spec.RDB.Connect.Port) + "/" + sourceDB.Spec.RDB.Database}
+
+	flinkJob.Job.Content[0].Writer.Name = target + "writer"
 	flinkJob.Job.Content[0].Writer.Parameter.UserName = targetDB.Spec.RDB.Connect.Username
 	flinkJob.Job.Content[0].Writer.Parameter.Password = targetDB.Spec.RDB.Connect.Password
 
 	flinkJob.Job.Content[0].Writer.Parameter.Connection[0].Table = []string{dataTarget.RelationalDbTarget.TargetTable}
 
-	flinkJob.Job.Content[0].Writer.Parameter.Connection[0].JdbcURL = []string{"jdbc:mysql://" + targetDB.Spec.RDB.Connect.Host + ":" + strconv.Itoa(targetDB.Spec.RDB.Connect.Port) + "/" + targetDB.Spec.RDB.Database}
+	flinkJob.Job.Content[0].Writer.Parameter.Connection[0].JdbcURL = []string{"jdbc:" + target + "://" + targetDB.Spec.RDB.Connect.Host + ":" + strconv.Itoa(targetDB.Spec.RDB.Connect.Port) + "/" + targetDB.Spec.RDB.Database}
 
 	for _, v := range dataTarget.RelationalDbTarget.MappingRelation {
 		flinkJob.Job.Content[0].Reader.Parameter.Column = append(flinkJob.Job.Content[0].Reader.Parameter.Column, v.SourceField)
