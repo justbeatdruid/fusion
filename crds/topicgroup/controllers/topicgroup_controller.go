@@ -220,6 +220,19 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			namespace.Status.Message = fmt.Sprintf("set SubscriptionAuthMode: %+v", err)
 		}
 
+		//更新SubscriptioDispatchRate
+		if err = r.Operator.SetPolicy(subscriptionDispatchRateSuffix, namespace, namespace.Spec.Policies.SubscriptionDispatchRate, post); err != nil {
+			namespace.Status.Status = nlptv1.UpdateFailed
+			namespace.Status.Message = fmt.Sprintf("set SubscriptionAuthMode: %+v", err)
+		}
+
+		//更新TopicDispatchRate
+		if err = r.Operator.SetPolicy(dispatchRateSuffix, namespace, namespace.Spec.Policies.TopicDispatchRate, post); err != nil {
+			namespace.Status.Status = nlptv1.UpdateFailed
+			namespace.Status.Message = fmt.Sprintf("set SubscriptionAuthMode: %+v", err)
+		}
+
+
 		if namespace.Status.Status == nlptv1.Updating {
 			namespace.Status.Status = nlptv1.Updated
 			namespace.Status.Message = "modify topic group polices successfully"
