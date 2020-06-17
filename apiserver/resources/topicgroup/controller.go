@@ -254,7 +254,7 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
 			ErrorCode: tgerror.ErrorModify,
-			Message:   c.errMsg.TopicGroup[tgerror.ErrorModify],
+			Message:   fmt.Sprintf(c.errMsg.TopicGroup[tgerror.ErrorModify], err),
 			Detail:    fmt.Sprintf("modify topic group error: %+v", err),
 		}
 	}

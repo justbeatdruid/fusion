@@ -424,7 +424,7 @@ func (p *Policies) Validate() error {
 			return err
 		}
 
-		err = p.checkRentionPolicies()
+		err = p.checkRetentionPolicies()
 		if err != nil {
 			return err
 		}
@@ -457,6 +457,7 @@ func (p *Policies) Validate() error {
 		if err = p.checkSubscriptionAuthMode(); err != nil {
 			return err
 		}
+
 	}
 	return nil
 
@@ -465,11 +466,12 @@ func (p *Policies) Validate() error {
 func (p *Policies) checkCompationThreshold() error {
 	if p.CompactionThreshold != nil {
 		if *p.CompactionThreshold < 0 {
-			return fmt.Errorf("compactionThreshold cannot be less than 0")
+			return fmt.Errorf("压缩阈值不能小于0")
 		}
 	}
 	return nil
 }
+
 
 func (p *Policies) checkSubscriptionAuthMode() error {
 	if p.SubscriptionAuthMode != nil {
@@ -478,7 +480,7 @@ func (p *Policies) checkSubscriptionAuthMode() error {
 		case Prefix:
 			break
 		default:
-			return fmt.Errorf("subscriptionAuthMode is invalid: %+v", *p.SubscriptionAuthMode)
+			return fmt.Errorf("订阅模式只能为None或Prefix")
 		}
 	}
 	return nil
@@ -487,7 +489,7 @@ func (p *Policies) checkSubscriptionAuthMode() error {
 func (p *Policies) checkBundles() error {
 	if p.Bundles != nil {
 		if p.Bundles.NumBundles <= 0 && p.Bundles.NumBundles != NotSet {
-			return fmt.Errorf("numBundles is invalid: %d", p.Bundles.NumBundles)
+			return fmt.Errorf(" Bundle数量不能小于或等于0")
 		}
 	}
 	return nil
@@ -507,7 +509,7 @@ func (p *Policies) checkSchemaCompatibilityStrategy() error {
 		case FULL_TRANSITIVE:
 			break
 		default:
-			return fmt.Errorf("schemaCompatibilityStrategy is invalid, value: %+v", *p.SchemaCompatibilityStrategy)
+			return fmt.Errorf("schema兼容性策略参数错误, value: %+v", *p.SchemaCompatibilityStrategy)
 		}
 	}
 	return nil
@@ -516,19 +518,19 @@ func (p *Policies) checkSchemaCompatibilityStrategy() error {
 func (p *Policies) checkThrottling() error {
 	if p.MaxConsumersPerSubscription != nil {
 		if *p.MaxConsumersPerSubscription < 0 {
-			return fmt.Errorf("maxConsumersPerSubscription cannot be less than 0")
+			return fmt.Errorf("每个订阅的消费者数量不能小于0")
 		}
 	}
 	if p.MaxConsumersPerTopic != nil {
 		if *p.MaxConsumersPerTopic < 0 {
-			return fmt.Errorf("maxConsumersPerTopic cannot be less than 0")
+			return fmt.Errorf("每个Topic最大消费者数量不能小于0")
 
 		}
 	}
 
 	if p.MaxProducersPerTopic != nil {
 		if *p.MaxProducersPerTopic < 0 {
-			return fmt.Errorf("maxProducersPerTopic cannot be less than 0")
+			return fmt.Errorf("每个Topic最大生产者数量不能小于0")
 
 		}
 	}
@@ -545,7 +547,7 @@ func (p *Policies) checkBacklogQuota() error {
 			break
 		default:
 			if backlogQuota[destinationStorage].Policy != NotSetString {
-				return fmt.Errorf("backlogQuota policy is invalid: %+v", backlogQuota["destination_storage"].Policy)
+				return fmt.Errorf("消息积压超限策略参数错误: %+v", backlogQuota["destination_storage"].Policy)
 			}
 		}
 	}
@@ -555,27 +557,27 @@ func (p *Policies) checkBacklogQuota() error {
 func (p *Policies) checkPersistence() error {
 	if p.Persistence != nil {
 		if p.Persistence.BookkeeperEnsemble < 0 || p.Persistence.BookkeeperAckQuorum < 0 || p.Persistence.BookkeeperWriteQuorum < 0 {
-			return fmt.Errorf("persistent is invalid, BookkeeperEnsemble or BookkeeperAckQuorum or BookkeeperWriteQuorum < 0")
+			return fmt.Errorf("消息持久化策略参数错误：Topic存储节点数｜消息副本数｜副本写入响应数不能小于0")
 		}
 
 		if p.Persistence.BookkeeperAckQuorum > p.Persistence.BookkeeperWriteQuorum {
-			return fmt.Errorf("persistent is invalid, BookkeeperAckQuorum must less than or equal to BookkeeperWriteQuorum")
+			return fmt.Errorf("消息持久化策略参数错误：副本写入响应数必须小于或等于消息副本数")
 		}
 
 		if p.Persistence.BookkeeperWriteQuorum > p.Persistence.BookkeeperEnsemble {
-			return fmt.Errorf("persistent is invalid, BookkeeperWriteQuorum must be less than or equal to BookkeeperEnsemble")
+			return fmt.Errorf("消息持久化策略参数错误：消息副本数必须小于或等于Topic存储节点数")
 		}
 	}
 	return nil
 }
 
-func (p *Policies) checkRentionPolicies() error {
+func (p *Policies) checkRetentionPolicies() error {
 	if p.RetentionPolicies != nil {
 		if p.RetentionPolicies.RetentionTimeInMinutes < pulsar.MinRetentionTimeInMinutes && p.RetentionPolicies.RetentionTimeInMinutes != NotSet {
-			return fmt.Errorf("retentionTimeInMinutes is invalid: %d", p.RetentionPolicies.RetentionTimeInMinutes)
+			return fmt.Errorf("消息留存时间不能小于%d", pulsar.MinRetentionTimeInMinutes)
 		}
 		if p.RetentionPolicies.RetentionSizeInMB < pulsar.MinRetentionSizeInMB && p.RetentionPolicies.RetentionTimeInMinutes != NotSet {
-			return fmt.Errorf("retentionTimeInMinutes is invalid: %d", p.RetentionPolicies.RetentionSizeInMB)
+			return fmt.Errorf("消息留存大小不能小于%d", pulsar.MinRetentionSizeInMB)
 		}
 
 	}
@@ -585,7 +587,7 @@ func (p *Policies) checkRentionPolicies() error {
 func (p *Policies) checkMessageTtlInSeconds() error {
 	if p.MessageTtlInSeconds != nil {
 		if *p.MessageTtlInSeconds < pulsar.DefaultMessageTTlInSeconds && *p.MessageTtlInSeconds != NotSet {
-			return fmt.Errorf("messageTtlInSeconds is invalid: %d", p.MessageTtlInSeconds)
+			return fmt.Errorf("消息自动确认超时不能小于%d", pulsar.DefaultMessageTTlInSeconds)
 		}
 	}
 	return nil
@@ -598,7 +600,7 @@ func (a *Topicgroup) Validate() error {
 			return fmt.Errorf("%s is null", k)
 		} else {
 			if ok, err := regexp.MatchString(NameReg, v); !ok {
-				return fmt.Errorf("name is illegal: %v ", err)
+				return fmt.Errorf("名称不合法: %+v ", err)
 			}
 		}
 	}

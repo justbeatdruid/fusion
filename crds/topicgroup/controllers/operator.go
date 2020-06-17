@@ -225,14 +225,15 @@ func (r *Operator) SetPolicy(suffix string, namespace *v1.Topicgroup, content in
 	var body string
 	var errs = make([]error, 0)
 	if method == "post" {
+		request.Header.Add("Content-Type", "application/json")
 		response, body, errs = request.Post(url).Send(content).End()
 	} else {
 		response, body, errs = request.Put(url).Send(content).End()
 	}
 
-	klog.Infof("set compactionThreshold finished, url: %+v, response: %+v, body: %+v, errs: %+v", url, response, body, errs)
+	klog.Infof("set policy finished, url: %+v, response: %+v, body: %+v, errs: %+v", url, response, body, errs)
 	if response.StatusCode != http.StatusNoContent || errs != nil {
-		return fmt.Errorf("set compactionThreshold error: %+v or http code is not success: %+v", errs, response.StatusCode)
+		return fmt.Errorf("set policy error: %+v or http code is not success: %+v", errs, response.StatusCode)
 	}
 	return nil
 
