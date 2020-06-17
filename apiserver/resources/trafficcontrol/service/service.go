@@ -57,7 +57,11 @@ func (s *Service) getApplication(id string, crdNamespace string) (*appv1.Applica
 
 func (s *Service) CreateTrafficcontrol(model *Trafficcontrol) (*Trafficcontrol, error, string) {
 	if err := s.Validate(model); err != nil {
-		return nil, fmt.Errorf("bad request: %+v", err), "012000012"
+		code := "012000012"
+		if strings.Contains(err.Error(), "at least one limit config must exist") {
+			code = "012000015"
+		}
+		return nil, fmt.Errorf("bad request: %+v", err), code
 	}
 	su, err := s.Create(ToAPI(model))
 	if err != nil {
