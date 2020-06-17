@@ -659,6 +659,7 @@ func (s *Service) BatchBindApi(appid string, topics []BindInfo, opts ...util.OpO
 		application := v1.Application{
 			ID:     appid,
 			Status: v1.Binding,
+			Actions: t.Actions,
 		}
 		tp.Spec.Applications = append(tp.Spec.Applications, application)
 		tp.Status.BindStatus = v1.BindingOrUnBinding

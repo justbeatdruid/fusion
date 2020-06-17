@@ -184,14 +184,14 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			application := topic.Spec.Applications[i]
 			switch application.Status {
 			case nlptv1.Binding:
-				actions := make([]string, 0)
-				actions = append(actions, nlptv1.Consume)
-				actions = append(actions, nlptv1.Produce)
+				//actions := make([]string, 0)
+				//actions = append(actions, nlptv1.Consume)
+				//actions = append(actions, nlptv1.Produce)
 
 				p := nlptv1.Permission{
 					AuthUserID:   "",
 					AuthUserName: application.ID,
-					Actions:      actions,
+					Actions:      application.Actions,
 				}
 				if err := r.Operator.GrantPermission(topic, &p); err != nil {
 					application.Status = nlptv1.BindFailed
