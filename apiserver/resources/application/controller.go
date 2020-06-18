@@ -279,6 +279,48 @@ func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) 
 	}
 }
 
+func (c *controller) ListApplicationByRelation(req *restful.Request) (int, *ListResponse) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	group := req.QueryParameter("group")
+	resourceType := req.QueryParameter("resourceType")
+	resourceId := req.QueryParameter("resourceId")
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      1,
+			Detail:    "auth model error",
+			ErrorCode: "002000003",
+			Message:   c.errMsg.Application["002000003"],
+		}
+	}
+	if app, err := c.service.ListApplicationByRelation(resourceType, resourceId, util.WithGroup(group),
+		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      2,
+			Detail:    fmt.Errorf("list application error: %+v", err).Error(),
+			ErrorCode: "002000008",
+			Message:   c.errMsg.Application["002000008"],
+		}
+	} else {
+		var apps ApplicationList = app
+		data, err := util.PageWrap(apps, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:      1,
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
+				ErrorCode: "002000009",
+				Message:   c.errMsg.Application["002000009"],
+			}
+		}
+		return http.StatusOK, &ListResponse{
+			Code:      0,
+			ErrorCode: "0",
+			Data:      data,
+		}
+	}
+}
+
 type ApplicationList []*service.Application
 
 func (apps ApplicationList) Len() int {

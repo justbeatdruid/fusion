@@ -33,15 +33,16 @@ func (a *Application) ResourceId() string {
 
 const applicationType = "application"
 
-func ApplicationFromApi(api *v1.Application) (Application, []UserRelation, error) {
+func ApplicationFromApi(api *v1.Application) (Application, []UserRelation, []Relation, error) {
 	raw, err := json.Marshal(api)
 	if err != nil {
-		return Application{}, nil, fmt.Errorf("marshal crd v1.application error: %+v", err)
+		return Application{}, nil, nil, fmt.Errorf("marshal crd v1.application error: %+v", err)
 	}
 	if api.ObjectMeta.Labels == nil {
-		return Application{}, nil, fmt.Errorf("application labels is null")
+		return Application{}, nil, nil, fmt.Errorf("application labels is null")
 	}
 	rls := FromUser(applicationType, api.ObjectMeta.Name, api.ObjectMeta.Labels)
+	relations := getApplicationRelation(api)
 	return Application{
 		Id:        api.ObjectMeta.Name,
 		Namespace: api.ObjectMeta.Namespace,
@@ -50,7 +51,7 @@ func ApplicationFromApi(api *v1.Application) (Application, []UserRelation, error
 		Status:    string(api.Status.Status),
 
 		Raw: string(raw),
-	}, rls, nil
+	}, rls, relations, nil
 }
 
 func ApplicationToApi(a Application) (*v1.Application, error) {
@@ -62,14 +63,27 @@ func ApplicationToApi(a Application) (*v1.Application, error) {
 	return api, nil
 }
 
-func ApplicationGetFromObject(obj interface{}) (Application, []UserRelation, error) {
+func ApplicationGetFromObject(obj interface{}) (Application, []UserRelation, []Relation, error) {
 	un, ok := obj.(*unstructured.Unstructured)
 	if !ok {
-		return Application{}, nil, fmt.Errorf("cannot cast obj %+v to unstructured", obj)
+		return Application{}, nil, nil, fmt.Errorf("cannot cast obj %+v to unstructured", obj)
 	}
 	api := &v1.Application{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), api); err != nil {
-		return Application{}, nil, fmt.Errorf("cannot convert from unstructured: %+v", err)
+		return Application{}, nil, nil, fmt.Errorf("cannot convert from unstructured: %+v", err)
 	}
 	return ApplicationFromApi(api)
+}
+
+func getApplicationRelation(app *v1.Application) []Relation {
+	result := make([]Relation, 0)
+	for _, api := range app.Spec.APIs {
+		result = append(result, Relation{
+			SourceType: applicationType,
+			SourceId:   app.ObjectMeta.Name,
+			TargetType: apiType,
+			TargetId:   api.ID,
+		})
+	}
+	return result
 }

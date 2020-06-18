@@ -54,6 +54,13 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.GET("/applications/relation").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("list all apps").
+		To(r.listApplicationByRelation).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.GET("/applications/{id}/users").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -122,6 +129,11 @@ func (r *router) patchApplication(request *restful.Request, response *restful.Re
 
 func (r *router) listApplication(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListApplication(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) listApplicationByRelation(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ListApplicationByRelation(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 
