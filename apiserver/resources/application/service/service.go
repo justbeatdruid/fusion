@@ -72,6 +72,13 @@ func (s *Service) ListApplication(opts ...util.OpOption) ([]*Application, error)
 	return ToListModel(apps, groupMap, opts...), nil
 }
 
+func (s *Service) ListApplicationByRelation(resourceType, resourceId string, opts ...util.OpOption) ([]*Application, error) {
+	if !s.db.Enabled() {
+		return nil, fmt.Errorf("not support if database disabled")
+	}
+	return s.ListByRelationFromDatabase(resourceType, resourceId, opts...)
+}
+
 func (s *Service) GetApplication(id string, opts ...util.OpOption) (*Application, error) {
 	app, err := s.Get(id, opts...)
 	if err != nil {
