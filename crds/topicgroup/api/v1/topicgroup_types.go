@@ -35,27 +35,27 @@ type TopicgroupSpec struct {
 	DisplayStatus ShowStatus `json:"disStatus"`             //界面显示状态
 }
 type Policies struct {
-	RetentionPolicies           *RetentionPolicies        `json:"retention_policies,omitempty"`     //消息保留策略
-	MessageTtlInSeconds         *int                      `json:"message_ttl_in_seconds,omitempty"` //未确认消息的最长保留时长
-	BacklogQuota                *map[string]BacklogQuota  `json:"backlog_quota_map,omitempty"`
-	Bundles                     *Bundles                  `json:"bundles,omitempty"` //key:destination_storage
-	TopicDispatchRate           *DispatchRate  `json:"topicDispatchRate,omitempty"`
-	SubscriptionDispatchRate    *DispatchRate  `json:"subscriptionDispatchRate,omitempty"`
-	ClusterSubscribeRate        *SubscribeRate `json:"clusterSubscribeRate"`
+	RetentionPolicies        *RetentionPolicies       `json:"retention_policies,omitempty"`     //消息保留策略
+	MessageTtlInSeconds      *int                     `json:"message_ttl_in_seconds,omitempty"` //未确认消息的最长保留时长
+	BacklogQuota             *map[string]BacklogQuota `json:"backlog_quota_map,omitempty"`
+	Bundles                  *Bundles                 `json:"bundles,omitempty"` //key:destination_storage
+	TopicDispatchRate        *DispatchRate            `json:"topicDispatchRate,omitempty"`
+	SubscriptionDispatchRate *DispatchRate            `json:"subscriptionDispatchRate,omitempty"`
+	ClusterSubscribeRate     *SubscribeRate           `json:"clusterSubscribeRate"`
 
-	Persistence                 *PersistencePolicies      `json:"persistence,omitempty"` //Configuration of bookkeeper persistence policies.
-	DeduplicationEnabled        *bool                     `json:"deduplicationEnabled,omitempty"`
-	EncryptionRequired          *bool                     `json:"encryption_required,omitempty"`
-	SubscriptionAuthMode        *string                   `json:"subscription_auth_mode,omitempty"` //None/Prefix
-	MaxProducersPerTopic        *int                      `json:"max_producers_per_topic,omitempty"`
-	MaxConsumersPerTopic        *int                      `json:"max_consumers_per_topic,omitempty"`
-	MaxConsumersPerSubscription *int                      `json:"max_consumers_per_subscription,omitempty"`
-	CompactionThreshold         *int64                    `json:"compaction_threshold,omitempty"`
-	OffloadThreshold            *int64                    `json:"offload_threshold,omitempty"`
-	OffloadDeletionLagMs        *int64                    `json:"offload_deletion_lag_ms,omitempty"`
-	IsAllowAutoUpdateSchema     *bool                     `json:"is_allow_auto_update_schema,omitempty"`
-	SchemaValidationEnforced    *bool                     `json:"schema_validation_enforced,omitempty"`
-	SchemaCompatibilityStrategy *string                   `json:"schema_compatibility_strategy,omitempty"`
+	Persistence                 *PersistencePolicies `json:"persistence,omitempty"` //Configuration of bookkeeper persistence policies.
+	DeduplicationEnabled        *bool                `json:"deduplicationEnabled,omitempty"`
+	EncryptionRequired          *bool                `json:"encryption_required,omitempty"`
+	SubscriptionAuthMode        *string              `json:"subscription_auth_mode,omitempty"` //None/Prefix
+	MaxProducersPerTopic        *int                 `json:"max_producers_per_topic,omitempty"`
+	MaxConsumersPerTopic        *int                 `json:"max_consumers_per_topic,omitempty"`
+	MaxConsumersPerSubscription *int                 `json:"max_consumers_per_subscription,omitempty"`
+	CompactionThreshold         *int64               `json:"compaction_threshold,omitempty"`
+	OffloadThreshold            *int64               `json:"offload_threshold,omitempty"`
+	OffloadDeletionLagMs        *int64               `json:"offload_deletion_lag_ms,omitempty"`
+	IsAllowAutoUpdateSchema     *bool                `json:"is_allow_auto_update_schema,omitempty"`
+	SchemaValidationEnforced    *bool                `json:"schema_validation_enforced,omitempty"`
+	SchemaCompatibilityStrategy *string              `json:"schema_compatibility_strategy,omitempty"`
 }
 type Bundles struct {
 	Boundaries []string `json:"boundaries,omitempty"`

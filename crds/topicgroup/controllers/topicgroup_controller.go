@@ -232,7 +232,6 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			namespace.Status.Message = fmt.Sprintf("set SubscriptionAuthMode: %+v", err)
 		}
 
-
 		if namespace.Status.Status == nlptv1.Updating {
 			namespace.Status.Status = nlptv1.Updated
 			namespace.Status.Message = "modify topic group polices successfully"

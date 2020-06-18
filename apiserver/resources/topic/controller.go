@@ -1520,7 +1520,6 @@ func (c *controller) SkipAllMessages(req *restful.Request) (int, *ResetPositionR
 
 }
 
-
 func (c *controller) BatchGrantPermissions(req *restful.Request) (int, *BatchGrantResponse) {
 	var topic *service.Topic
 	id := req.PathParameter("id")
@@ -1563,7 +1562,6 @@ func (c *controller) BatchGrantPermissions(req *restful.Request) (int, *BatchGra
 
 }
 
-
 func (c *controller) SkipMessages(req *restful.Request) (int, *ResetPositionResponse) {
 	id := req.PathParameter("id")
 	subName := req.PathParameter("subName")
@@ -1587,7 +1585,6 @@ func (c *controller) SkipMessages(req *restful.Request) (int, *ResetPositionResp
 			Detail:    fmt.Sprintf("reset cursor error: %+v", err),
 		}
 	}
-
 
 	numM, err := strconv.ParseInt(numMessages, 10, 32)
 	if err != nil {
