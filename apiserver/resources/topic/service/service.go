@@ -73,7 +73,6 @@ func (r *requestLogger) Println(v ...interface{}) {
 	klog.V(4).Infof("%+v", v)
 }
 
-
 func (s *Service) GetClient() dynamic.NamespaceableResourceInterface {
 	return s.client
 }
@@ -664,8 +663,8 @@ func (s *Service) BatchBindApi(appid string, topics []BindInfo, opts ...util.OpO
 
 		}
 		application := v1.Application{
-			ID:     appid,
-			Status: v1.Binding,
+			ID:      appid,
+			Status:  v1.Binding,
 			Actions: t.Actions,
 		}
 		tp.Spec.Applications = append(tp.Spec.Applications, application)

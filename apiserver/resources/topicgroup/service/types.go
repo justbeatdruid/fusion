@@ -48,26 +48,26 @@ type Topicgroup struct {
 }
 
 type Policies struct {
-	RetentionPolicies           *RetentionPolicies        `json:"retentionPolicies,omitempty"` //消息保留策略
-	MessageTtlInSeconds         *int                      `json:"messageTtlInSeconds"`         //未确认消息的最长保留时长
-	BacklogQuota                *map[string]BacklogQuota  `json:"backlog_quota_map"`
-	Bundles                     *Bundles                  `json:"bundles"` //key:destination_storage
-	TopicDispatchRate           *DispatchRate  			  `json:"topicDispatchRate"`
-	SubscriptionDispatchRate    *DispatchRate 			  `json:"subscriptionDispatchRate"`
-	ClusterSubscribeRate        *SubscribeRate 			  `json:"clusterSubscribeRate"`
-	Persistence                 *PersistencePolicies      `json:"persistence"` //Configuration of bookkeeper persistence policies.
-	DeduplicationEnabled        *bool                     `json:"deduplicationEnabled"`
-	EncryptionRequired          *bool                     `json:"encryption_required"`
-	SubscriptionAuthMode        *string                   `json:"subscription_auth_mode"` //None/Prefix
-	MaxProducersPerTopic        *int                      `json:"max_producers_per_topic"`
-	MaxConsumersPerTopic        *int                      `json:"max_consumers_per_topic"`
-	MaxConsumersPerSubscription *int                      `json:"max_consumers_per_subscription"`
-	CompactionThreshold         *int64                    `json:"compaction_threshold"`
-	OffloadThreshold            *int64                    `json:"offload_threshold"`
-	OffloadDeletionLagMs        *int64                    `json:"offload_deletion_lag_ms"`
-	IsAllowAutoUpdateSchema     *bool                     `json:"is_allow_auto_update_schema"`
-	SchemaValidationEnforced    *bool                     `json:"schema_validation_enforced"`
-	SchemaCompatibilityStrategy *string                   `json:"schema_compatibility_strategy"`
+	RetentionPolicies           *RetentionPolicies       `json:"retentionPolicies,omitempty"` //消息保留策略
+	MessageTtlInSeconds         *int                     `json:"messageTtlInSeconds"`         //未确认消息的最长保留时长
+	BacklogQuota                *map[string]BacklogQuota `json:"backlog_quota_map"`
+	Bundles                     *Bundles                 `json:"bundles"` //key:destination_storage
+	TopicDispatchRate           *DispatchRate            `json:"topicDispatchRate"`
+	SubscriptionDispatchRate    *DispatchRate            `json:"subscriptionDispatchRate"`
+	ClusterSubscribeRate        *SubscribeRate           `json:"clusterSubscribeRate"`
+	Persistence                 *PersistencePolicies     `json:"persistence"` //Configuration of bookkeeper persistence policies.
+	DeduplicationEnabled        *bool                    `json:"deduplicationEnabled"`
+	EncryptionRequired          *bool                    `json:"encryption_required"`
+	SubscriptionAuthMode        *string                  `json:"subscription_auth_mode"` //None/Prefix
+	MaxProducersPerTopic        *int                     `json:"max_producers_per_topic"`
+	MaxConsumersPerTopic        *int                     `json:"max_consumers_per_topic"`
+	MaxConsumersPerSubscription *int                     `json:"max_consumers_per_subscription"`
+	CompactionThreshold         *int64                   `json:"compaction_threshold"`
+	OffloadThreshold            *int64                   `json:"offload_threshold"`
+	OffloadDeletionLagMs        *int64                   `json:"offload_deletion_lag_ms"`
+	IsAllowAutoUpdateSchema     *bool                    `json:"is_allow_auto_update_schema"`
+	SchemaValidationEnforced    *bool                    `json:"schema_validation_enforced"`
+	SchemaCompatibilityStrategy *string                  `json:"schema_compatibility_strategy"`
 }
 type Bundles struct {
 	Boundaries []string `json:"boundaries"`
@@ -90,7 +90,6 @@ type DispatchRate struct {
 	RatePeriodInSecond           int   `json:"ratePeriodInSecond"`           /* by default dispatch-rate will be calculate per 1 second */
 
 }
-
 
 type RetentionPolicies struct {
 	RetentionTimeInMinutes int   `json:"retentionTimeInMinutes"`
@@ -237,7 +236,7 @@ func ToBacklogQuotaModel(obj *v1.Policies) map[string]BacklogQuota {
 }
 
 func ToDispatchRateModel(obj *v1.Policies) (SubscribeRate, DispatchRate, DispatchRate) {
-    cRate := SubscribeRate{
+	cRate := SubscribeRate{
 		SubscribeThrottlingRatePerConsumer: obj.ClusterSubscribeRate.SubscribeThrottlingRatePerConsumer,
 		RatePeriodInSecond:                 obj.ClusterSubscribeRate.RatePeriodInSecond,
 	}
@@ -247,7 +246,6 @@ func ToDispatchRateModel(obj *v1.Policies) (SubscribeRate, DispatchRate, Dispatc
 		RelativeToPublishRate:        obj.SubscriptionDispatchRate.RelativeToPublishRate,
 		RatePeriodInSecond:           obj.SubscriptionDispatchRate.RatePeriodInSecond,
 	}
-
 
 	tRate := DispatchRate{
 		DispatchThrottlingRateInMsg:  obj.TopicDispatchRate.DispatchThrottlingRateInMsg,
@@ -283,7 +281,7 @@ func ToPolicesApi(policies *Policies) *v1.Policies {
 		return nil
 	}
 
-	 cRate, sRate, tRate := ToDispatchRate(policies)
+	cRate, sRate, tRate := ToDispatchRate(policies)
 
 	bMap := make(map[string]v1.BacklogQuota)
 	if policies.BacklogQuota != nil {
@@ -311,10 +309,10 @@ func ToPolicesApi(policies *Policies) *v1.Policies {
 		OffloadThreshold:            policies.OffloadThreshold,
 		SubscriptionAuthMode:        policies.SubscriptionAuthMode,
 		EncryptionRequired:          policies.EncryptionRequired,
-		ClusterSubscribeRate:      &cRate,
-		SubscriptionDispatchRate: &sRate,
-		TopicDispatchRate:        &tRate,
-		DeduplicationEnabled:     policies.DeduplicationEnabled,
+		ClusterSubscribeRate:        &cRate,
+		SubscriptionDispatchRate:    &sRate,
+		TopicDispatchRate:           &tRate,
+		DeduplicationEnabled:        policies.DeduplicationEnabled,
 	}
 
 	if policies.Persistence != nil {
@@ -347,7 +345,6 @@ func ToDispatchRate(policies *Policies) (v1.SubscribeRate, v1.DispatchRate, v1.D
 		RelativeToPublishRate:        policies.SubscriptionDispatchRate.RelativeToPublishRate,
 		RatePeriodInSecond:           policies.SubscriptionDispatchRate.RatePeriodInSecond,
 	}
-
 
 	tRate := v1.DispatchRate{
 		DispatchThrottlingRateInMsg:  policies.TopicDispatchRate.DispatchThrottlingRateInMsg,
@@ -421,7 +418,6 @@ func (p *Policies) checkCompationThreshold() error {
 	}
 	return nil
 }
-
 
 func (p *Policies) checkSubscriptionAuthMode() error {
 	if p.SubscriptionAuthMode != nil {

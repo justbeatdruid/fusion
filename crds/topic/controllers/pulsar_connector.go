@@ -113,7 +113,7 @@ func (r *Connector) CreateTopic(topic *nlptv1.Topic) (err error) {
 	if response.StatusCode == 204 {
 		stats, err := r.GetStats(*topic)
 		if err != nil {
-			fmt.Errorf("%+v", err)
+			klog.Errorf("%+v", err)
 			return nil
 		}
 		topic.Spec.Stats = *stats

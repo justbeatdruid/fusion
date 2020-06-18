@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	skipAllUrl = "/admin/v2/%s/%s/%s/%s/subscriptions/%s/skip_all"
+	skipAllUrl    = "/admin/v2/%s/%s/%s/%s/subscriptions/%s/skip_all"
 	skillNMessage = "/admin/v2/%s/%s/%s/%s/subscription/%s/skip/%d"
 )
 
@@ -85,4 +85,3 @@ func (r *Connector) SkipMessages(tp *v1.Topic, subscriptionName string, numMessa
 
 	return nil
 }
-

@@ -172,7 +172,6 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-
 	//批量设置用户权限
 	ws.Route(ws.POST("/topics/{id}/permissions").
 		Consumes(restful.MIME_JSON).
@@ -181,8 +180,6 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.batchGrantPermissions).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
-
-
 
 	//从最新位置开始消费接口开发
 	ws.Route(ws.POST("/topics/{id}/subscription/{subName}/skip/{numMessages}").
@@ -296,7 +293,6 @@ func (r *router) skipAllMessages(request *restful.Request, response *restful.Res
 	response.WriteHeaderAndEntity(code, result)
 }
 
-
 func (r *router) batchGrantPermissions(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.BatchGrantPermissions(request)
 	response.WriteHeaderAndEntity(code, result)
@@ -306,4 +302,3 @@ func (r *router) skipMessages(request *restful.Request, response *restful.Respon
 	code, result := r.controller.SkipMessages(request)
 	response.WriteHeaderAndEntity(code, result)
 }
-
