@@ -77,7 +77,8 @@ func newDatabaseConnection(cfg DatabaseConfig) (*DatabaseConnection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot register database: %+v", err)
 	}
-	orm.RegisterModel(new(model.Application), new(model.UserRelation), new(model.Task), new(model.TbDagRun), new(model.TbMetadata))
+	orm.RegisterModel(new(model.Application), new(model.UserRelation), new(model.Task), new(model.TbDagRun), new(model.TbMetadata),
+		new(model.Relation), new(model.Api), new(model.Serviceunit))
 	if err = orm.RunSyncdb("default", false, true); err != nil {
 		return nil, fmt.Errorf("cannot sync database: %+v", err)
 	}
@@ -104,143 +105,6 @@ func (d *DatabaseConnection) Commit() error {
 func (d *DatabaseConnection) Rollback() error {
 	defer d.mtx.Unlock()
 	return d.Ormer.Rollback()
-}
-
-func (d *DatabaseConnection) AddObject(o model.Table, us interface{}, count int) (err error) {
-	if err = d.Begin(); err != nil {
-		return fmt.Errorf("begin txn error: %+v", err)
-	}
-	_, err = d.Insert(o)
-	if err != nil {
-		d.Rollback()
-		return err
-	}
-	_, err = d.InsertMulti(count, us)
-	if err != nil {
-		d.Rollback()
-		return err
-	}
-	if err = d.Commit(); err != nil {
-		return fmt.Errorf("commit txn error: %+v", err)
-	}
-	return nil
-}
-
-func (d *DatabaseConnection) UpdateObject(o model.Table, us interface{}, count int) (err error) {
-	if err := d.Begin(); err != nil {
-		return fmt.Errorf("begin txn error: %+v", err)
-	}
-	if _, err := d.Update(o); err != nil {
-		d.Rollback()
-		return err
-	}
-	if us != nil {
-		ul := []model.UserRelation{}
-		if _, err := d.QueryTable("UserRelation").Filter("ResourceId", o.ResourceType()).Filter("ResourceType", o.ResourceType()).All(&ul); err != nil {
-			d.Rollback()
-			return err
-		}
-		for _, u := range ul {
-			if _, err := d.Delete(&u); err != nil {
-				d.Rollback()
-				return err
-			}
-		}
-		_, err = d.InsertMulti(count, us)
-		if err != nil {
-			d.Rollback()
-			return err
-		}
-	}
-	if err != nil {
-		d.Rollback()
-		return err
-	}
-	if err = d.Commit(); err != nil {
-		return fmt.Errorf("commit txn error: %+v", err)
-	}
-	return nil
-}
-
-func (d *DatabaseConnection) DeleteObject(o model.Table) (err error) {
-	if err = d.Begin(); err != nil {
-		return fmt.Errorf("begin txn error: %+v", err)
-	}
-	_, err = d.Delete(o)
-	ul := []model.UserRelation{}
-	if _, err := d.QueryTable("UserRelation").Filter("ResourceId", o.ResourceId()).Filter("ResourceType", o.ResourceType()).All(&ul); err != nil {
-		d.Rollback()
-		return err
-	}
-	for _, u := range ul {
-		if _, err := d.Delete(&u); err != nil {
-			d.Rollback()
-			return err
-		}
-	}
-	if err != nil {
-		d.Rollback()
-		return err
-	}
-	if err = d.Commit(); err != nil {
-		return fmt.Errorf("commit txn error: %+v", err)
-	}
-	return nil
-}
-
-func (d *DatabaseConnection) AddApplication(obj interface{}) error {
-	o, us, err := model.ApplicationGetFromObject(obj)
-	if err != nil {
-		return fmt.Errorf("get application from obj error: %+v", err)
-	}
-	return d.AddObject(&o, us, len(us))
-}
-
-func (d *DatabaseConnection) UpdateApplication(old, obj interface{}) error {
-	_, ous, err := model.ApplicationGetFromObject(obj)
-	if err != nil {
-		return fmt.Errorf("get users from obj error: %+v", err)
-	}
-	o, us, err := model.ApplicationGetFromObject(obj)
-	if err != nil {
-		return fmt.Errorf("get application from obj error: %+v", err)
-	}
-	if model.Equal(ous, us) {
-		return d.UpdateObject(&o, nil, 0)
-	}
-
-	return d.UpdateObject(&o, us, len(us))
-}
-
-func (d *DatabaseConnection) DeleteApplication(obj interface{}) error {
-	o, _, err := model.ApplicationGetFromObject(obj)
-	if err != nil {
-		return fmt.Errorf("get application from obj error: %+v", err)
-	}
-	return d.DeleteObject(&o)
-}
-
-func (d *DatabaseConnection) QueryApplication(uid string, md *model.Application) (result []model.Application, err error) {
-	conditions := make([]model.Condition, 0)
-	if md == nil {
-		return nil, fmt.Errorf("model is null")
-	}
-	if len(md.Namespace) == 0 {
-		return nil, fmt.Errorf("namespace not set in model")
-	}
-	conditions = append(conditions, model.Condition{"namespace", model.Equals, md.Namespace})
-	if len(md.Group) > 0 {
-		conditions = append(conditions, model.Condition{"group", model.Equals, md.Group})
-	}
-	if len(md.Name) > 0 {
-		conditions = append(conditions, model.Condition{"name", model.Like, md.Name})
-	}
-	if len(md.Status) > 0 {
-		conditions = append(conditions, model.Condition{"status", model.Equals, md.Status})
-	}
-
-	err = d.query(uid, md, conditions, &result)
-	return
 }
 
 func (d *DatabaseConnection) query(uid string, md model.Table, conditions []model.Condition, result interface{}) (err error) {
@@ -293,4 +157,242 @@ func (d *DatabaseConnection) query(uid string, md model.Table, conditions []mode
 	}
 	_, err = d.Raw(sql, values...).QueryRows(result)
 	return
+}
+
+func (d *DatabaseConnection) AddObject(o model.Table, us []model.UserRelation, count int, rl []model.Relation, rcount int) (err error) {
+	if err = d.Begin(); err != nil {
+		return fmt.Errorf("begin txn error: %+v", err)
+	}
+	_, err = d.Insert(o)
+	if err != nil {
+		d.Rollback()
+		return err
+	}
+	if us != nil && len(us) > 0 {
+		_, err = d.InsertMulti(count, us)
+		if err != nil {
+			d.Rollback()
+			return err
+		}
+	}
+	if rl != nil && len(rl) > 0 {
+		_, err = d.InsertMulti(rcount, rl)
+		if err != nil {
+			d.Rollback()
+			return err
+		}
+	}
+	if err = d.Commit(); err != nil {
+		return fmt.Errorf("commit txn error: %+v", err)
+	}
+	return nil
+}
+
+func (d *DatabaseConnection) UpdateObject(o model.Table, us []model.UserRelation, count int, rl []model.Relation, rcount int) (err error) {
+	if err := d.Begin(); err != nil {
+		return fmt.Errorf("begin txn error: %+v", err)
+	}
+	if _, err := d.Update(o); err != nil {
+		d.Rollback()
+		return err
+	}
+	if us != nil && len(us) > 0 {
+		ul := []model.UserRelation{}
+		if _, err := d.QueryTable("UserRelation").Filter("ResourceId", o.ResourceType()).Filter("ResourceType", o.ResourceType()).All(&ul); err != nil {
+			d.Rollback()
+			return err
+		}
+		for _, u := range ul {
+			if _, err := d.Delete(&u); err != nil {
+				d.Rollback()
+				return err
+			}
+		}
+		_, err = d.InsertMulti(count, us)
+		if err != nil {
+			d.Rollback()
+			return err
+		}
+	}
+	if rl != nil && len(rl) > 0 {
+		rl := []model.Relation{}
+		if _, err := d.QueryTable("Relation").Filter("SourceId", o.ResourceType()).Filter("SourceType", o.ResourceType()).All(&rl); err != nil {
+			d.Rollback()
+			return err
+		}
+		for _, u := range rl {
+			if _, err := d.Delete(&u); err != nil {
+				d.Rollback()
+				return err
+			}
+		}
+		_, err = d.InsertMulti(count, us)
+		if err != nil {
+			d.Rollback()
+			return err
+		}
+	}
+	if err = d.Commit(); err != nil {
+		return fmt.Errorf("commit txn error: %+v", err)
+	}
+	return nil
+}
+
+func (d *DatabaseConnection) DeleteObject(o model.Table) (err error) {
+	if err = d.Begin(); err != nil {
+		return fmt.Errorf("begin txn error: %+v", err)
+	}
+	_, err = d.Delete(o)
+	if err != nil {
+		d.Rollback()
+		return err
+	}
+
+	ul := []model.UserRelation{}
+	if _, err := d.QueryTable("UserRelation").Filter("ResourceId", o.ResourceId()).Filter("ResourceType", o.ResourceType()).All(&ul); err != nil {
+		d.Rollback()
+		return err
+	}
+	for _, u := range ul {
+		if _, err := d.Delete(&u); err != nil {
+			d.Rollback()
+			return err
+		}
+	}
+
+	rl := []model.Relation{}
+	if _, err := d.QueryTable("Relation").Filter("SourceId", o.ResourceId()).Filter("SourceType", o.ResourceType()).All(&rl); err != nil {
+		d.Rollback()
+		return err
+	}
+	for _, r := range rl {
+		if _, err := d.Delete(&r); err != nil {
+			d.Rollback()
+			return err
+		}
+	}
+
+	if err = d.Commit(); err != nil {
+		return fmt.Errorf("commit txn error: %+v", err)
+	}
+	return nil
+}
+
+func (d *DatabaseConnection) AddApplication(obj interface{}) error {
+	o, us, rl, err := model.ApplicationGetFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("get application from obj error: %+v", err)
+	}
+	return d.AddObject(&o, us, len(us), rl, len(rl))
+}
+
+func (d *DatabaseConnection) UpdateApplication(old, obj interface{}) error {
+	_, ous, _, err := model.ApplicationGetFromObject(old)
+	if err != nil {
+		return fmt.Errorf("get users from obj error: %+v", err)
+	}
+	o, us, rl, err := model.ApplicationGetFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("get application from obj error: %+v", err)
+	}
+	if model.Equal(ous, us) {
+		return d.UpdateObject(&o, nil, 0, rl, len(rl))
+	}
+
+	return d.UpdateObject(&o, us, len(us), rl, len(rl))
+}
+
+func (d *DatabaseConnection) DeleteApplication(obj interface{}) error {
+	o, _, _, err := model.ApplicationGetFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("get application from obj error: %+v", err)
+	}
+	return d.DeleteObject(&o)
+}
+
+func (d *DatabaseConnection) QueryApplication(uid string, md *model.Application) (result []model.Application, err error) {
+	conditions := make([]model.Condition, 0)
+	if md == nil {
+		return nil, fmt.Errorf("model is null")
+	}
+	if len(md.Namespace) == 0 {
+		return nil, fmt.Errorf("namespace not set in model")
+	}
+	conditions = append(conditions, model.Condition{"namespace", model.Equals, md.Namespace})
+	if len(md.Group) > 0 {
+		conditions = append(conditions, model.Condition{"group", model.Equals, md.Group})
+	}
+	if len(md.Name) > 0 {
+		conditions = append(conditions, model.Condition{"name", model.Like, md.Name})
+	}
+	if len(md.Status) > 0 {
+		conditions = append(conditions, model.Condition{"status", model.Equals, md.Status})
+	}
+
+	err = d.query(uid, md, conditions, &result)
+	return
+}
+
+func (d *DatabaseConnection) AddApi(obj interface{}) error {
+	o, us, err := model.ApiGetFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("get api from obj error: %+v", err)
+	}
+	return d.AddObject(&o, us, len(us), nil, 0)
+}
+
+func (d *DatabaseConnection) UpdateApi(old, obj interface{}) error {
+	_, ous, err := model.ApiGetFromObject(old)
+	if err != nil {
+		return fmt.Errorf("get users from obj error: %+v", err)
+	}
+	o, us, err := model.ApiGetFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("get api from obj error: %+v", err)
+	}
+	if model.Equal(ous, us) {
+		return d.UpdateObject(&o, nil, 0, nil, 0)
+	}
+
+	return d.UpdateObject(&o, us, len(us), nil, 0)
+}
+
+func (d *DatabaseConnection) DeleteApi(obj interface{}) error {
+	o, _, err := model.ApiGetFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("get api from obj error: %+v", err)
+	}
+	return d.DeleteObject(&o)
+}
+
+func (d *DatabaseConnection) AddServiceunit(obj interface{}) error {
+	o, us, err := model.ServiceunitGetFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("get serviceunit from obj error: %+v", err)
+	}
+	return d.AddObject(&o, us, len(us), nil, 0)
+}
+
+func (d *DatabaseConnection) UpdateServiceunit(old, obj interface{}) error {
+	_, ous, err := model.ServiceunitGetFromObject(old)
+	if err != nil {
+		return fmt.Errorf("get users from obj error: %+v", err)
+	}
+	o, us, err := model.ServiceunitGetFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("get serviceunit from obj error: %+v", err)
+	}
+	if model.Equal(ous, us) {
+		return d.UpdateObject(&o, nil, 0, nil, 0)
+	}
+
+	return d.UpdateObject(&o, us, len(us), nil, 0)
+}
+
+func (d *DatabaseConnection) DeleteServiceunit(obj interface{}) error {
+	o, _, err := model.ServiceunitGetFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("get serviceunit from obj error: %+v", err)
+	}
+	return d.DeleteObject(&o)
 }

@@ -22,6 +22,14 @@ func initGVM(db *database.DatabaseConnection) {
 			addFunc = db.AddApplication
 			updateFunc = db.UpdateApplication
 			deleteFunc = db.DeleteApplication
+		case "apis":
+			addFunc = db.AddApi
+			updateFunc = db.UpdateApi
+			deleteFunc = db.DeleteApi
+		case "serviceunits":
+			addFunc = db.AddServiceunit
+			updateFunc = db.UpdateServiceunit
+			deleteFunc = db.DeleteServiceunit
 		default:
 			goto next
 		}

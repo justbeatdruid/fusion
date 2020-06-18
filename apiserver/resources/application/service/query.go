@@ -36,3 +36,26 @@ func (s *Service) ListFromDatabase(opts ...util.OpOption) (*v1.ApplicationList, 
 	}
 	return &v1.ApplicationList{Items: apps}, nil
 }
+
+func (s *Service) ListByRelationFromDatabase(resourceType, resourceId string, opts ...util.OpOption) ([]*Application, error) {
+	if !s.tenantEnabled {
+		return nil, fmt.Errorf("unspported for apiserver with tenant disabled")
+	}
+	m := &model.Application{}
+	sqlTpl := `SELECT * FROM %s WHERE namespace = "%s" AND id IN (SELECT source_id FROM relation WHERE source_type = "%s" AND target_type = "%s" AND target_id = "%s")`
+	sql := fmt.Sprintf(sqlTpl, m.TableName(), util.OpList(opts...).Namespace(), m.ResourceType(), resourceType, resourceId)
+	mresult := make([]model.Application, 0)
+	_, err := s.db.Raw(sql).QueryRows(&mresult)
+	if err != nil {
+		return nil, fmt.Errorf("query from database error: %+v", err)
+	}
+	apps := make([]*Application, len(mresult))
+	for i := range mresult {
+		v1app, err := model.ApplicationToApi(mresult[i])
+		if err != nil {
+			return nil, fmt.Errorf("get application from model error: %+v", err)
+		}
+		apps[i] = ToModel(v1app, opts...)
+	}
+	return apps, nil
+}
