@@ -145,6 +145,15 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	//多分区Topic的订阅列表
+	ws.Route(ws.GET("/topics/{id}/subscriptions/partition").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("get subscriptions of partitioned topics").
+		To(r.getPartitionedSubscritionsOfTopic).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	//发送消息
 	ws.Route(ws.POST("/topics/messages").
 		Consumes(restful.MIME_JSON).
@@ -275,6 +284,11 @@ func (r *router) batchBindTopics(request *restful.Request, response *restful.Res
 
 func (r *router) getSubscriptionsOfTopic(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.GetSubscriptionsOfTopic(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) getPartitionedSubscritionsOfTopic(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.GetPartitionedSubscritionsOfTopic(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 

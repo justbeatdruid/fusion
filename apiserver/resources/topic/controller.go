@@ -1382,6 +1382,50 @@ func (c *controller) GetSubscriptionsOfTopic(req *restful.Request) (int, *Subscr
 		Detail:    fmt.Sprintf("query subscription success"),
 	}
 }
+
+func (c *controller) GetPartitionedSubscritionsOfTopic(req *restful.Request) (int, *SubscriptionsResponse) {
+	id := req.PathParameter("id")
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &SubscriptionsResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Data:      nil,
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+
+	t, err := c.service.GetTopic(id, util.WithNamespace(authUser.Namespace))
+	if err != nil {
+		return http.StatusInternalServerError, &SubscriptionsResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorQuerySubscriptionsInfo,
+			Message:   c.errMsg.Topic[tperror.ErrorQuerySubscriptionsInfo],
+			Data:      nil,
+			Detail:    fmt.Sprintf("query subscription error: %+v", err),
+		}
+	}
+
+	if *t.Partitioned {
+		return http.StatusOK, &SubscriptionsResponse{
+			Code:      success,
+			ErrorCode: tperror.Success,
+			Data:      c.service.GetSubscriptionsOfPartitionedTopic(t),
+			Detail:    fmt.Sprintf("query subscription success"),
+		}
+	} else {
+		return http.StatusInternalServerError, &SubscriptionsResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorQuerySubscriptionsInfo,
+			Message:   c.errMsg.Topic[tperror.ErrorQuerySubscriptionsInfo],
+			Data:      nil,
+			Detail:    fmt.Sprintf("query subscription error: %+v", err),
+		}
+	}
+
+}
+
 func (c *controller) SendMessages(req *restful.Request) (int, *SendMessagesResponse) {
 	sM := &service.SendMessages{}
 	if err := req.ReadEntity(sM); err != nil {

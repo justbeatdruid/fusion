@@ -60,6 +60,7 @@ type Stats struct {
 	DeduplicationStatus string                      `json:"deduplicationStatus"`
 	Subscriptions       map[string]SubscriptionStat `json:"subscriptions"`
 	Publishers          []Publisher                 `json:"publishers"`
+	Partitions          map[string]Stats            `json:"partitions"`
 }
 type Publisher struct {
 	MsgRateIn       float64 `json:"msgRateIn"`
@@ -270,6 +271,13 @@ func (r *Connector) FormatStats(stats *Stats) *nlptv1.Stats {
 		BytesInCounter:      stats.BytesInCounter,
 		StorageSize:         stats.StorageSize,
 		BacklogSize:         stats.BacklogSize,
+	}
+
+	if stats.Partitions != nil {
+		parsedStats.Partitions = make(map[string]nlptv1.Stats, 0)
+		for k, v := range stats.Partitions {
+			parsedStats.Partitions[k] = *r.FormatStats(&v)
+		}
 	}
 
 	parsedStats.MsgRateIn = fmt.Sprintf("%.3f", stats.MsgRateIn)

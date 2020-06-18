@@ -20,20 +20,21 @@ const (
 )
 
 type Topic struct {
-	ID                  string           `json:"id"`
-	Name                string           `json:"name"` //topic名称
-	Namespace           string           `json:"namespace"`
-	TopicGroup          string           `json:"topicGroup"`   //topic所属分组ID
-	PartitionNum        int              `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
-	Partitioned         *bool            `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
-	Persistent          *bool            `json:"persistent"`   //是否持久化，默认为true，非必填
-	URL                 string           `json:"url"`          //URL
-	CreatedAt           int64            `json:"createdAt"`    //创建Topic的时间戳
-	Status              v1.Status        `json:"status"`
-	Message             string           `json:"message"`
-	Permissions         []Permission     `json:"permissions"`
-	Users               user.Users       `json:"users"`
-	Stats               *Stats           `json:"stats"`               //Topic的统计数据
+	ID           string       `json:"id"`
+	Name         string       `json:"name"` //topic名称
+	Namespace    string       `json:"namespace"`
+	TopicGroup   string       `json:"topicGroup"`   //topic所属分组ID
+	PartitionNum int          `json:"partitionNum"` //topic的分区数量，partitioned为true时，需要指定。默认为1
+	Partitioned  *bool        `json:"partitioned"`  //是否多分区，默认为false。true：代表多分区Topic
+	Persistent   *bool        `json:"persistent"`   //是否持久化，默认为true，非必填
+	URL          string       `json:"url"`          //URL
+	CreatedAt    int64        `json:"createdAt"`    //创建Topic的时间戳
+	Status       v1.Status    `json:"status"`
+	Message      string       `json:"message"`
+	Permissions  []Permission `json:"permissions"`
+	Users        user.Users   `json:"users"`
+	Stats        *Stats       `json:"stats"` //Topic的统计数据
+
 	Description         string           `json:"description"`         //描述
 	ShowStatus          v1.ShowStatus    `json:"displayStatus"`       //页面显示状态
 	AuthorizationStatus string           `json:"authorizationStatus"` //用户授权状态
@@ -53,6 +54,7 @@ type Stats struct {
 	DeduplicationStatus string                      `json:"deduplicationStatus"`
 	Subscriptions       map[string]SubscriptionStat `json:"subscriptions"`
 	Publishers          []Publisher                 `json:"publishers"`
+	Partitions          map[string]Stats            `json:"partitions"`
 }
 type Publisher struct {
 	MsgRateIn       float64 `json:"msgRateIn"`
@@ -107,6 +109,12 @@ type ConsumerStat struct {
 	Address               string  `json:"address"`
 }
 
+type PartitionedSubscriptionsInfo struct {
+	PartitionNo       string            `json:"partitionNo"`
+	SubscriptionsInfo SubscriptionsInfo `json:"subscriptionsInfo"`
+}
+
+type PartitionedSubscriptionsInfos []PartitionedSubscriptionsInfo
 type SubscriptionsInfo struct {
 	AverageMsgSize float64        `json:"averageMsgSize"`
 	StorageSize    int64          `json:"storageSize"`
@@ -331,6 +339,13 @@ func ToStatsModel(obj v1.Stats) *Stats {
 		}
 	}
 
+	if obj.Partitions != nil {
+		pStats := make(map[string]Stats, 0)
+		for k, v := range obj.Partitions {
+			pStats[k] = *ToStatsModel(v)
+		}
+	}
+
 	return &Stats{
 		MsgRateIn:           ParseFloat(obj.MsgRateIn),
 		MsgRateOut:          ParseFloat(obj.MsgRateOut),
@@ -444,19 +459,39 @@ func (p *Permission) Validate() error {
 	return nil
 }
 
+func (a *Topic) ToPartitionedSubscriptionsModel() PartitionedSubscriptionsInfos {
+	if a.Stats.Partitions == nil {
+		return nil
+	}
+
+	pSubInfos := make([]PartitionedSubscriptionsInfo, 0)
+	for k, v := range a.Stats.Partitions {
+		partition := PartitionedSubscriptionsInfo{}
+		startIndex := strings.LastIndex(k, "-")
+		partition.PartitionNo = k[startIndex+1 : len(k)]
+		partition.SubscriptionsInfo = *toSubscription(&v)
+		pSubInfos = append(pSubInfos, partition)
+	}
+	return pSubInfos
+}
 func (a *Topic) ToSubscriptionsModel() *SubscriptionsInfo {
 	if a.Stats == nil {
 		return nil
 	}
+
+	return toSubscription(a.Stats)
+}
+
+func toSubscription(stats *Stats) *SubscriptionsInfo {
 	subs := &SubscriptionsInfo{
-		AverageMsgSize: a.Stats.AverageMsgSize,
-		StorageSize:    a.Stats.StorageSize,
-		BacklogSize:    a.Stats.BacklogSize,
+		AverageMsgSize: stats.AverageMsgSize,
+		StorageSize:    stats.StorageSize,
+		BacklogSize:    stats.BacklogSize,
 	}
 
-	if a.Stats.Subscriptions != nil {
+	if stats.Subscriptions != nil {
 		subs.Subscriptions = make([]Subscription, 0)
-		for k, v := range a.Stats.Subscriptions {
+		for k, v := range stats.Subscriptions {
 			sub := Subscription{}
 			sub.Name = k
 			sub.LastConsumedTimestamp = v.LastConsumedTimestamp
