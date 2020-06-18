@@ -712,7 +712,11 @@ func (c *controller) ExportApis(req *restful.Request) (int, *ExportRequest) {
 
 	file := excelize.NewFile()
 	index := file.NewSheet("apis")
-	s := []string{"ID", "Namespace", "Name", "Description"}
+	//  数组建立
+	s := []string{"id", "namespace", "name", "description","serviceunit.id","serviceunit.name","users.owner.id",
+		"users.owner.name", "apiType","authType","tags","apiBackendType","method", "protocol","returnType",
+		"apiDefineInfo.path","apiDefineInfo.matchMode","apiDefineInfo.method","apiDefineInfo.protocol",
+		"apiDefineInfo.cors","apiQueryInfo.webParams","publishStatus","updatedAt","releasedAt"}
 
 	for i := range s {
 		file.SetCellValue("apis", string(i+65)+"1", s[i])
@@ -730,6 +734,26 @@ func (c *controller) ExportApis(req *restful.Request) (int, *ExportRequest) {
 		file.SetCellValue("apis", string(66)+strconv.Itoa(row), api.Namespace)
 		file.SetCellValue("apis", string(67)+strconv.Itoa(row), api.Name)
 		file.SetCellValue("apis", string(68)+strconv.Itoa(row), api.Description)
+		file.SetCellValue("apis", string(70)+strconv.Itoa(row), api.Serviceunit.ID)
+		file.SetCellValue("apis", string(71)+strconv.Itoa(row), api.Serviceunit.Name)
+		file.SetCellValue("apis", string(72)+strconv.Itoa(row), api.Users.Owner.ID)
+		file.SetCellValue("apis", string(73)+strconv.Itoa(row), api.Users.Owner.Name)
+		file.SetCellValue("apis", string(74)+strconv.Itoa(row), api.ApiType)
+		file.SetCellValue("apis", string(75)+strconv.Itoa(row), api.AuthType)
+		file.SetCellValue("apis", string(76)+strconv.Itoa(row), api.Tags)
+		file.SetCellValue("apis", string(77)+strconv.Itoa(row), api.ApiBackendType)
+		file.SetCellValue("apis", string(78)+strconv.Itoa(row), api.Method)
+		file.SetCellValue("apis", string(79)+strconv.Itoa(row), api.Protocol)
+		file.SetCellValue("apis", string(80)+strconv.Itoa(row), api.ReturnType)
+		file.SetCellValue("apis", string(81)+strconv.Itoa(row), api.ApiDefineInfo.Path)
+		file.SetCellValue("apis", string(82)+strconv.Itoa(row), api.ApiDefineInfo.MatchMode)
+		file.SetCellValue("apis", string(83)+strconv.Itoa(row), api.ApiDefineInfo.Method)
+		file.SetCellValue("apis", string(84)+strconv.Itoa(row), api.ApiDefineInfo.Protocol)
+		file.SetCellValue("apis", string(85)+strconv.Itoa(row), api.ApiDefineInfo.Cors)
+		file.SetCellValue("apis", string(86)+strconv.Itoa(row), api.ApiQueryInfo.WebParams)
+		file.SetCellValue("apis", string(87)+strconv.Itoa(row), api.PublishStatus)
+		file.SetCellValue("apis", string(88)+strconv.Itoa(row), api.UpdatedAt)
+		file.SetCellValue("apis", string(89)+strconv.Itoa(row), api.ReleasedAt)
 	}
 
 	file.SetActiveSheet(index)
