@@ -51,6 +51,12 @@ func TestAPIs(t *testing.T) {
 }
 
 func TestOperator_CreateTopic(t *testing.T) {
+	var test = "hello"
+	fmt.Println(len(test))
+
+	test = "你好"
+	fmt.Println(len(test))
+
 	op = new(Connector)
 	op.Host = "10.160.32.24"
 	op.Port = 30002
@@ -59,8 +65,6 @@ func TestOperator_CreateTopic(t *testing.T) {
 	topic := new(nlptv1.Topic)
 	topic.Spec.TopicGroup = "default"
 	topic.Spec.Name = "nonPartitionTopic"
-	topic.Spec.Tenant = "public"
-	topic.Spec.Partition = 1
 
 	op.CreateTopic(topic)
 }
@@ -105,8 +109,8 @@ func TestConnector_GetStats(t *testing.T) {
 	topic := nlptv1.Topic{}
 	topic.Spec.TopicGroup = "default"
 	topic.Spec.Name = "nonPartitionTopic"
-	topic.Spec.Tenant = "public"
-	topic.Spec.Partition = 1
+	topic.Spec.PartitionNum = 1
+	topic.Spec.Partitioned = true
 
 	op.GetStats(topic)
 }

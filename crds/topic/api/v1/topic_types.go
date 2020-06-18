@@ -30,23 +30,24 @@ type TopicSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Topic. Edit Topic_types.go to remove/update
-	Name            string        `json:"name"`
-	TopicGroup      string        `json:"topicGroup"`      //topic分组ID
-	PartitionNum    int           `json:"partitionNum"`    //topic的分区数量，partitioned为true时，需要指定。默认为1
-	OldPartitionNum int           `json:"oldPartitionNum"` //保存修改前的分区数，用于更新失败回滚
-	Partitioned     bool          `json:"partitioned"`     //是否多分区，默认为false。true：代表多分区Topic
-	Persistent      bool          `json:"persistent"`      //是否持久化，默认为true，非必填
-	Url             string        `json:"url"`             //Topic url
-	Permissions     []Permission  `json:"permissions"`
-	Stats           Stats         `json:"stats"`        //Topic的统计数据
-	Applications    []Application `json:"applications"` //已绑定的应用ID列表
-	Description     string        `json:"description"`  //描述
-	DisplayStatus   ShowStatus    `json:"disStatus"`
+	Name             string             `json:"name"`
+	TopicGroup       string             `json:"topicGroup"`      //topic分组ID
+	PartitionNum     int                `json:"partitionNum"`    //topic的分区数量，partitioned为true时，需要指定。默认为1
+	OldPartitionNum  int                `json:"oldPartitionNum"` //保存修改前的分区数，用于更新失败回滚
+	Partitioned      bool               `json:"partitioned"`     //是否多分区，默认为false。true：代表多分区Topic
+	Persistent       bool               `json:"persistent"`      //是否持久化，默认为true，非必填
+	Url              string             `json:"url"`             //Topic url
+	Permissions      []Permission       `json:"permissions"`
+	Stats            Stats              `json:"stats"`            //Topic的统计数据
+	PartitionedStats []PartitionedStats `json:"partitionedStats"` //多分区Topic的统计数据
+	Applications     []Application      `json:"applications"`     //已绑定的应用ID列表
+	Description      string             `json:"description"`      //描述
+	DisplayStatus    ShowStatus         `json:"disStatus"`
 }
 
 type Application struct {
-	ID     string `json:"id"`
-	Status Status `json:"status"`
+	ID      string  `json:"id"`
+	Status  Status  `json:"status"`
 	Actions Actions `json:"actions"`
 }
 type Actions []string
@@ -170,7 +171,13 @@ type Stats struct {
 	BacklogSize         int64                       `json:"backlogSize"`
 	DeduplicationStatus string                      `json:"deduplicationStatus"`
 	Subscriptions       map[string]SubscriptionStat `json:"subscriptions"`
+	Partitions          map[string]Stats            `json:"partitions"`
 	Publishers          []Publisher                 `json:"publishers"`
+}
+
+type PartitionedStats struct {
+	PartitionNo int   `json:"partitionNo"` //分区编号
+	Stats       Stats `json:"stats"`
 }
 type Publisher struct {
 	MsgRateIn       string `json:"msgRateIn"`
@@ -251,7 +258,7 @@ func initShowStatusMap() {
 	ShowStatusMap[UpdatingAuthorization] = UpdatingAuthorizationOfShow
 	ShowStatusMap[UpdatingAuthorizationFailed] = UpdatingAuthorizationFailedOfShow
 	ShowStatusMap[UpdatingAuthorizationSuccess] = UpdatingAuthorizationSuccessOfShow
-    ShowStatusMap[DeletingAuthorization] = DeletingAuthorizationOfShow
-    ShowStatusMap[DeleteAuthorizationFailed] = DeleteAuthorizationFailedOfShow
-    ShowStatusMap[DeletedAuthorization] = DeletedAuthorizationOfShow
+	ShowStatusMap[DeletingAuthorization] = DeletingAuthorizationOfShow
+	ShowStatusMap[DeleteAuthorizationFailed] = DeleteAuthorizationFailedOfShow
+	ShowStatusMap[DeletedAuthorization] = DeletedAuthorizationOfShow
 }

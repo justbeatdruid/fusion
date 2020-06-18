@@ -718,6 +718,10 @@ func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.
 func (s *Service) GetSubscriptionsOfTopic(topic *Topic) *SubscriptionsInfo {
 	return topic.ToSubscriptionsModel()
 }
+
+func (s *Service) GetSubscriptionsOfPartitionedTopic(topic *Topic) PartitionedSubscriptionsInfos {
+	return topic.ToPartitionedSubscriptionsModel()
+}
 func (s *Service) SendMessages(topicUrl string, messagesBody string, key string) (pulsar.MessageID, error) {
 	client, err := s.GetPulsarClient()
 	if err != nil {
