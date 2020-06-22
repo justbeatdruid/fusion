@@ -183,7 +183,7 @@ func (s *Service) Validate(a *Application) error {
 			}
 		}
 		if k == "description" {
-			if len(v) > 1024 {
+			if len([]rune(v)) > 1024 {
 				return fmt.Errorf("%s Cannot exceed 1024 characters", k)
 			}
 		}
@@ -248,7 +248,7 @@ func (s *Service) assignment(target *v1.Application, reqData interface{}) error 
 	}
 	if _, ok := data["description"]; ok {
 		target.Spec.Description = source.Description
-		if len(target.Spec.Description) > 1024 {
+		if len([]rune(target.Spec.Description)) > 1024 {
 			return fmt.Errorf("%s Cannot exceed 1024 characters", target.Spec.Description)
 		}
 	}

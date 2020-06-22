@@ -145,7 +145,7 @@ func (s *Service) Validate(a *Trafficcontrol) error {
 			}
 		}
 		if k == "description" {
-			if len(v) > 255 {
+			if len([]rune(v)) > 255 {
 				return fmt.Errorf("%s cannot exceed 255 characters", k)
 			}
 		}
@@ -366,7 +366,7 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 		target.Status.APICount = source.APICount
 	}
 	if _, ok = data["description"]; ok {
-		if len(source.Description) > 255 {
+		if len([]rune(source.Description)) > 255 {
 			return fmt.Errorf("%s cannot exceed 255 characters", source.Description)
 		}
 		target.Spec.Description = source.Description
