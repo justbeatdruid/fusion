@@ -161,7 +161,7 @@ func (s *Service) Validate(a *Restriction) error {
 			}
 		}
 		if k == "description" {
-			if len(v) > 255 {
+			if len([]rune(v)) > 255 {
 				return fmt.Errorf("%s Cannot exceed 255 characters", k)
 			}
 		}
@@ -252,7 +252,7 @@ func (s *Service) assignment(target *v1.Restriction, reqData interface{}) error 
 	}
 	if _, ok = data["description"]; ok {
 		target.Spec.Description = source.Description
-		if len(target.Spec.Description) > 255 {
+		if len([]rune(target.Spec.Description)) > 255 {
 			return fmt.Errorf("%s Cannot exceed 255 characters", target.Spec.Description)
 		}
 	}
