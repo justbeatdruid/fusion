@@ -151,7 +151,7 @@ func (r *Connector) DeleteTopic(topic *nlptv1.Topic) (err error) {
 	}
 	if response.StatusCode == http.StatusNoContent {
 		return nil
-	} else if strings.Contains(body, "Topic not found") || strings.Contains(body, "Partitioned topic does not exist") {
+	} else if strings.Contains(body, "Topic not found") || strings.Contains(body, "Partitioned topic does not exist") || strings.Contains(body, "Policies not found for") {
 		return nil
 	} else {
 		errMsg := fmt.Sprintf("delete topic error, url: %s, Error code: %d, Error Message: %s", topicUrl, response.StatusCode, body)
