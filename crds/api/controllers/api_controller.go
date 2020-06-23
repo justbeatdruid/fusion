@@ -323,6 +323,12 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 }
 
 func (r *ApiReconciler) AddApiToServiceUnit(ctx context.Context, su *suv1.Serviceunit, api *nlptv1.Api) error {
+	for _, value := range su.Spec.APIs {
+		if value.ID == api.ObjectMeta.Name {
+			klog.Infof("no need update su apis: %+v", *su)
+			return nil
+		}
+	}
 	su.Spec.APIs = append(su.Spec.APIs, suv1.Api{api.ObjectMeta.Name, api.Name})
 	su.Status.APICount = su.Status.APICount + 1
 	if err := r.Update(ctx, su); err != nil {
