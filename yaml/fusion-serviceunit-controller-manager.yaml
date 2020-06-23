@@ -80,6 +80,8 @@ spec:
         volumeMounts:
         - mountPath: /data
           name: data
+        - name: function-api-volume
+          mountPath: /data/upload/serviceunit
       restartPolicy: Always
       securityContext:
         fsGroup: 0
@@ -87,6 +89,9 @@ spec:
       volumes:
       - emptyDir: {}
         name: data
+      - name: function-api-volume
+        persistentVolumeClaim:
+          claimName: fusion-function-api-claim
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding
