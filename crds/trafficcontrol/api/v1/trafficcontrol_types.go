@@ -73,7 +73,9 @@ const (
 	DelSpecApp Operation = "delSpecApp"
 	UpdateSpecApp Operation = "updateSpecApp"
 )
-
+type TrafficcontrolBind struct{
+	ID string `json:"id"`
+}
 const MAXNUM int = 5
 
 type Special struct {

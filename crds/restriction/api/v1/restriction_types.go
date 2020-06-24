@@ -71,6 +71,10 @@ type Api struct {
 	Detail        string    `json:"detail"`
 	BindedAt      util.Time `json:"bindedAt"`
 }
+type RestrictionBind struct{
+	ID string `json:"id"`
+}
+
 type Result string
 
 const (

@@ -106,6 +106,15 @@ func (s *Service) DeleteRestriction(id string, opts ...util.OpOption) error {
 	}
 	return nil
 }
+func (s *Service)BatchDeleteRestriction(restrictions []v1.RestrictionBind,opts...util.OpOption) error{
+	for _, value := range restrictions {
+		err := s.Delete(value.ID, opts...)
+		if err != nil {
+			return fmt.Errorf("cannot batch delete restriction: %+v", err)
+		}
+	}
+	return nil
+}
 
 // + update
 func (s *Service) UpdateRestriction(id string, reqData interface{}, opts ...util.OpOption) (*Restriction, error) {

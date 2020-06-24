@@ -43,6 +43,7 @@ type RequestWrapped struct {
 type CreateResponse = Wrapped
 type CreateRequest = RequestWrapped
 type DeleteResponse = Wrapped
+type BatchDeleteResponse = Wrapped
 type GetResponse = Wrapped
 type ListResponse = struct {
 	Code      int         `json:"code"`
@@ -63,6 +64,7 @@ type BindRequest struct {
 	Data    struct {
 		Operation string   `json:"operation"`
 		Apis      []v1.Api `json:"apis"`
+		Trafficcontrols []v1.TrafficcontrolBind `json:"trafficcontrols"`
 	} `json:"data,omitempty"`
 }
 type BindResponse = Wrapped
@@ -175,7 +177,47 @@ func (c *controller) DeleteTrafficcontrol(req *restful.Request) (int, *DeleteRes
 		}
 	}
 }
-
+func (c *controller)BatchDeleteTrafficcontrol(req *restful.Request) (int,*BatchDeleteResponse){
+	body :=&BindRequest{}
+	if err :=req.ReadEntity(body);err!=nil{
+		return http.StatusInternalServerError,&BatchDeleteResponse{
+			Code:      1,
+			ErrorCode: "012000013",
+			Message:   c.errMsg.Trafficcontrol["007000013"],
+			Detail:   fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data.Operation != "delete" {
+		return http.StatusInternalServerError, &BatchDeleteResponse{
+			Code:      1,
+			ErrorCode: "012000020",
+			Message:   c.errMsg.Trafficcontrol["012000020"],
+			Detail:    "operation params error",
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &BatchDeleteResponse{
+			Code:      1,
+			ErrorCode: "012000003",
+			Message:   c.errMsg.Trafficcontrol["012000003"],
+			Detail:    "auth model error",
+		}
+	}
+	if err:=c.service.BatchDeleteTrafficcontrol(body.Data.Trafficcontrols,util.WithUser(authuser.Name),util.WithNamespace(authuser.Namespace));err!=nil{
+		return http.StatusInternalServerError, &BatchDeleteResponse{
+			Code:      2,
+			ErrorCode: "012000006",
+			Message:   c.errMsg.Restriction["012000006"],
+			Detail:    fmt.Errorf("delete trafficcontrol error: %+v", err).Error(),
+		}
+	}else {
+		return http.StatusOK, &BatchDeleteResponse{
+			Code:      0,
+			ErrorCode: "0",
+		}
+	}
+}
 func (c *controller) ListTrafficcontrol(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
