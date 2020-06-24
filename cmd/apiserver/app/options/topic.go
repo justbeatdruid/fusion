@@ -5,6 +5,7 @@ import (
 	"github.com/spf13/pflag"
 	"io/ioutil"
 	"k8s.io/klog"
+	"strings"
 )
 
 type TopicOptions struct {
@@ -56,7 +57,7 @@ func (o *TopicOptions) ParsePulsarSecret() error {
 	if err != nil {
 		return fmt.Errorf("cannot read token secret: %+v", err)
 	}
-	o.TokenSecret = string(b)
+	o.TokenSecret = strings.TrimSpace(string(b))
 
 	if len(o.TokenSecret) == 0 {
 		return fmt.Errorf("token secret path not set")
@@ -70,7 +71,7 @@ func (o *TopicOptions) ParsePulsarSecret() error {
 	if err != nil {
 		return fmt.Errorf("cannot read superuser token: %+v", err)
 	}
-	o.SuperUserToken = string(b2)
+	o.SuperUserToken = strings.TrimSpace(string(b2))
 	klog.Infof("ParsePulsarSecret: token: %+v, secret key: %+v", o.SuperUserToken, o.TokenSecret)
 	return nil
 

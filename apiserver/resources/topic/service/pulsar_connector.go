@@ -5,11 +5,12 @@ import (
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	v1 "github.com/chinamobile/nlpt/crds/topic/api/v1"
 	"github.com/parnurzeal/gorequest"
+	"k8s.io/klog"
 	"net/http"
 )
 
 const (
-	skipAllUrl    = "/admin/v2/%s/%s/%s/%s/subscriptions/%s/skip_all"
+	skipAllUrl    = "/admin/v2/%s/%s/%s/%s/subscription/%s/skip_all"
 	skillNMessage = "/admin/v2/%s/%s/%s/%s/subscription/%s/skip/%d"
 )
 
@@ -39,6 +40,8 @@ func (r *Connector) addTokenToHeader(request *gorequest.SuperAgent) *gorequest.S
 	if r.AuthEnable {
 		request.Header.Set("Authorization", "Bearer "+r.SuperUserToken)
 	}
+
+	klog.Errorf("%+v", request)
 	return request
 }
 
@@ -48,6 +51,7 @@ func (r *Connector) SkipAllMessages(tp *v1.Topic, subscriptionName string) error
 	if !tp.Spec.Persistent {
 		domain = "non-persistent"
 	}
+
 
 	url := fmt.Sprintf(skipAllUrl, domain, tp.Namespace, tp.Spec.TopicGroup, tp.Spec.Name, subscriptionName)
 	url = fmt.Sprintf("%s://%s:%d%s", "http", r.Host, r.Port, url)
