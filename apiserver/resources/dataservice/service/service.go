@@ -3,6 +3,8 @@ package service
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
 	"strconv"
 	"time"
 
@@ -43,11 +45,11 @@ func NewService(kubeClient *clientset.Clientset, client dynamic.Interface, elect
 
 //CreateDataservice ...
 func (s *Service) CreateDataservice(dataService *Dataservice, userId, namespace string) (*Dataservice, error) {
-	_, err := model.GetTaskByName(dataService.Name, userId, namespace)
+	_, err := model.GetTaskByName(dataService.Name, namespace)
 	if err == nil {
 		return dataService, fmt.Errorf("name duplicated")
 	}
-	err = dataService.Validate(s, util.WithUser(userId), util.WithNamespace(namespace))
+	err = dataService.Validate(s, util.WithNamespace(namespace))
 	if err != nil {
 		return dataService, err
 	}
@@ -70,12 +72,12 @@ func (s *Service) CreateDataservice(dataService *Dataservice, userId, namespace 
 }
 
 //OperationDataservice ...
-func (s *Service) OperationDataservice(operationReq *OperationReq, userId, namespace string) error {
+func (s *Service) OperationDataservice(operationReq *OperationReq, namespace string) error {
 
 	if err := operationReq.Validate(); err != nil {
 		return err
 	}
-	task, err := model.OperationTaskStatus(operationReq.Operation, userId, namespace, operationReq.DagID)
+	task, err := model.OperationTaskStatus(operationReq.Operation, namespace, operationReq.DagID)
 
 	if operationReq.Operation == "delete" || operationReq.Operation == "stop" {
 		go func(task []model.Task) {
@@ -91,15 +93,56 @@ func (s *Service) OperationDataservice(operationReq *OperationReq, userId, names
 	return err
 }
 
+func (s *Service) getUserIdByName(groupId, createUserName string) []string {
+	userIDs := []string{}
+	url := "http://tenant-manager:8091/tenant-manager/sys/support/groupUsers?groupId=" + groupId + "&pauserName=" + createUserName
+	klog.Errorf("url:%v", url)
+
+	reqest, err := http.NewRequest("GET", url, nil)
+
+	reqest.Header.Add("content-type", "application/json")
+
+	client := &http.Client{}
+	response, err := client.Do(reqest)
+	if err != nil {
+		klog.Errorf("response:%v, err: %v\n", response, err)
+		return userIDs
+	}
+	defer response.Body.Close()
+
+	respbody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		klog.Errorf("respbody:%v, err: %v\n", respbody, err)
+		return userIDs
+	}
+	respReturn := UserResp{}
+	err = json.Unmarshal(respbody, &respReturn)
+	if err != nil || respReturn.Code != 0 {
+		klog.Errorf("respbody:%v, err: %v\n", string(respbody), err)
+		return userIDs
+	}
+	klog.Errorf("respReturn:%v, err: %v\n", respReturn, err)
+	for i := range respReturn.Users {
+		userIDs = append(userIDs, respReturn.Users[i].UserID)
+	}
+	return userIDs
+
+}
+
 //ListDataservice ...
-func (s *Service) ListDataservice(offet, limit int, name, userId, namespace string) (interface{}, error) {
-	dss, num, total, err := model.GetTasks((offet-1)*limit, limit, name, userId, namespace)
+func (s *Service) ListDataservice(offet, limit int, name, namespace, taskType string, status int, createUser string, createTime []string) (interface{}, error) {
+	userIDs := []string{}
+	if createUser != "" {
+		userIDs = s.getUserIdByName(namespace, createUser)
+	}
+
+	dss, num, total, err := model.GetTasks((offet-1)*limit, limit, name, namespace, taskType, status, userIDs, createTime)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
 	body := map[string]interface{}{}
 
-	body["items"] = ToListAPI(dss, s, util.WithUser(userId), util.WithNamespace(namespace))
+	body["items"] = ToListAPI(dss, s, util.WithNamespace(namespace))
 	body["count"] = num
 	body["total"] = total
 	body["page"] = offet
@@ -128,18 +171,18 @@ func (s *Service) GetDataSource(id string, opts ...util.OpOption) (*dsv1.Datasou
 }
 
 //GetDataservice ...
-func (s *Service) GetDataservice(id, userId, namespace string) (*Dataservice, error) {
-	ds, err := model.GetTaskByDagId(id, userId, namespace)
+func (s *Service) GetDataservice(id, namespace string) (*Dataservice, error) {
+	ds, err := model.GetTaskByDagId(id, namespace)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)
 	}
 
-	return ToAPI(ds, s, util.WithUser(userId), util.WithNamespace(namespace)), nil
+	return ToAPI(ds, s, util.WithNamespace(namespace)), nil
 }
 
 //DeleteDataservice ...
-func (s *Service) DeleteDataservice(id, userId, namespace string) error {
-	task, err := model.DeleteTaskByDagId(id, userId, namespace)
+func (s *Service) DeleteDataservice(id, namespace string) error {
+	task, err := model.DeleteTaskByDagId(id, namespace)
 	if err == nil {
 		errCronjob := k8s.DeleteCronJob(s.kubeClient, task.Job, crdNamespace)
 		model.DeleteTbMetadataByDagId(id)
@@ -149,8 +192,8 @@ func (s *Service) DeleteDataservice(id, userId, namespace string) error {
 }
 
 //UpdateDateService ...
-func (s *Service) UpdateDateService(reqData map[string]interface{}, dagId, userId, namespace string) (*Dataservice, error) {
-	taskdb, err := model.GetTaskByDagId(dagId, userId, namespace)
+func (s *Service) UpdateDateService(reqData map[string]interface{}, dagId, namespace string) (*Dataservice, error) {
+	taskdb, err := model.GetTaskByDagId(dagId, namespace)
 	if err != nil {
 		klog.Errorf("get error:%v", err)
 		return nil, fmt.Errorf("not found")
@@ -164,13 +207,13 @@ func (s *Service) UpdateDateService(reqData map[string]interface{}, dagId, userI
 	}
 
 	if _, ok := reqData["Name"]; ok {
-		task, err := model.GetTaskByName(taskdb.Name, userId, namespace)
+		task, err := model.GetTaskByName(taskdb.Name, namespace)
 		if err == nil && task.DagId != dagId {
 			return nil, fmt.Errorf("name duplicated")
 		}
 	}
-	api := ToAPI(taskdb, s, util.WithUser(userId), util.WithNamespace(namespace))
-	err = api.Validate(s, util.WithUser(userId), util.WithNamespace(namespace))
+	api := ToAPI(taskdb, s, util.WithNamespace(namespace))
+	err = api.Validate(s, util.WithNamespace(namespace))
 
 	if err != nil {
 		return nil, err
@@ -208,7 +251,7 @@ func (s *Service) GetFlinkxBody(ds model.Task) (string, error) {
 		klog.Errorf("unmarshal failed,err:%v, config:%v", err, ds.DataSourceConfig)
 		return "", err
 	}
-	sourceDB, _, err := s.GetDataSource(dataSource.RelationalDb.SourceID, util.WithUser(ds.UserId), util.WithNamespace(ds.Namespace))
+	sourceDB, _, err := s.GetDataSource(dataSource.RelationalDb.SourceID, util.WithNamespace(ds.Namespace))
 	if err != nil {
 		klog.Errorf("get source failed,err:%v", err)
 		return "", err
@@ -220,7 +263,7 @@ func (s *Service) GetFlinkxBody(ds model.Task) (string, error) {
 		klog.Errorf("unmarshal failed,err:%v, config:%v", err, ds.DataTargetConfig)
 		return "", err
 	}
-	targetDB, _, err := s.GetDataSource(dataTarget.RelationalDbTarget.TargetID, util.WithUser(ds.UserId), util.WithNamespace(ds.Namespace))
+	targetDB, _, err := s.GetDataSource(dataTarget.RelationalDbTarget.TargetID, util.WithNamespace(ds.Namespace))
 	if err != nil {
 		klog.Errorf("get source failed,err:%v", err)
 		return "", err
@@ -339,6 +382,11 @@ func (s *Service) dealIntegrationTask() {
 		task, err := model.GetTaskByStartTime()
 		if err != nil {
 			klog.Errorf("get task falied  Job failed,err:%v", err)
+			continue
+		}
+		if len(task) != 0 {
+			klog.Infof("task: %v", task)
+		} else {
 			continue
 		}
 		for i := range task {

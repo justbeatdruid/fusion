@@ -434,3 +434,14 @@ type WriteParameter struct {
 	Session    []string     `json:"session"`
 	Connection []Connection `json:"connection"`
 }
+
+type UserResp struct {
+	Message string `json:"msg"`
+	Code    int    `json:"code"`
+	Users   []User `json:"users"`
+}
+
+type User struct {
+	UserName string `json:"userName"`
+	UserID   string `json:"userId"`
+}

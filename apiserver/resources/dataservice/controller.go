@@ -167,7 +167,7 @@ func (c *controller) OperationDataservice(req *restful.Request) (int, *CreateRes
 		}
 	}
 
-	if err = c.service.OperationDataservice(body.Data, authuser.Name, authuser.Namespace); err == nil {
+	if err = c.service.OperationDataservice(body.Data, authuser.Namespace); err == nil {
 		return http.StatusOK, &CreateResponse{
 			Code:      0,
 			ErrorCode: "0",
@@ -195,7 +195,7 @@ func (c *controller) GetDataservice(req *restful.Request) (int, *GetResponse) {
 		}
 	}
 
-	ds, err := c.service.GetDataservice(req.PathParameter("id"), authuser.Name, authuser.Namespace)
+	ds, err := c.service.GetDataservice(req.PathParameter("id"), authuser.Namespace)
 	if err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      1,
@@ -224,7 +224,7 @@ func (c *controller) DeleteDataservice(req *restful.Request) (int, *DeleteRespon
 		}
 	}
 
-	err = c.service.DeleteDataservice(req.PathParameter("id"), authuser.Name, authuser.Namespace)
+	err = c.service.DeleteDataservice(req.PathParameter("id"), authuser.Namespace)
 	if err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      1,
@@ -241,7 +241,7 @@ func (c *controller) DeleteDataservice(req *restful.Request) (int, *DeleteRespon
 
 }
 
-//DeleteDataservice ...
+//UpdateDateService ...
 func (c *controller) UpdateDateService(req *restful.Request) (int, *UpdateResponse) {
 	reqBody := make(map[string]interface{})
 	if err := req.ReadEntity(&reqBody); err != nil {
@@ -285,7 +285,7 @@ func (c *controller) UpdateDateService(req *restful.Request) (int, *UpdateRespon
 			Detail:    "auth model error",
 		}
 	}
-	ds, err := c.service.UpdateDateService(data, req.PathParameter("id"), authuser.Name, authuser.Namespace)
+	ds, err := c.service.UpdateDateService(data, req.PathParameter("id"), authuser.Namespace)
 	if err == nil {
 		return http.StatusOK, &UpdateResponse{
 			Code:      0,
@@ -325,6 +325,11 @@ func (c *controller) ListDataservice(req *restful.Request) (int, *ListResponse) 
 	pageStr := req.QueryParameter("page")
 	limitStr := req.QueryParameter("limit")
 	name := req.QueryParameter("name")
+	taskType := req.QueryParameter("type")
+	taskStatus := req.QueryParameter("status")
+	createUser := req.QueryParameter("user")
+	createTime := req.QueryParameters("createtime")
+
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page <= 0 {
 		klog.Errorf("offset para error, offset: %+v, err :%v", pageStr, err)
@@ -336,6 +341,17 @@ func (c *controller) ListDataservice(req *restful.Request) (int, *ListResponse) 
 		limit = service.Maxlimit
 	}
 
+	if taskType != "realtime" && taskType != "periodic" {
+		klog.Errorf("error taskType: %+v", taskType)
+		taskType = "all"
+	}
+
+	status, err := strconv.Atoi(taskStatus)
+	if err != nil || (status != 0 && status != 1) {
+		klog.Errorf("taskStatus para error, taskStatus: %+v, err :%v", taskStatus, err)
+		status = 2
+	}
+
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
@@ -345,7 +361,8 @@ func (c *controller) ListDataservice(req *restful.Request) (int, *ListResponse) 
 			Detail:    "auth model error",
 		}
 	}
-	ds, err := c.service.ListDataservice(page, limit, name, authuser.Name, authuser.Namespace)
+	ds, err := c.service.ListDataservice(page, limit, name, authuser.Namespace, taskType, status, createUser, createTime)
+	//ds, err := c.service.ListDataservice(page, limit, name, authuser.Name, authuser.Namespace)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      1,
