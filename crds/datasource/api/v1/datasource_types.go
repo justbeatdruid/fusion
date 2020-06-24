@@ -40,6 +40,8 @@ type DatasourceSpec struct {
 	DataWarehouse *dwv1.Database `json:"datawarehouse,omitempty"`
 	MessageQueue  *MessageQueue  `json:"mq,omitempty"`
 
+	Mongo *Mongo `json:"mongo,omitempty"`
+
 	Location string `json:"localtion"`
 	AuthType string `json:"authType"`
 }
@@ -54,6 +56,7 @@ const (
 	RDBType           Type = "rdb"
 	DataWarehouseType Type = "datawarehouse"
 	TopicType         Type = "pulsar"
+	MongoType         Type = "mongo"
 )
 
 type RDB struct {
@@ -151,6 +154,14 @@ type MessageConnection struct {
 	Namespace      string `json:"namespace"`
 	AuthEnabled    bool   `json:"authEnabled"`
 	NamespaceToken string `json:"token"`
+}
+
+type Mongo struct {
+	Host     string `json:"host"`
+	Port     int    `json:"port"`
+	Database string `json:"database"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
 // +kubebuilder:object:root=true

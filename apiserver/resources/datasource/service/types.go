@@ -29,6 +29,8 @@ type Datasource struct {
 
 	MessageQueue *v1.MessageQueue `json:"mq,omitempty"`
 
+	Mongo *v1.Mongo `json:"mongo,omitempty"`
+
 	Status    string    `json:"status"`
 	UpdatedAt util.Time `json:"updatedAt"`
 	CreatedAt util.Time `json:"createdAt"`
@@ -80,6 +82,8 @@ func ToAPI(ds *Datasource, specOnly bool) *v1.Datasource {
 		crd.ObjectMeta.Annotations = make(map[string]string)
 		crd.ObjectMeta.Annotations["name"] = ds.DataWarehouse.Name
 		crd.ObjectMeta.Annotations["subject"] = ds.DataWarehouse.SubjectName
+	} else if ds.Type == v1.MongoType {
+		crd.Spec.Mongo = ds.Mongo
 	}
 	status := ds.Status
 	if len(status) == 0 {
@@ -140,6 +144,8 @@ func ToModel(obj *v1.Datasource) *Datasource {
 		}
 	case v1.TopicType:
 		ds.MessageQueue = obj.Spec.MessageQueue
+	case v1.MongoType:
+		ds.Mongo = obj.Spec.Mongo
 	}
 	ds.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
 	return ds
@@ -195,6 +201,10 @@ func (s *Service) Validate(a *Datasource) error {
 	case v1.TopicType:
 		if err := s.CheckTopic(a.Namespace, a.MessageQueue); err != nil {
 			return fmt.Errorf("topic validate error: %+v", err)
+		}
+	case v1.MongoType:
+		if err := s.CheckMongo(a.Mongo); err != nil {
+			return fmt.Errorf("mongo validate error: %+v", err)
 		}
 	default:
 		return fmt.Errorf("unknown datasource type: %s", a.Type)

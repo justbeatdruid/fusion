@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	dwtype "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
+	mongodriver "github.com/chinamobile/nlpt/apiserver/resources/datasource/mongo/driver"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb/driver"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
@@ -511,6 +512,8 @@ func (s *Service) Ping(ds *Datasource) error {
 		return err
 	case v1.TopicType:
 		return s.CheckTopic(ds.Namespace, ds.MessageQueue)
+	case v1.MongoType:
+		return s.CheckMongo(ds.Mongo)
 	default:
 		return fmt.Errorf("not supported for %s", ds.Type)
 	}
@@ -639,4 +642,20 @@ func (s *Service) CheckTopic(crdNamespace string, mq *v1.MessageQueue) error {
 		}
 		return nil
 	}
+}
+
+func (s *Service) CheckMongo(mongo *v1.Mongo) error {
+	if mongo == nil {
+		return fmt.Errorf("mongo is null")
+	}
+	if len(mongo.Host) == 0 {
+		return fmt.Errorf("host is null")
+	}
+	if mongo.Port < 1 || mongo.Port > 65536 {
+		return fmt.Errorf("invalid port")
+	}
+	if len(mongo.Database) == 0 {
+		return fmt.Errorf("database is null")
+	}
+	return mongodriver.Ping(mongo)
 }

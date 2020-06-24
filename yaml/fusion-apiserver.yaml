@@ -123,6 +123,8 @@ spec:
         - name: pulsar-secret-volume
           mountPath: /data/pulsar-secret
           readOnly: true
+        - name: function-api-volume
+          mountPath: /data/upload/serviceunit
       restartPolicy: Always
       securityContext:
         fsGroup: 0
@@ -139,7 +141,9 @@ spec:
       - name: pulsar-secret-volume
         secret:
           secretName: pulsar-secret
-
+      - name: function-api-volume
+        persistentVolumeClaim:
+          claimName: fusion-function-api-claim
 ---
 apiVersion: rbac.authorization.k8s.io/v1beta1
 kind: ClusterRoleBinding

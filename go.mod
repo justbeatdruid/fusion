@@ -14,7 +14,6 @@ require (
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/google/btree v1.0.0
 	github.com/json-iterator/go v1.1.8
-	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/lib/pq v1.3.0
 	github.com/onsi/ginkgo v1.10.1
 	github.com/onsi/gomega v1.7.0
@@ -26,6 +25,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/tealeg/xlsx v1.0.5
 	go.etcd.io/etcd v0.0.0-20191023171146-3cf2f69b5738
+	go.mongodb.org/mongo-driver v1.3.4
 	golang.org/x/crypto v0.0.0-20200109152110-61a87790db17 // indirect
 	golang.org/x/net v0.0.0-20191209160850-c0dbc17a3553 // indirect
 	golang.org/x/sys v0.0.0-20200107162124-548cf772de50 // indirect
