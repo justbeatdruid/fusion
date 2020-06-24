@@ -7,6 +7,7 @@ import (
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/parnurzeal/gorequest"
 	"net/http"
+	"strings"
 
 	"github.com/chinamobile/nlpt/apiserver/kubernetes"
 	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
@@ -46,6 +47,7 @@ type Service struct {
 	errMsg            config.ErrorConfig
 	ip                string
 	port              int
+	httpPort          int
 	authEnable        bool
 	adminToken        string
 }
@@ -85,6 +87,7 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topCo
 		errMsg:            errMsg,
 		ip:                topConfig.Host,
 		port:              topConfig.Port,
+		httpPort:          topConfig.HttpPort,
 		authEnable:        topConfig.AuthEnable,
 		adminToken:        topConfig.AdminToken,
 		kubeClient:        kubeClient,
@@ -736,16 +739,21 @@ func (s *Service) SendMessages(topicUrl string, messagesBody string, key string)
 
 func (s *Service) ResetPositionById(RP *ResetPosition, tp *Topic) error {
 	body := make(map[string]interface{})
-	body["ledgerId"] = RP.LedgerId
-	body["entryId"] = RP.EntryId
-	body["partitionIndex"] = RP.PartitionIndex
+
+	messageIds := strings.Split(RP.MessageId, ":")
+	if len(messageIds) < 4 {
+		return fmt.Errorf("invalid messageId parameter")
+	}
+	body["ledgerId"] = messageIds[0]
+	body["entryId"] = messageIds[1]
+	body["partitionIndex"] = messageIds[2]
 	topicGroup := tp.TopicGroup
 	tenant := tp.Namespace
 	topic := tp.Name
 	subName := RP.SubName
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
 	RPUrl := fmt.Sprintf(ResetPositionByIdUrl, tenant, topicGroup, topic, subName)
-	url := fmt.Sprintf("%s://%s:%d%s", "http", s.ip, s.port, RPUrl)
+	url := fmt.Sprintf("%s://%s:%d%s", "http", s.ip, s.httpPort, RPUrl)
 	request.Data = body
 	if s.authEnable {
 		request.Header.Set("Authorization", "Bearer "+s.adminToken)
@@ -770,7 +778,7 @@ func (s *Service) ResetPositionByTime(RP *ResetPosition, tp *Topic) error {
 	subName := RP.SubName
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
 	RPUrl := fmt.Sprintf(ResetPositionByTimeUrl, tenant, topicGroup, topic, subName, timestamp)
-	url := fmt.Sprintf("%s://%s:%d%s", "http", s.ip, s.port, RPUrl)
+	url := fmt.Sprintf("%s://%s:%d%s", "http", s.ip, s.httpPort, RPUrl)
 	if s.authEnable {
 		request.Header.Set("Authorization", "Bearer "+s.adminToken)
 	}

@@ -188,9 +188,7 @@ type SendMessages struct {
 type ResetPosition struct {
 	ID             string `json:"id"`      //topicId
 	SubName        string `json:"subName"` //订阅者的名称
-	LedgerId       int64  `json:"ledgerId"`
-	EntryId        int64  `json:"entryId"`
-	PartitionIndex int64  `json:"partitionIndex"`
+	MessageId       string  `json:"messageId"`
 	Timestamp      int64  `json:"timestamp"` //以ms为单位
 }
 type GrantPermissions struct {
@@ -339,8 +337,8 @@ func ToStatsModel(obj v1.Stats) *Stats {
 		}
 	}
 
+	pStats := make(map[string]Stats, 0)
 	if obj.Partitions != nil {
-		pStats := make(map[string]Stats, 0)
 		for k, v := range obj.Partitions {
 			pStats[k] = *ToStatsModel(v)
 		}
@@ -357,6 +355,7 @@ func ToStatsModel(obj v1.Stats) *Stats {
 		BacklogSize:         obj.BacklogSize,
 		DeduplicationStatus: obj.DeduplicationStatus,
 		Subscriptions:       subscriptions,
+		Partitions:          pStats,
 	}
 }
 func ToListModel(items *v1.TopicList) []*Topic {

@@ -47,20 +47,29 @@ func (r *TopicSynchronizer) SyncTopicStats() error {
 		if tp.Status.Status == nlptv1.Creating {
 			continue
 		}
-		stats, err := r.Connector.GetStats(tp)
-		if err != nil {
-			continue
-		}
-		tp.Spec.Stats = *stats
-		if err := r.Update(ctx, &tp); err != nil {
-			klog.Errorf("update topic stats error")
-		}
+
+		go r.syncStats(tp)
 
 	}
 
 	return nil
 }
 
+
+
+func (r *TopicSynchronizer) syncStats(tp nlptv1.Topic) {
+	ctx := context.Background()
+	stats, err := r.Connector.GetStats(tp)
+	if err != nil {
+		return
+	}
+	tp.Spec.Stats = *stats
+	if err := r.Update(ctx, &tp); err != nil {
+		klog.Errorf("update topic stats error")
+	}else {
+		klog.Info("finished sync stats of topic:",  tp.Spec.Name)
+	}
+}
 func (r *TopicSynchronizer) Start(stop <-chan struct{}) error {
 	// wait for cache up
 	time.Sleep(time.Second * 10)
