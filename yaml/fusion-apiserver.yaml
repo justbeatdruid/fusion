@@ -77,6 +77,7 @@ spec:
         - --audit-port=6868
         - --pulsar-host=pulsar-proxy.pulsar
         - --pulsar-port=6650
+        - --pulsar-http-port=8080
         - --pulsar-auth-enable=true
         - --presto-host=pulsar-proxy.pulsar
         - --presto-port=8081

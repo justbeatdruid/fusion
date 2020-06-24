@@ -24,7 +24,7 @@ type Connector struct {
 func NewConnector(tpConfig *config.TopicConfig) *Connector {
 	return &Connector{
 		Host:           tpConfig.Host,
-		Port:           tpConfig.Port,
+		Port:           tpConfig.HttpPort,
 		AuthEnable:     tpConfig.AuthEnable,
 		SuperUserToken: tpConfig.AdminToken,
 	}
