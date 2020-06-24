@@ -41,6 +41,7 @@ type ServiceunitSpec struct {
 	KongService   KongServiceInfo `json:"kongServiceInfo"`
 	Result        Result          `json:"result"`
 	DisplayStatus DisStatus       `json:"disStatus"`
+	FissionRefInfo FissionRefInfo `json:"fissionRefInfo"`
 }
 
 type KongServiceInfo struct {
@@ -85,6 +86,7 @@ type ServiceType string
 const (
 	DataService ServiceType = "data"
 	WebService  ServiceType = "web"
+	FunctionService ServiceType = "function"
 )
 
 // ServiceunitStatus defines the observed state of Serviceunit
@@ -137,6 +139,16 @@ const (
 	Updating Status = "updating"
 	Updated  Status = "updated"
 )
+
+type FissionRefInfo struct {
+	EnvName string `json:"envName"`   //运行环境名称
+	Language string `json:"language"` //函数实现语言
+	PkgName string `json:"pkgName"`   //函数包名称
+	BuildCmd  string `json:"buildCmd"`  //编译脚本
+	FnName  string `json:"fnName"`     //函数名称
+	FnFile  string `json:"fnFile"`     //函数源码文件
+	Entrypoint string  `json:"entryPoint"`  //函数入口
+}
 
 // +kubebuilder:object:root=true
 
