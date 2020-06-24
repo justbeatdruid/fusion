@@ -674,7 +674,7 @@ func (c *controller) ImportServiceunits(req *restful.Request, response *restful.
 			return http.StatusInternalServerError, &ImportResponse{
 				Code:      1,
 				ErrorCode: "008000022",
-				Message:   "import file  error",
+				Message:    c.errMsg.Serviceunit["008000022"],
 				Detail:    fmt.Sprintf("import file  error: %+v", err),
 			}
 		}
@@ -686,7 +686,7 @@ func (c *controller) ImportServiceunits(req *restful.Request, response *restful.
 		return http.StatusInternalServerError, &ImportResponse{
 			Code:      1,
 			ErrorCode: "008000023",
-			Message:   "invalid file format",
+			Message:   c.errMsg.Serviceunit["008000023"],
 			Detail:    fmt.Sprintf("invalid file format: %+v", err),
 		}
 	}
@@ -698,7 +698,7 @@ func (c *controller) ImportServiceunits(req *restful.Request, response *restful.
 		return http.StatusInternalServerError, &ImportResponse{
 			Code:      1,
 			ErrorCode: "008000024",
-			Message:   "import failed, copy file error",
+			Message:   c.errMsg.Serviceunit["008000024"],
 			Detail:    fmt.Sprintf("import failed, copy file error: %+v", err),
 		}
 	}
