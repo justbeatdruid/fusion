@@ -2,7 +2,10 @@ package controllers
 
 import (
 	"fmt"
+	"github.com/pkg/errors"
+	"io/ioutil"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/parnurzeal/gorequest"
@@ -99,6 +102,117 @@ type requestLogger struct {
 	prefix string
 }
 
+
+type EnvReqInfo struct {
+	Metadata struct {
+		Name string `json:"name"`
+		Namespace string `json:"namespace"`
+	} `json:"metadata"`
+	Spec struct {
+		Runtime struct {
+			Image string `json:"image"`
+		} `json:"runtime"`
+		Builder struct {
+			Image string `json:"image"`
+			Command string `json:"command"`
+		} `json:"builder"`
+		Poolsize int `json:"poolsize"`   //3
+		Keeparchive bool `json:"keeparchive"` //false
+	} `json:"spec"`
+}
+type PkgRefInfoReq struct {
+	Metadata struct {
+		Name string `json:"name"`
+		Namespace string `json:"namespace"`
+	} `json:"metadata"`
+	Spec struct {
+		Environment struct {
+			Namespace string `json:"namespace"`
+			Name string `json:"name"`
+		} `json:"environment"`
+		Source struct {
+			Type string `json:"type"`
+			Literal []byte  `json:"literal"`
+			Checksum struct {
+			} `json:"checksum"`
+		} `json:"source"`
+		Deployment struct {
+			Type string `json:"type"`
+			Literal []byte  `json:"literal"`
+			Checksum struct {
+			} `json:"checksum"`
+		} `json:"deployment"`
+	} `json:"spec"`
+	Status struct {
+	} `json:"status"`
+	BuildCommand string `json:"buildcmd,omitempty"`
+}
+
+type FissionResInfoRsp struct {
+	Name string `json:"name"`
+	Namespace string `json:"namespace"`
+	SelfLink string `json:"selfLink"`
+	UID string `json:"uid"`
+	ResourceVersion string `json:"resourceVersion"`
+	Generation int `json:"generation"`
+	CreationTimestamp time.Time `json:"creationTimestamp"`
+}
+
+const (
+	FissionController   = "controller.fission"
+	FissionPort         = 80
+	FissionRouter       = "router.fission"
+	EnvUrl              = "/v2/environments"         //成功
+	PkgUrl              = "/v2/packages" //读取消息体失败
+	FunctionUrl         = "/v2/functions" //创建Topic失败
+	NodeJsImage         ="fission/node-env"
+	NodeJsBuild         ="fission/node-builder"
+	PythonImage         ="fission/python-env"
+	PythonBuild         ="fission/python-builder"
+	GoImage             ="fission/go-env"
+	GoBuild             ="fission/go-builder"
+	Command             = "build"
+	NodeJs              = "nodejs"
+	Python              = "python"
+	Go                  = "go"
+	Zip                 = ".zip"
+)
+
+type FunctionReqInfo struct {
+	Metadata struct {
+		Name string `json:"name"`
+		Namespace string `json:"namespace"`
+	} `json:"metadata"`
+	Spec struct {
+		Environment struct {
+			Namespace string `json:"namespace"`
+			Name string `json:"name"`
+		} `json:"environment"`
+		Package struct {
+			Packageref struct {
+				Namespace string `json:"namespace"`
+				Name string `json:"name"`
+				Resourceversion string `json:"resourceversion"`
+			} `json:"packageref"`
+			FunctionName string `json:"functionName"`
+		} `json:"package"`
+		Secrets interface{} `json:"secrets"`
+		Configmaps interface{} `json:"configmaps"`
+		Resources interface{} `json:"resources"`
+		InvokeStrategy struct {
+			ExecutionStrategy struct {
+				ExecutorType string `json:"ExecutorType"`
+				MinScale int `json:"MinScale"`
+				MaxScale int `json:"MaxScale"`
+				TargetCPUPercent int `json:"TargetCPUPercent"`
+				SpecializationTimeout int `json:"SpecializationTimeout"`
+			} `json:"ExecutionStrategy"`
+			StrategyType string `json:"StrategyType"`
+		} `json:"InvokeStrategy"`
+		FunctionTimeout int `json:"functionTimeout"`
+	} `json:"spec"`
+}
+
 var logger = &requestLogger{}
 
 func (r *requestLogger) SetPrefix(prefix string) {
@@ -141,8 +255,8 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		WirteOut: 60000,
 		ReadOut:  60000,
 	}
-	if db.Spec.Type == nlptv1.WebService {
-
+	switch db.Spec.Type {
+	case nlptv1.WebService:
 		requestBody = &RequestBody{
 			Name:     db.ObjectMeta.Name,
 			Protocol: db.Spec.KongService.Protocol,
@@ -164,6 +278,23 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		if requestBody.ReadOut == 0 {
 			requestBody.ReadOut = 60000
 		}
+	case nlptv1.FunctionService :
+		requestBody = &RequestBody{
+			Name:     db.ObjectMeta.Name,
+			Protocol: "http",
+			Host:     FissionRouter,
+			Port:     FissionPort,
+			TimeOut:  60000,
+			WirteOut: 60000,
+			ReadOut:  60000,
+		}
+	}
+	if db.Spec.Type == nlptv1.FunctionService {
+		fn, err := r.CreateFunction(db)
+		if err != nil{
+			return fmt.Errorf("create function error: %+v", err)
+		}
+		klog.V(5).Infof("create function result fn: %+v", fn)
 	}
 	responseBody := &ResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
@@ -174,7 +305,7 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	if response.StatusCode != 201 {
 		return fmt.Errorf("request for create service error: receive wrong status code: %s", string(body))
 	}
-	if db.Spec.Type == nlptv1.DataService {
+	if db.Spec.Type == nlptv1.DataService || db.Spec.Type == nlptv1.FunctionService {
 		(*db).Spec.KongService.Host = responseBody.Host
 		(*db).Spec.KongService.Protocol = responseBody.Protocol
 		(*db).Spec.KongService.Port = responseBody.Port
@@ -268,3 +399,164 @@ func (r *Operator) UpdateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	}
 	return nil
 }
+
+func GetContentsPkg(filePath string) ([]byte, error) {
+	code, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return nil, errors.Wrapf(err, "error reading %v", filePath)
+	}
+	return code, nil
+}
+func GetLanguage(lan string) string {
+	switch  lan {
+	case NodeJs:
+		return NodeJs
+	case Python:
+		return Python
+	case Go:
+		return Go
+	}
+	return NodeJs
+}
+
+func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error) {
+	klog.Infof("Enter CreateEnv :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, FissionController, FissionPort, EnvUrl))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &EnvReqInfo{}
+	languageInfo := db.Spec.FissionRefInfo.Language
+	name := fmt.Sprintf("%v-%v", languageInfo, db.ObjectMeta.Name)
+	requestBody.Metadata.Name = name
+	requestBody.Metadata.Namespace =  db.ObjectMeta.Namespace
+	switch languageInfo  {
+	case NodeJs:
+		requestBody.Spec.Runtime.Image = NodeJsImage
+		requestBody.Spec.Builder.Image = NodeJsBuild
+	case Python:
+		requestBody.Spec.Runtime.Image = PythonImage
+		requestBody.Spec.Builder.Image = PythonBuild
+	case Go:
+		requestBody.Spec.Runtime.Image = GoImage
+		requestBody.Spec.Builder.Image = GoBuild
+	}
+	requestBody.Spec.Builder.Command = Command
+	requestBody.Spec.Poolsize = 3
+	requestBody.Spec.Keeparchive = false
+
+	responseBody := &FissionResInfoRsp{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Errorf("request for create env error %+v", errs)
+		return nil, fmt.Errorf("request for create env error: %+v", errs)
+	}
+	klog.V(5).Infof("create env code and body: %d %s\n", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.Errorf("create failed msg: %s\n", responseBody)
+		return nil, fmt.Errorf("request for create rate error: receive wrong status code: %s", string(body))
+	}
+	klog.V(5).Infof("create env name: %s\n", responseBody.Name)
+	return responseBody, nil
+}
+
+func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit, env *FissionResInfoRsp) (*FissionResInfoRsp, error){
+	klog.Infof("Enter CreatePkgByFile :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, FissionController, FissionPort, PkgUrl))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &PkgRefInfoReq{}
+	name := fmt.Sprintf("%v-%v-pkg", db.Spec.FissionRefInfo.FnName, db.ObjectMeta.Name)
+	requestBody.Metadata.Name = name
+	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
+	requestBody.Spec.Environment.Name = env.Name
+	requestBody.Spec.Environment.Namespace = "default"
+	if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
+		requestBody.Spec.Source.Type = "literal"
+		requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
+		requestBody.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
+	}else {
+		requestBody.Spec.Deployment.Type = "literal"
+		requestBody.Spec.Deployment.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
+	}
+
+	responseBody := &FissionResInfoRsp{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Errorf("request for create pkg error %+v", errs)
+		return nil, fmt.Errorf("request for create pkg error: %+v", errs)
+	}
+	klog.V(5).Infof("create pkg code and body: %d %s\n", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.Errorf("create pkg failed msg: %s\n", responseBody)
+		return nil, fmt.Errorf("request for create rate error: receive wrong status code: %s", string(body))
+	}
+	klog.V(5).Infof("create pkg name: %s\n", responseBody.Name)
+	return  responseBody, nil
+}
+
+func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, env *FissionResInfoRsp, pkg *FissionResInfoRsp) (*FissionResInfoRsp, error){
+	klog.Infof("Enter CreateFnByEnvAndPkg :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, FissionController, FissionPort, FunctionUrl))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &FunctionReqInfo{}
+	requestBody.Metadata.Name = db.Spec.FissionRefInfo.FnName
+	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
+	requestBody.Spec.Environment.Name = env.Name
+	requestBody.Spec.Environment.Namespace = env.Namespace
+	requestBody.Spec.Package.Packageref.Namespace = pkg.Namespace
+	requestBody.Spec.Package.Packageref.Name = pkg.Name
+	requestBody.Spec.Package.Packageref.Resourceversion = pkg.ResourceVersion
+	requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint
+	requestBody.Spec.InvokeStrategy.ExecutionStrategy.ExecutorType = "poolmgr"
+	requestBody.Spec.InvokeStrategy.StrategyType = "execution"
+	requestBody.Spec.FunctionTimeout = 120
+	
+	responseBody := &FissionResInfoRsp{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Errorf("request for create function error %+v", errs)
+		return nil, fmt.Errorf("request for create function error: %+v", errs)
+	}
+
+	klog.V(5).Infof("create function code and body: %d %s\n", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.Errorf("create function failed msg: %s\n", responseBody)
+		return nil, fmt.Errorf("request for create rate error: receive wrong status code: %s", string(body))
+	}
+	klog.V(5).Infof("create function name: %s\n", responseBody.Name)
+	return  responseBody, nil
+}
+
+func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error){
+	klog.Infof("Enter CreateFunction :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
+    env, err := r.CreateEnv(db)
+	if err != nil {
+		return nil, fmt.Errorf("request for create env error: %+v", err)
+	}
+	(*db).Spec.FissionRefInfo.EnvName = env.Name
+	pkg, err := r.CreatePkgByFile(db, env)
+	if err != nil {
+		return nil, fmt.Errorf("request for create pkg error: %+v", err)
+	}
+	(*db).Spec.FissionRefInfo.PkgName = pkg.Name
+	fn, err := r.CreateFnByEnvAndPkg(db, env, pkg)
+	if err != nil {
+		return nil, fmt.Errorf("request for create function error: %+v", err)
+	}
+	klog.V(5).Infof("create function name: %s\n", fn.Name)
+	return  fn, nil
+}
+
