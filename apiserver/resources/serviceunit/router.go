@@ -107,6 +107,13 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.changeOwner).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+	//导入函数
+	ws.Route(ws.POST("/serviceunits/import").
+		Consumes("multipart/form-data").
+		Produces(restful.MIME_JSON).
+		Doc("import functions from files").
+		To(r.importServiceunits).
+		Do(returns200, returns500))
 }
 
 func (r *router) createServiceunit(request *restful.Request, response *restful.Response) {
@@ -173,5 +180,10 @@ func (r *router) getUsers(request *restful.Request, response *restful.Response) 
 	for k, v := range headers {
 		response.AddHeader(k, v)
 	}
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) importServiceunits(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ImportServiceunits(request, response)
 	response.WriteHeaderAndEntity(code, result)
 }

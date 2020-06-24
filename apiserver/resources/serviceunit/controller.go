@@ -2,7 +2,10 @@ package serviceunit
 
 import (
 	"fmt"
+	"io"
+	"k8s.io/klog"
 	"net/http"
+	"os"
 	"strconv"
 
 	"github.com/chinamobile/nlpt/apiserver/concurrency"
@@ -58,6 +61,15 @@ type PingResponse = DeleteResponse
 // + update_sunyu
 type UpdateRequest = Wrapped
 type UpdateResponse = Wrapped
+
+type ImportResponse struct {
+	Code      int    `json:"code"`
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message"`
+	Detail    string `json:"detail"`
+}
+
+const UploadPath string  = "/data/upload/serviceunit/"
 
 func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateResponse) {
 	unlock, err := c.lock.Lock("serviceunit")
@@ -653,6 +665,47 @@ func (c *controller) GetUsers(req *restful.Request) (int, map[string]string, *us
 				ErrorCode: "0",
 				Data:      data,
 			}
+	}
+}
+
+func (c *controller) ImportServiceunits(req *restful.Request, response *restful.Response) (int, *ImportResponse) {
+	if err := req.Request.ParseMultipartForm(32 << 20); err != nil {
+		if err != nil {
+			return http.StatusInternalServerError, &ImportResponse{
+				Code:      1,
+				ErrorCode: "008000022",
+				Message:   "import file  error",
+				Detail:    fmt.Sprintf("import file  error: %+v", err),
+			}
+		}
+	}
+	file, handler, err := req.Request.FormFile("uploadfile")
+	klog.Infof("File name: %+v", handler.Filename)
+	if err != nil {
+		klog.Error("File error.")
+		return http.StatusInternalServerError, &ImportResponse{
+			Code:      1,
+			ErrorCode: "008000023",
+			Message:   "invalid file format",
+			Detail:    fmt.Sprintf("invalid file format: %+v", err),
+		}
+	}
+
+	defer file.Close()
+	f, err := os.OpenFile(UploadPath + handler.Filename, os.O_RDWR|os.O_CREATE, 0666)
+	if _, err = io.Copy(f, file); err != nil {
+		klog.Error("import failed,copy file error.")
+		return http.StatusInternalServerError, &ImportResponse{
+			Code:      1,
+			ErrorCode: "008000024",
+			Message:   "import failed, copy file error",
+			Detail:    fmt.Sprintf("import failed, copy file error: %+v", err),
+		}
+	}
+
+	return http.StatusOK, &ImportResponse{
+		Code:      0,
+		ErrorCode: "0",
 	}
 }
 
