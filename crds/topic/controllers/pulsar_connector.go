@@ -164,9 +164,9 @@ func (r *Connector) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Perm
 	request := r.GetHttpRequest()
 	var url string
 	if topic.Spec.Persistent {
-		url = nonPersistentPermissionUrl
-	} else {
 		url = persistentPermissionUrl
+	} else {
+		url = nonPersistentPermissionUrl
 	}
 	url = fmt.Sprintf(url, topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name, permission.AuthUserName)
 	url = fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
