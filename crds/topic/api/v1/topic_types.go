@@ -110,7 +110,7 @@ const (
 	DeletedAuthorization         Status = "deletedAuthorization"
 	BindingOrUnBinding           Status = "bindingOrUnbinding"
 	Binding                      Status = "binding"
-	Bound                        Status = "bound"
+	Bound                        Status = "bindingSucceeded"
 	BindFailed                   Status = "bindFailed"
 	Unbinding                    Status = "unBinding"
 	UnbindFailed                 Status = "unBindFailed"
