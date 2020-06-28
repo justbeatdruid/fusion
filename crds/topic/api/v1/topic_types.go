@@ -40,15 +40,17 @@ type TopicSpec struct {
 	Permissions      []Permission       `json:"permissions"`
 	Stats            Stats              `json:"stats"`            //Topic的统计数据
 	PartitionedStats []PartitionedStats `json:"partitionedStats"` //多分区Topic的统计数据
-	Applications     []Application      `json:"applications"`     //已绑定的应用ID列表
+	Applications     map[string]Application      `json:"applications"`     //已绑定的应用ID列表
 	Description      string             `json:"description"`      //描述
 	DisplayStatus    ShowStatus         `json:"disStatus"`
 }
 
 type Application struct {
-	ID      string  `json:"id"`
-	Status  Status  `json:"status"`
-	Actions Actions `json:"actions"`
+	ID      string  `json:"id"`      //应用ID
+	Status  Status  `json:"status"`  //Topic的绑定状态
+	Actions Actions `json:"actions"` //Topic的应用权限
+	Message string  `json:"message"` //绑定消息
+	DisplayStatus ShowStatus `json:"disStatus"` //显示状态
 }
 type Actions []string
 
@@ -137,6 +139,12 @@ const (
 	UpdatingAuthorizationOfShow        ShowStatus = "变更授权中"
 	UpdatingAuthorizationFailedOfShow  ShowStatus = "变更授权失败"
 	UpdatingAuthorizationSuccessOfShow ShowStatus = "变更授权成功"
+	BindingSucceededOfShow             ShowStatus = "绑定成功"
+	BindFailedOfShow                   ShowStatus = "绑定失败"
+	BindingOfShow                      ShowStatus = "绑定中"
+	UnbindingOfShow                    ShowStatus = "解除绑定中"
+	UnbindFailedOfShow                 ShowStatus = "解除绑定失败"
+
 )
 
 // +kubebuilder:object:root=true
@@ -261,4 +269,11 @@ func initShowStatusMap() {
 	ShowStatusMap[DeletingAuthorization] = DeletingAuthorizationOfShow
 	ShowStatusMap[DeleteAuthorizationFailed] = DeleteAuthorizationFailedOfShow
 	ShowStatusMap[DeletedAuthorization] = DeletedAuthorizationOfShow
+	ShowStatusMap[Binding] = BindingOfShow
+	ShowStatusMap[BindFailed] = BindFailedOfShow
+	ShowStatusMap[Bound] = BindingSucceededOfShow
+	ShowStatusMap[Unbinding] = UnbindingOfShow
+	ShowStatusMap[UnbindFailed] = UnbindFailedOfShow
+
+
 }
