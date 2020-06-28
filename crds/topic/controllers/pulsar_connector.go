@@ -201,7 +201,7 @@ func (r *Connector) getUrl(topic *nlptv1.Topic) string {
 func (r *Connector) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err error) {
 	request := r.GetHttpRequest()
 	url := persistentTopicUrl
-	if topic.Spec.Persistent {
+	if !topic.Spec.Persistent {
 		url = nonPersistentTopicUrl
 	}
 
