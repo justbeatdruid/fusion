@@ -154,6 +154,15 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	//手动刷新消费者页面
+	ws.Route(ws.GET("/topics/{id}/subscriptions/{subName}/consumers").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("refresh consumers info").
+		To(r.getPartitionedSubscritionsOfTopic).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	//发送消息
 	ws.Route(ws.POST("/topics/messages").
 		Consumes(restful.MIME_JSON).
@@ -195,6 +204,15 @@ func (r *router) Install(ws *restful.WebService) {
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("Skipping messages on a topic subscription").
+		To(r.skipMessages).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	//监控与统计接口
+	ws.Route(ws.GET("/topics/statistics/{query}").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("monitoring and statistics").
 		To(r.skipMessages).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
@@ -313,6 +331,11 @@ func (r *router) batchGrantPermissions(request *restful.Request, response *restf
 }
 
 func (r *router) skipMessages(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.SkipMessages(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) refreshConsumers(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.SkipMessages(request)
 	response.WriteHeaderAndEntity(code, result)
 }
