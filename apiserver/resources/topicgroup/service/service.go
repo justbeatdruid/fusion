@@ -222,41 +222,41 @@ func (s *Service) getTopicsCrd(id string, opts ...util.OpOption) (*topicv1.Topic
 
 	return tps, nil
 }
-func (s *Service) DeleteTopicgroup(id string, opts ...util.OpOption) (*Topicgroup, error) {
-	tg, err := s.Delete(id, opts...)
+func (s *Service) DeleteTopicgroup(id string, opts ...util.OpOption) (*Topicgroup, string, error) {
+	tg, message, err := s.Delete(id, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
+		return nil, message, err
 	}
-	return ToModel(tg), nil
+	return ToModel(tg), message, nil
 }
 
-func (s *Service) ModifyTopicgroup(id string, topicgroup *Topicgroup, opts ...util.OpOption) (*Topicgroup, error) {
+func (s *Service) ModifyTopicgroup(id string, topicgroup *Topicgroup, opts ...util.OpOption) (*Topicgroup, string, error) {
 	crd, err := s.Get(id, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("cannot get object: %+v", err)
+		return nil, "Topic分组不存在", fmt.Errorf("cannot get object: %+v", err)
 	}
 
 	if crd == nil {
-		return nil, fmt.Errorf("cannot get object: %+v", err)
+		return nil, "Topic分组不存在", fmt.Errorf("cannot get object: %+v", err)
 	}
 
 	if topicgroup == nil {
-		return nil, fmt.Errorf("bad request:policies is required")
+		return nil, "参数policies为空", fmt.Errorf("bad request:policies is required")
 	}
 
 	if err = topicgroup.ValidateModifyBody(); err != nil {
-		return nil, err
+		return nil, fmt.Sprintf("参数错误：%+v", err), err
 	}
 	crd.Spec.Description = topicgroup.Description
 	crd.Spec.Policies = s.MergePolicies(topicgroup.Policies, crd.Spec.Policies)
 	crd.Status.Status = v1.Updating
 	crd.Status.Message = "updating topic group policies"
-	crd, err = s.UpdateStatus(crd)
+	crd, msg, err := s.UpdateStatus(crd)
 	if err != nil {
-		return nil, fmt.Errorf("modify topicgroup failed:%+v", err)
+		return nil, msg, fmt.Errorf("modify topicgroup failed:%+v", err)
 	}
 
-	return ToModel(crd), nil
+	return ToModel(crd), msg, nil
 
 }
 
@@ -451,14 +451,14 @@ func (s *Service) Get(id string, ops ...util.OpOption) (*v1.Topicgroup, error) {
 	return tp, nil
 }
 
-func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topicgroup, error) {
+func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topicgroup, string, error) {
 	tg, err := s.Get(id, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("error delete crd: %+v", err)
+		return nil, fmt.Sprintf("Topic分组不存在"), fmt.Errorf("资源查询失败: %+v", err)
 	}
 
 	if s.GetTopicCountOfTopicgroup(tg.Spec.Name, opts...) > 0 {
-		return nil, fmt.Errorf("error delete crd: %+v", "topic group is not empty")
+		return nil, "不能删除Topic分组，当前Topic分组不为空", fmt.Errorf("topic group is not empty")
 	}
 	tg.Status.Status = v1.Deleting
 	tg.Status.Message = "deleting"
@@ -466,25 +466,25 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topicgroup, erro
 }
 
 //更新状态
-func (s *Service) UpdateStatus(tg *v1.Topicgroup) (*v1.Topicgroup, error) {
+func (s *Service) UpdateStatus(tg *v1.Topicgroup) (*v1.Topicgroup, string,  error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tg)
 	if err != nil {
-		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+		return nil, "数据库错误", fmt.Errorf("convert crd to unstructured error: %+v", err)
 	}
 	crd := &unstructured.Unstructured{}
 	crd.SetUnstructuredContent(content)
 	klog.V(5).Infof("try to update status for crd: %+v", crd)
 	crd, err = s.client.Namespace(tg.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
 	if err != nil {
-		return nil, fmt.Errorf("error update crd status: %+v", err)
+		return nil, "数据库错误", fmt.Errorf("error update crd status: %+v", err)
 	}
 	tg = &v1.Topicgroup{}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tg); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+		return nil, "数据库错误", fmt.Errorf("convert unstructured to crd error: %+v", err)
 	}
 	klog.V(5).Infof("get v1.topicgroup: %+v", tg)
 
-	return tg, nil
+	return tg, "", nil
 }
 
 func (s *Service) UpdateTopicStatus(tp *topicv1.Topic) (*topicv1.Topic, error) {
