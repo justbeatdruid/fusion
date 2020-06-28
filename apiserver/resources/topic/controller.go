@@ -688,20 +688,15 @@ func (c *controller) ListTopicByApplication(application string, tps []*service.T
 
 	for _, tp := range tps {
 		var apps = make(map[string]v1.Application)
-		for _, app := range tp.Applications {
-			if app.ID == application {
-				for k, v := range tp.Applications {
-					if k == application {
-						apps[k] = v
-					}
-				}
-				continue
-			}
+		if v, ok := tp.Applications[application]; ok{
+			apps[application] = v
 		}
+
 		tp.Applications = apps
-		tpsResult = append(tpsResult, tp)
 
-
+		if len(apps) > 0 {
+			tpsResult = append(tpsResult, tp)
+		}
 	}
 
 
