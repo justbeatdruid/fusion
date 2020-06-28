@@ -47,6 +47,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.PUT("/trafficcontrols}").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("batch delete trafficcontrol").
+		To(r.batchDeleteTrafficcontrol).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.GET("/trafficcontrols").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all trafficcontrols").
@@ -79,7 +87,10 @@ func (r *router) deleteTrafficcontrol(request *restful.Request, response *restfu
 	code, result := r.controller.DeleteTrafficcontrol(request)
 	response.WriteHeaderAndEntity(code, result)
 }
-
+func (r *router) batchDeleteTrafficcontrol(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.BatchDeleteTrafficcontrol(request)
+	response.WriteHeaderAndEntity(code, result)
+}
 func (r *router) listTrafficcontrol(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListTrafficcontrol(request)
 	response.WriteHeaderAndEntity(code, result)

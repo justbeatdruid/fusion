@@ -43,6 +43,7 @@ type RequestWrapped struct {
 type CreateResponse = Wrapped
 type CreateRequest = RequestWrapped
 type DeleteResponse = Wrapped
+type BatchDeleteResponse = Wrapped
 type GetResponse = Wrapped
 type ListResponse = struct {
 	Code      int         `json:"code"`
@@ -63,6 +64,7 @@ type BindRequest struct {
 	Data    struct {
 		Operation string   `json:"operation"`
 		Apis      []v1.Api `json:"apis"`
+		Restrictions []v1.RestrictionBind `json:"restrictions"`
 	} `json:"data,omitempty"`
 }
 type BindResponse = Wrapped
@@ -162,6 +164,49 @@ func (c *controller) DeleteRestriction(req *restful.Request) (int, *DeleteRespon
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
+			Code:      0,
+			ErrorCode: "0",
+		}
+	}
+}
+
+func (c *controller)BatchDeleteRestriction(req *restful.Request)(int, *BatchDeleteResponse){
+	body := &BindRequest{}
+	if err :=req.ReadEntity(body);err!=nil{
+		return http.StatusInternalServerError,&BatchDeleteResponse{
+			Code:      1,
+			ErrorCode: "007000013",
+			Message:   c.errMsg.Restriction["007000013"],
+			Detail:   fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data.Operation != "delete" {
+		return http.StatusInternalServerError, &BatchDeleteResponse{
+			Code:      1,
+			ErrorCode: "007000020",
+			Message:   c.errMsg.Restriction["007000020"],
+			Detail:    "operation params error",
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &BatchDeleteResponse{
+			Code:      1,
+			ErrorCode: "007000010",
+			Message:   c.errMsg.Restriction["007000010"],
+			Detail:    "auth model error",
+		}
+	}
+
+	if err:=c.service.BatchDeleteRestriction(body.Data.Restrictions,util.WithUser(authuser.Name),util.WithNamespace(authuser.Namespace));err!=nil{
+		return http.StatusInternalServerError, &BatchDeleteResponse{
+			Code:      2,
+			ErrorCode: "007000005",
+			Message:   c.errMsg.Restriction["007000005"],
+			Detail:    fmt.Errorf("delete restriction error: %+v", err).Error(),
+		}
+	}else {
+		return http.StatusOK, &BatchDeleteResponse{
 			Code:      0,
 			ErrorCode: "0",
 		}

@@ -47,6 +47,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.PUT("/restrictions").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("batch delete restriction").
+		To(r.batchDeleteRestriction).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.GET("/restrictions").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all restrictions").
@@ -77,6 +85,11 @@ func (r *router) getRestriction(request *restful.Request, response *restful.Resp
 
 func (r *router) deleteRestriction(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.DeleteRestriction(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) batchDeleteRestriction(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.BatchDeleteRestriction(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 

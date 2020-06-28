@@ -127,7 +127,15 @@ func (s *Service) DeleteTrafficcontrol(id string, opts ...util.OpOption) error {
 	}
 	return nil
 }
-
+func (s *Service)BatchDeleteTrafficcontrol(trafficcontrols []v1.TrafficcontrolBind, opts ...util.OpOption) error{
+	for _, value := range trafficcontrols {
+		err := s.Delete(value.ID, opts...)
+		if err!=nil{
+			return fmt.Errorf("cannot delete traffic control: %+v", err)
+		}
+	}
+	return nil
+}
 // + update_sunyu
 func (s *Service) UpdateTrafficcontrol(id string, reqData interface{}, opts ...util.OpOption) (*Trafficcontrol, error) {
 	crd, err := s.Get(id, opts...)
