@@ -694,9 +694,13 @@ func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.
 		}
 
 		var topicIsBound = false
-		for _, boundAppID := range tp.Spec.Applications {
-			if boundAppID.ID == appid {
+
+		for i := 0; i < len(tp.Spec.Applications); i++ {
+			boundApp := tp.Spec.Applications[i]
+			if boundApp.ID == appid {
 				topicIsBound = true
+				boundApp.Status = v1.Unbinding
+				tp.Spec.Applications[i] = boundApp
 				break
 			}
 		}
@@ -705,11 +709,6 @@ func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.
 			return fmt.Errorf("topic(%+v) does not bind the application(%+v)", tp.Spec.Name, app.Spec.Name)
 		}
 
-		application := v1.Application{
-			ID:     appid,
-			Status: v1.Unbinding,
-		}
-		tp.Spec.Applications = append(tp.Spec.Applications, application)
 		tp.Status.BindStatus = v1.BindingOrUnBinding
 		if tp, err = s.UpdateStatus(tp); err != nil {
 			return fmt.Errorf("application unbind topic failed, error: %+v", err)
