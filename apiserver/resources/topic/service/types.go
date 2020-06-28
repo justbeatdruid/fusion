@@ -256,6 +256,15 @@ func ToModel(obj *v1.Topic) *Topic {
 		ps = append(ps, p)
 	}
 
+	apps := make([]v1.Application, 0)
+
+	if obj.Spec.Applications != nil {
+		for _, v := range obj.Spec.Applications {
+			v.DisplayStatus = v1.ShowStatusMap[v.Status]
+			apps = append(apps, v)
+		}
+	}
+
 	return &Topic{
 		ID:           obj.ObjectMeta.Name,
 		Name:         obj.Spec.Name,
@@ -273,7 +282,7 @@ func ToModel(obj *v1.Topic) *Topic {
 		Stats:        ToStatsModel(obj.Spec.Stats),
 		Description:  obj.Spec.Description,
 		ShowStatus:   v1.ShowStatusMap[obj.Status.Status],
-		Applications: obj.Spec.Applications,
+		Applications: apps,
 	}
 
 }

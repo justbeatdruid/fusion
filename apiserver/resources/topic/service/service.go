@@ -659,18 +659,22 @@ func (s *Service) BatchBindApi(appid string, topics []BindInfo, opts ...util.OpO
 		if err != nil {
 			return fmt.Errorf("query topic by id error: %+v", err)
 		}
-		for _, boundAppID := range tp.Spec.Applications {
-			if boundAppID.ID == appid {
-				return fmt.Errorf("application has already bound to topic")
-			}
 
+		if _, ok := tp.Spec.Applications[appid]; ok {
+			return fmt.Errorf("application has already bound to topic")
 		}
+
 		application := v1.Application{
 			ID:      appid,
 			Status:  v1.Binding,
 			Actions: t.Actions,
+			DisplayStatus : v1.ShowStatusMap[v1.Binding],
 		}
-		tp.Spec.Applications = append(tp.Spec.Applications, application)
+
+		if tp.Spec.Applications == nil {
+			tp.Spec.Applications = make(map[string]v1.Application)
+		}
+		tp.Spec.Applications[appid] = application
 		tp.Status.BindStatus = v1.BindingOrUnBinding
 		if tp, err = s.UpdateStatus(tp); err != nil {
 			return fmt.Errorf("application bind topic failed, error: %+v", err)
@@ -694,23 +698,31 @@ func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.
 		}
 
 		var topicIsBound = false
-		for _, boundAppID := range tp.Spec.Applications {
-			if boundAppID.ID == appid {
+
+		for _, application := range tp.Spec.Applications {
+			if application.ID == appid {
 				topicIsBound = true
+				if application.Status == v1.Bound || application.Status == v1.Binding{
+					application.Status = v1.Unbinding
+					tp.Status.BindStatus = v1.BindingOrUnBinding
+					application.DisplayStatus = v1.ShowStatusMap[application.Status]
+
+				} else if application.Status == v1.BindFailed {
+					//绑定失败的场景，允许直接解绑定
+					application.Status = v1.UnbindSuccess
+					application.DisplayStatus = v1.ShowStatusMap[application.Status]
+
+				}
+				tp.Spec.Applications[appid] = application
 				break
 			}
 		}
+
 
 		if !topicIsBound {
 			return fmt.Errorf("topic(%+v) does not bind the application(%+v)", tp.Spec.Name, app.Spec.Name)
 		}
 
-		application := v1.Application{
-			ID:     appid,
-			Status: v1.Unbinding,
-		}
-		tp.Spec.Applications = append(tp.Spec.Applications, application)
-		tp.Status.BindStatus = v1.BindingOrUnBinding
 		if tp, err = s.UpdateStatus(tp); err != nil {
 			return fmt.Errorf("application unbind topic failed, error: %+v", err)
 		}

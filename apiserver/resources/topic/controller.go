@@ -685,14 +685,24 @@ func (c *controller) ListTopicByTopicGroup(topicGroup string, tps []*service.Top
 func (c *controller) ListTopicByApplication(application string, tps []*service.Topic) []*service.Topic {
 	var tpsResult []*service.Topic
 
+
 	for _, tp := range tps {
-		for _, app := range tp.Applications {
+		var apps = make([]v1.Application, 0)
+
+		for i := 0; i < len(tp.Applications); i++ {
+			app := tp.Applications[i]
 			if app.ID == application {
-				tpsResult = append(tpsResult, tp)
-				continue
+				apps = append(apps, app)
 			}
 		}
+		tp.Applications = apps
+
+		if len(apps) > 0 {
+			tpsResult = append(tpsResult, tp)
+		}
 	}
+
+
 	return tpsResult
 }
 

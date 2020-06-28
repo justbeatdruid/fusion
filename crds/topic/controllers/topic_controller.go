@@ -180,8 +180,7 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	if topic.Status.BindStatus == nlptv1.BindingOrUnBinding {
-		for i := 0; i < len(topic.Spec.Applications); i++ {
-			application := topic.Spec.Applications[i]
+		for appid, application := range topic.Spec.Applications {
 			switch application.Status {
 			case nlptv1.Binding:
 				//actions := make([]string, 0)
@@ -195,33 +194,40 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 				}
 				if err := r.Operator.GrantPermission(topic, &p); err != nil {
 					application.Status = nlptv1.BindFailed
+					application.DisplayStatus = nlptv1.ShowStatusMap[application.Status]
+					application.Message = fmt.Sprintf("bind error: %+v", err)
 				} else {
 					application.Status = nlptv1.Bound
-					p.Status.Message = "success"
+					application.DisplayStatus = nlptv1.ShowStatusMap[application.Status]
+					application.Message = "bind success"
 				}
 			case nlptv1.Unbinding:
 				p := nlptv1.Permission{
 					AuthUserID:   "",
 					AuthUserName: application.ID,
 				}
+
 				if err := r.Operator.DeletePer(topic, &p); err != nil {
 					application.Status = nlptv1.UnbindFailed
+					application.DisplayStatus = nlptv1.ShowStatusMap[application.Status]
+					application.Message = fmt.Sprintf("release error: %+v", err)
+
 				} else {
 					application.Status = nlptv1.UnbindSuccess
 				}
 			}
-			topic.Spec.Applications[i] = application
+			topic.Spec.Applications[appid] = application
 			if err := r.Update(ctx, topic); err != nil {
 				klog.Errorf("Update Topic Failed: %+v", *topic)
 			}
 		}
 
 		//处理解绑定的场景
-		var apps = make([]nlptv1.Application, 0)
-		for i := 0; i < len(topic.Spec.Applications); i++ {
-			application := topic.Spec.Applications[i]
+		apps := make(map[string]nlptv1.Application)
+
+		for appid, application := range topic.Spec.Applications {
 			if application.Status != nlptv1.UnbindSuccess {
-				apps = append(apps, application)
+				apps[appid] = application
 			}
 		}
 
