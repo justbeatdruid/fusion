@@ -36,6 +36,10 @@ spec:
           properties:
             available:
               type: boolean
+            description:
+              type: string
+            disStatus:
+              type: string
             name:
               type: string
             policies:
@@ -60,13 +64,11 @@ spec:
                       type: integer
                   type: object
                 clusterSubscribeRate:
-                  additionalProperties:
-                    properties:
-                      ratePeriodInSecond:
-                        type: integer
-                      subscribeThrottlingRatePerConsumer:
-                        type: integer
-                    type: object
+                  properties:
+                    ratePeriodInSecond:
+                      type: integer
+                    subscribeThrottlingRatePerConsumer:
+                      type: integer
                   type: object
                 compaction_threshold:
                   format: int64
@@ -117,37 +119,39 @@ spec:
                 subscription_auth_mode:
                   type: string
                 subscriptionDispatchRate:
-                  additionalProperties:
-                    properties:
-                      dispatchThrottlingRateInByte:
-                        format: int64
-                        type: integer
-                      dispatchThrottlingRateInMsg:
-                        type: integer
-                      ratePeriodInSecond:
-                        type: integer
-                      relativeToPublishRate:
-                        type: boolean
-                    type: object
+                  properties:
+                    dispatchThrottlingRateInByte:
+                      format: int64
+                      type: integer
+                    dispatchThrottlingRateInMsg:
+                      type: integer
+                    ratePeriodInSecond:
+                      type: integer
+                    relativeToPublishRate:
+                      type: boolean
                   type: object
                 topicDispatchRate:
-                  additionalProperties:
-                    properties:
-                      dispatchThrottlingRateInByte:
-                        format: int64
-                        type: integer
-                      dispatchThrottlingRateInMsg:
-                        type: integer
-                      ratePeriodInSecond:
-                        type: integer
-                      relativeToPublishRate:
-                        type: boolean
-                    type: object
+                  properties:
+                    dispatchThrottlingRateInByte:
+                      format: int64
+                      type: integer
+                    dispatchThrottlingRateInMsg:
+                      type: integer
+                    ratePeriodInSecond:
+                      type: integer
+                    relativeToPublishRate:
+                      type: boolean
                   type: object
+              required:
+              - clusterSubscribeRate
               type: object
+            topicsCount:
+              type: integer
           required:
           - available
+          - disStatus
           - name
+          - topicsCount
           type: object
         status:
           description: TopicgroupStatus defines the observed state of Topicgroup
