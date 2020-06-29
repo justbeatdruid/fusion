@@ -149,7 +149,10 @@ func DeleteTaskByID(id int) (err error) {
 func GetTasks(offet, limit int, name, namespace, taskType string, status int, userID []string, createTime []string) (tasks []Task, num, total int64, err error) {
 	o := orm.NewOrm()
 
-	qs := o.QueryTable("Task").Filter("Name__contains", name).Filter("Namespace", namespace)
+	qs := o.QueryTable("Task").Filter("Namespace", namespace)
+	if name != "" {
+		qs = qs.Filter("Name__icontains", name)
+	}
 	if taskType != "all" {
 		qs = qs.Filter("Type", taskType)
 	}
@@ -179,9 +182,10 @@ func GetTasks(offet, limit int, name, namespace, taskType string, status int, us
 }
 
 // GetTbDagRun ...
-func GetTbDagRun(dagID string) (dagRun []TbDagRun, num int64, err error) {
+func GetTbDagRun(offet, limit int, dagID string) (dagRun []TbDagRun, num int64, total int64, err error) {
 	o := orm.NewOrm()
-	num, err = o.QueryTable("TbDagRun").Filter("DagId", dagID).OrderBy("-ExecDate").All(&dagRun)
+	num, err = o.QueryTable("TbDagRun").Filter("DagId", dagID).Offset(offet).Limit(limit).OrderBy("-ExecDate").All(&dagRun)
+	total, err = o.QueryTable("TbDagRun").Filter("DagId", dagID).Count()
 	return
 }
 
