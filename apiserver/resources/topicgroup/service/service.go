@@ -9,6 +9,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/util"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
 
@@ -426,7 +427,7 @@ func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupE
 			ErrorCode: tgerror.ErrorCreateTopicgroup,
 		}
 	}
-	klog.V(5).Infof("get v1.topicgroup of creating: %+v", tp)
+	klog.V(5).Infof("get v1.topicgroup of creating: %+v, time: %+v", tp, time.Now().Unix())
 	return tp, tgerror.TopicgroupError{}
 }
 
