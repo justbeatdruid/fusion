@@ -8,7 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/errors"
 	"net/http"
 	"strings"
-
+	tcerror "github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol/error"
 	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/util"
@@ -74,16 +74,16 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "012000001",
-			Message:   c.errMsg.Trafficcontrol["012000001"],
+			ErrorCode: tcerror.FailedToReadMessageContent,
+			Message:   c.errMsg.Trafficcontrol[tcerror.FailedToReadMessageContent],
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "012000002",
-			Message:   c.errMsg.Trafficcontrol["012000002"],
+			ErrorCode: tcerror.MessageBodyIsEmpty,
+			Message:   c.errMsg.Trafficcontrol[tcerror.MessageBodyIsEmpty],
 			Detail:    "read entity error: data is null",
 		}
 	}
@@ -91,8 +91,8 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "012000003",
-			Message:   c.errMsg.Trafficcontrol["012000003"],
+			ErrorCode: tcerror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Trafficcontrol[tcerror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
@@ -103,12 +103,12 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 			comma := strings.Index(err.Error(), "每")
 			return http.StatusInternalServerError, &CreateResponse{
 				Code:      2,
-				ErrorCode: "012000014",
+				ErrorCode: tcerror.FailedToCreateTrafficControl,
 				Message:   err.Error()[comma:],
 			}
 		}
 		if errors.IsNameDuplicated(err) {
-			code = "012000011"
+			code = tcerror.FlowControlWithDuplicateName
 		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
@@ -119,7 +119,7 @@ func (c *controller) CreateTrafficcontrol(req *restful.Request) (int, *CreateRes
 	} else {
 		return http.StatusOK, &CreateResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: tcerror.Success,
 			Data:      db,
 		}
 	}
@@ -131,22 +131,22 @@ func (c *controller) GetTrafficcontrol(req *restful.Request) (int, *GetResponse)
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "012000003",
-			Message:   c.errMsg.Trafficcontrol["012000003"],
+			ErrorCode: tcerror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Trafficcontrol[tcerror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
 	if db, err := c.service.GetTrafficcontrol(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      2,
-			ErrorCode: "012000005",
-			Message:   c.errMsg.Trafficcontrol["012000005"],
+			ErrorCode: tcerror.QuerySingleFlowControlFailureBasedOnId,
+			Message:   c.errMsg.Trafficcontrol[tcerror.IncorrectAuthenticationInformation],
 			Detail:    fmt.Errorf("get trafficcontrol error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: tcerror.Success,
 			Data:      db,
 		}
 	}
@@ -158,22 +158,22 @@ func (c *controller) DeleteTrafficcontrol(req *restful.Request) (int, *DeleteRes
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "012000003",
-			Message:   c.errMsg.Api["012000003"],
+			ErrorCode: tcerror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Api[tcerror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
 	if err := c.service.DeleteTrafficcontrol(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      2,
-			ErrorCode: "012000006",
-			Message:   c.errMsg.Trafficcontrol["012000006"],
+			ErrorCode: tcerror.FailedToDeleteFlowControl,
+			Message:   c.errMsg.Trafficcontrol[tcerror.FailedToDeleteFlowControl],
 			Detail:    fmt.Errorf("delete trafficcontrol error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: tcerror.Success,
 		}
 	}
 }
@@ -182,7 +182,7 @@ func (c *controller)BatchDeleteTrafficcontrol(req *restful.Request) (int,*BatchD
 	if err :=req.ReadEntity(body);err!=nil{
 		return http.StatusInternalServerError,&BatchDeleteResponse{
 			Code:      1,
-			ErrorCode: "012000013",
+			ErrorCode: tcerror.IncorrectAuthenticationInformation,
 			Message:   c.errMsg.Trafficcontrol["007000013"],
 			Detail:   fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
@@ -190,8 +190,8 @@ func (c *controller)BatchDeleteTrafficcontrol(req *restful.Request) (int,*BatchD
 	if body.Data.Operation != "delete" {
 		return http.StatusInternalServerError, &BatchDeleteResponse{
 			Code:      1,
-			ErrorCode: "012000020",
-			Message:   c.errMsg.Trafficcontrol["012000020"],
+			ErrorCode: tcerror.RequestParameterError,
+			Message:   c.errMsg.Trafficcontrol[tcerror.RequestParameterError],
 			Detail:    "operation params error",
 		}
 	}
@@ -199,22 +199,22 @@ func (c *controller)BatchDeleteTrafficcontrol(req *restful.Request) (int,*BatchD
 	if err != nil {
 		return http.StatusInternalServerError, &BatchDeleteResponse{
 			Code:      1,
-			ErrorCode: "012000003",
-			Message:   c.errMsg.Trafficcontrol["012000003"],
+			ErrorCode: tcerror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Trafficcontrol[tcerror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
 	if err:=c.service.BatchDeleteTrafficcontrol(body.Data.Trafficcontrols,util.WithUser(authuser.Name),util.WithNamespace(authuser.Namespace));err!=nil{
 		return http.StatusInternalServerError, &BatchDeleteResponse{
 			Code:      2,
-			ErrorCode: "012000006",
-			Message:   c.errMsg.Restriction["012000006"],
+			ErrorCode: tcerror.FailedToDeleteFlowControl,
+			Message:   c.errMsg.Restriction[tcerror.FailedToDeleteFlowControl],
 			Detail:    fmt.Errorf("delete trafficcontrol error: %+v", err).Error(),
 		}
 	}else {
 		return http.StatusOK, &BatchDeleteResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: tcerror.Success,
 		}
 	}
 }
@@ -227,16 +227,16 @@ func (c *controller) ListTrafficcontrol(req *restful.Request) (int, *ListRespons
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      1,
-			ErrorCode: "012000003",
-			Message:   c.errMsg.Trafficcontrol["012000003"],
+			ErrorCode: tcerror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Trafficcontrol[tcerror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
 	if tc, err := c.service.ListTrafficcontrol(util.WithNameLike(name), util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace), util.WithId(apiId)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
-			ErrorCode: "012000007",
-			Message:   c.errMsg.Trafficcontrol["012000007"],
+			ErrorCode: tcerror.QueryFlowControlListFailed,
+			Message:   c.errMsg.Trafficcontrol[tcerror.QueryFlowControlListFailed],
 			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
@@ -245,14 +245,14 @@ func (c *controller) ListTrafficcontrol(req *restful.Request) (int, *ListRespons
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:      3,
-				ErrorCode: "012000008",
-				Message:   c.errMsg.Trafficcontrol["012000008"],
+				ErrorCode: tcerror.QueryFlowControlPagingParameterError,
+				Message:   c.errMsg.Trafficcontrol[tcerror.QueryFlowControlPagingParameterError],
 				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 			}
 		}
 		return http.StatusOK, &ListResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: tcerror.Success,
 			Data:      data,
 		}
 	}
@@ -277,8 +277,8 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 	if err := req.ReadEntity(&reqBody); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "012000001",
-			Message:   c.errMsg.Trafficcontrol["012000001"],
+			ErrorCode: tcerror.FailedToReadMessageContent,
+			Message:   c.errMsg.Trafficcontrol[tcerror.FailedToReadMessageContent],
 			Detail:    fmt.Errorf("cannot read entity: %+v, reqbody:%v, req:%v", err, reqBody, req).Error(),
 		}
 	}
@@ -286,8 +286,8 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 	if !ok {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "012000002",
-			Message:   c.errMsg.Trafficcontrol["012000002"],
+			ErrorCode: tcerror.MessageBodyIsEmpty,
+			Message:   c.errMsg.Trafficcontrol[tcerror.MessageBodyIsEmpty],
 			Detail:    "read entity error: data is null",
 		}
 	}
@@ -296,25 +296,25 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "012000003",
-			Message:   c.errMsg.Trafficcontrol["012000003"],
+			ErrorCode: tcerror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Trafficcontrol[tcerror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
 
 	if db, err := c.service.UpdateTrafficcontrol(req.PathParameter("id"), data,
 		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
-		code := "012000009"
+		code := tcerror.UpdateFlowControlFailed
 		if strings.Contains(err.Error(), "必须小于每") {
 			comma := strings.Index(err.Error(), "每")
 			return http.StatusInternalServerError, &CreateResponse{
 				Code:      2,
-				ErrorCode: "012000014",
+				ErrorCode: tcerror.FailedToCreateTrafficControl,
 				Message:   err.Error()[comma:],
 			}
 		}
 		if errors.IsNameDuplicated(err) {
-			code = "012000011"
+			code = tcerror.FlowControlWithDuplicateName
 		}
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:      2,
@@ -325,7 +325,7 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 	} else {
 		return http.StatusOK, &UpdateResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: tcerror.Success,
 			Data:      db,
 		}
 	}
@@ -336,8 +336,8 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      1,
-			ErrorCode: "012000001",
-			Message:   c.errMsg.Trafficcontrol["012000001"],
+			ErrorCode: tcerror.FailedToReadMessageContent,
+			Message:   c.errMsg.Trafficcontrol[tcerror.FailedToReadMessageContent],
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
@@ -346,8 +346,8 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 	if err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      1,
-			ErrorCode: "012000003",
-			Message:   c.errMsg.Trafficcontrol["012000003"],
+			ErrorCode: tcerror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Trafficcontrol[tcerror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
@@ -355,14 +355,14 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      2,
-			ErrorCode: "012000010",
-			Message:   c.errMsg.Trafficcontrol["012000010"],
+			ErrorCode: tcerror.BindingOrUnbindingAPIFailed,
+			Message:   c.errMsg.Trafficcontrol[tcerror.BindingOrUnbindingAPIFailed],
 			Detail:    fmt.Errorf("bind or unbind api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &BindResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: tcerror.Success,
 			Data:      api,
 		}
 	}

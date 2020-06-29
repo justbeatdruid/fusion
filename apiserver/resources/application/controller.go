@@ -10,6 +10,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/application/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	v1 "github.com/chinamobile/nlpt/crds/application/api/v1"
+	aperror "github.com/chinamobile/nlpt/apiserver/resources/application/error"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
@@ -80,16 +81,16 @@ func (c *controller) CreateApplication(req *restful.Request) (int, *CreateRespon
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
-			ErrorCode: "002000001",
-			Message:   c.errMsg.Application["002000001"],
+			ErrorCode: aperror.FailedToReadMessageContent,
+			Message:   c.errMsg.Application[aperror.FailedToReadMessageContent],
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			Detail:    "read entity error: data is null",
-			ErrorCode: "002000002",
-			Message:   c.errMsg.Application["002000002"],
+			ErrorCode: aperror.MessageBodyIsEmpty,
+			Message:   c.errMsg.Application[aperror.MessageBodyIsEmpty],
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
@@ -97,15 +98,15 @@ func (c *controller) CreateApplication(req *restful.Request) (int, *CreateRespon
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			Detail:    "auth model error",
-			ErrorCode: "002000003",
-			Message:   c.errMsg.Application["002000003"],
+			ErrorCode: aperror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Application[aperror.IncorrectAuthenticationInformation],
 		}
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
 	body.Data.Namespace = authuser.Namespace
 	if app, err, code := c.service.CreateApplication(body.Data); err != nil {
 		if errors.IsNameDuplicated(err) {
-			code = "002000021"
+			code = aperror.DuplicateApplicationName
 		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
@@ -116,7 +117,7 @@ func (c *controller) CreateApplication(req *restful.Request) (int, *CreateRespon
 	} else {
 		return http.StatusOK, &CreateResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: aperror.Success,
 			Data:      app,
 		}
 	}
@@ -129,21 +130,21 @@ func (c *controller) GetApplication(req *restful.Request) (int, *GetResponse) {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			Detail:    "auth model error",
-			ErrorCode: "002000003",
-			Message:   c.errMsg.Application["002000003"],
+			ErrorCode: aperror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Application[aperror.IncorrectAuthenticationInformation],
 		}
 	}
 	if app, err := c.service.GetApplication(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      1,
 			Detail:    fmt.Errorf("get application error: %+v", err).Error(),
-			ErrorCode: "002000005",
-			Message:   c.errMsg.Application["002000005"],
+			ErrorCode: aperror.QueryingASingleApplicationBasedOnIdFails,
+			Message:   c.errMsg.Application[aperror.QueryingASingleApplicationBasedOnIdFails],
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: aperror.Success,
 			Data:      app,
 		}
 	}
@@ -165,8 +166,8 @@ func (c *controller) PatchApplication(req *restful.Request) (int, *DeleteRespons
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
-			ErrorCode: "002000001",
-			Message:   c.errMsg.Application["002000001"],
+			ErrorCode: aperror.FailedToReadMessageContent,
+			Message:   c.errMsg.Application[aperror.FailedToReadMessageContent],
 		}
 	}
 	data, ok := reqBody["data"]
@@ -177,8 +178,8 @@ func (c *controller) PatchApplication(req *restful.Request) (int, *DeleteRespons
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			Detail:    "read entity error: data is null",
-			ErrorCode: "002000002",
-			Message:   c.errMsg.Application["002000002"],
+			ErrorCode: aperror.MessageBodyIsEmpty,
+			Message:   c.errMsg.Application[aperror.MessageBodyIsEmpty],
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
@@ -186,14 +187,14 @@ func (c *controller) PatchApplication(req *restful.Request) (int, *DeleteRespons
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			Detail:    "auth model error",
-			ErrorCode: "002000003",
-			Message:   c.errMsg.Application["002000003"],
+			ErrorCode: aperror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Application[aperror.IncorrectAuthenticationInformation],
 		}
 	}
 	if app, err := c.service.PatchApplication(req.PathParameter("id"), data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
-		code := "002000007"
+		code := aperror.UpdateApplicationFailed
 		if errors.IsNameDuplicated(err) {
-			code = "002000021"
+			code = aperror.DuplicateApplicationName
 		}
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      1,
@@ -204,7 +205,7 @@ func (c *controller) PatchApplication(req *restful.Request) (int, *DeleteRespons
 	} else {
 		return http.StatusOK, &DeleteResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: aperror.Success,
 			Data:      app,
 		}
 	}
@@ -217,21 +218,21 @@ func (c *controller) DeleteApplication(req *restful.Request) (int, *DeleteRespon
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      1,
 			Detail:    "auth model error",
-			ErrorCode: "002000003",
-			Message:   c.errMsg.Application["002000003"],
+			ErrorCode: aperror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Application[aperror.IncorrectAuthenticationInformation],
 		}
 	}
 	if app, err := c.service.DeleteApplication(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      1,
 			Detail:    fmt.Errorf("delete application error: %+v", err).Error(),
-			ErrorCode: "002000006",
-			Message:   c.errMsg.Application["002000006"],
+			ErrorCode: aperror.FailedToDeleteApplication,
+			Message:   c.errMsg.Application[aperror.FailedToDeleteApplication],
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: aperror.Success,
 			Data:      app,
 		}
 	}
@@ -248,8 +249,8 @@ func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) 
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      1,
 			Detail:    "auth model error",
-			ErrorCode: "002000003",
-			Message:   c.errMsg.Application["002000003"],
+			ErrorCode: aperror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Application[aperror.IncorrectAuthenticationInformation],
 		}
 	}
 	if app, err := c.service.ListApplication(util.WithGroup(group), util.WithNameLike(name),
@@ -257,8 +258,8 @@ func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) 
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			Detail:    fmt.Errorf("list application error: %+v", err).Error(),
-			ErrorCode: "002000008",
-			Message:   c.errMsg.Application["002000008"],
+			ErrorCode:aperror.QueryApplicationListFailed,
+			Message:   c.errMsg.Application[aperror.QueryApplicationListFailed],
 		}
 	} else {
 		var apps ApplicationList = app
@@ -267,13 +268,13 @@ func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) 
 			return http.StatusInternalServerError, &ListResponse{
 				Code:      1,
 				Detail:    fmt.Sprintf("page parameter error: %+v", err),
-				ErrorCode: "002000009",
-				Message:   c.errMsg.Application["002000009"],
+				ErrorCode: aperror.QueryApplicationPagingParameterError,
+				Message:   c.errMsg.Application[aperror.QueryApplicationPagingParameterError],
 			}
 		}
 		return http.StatusOK, &ListResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: aperror.Success,
 			Data:      data,
 		}
 	}
@@ -290,8 +291,8 @@ func (c *controller) ListApplicationByRelation(req *restful.Request) (int, *List
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      1,
 			Detail:    "auth model error",
-			ErrorCode: "002000003",
-			Message:   c.errMsg.Application["002000003"],
+			ErrorCode: aperror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Application[aperror.IncorrectAuthenticationInformation],
 		}
 	}
 	if app, err := c.service.ListApplicationByRelation(resourceType, resourceId, util.WithGroup(group),
@@ -299,8 +300,8 @@ func (c *controller) ListApplicationByRelation(req *restful.Request) (int, *List
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			Detail:    fmt.Errorf("list application error: %+v", err).Error(),
-			ErrorCode: "002000008",
-			Message:   c.errMsg.Application["002000008"],
+			ErrorCode: aperror.QueryApplicationListFailed,
+			Message:   c.errMsg.Application[aperror.QueryApplicationListFailed],
 		}
 	} else {
 		var apps ApplicationList = app
@@ -309,13 +310,13 @@ func (c *controller) ListApplicationByRelation(req *restful.Request) (int, *List
 			return http.StatusInternalServerError, &ListResponse{
 				Code:      1,
 				Detail:    fmt.Sprintf("page parameter error: %+v", err),
-				ErrorCode: "002000009",
-				Message:   c.errMsg.Application["002000009"],
+				ErrorCode: aperror.QueryApplicationPagingParameterError,
+				Message:   c.errMsg.Application[aperror.QueryApplicationPagingParameterError],
 			}
 		}
 		return http.StatusOK, &ListResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: aperror.Success,
 			Data:      data,
 		}
 	}
@@ -348,8 +349,8 @@ func (c *controller) AddUser(req *restful.Request) (int, *user.UserResponse) {
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000001",
-			Message:   c.errMsg.Application["002000001"],
+			ErrorCode: aperror.FailedToReadMessageContent,
+			Message:   c.errMsg.Application[aperror.FailedToReadMessageContent],
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
@@ -357,24 +358,24 @@ func (c *controller) AddUser(req *restful.Request) (int, *user.UserResponse) {
 	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000002",
-			Message:   c.errMsg.Application["002000002"],
+			ErrorCode: aperror.MessageBodyIsEmpty,
+			Message:   c.errMsg.Application[aperror.MessageBodyIsEmpty],
 			Detail:    "read entity error: " + err.Error(),
 		}
 	}
 	if len(data.ID) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000011",
-			Message:   c.errMsg.Application["002000011"],
+			ErrorCode: aperror.TheIdInTheMessageBodyIsEmpty,
+			Message:   c.errMsg.Application[aperror.TheIdInTheMessageBodyIsEmpty],
 			Detail:    "read entity error: id in data is null",
 		}
 	}
 	if len(data.Role) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000012",
-			Message:   c.errMsg.Application["002000012"],
+			ErrorCode: aperror.TheRoleInTheMessageBodyIsEmpty,
+			Message:   c.errMsg.Application[aperror.TheRoleInTheMessageBodyIsEmpty],
 			Detail:    "read entity error: role in data is null",
 		}
 	}
@@ -382,22 +383,22 @@ func (c *controller) AddUser(req *restful.Request) (int, *user.UserResponse) {
 	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000003",
-			Message:   c.errMsg.Application["002000003"],
+			ErrorCode: aperror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Application[aperror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
 	if err := c.service.AddUser(id, authuser.Name, data); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      2,
-			ErrorCode: "002000013",
-			Message:   c.errMsg.Application["002000013"],
+			ErrorCode: aperror.FailedToAddUser,
+			Message:   c.errMsg.Application[aperror.FailedToAddUser],
 			Detail:    fmt.Errorf("add user error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &user.UserResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode:aperror.Success,
 		}
 	}
 }
@@ -408,16 +409,16 @@ func (c *controller) RemoveUser(req *restful.Request) (int, *user.UserResponse) 
 	if len(id) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000014",
-			Message:   c.errMsg.Application["002000014"],
+			ErrorCode: aperror.TheIdInTheUrlParameterIsEmpty,
+			Message:   c.errMsg.Application[aperror.TheIdInTheUrlParameterIsEmpty],
 			Detail:    "id in path parameter is null",
 		}
 	}
 	if len(userid) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000015",
-			Message:   c.errMsg.Application["002000015"],
+			ErrorCode: aperror.UserIdInUrlParameterIsEmpty,
+			Message:   c.errMsg.Application[aperror.UserIdInUrlParameterIsEmpty],
 			Detail:    "user id in path parameter is null",
 		}
 	}
@@ -425,22 +426,22 @@ func (c *controller) RemoveUser(req *restful.Request) (int, *user.UserResponse) 
 	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000003",
-			Message:   c.errMsg.Application["002000003"],
+			ErrorCode: aperror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Application[aperror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
 	if err := c.service.RemoveUser(id, authuser.Name, userid); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      2,
-			ErrorCode: "002000016",
-			Message:   c.errMsg.Application["002000016"],
+			ErrorCode: aperror.FailedToRemoveUser,
+			Message:   c.errMsg.Application[aperror.FailedToRemoveUser],
 			Detail:    fmt.Errorf("remove user error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &user.UserResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: aperror.Success,
 		}
 	}
 }
@@ -450,8 +451,8 @@ func (c *controller) ChangeOwner(req *restful.Request) (int, *user.UserResponse)
 	if len(id) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000014",
-			Message:   c.errMsg.Application["002000014"],
+			ErrorCode: aperror.TheIdInTheUrlParameterIsEmpty,
+			Message:   c.errMsg.Application[aperror.TheIdInTheUrlParameterIsEmpty],
 			Detail:    "id in path parameter is null",
 		}
 	}
@@ -459,8 +460,8 @@ func (c *controller) ChangeOwner(req *restful.Request) (int, *user.UserResponse)
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000001",
-			Message:   c.errMsg.Application["002000001"],
+			ErrorCode: aperror.FailedToReadMessageContent,
+			Message:   c.errMsg.Application[aperror.FailedToReadMessageContent],
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
@@ -468,16 +469,16 @@ func (c *controller) ChangeOwner(req *restful.Request) (int, *user.UserResponse)
 	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000002",
-			Message:   c.errMsg.Application["002000002"],
+			ErrorCode: aperror.MessageBodyIsEmpty,
+			Message:   c.errMsg.Application[aperror.MessageBodyIsEmpty],
 			Detail:    "read entity error: " + err.Error(),
 		}
 	}
 	if len(data.ID) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000011",
-			Message:   c.errMsg.Application["002000011"],
+			ErrorCode: aperror.TheIdInTheMessageBodyIsEmpty,
+			Message:   c.errMsg.Application[aperror.TheIdInTheMessageBodyIsEmpty],
 			Detail:    "read entity error: id in data is null",
 		}
 	}
@@ -485,22 +486,22 @@ func (c *controller) ChangeOwner(req *restful.Request) (int, *user.UserResponse)
 	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000003",
-			Message:   c.errMsg.Application["002000003"],
+			ErrorCode: aperror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Application[aperror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
 	if err := c.service.ChangeOwner(id, authuser.Name, data); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      2,
-			ErrorCode: "002000018",
-			Message:   c.errMsg.Application["002000018"],
+			ErrorCode: aperror.FailedToChangeOwner,
+			Message:   c.errMsg.Application[aperror.FailedToChangeOwner],
 			Detail:    fmt.Errorf("change owner error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &user.UserResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: aperror.Success,
 		}
 	}
 }
@@ -511,16 +512,16 @@ func (c *controller) ChangeUser(req *restful.Request) (int, *user.UserResponse) 
 	if len(id) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000014",
-			Message:   c.errMsg.Application["002000014"],
+			ErrorCode: aperror.TheIdInTheUrlParameterIsEmpty,
+			Message:   c.errMsg.Application[aperror.TheIdInTheUrlParameterIsEmpty],
 			Detail:    "id in path parameter is null",
 		}
 	}
 	if len(userid) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000015",
-			Message:   c.errMsg.Application["002000015"],
+			ErrorCode: aperror.UserIdInUrlParameterIsEmpty,
+			Message:   c.errMsg.Application[aperror.UserIdInUrlParameterIsEmpty],
 			Detail:    "user id in path parameter is null",
 		}
 	}
@@ -528,8 +529,8 @@ func (c *controller) ChangeUser(req *restful.Request) (int, *user.UserResponse) 
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000001",
-			Message:   c.errMsg.Application["002000001"],
+			ErrorCode: aperror.FailedToReadMessageContent,
+			Message:   c.errMsg.Application[aperror.FailedToReadMessageContent],
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
@@ -537,16 +538,16 @@ func (c *controller) ChangeUser(req *restful.Request) (int, *user.UserResponse) 
 	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000002",
-			Message:   c.errMsg.Application["002000002"],
+			ErrorCode: aperror.MessageBodyIsEmpty,
+			Message:   c.errMsg.Application[aperror.MessageBodyIsEmpty],
 			Detail:    "read entity error: " + err.Error(),
 		}
 	}
 	if len(data.Role) == 0 {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000012",
-			Message:   c.errMsg.Application["002000012"],
+			ErrorCode: aperror.TheRoleInTheMessageBodyIsEmpty,
+			Message:   c.errMsg.Application[aperror.TheRoleInTheMessageBodyIsEmpty],
 			Detail:    "read entity error: role in data is null",
 		}
 	}
@@ -555,22 +556,22 @@ func (c *controller) ChangeUser(req *restful.Request) (int, *user.UserResponse) 
 	if err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      1,
-			ErrorCode: "002000003",
-			Message:   c.errMsg.Application["002000003"],
+			ErrorCode: aperror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Application[aperror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
 	if err := c.service.ChangeUser(id, authuser.Name, data); err != nil {
 		return http.StatusInternalServerError, &user.UserResponse{
 			Code:      2,
-			ErrorCode: "002000017",
-			Message:   c.errMsg.Application["002000017"],
+			ErrorCode: aperror.FailedToChangeUser,
+			Message:   c.errMsg.Application[aperror.FailedToChangeUser],
 			Detail:    fmt.Errorf("change user error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &user.UserResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: aperror.Success,
 		}
 	}
 }
@@ -582,8 +583,8 @@ func (c *controller) GetUsers(req *restful.Request) (int, map[string]string, *us
 	if len(id) == 0 {
 		return http.StatusInternalServerError, nil, &user.ListResponse{
 			Code:      1,
-			ErrorCode: "002000014",
-			Message:   c.errMsg.Application["002000014"],
+			ErrorCode: aperror.TheIdInTheUrlParameterIsEmpty,
+			Message:   c.errMsg.Application[aperror.TheIdInTheUrlParameterIsEmpty],
 			Detail:    "id in path parameter is null",
 		}
 	}
@@ -591,8 +592,8 @@ func (c *controller) GetUsers(req *restful.Request) (int, map[string]string, *us
 	if err != nil {
 		return http.StatusInternalServerError, nil, &user.ListResponse{
 			Code:      1,
-			ErrorCode: "002000003",
-			Message:   c.errMsg.Application["002000003"],
+			ErrorCode: aperror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Application[aperror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
@@ -609,15 +610,15 @@ func (c *controller) GetUsers(req *restful.Request) (int, map[string]string, *us
 			return http.StatusInternalServerError, nil, &user.ListResponse{
 				Code:      1,
 				Detail:    fmt.Sprintf("page parameter error: %+v", err),
-				ErrorCode: "002000009",
-				Message:   c.errMsg.Application["002000009"],
+				ErrorCode: aperror.QueryApplicationPagingParameterError,
+				Message:   c.errMsg.Application[aperror.QueryApplicationPagingParameterError],
 			}
 		}
 		return http.StatusOK, map[string]string{
 				"isadmin": strconv.FormatBool(isAdmin),
 			}, &user.ListResponse{
 				Code:      0,
-				ErrorCode: "0",
+				ErrorCode: aperror.Success,
 				Data:      data,
 			}
 	}
@@ -628,8 +629,8 @@ func (c *controller) DoStatisticsOncApps(req *restful.Request) (int, *Statistics
 	if err != nil {
 		return http.StatusInternalServerError, &StatisticsResponse{
 			Code:      1,
-			ErrorCode: "002000003",
-			Message:   c.errMsg.Application["002000003"],
+			ErrorCode: aperror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Application[aperror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
@@ -637,8 +638,8 @@ func (c *controller) DoStatisticsOncApps(req *restful.Request) (int, *Statistics
 	if err != nil {
 		return http.StatusInternalServerError, &StatisticsResponse{
 			Code:      1,
-			ErrorCode: "002000008",
-			Message:   c.errMsg.Application["002000008"],
+			ErrorCode: aperror.QueryApplicationListFailed,
+			Message:   c.errMsg.Application[aperror.QueryApplicationListFailed],
 			Detail:    fmt.Sprintf("do statistics on apps error, %+v", err),
 		}
 	}
