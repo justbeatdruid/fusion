@@ -399,7 +399,7 @@ func (r *Operator) UpdateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		if err != nil{
 			return fmt.Errorf("update function error: %+v ",err)
 		}
-		klog.V(5).Infof("create function result fn: %+v", fn)
+		klog.V(5).Infof("update function result fn: %+v", fn)
 	}
 	responseBody := &ResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
