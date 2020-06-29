@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"k8s.io/klog"
 	"strconv"
+	"time"
 
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -41,6 +42,7 @@ type TopicgroupReconciler struct {
 // +kubebuilder:rbac:groups=nlpt.cmcc.com,resources=topicgroups/status,verbs=get;update;patch
 
 func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
+	klog.Infof("start time: %+v, name:%+v", time.Now().Unix(), req.Name)
 	ctx := context.Background()
 	_ = r.Log.WithValues("topicgroup", req.NamespacedName)
 
@@ -83,9 +85,11 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 		}
 
-		klog.V(1).Infof("Final Namespace: %+v", *namespace)
+		klog.Infof("end time: %+v, name: %+v", time.Now().Unix(), req.Name)
+
+		//klog.V(1).Infof("Final Namespace: %+v", *namespace)
 		if err := r.Update(ctx, namespace); err != nil {
-			klog.Errorf("unable to update namespace: %+v", namespace)
+			klog.Errorf("unable to update namespace: %+v, err: %+v", namespace, err)
 		}
 	}
 
