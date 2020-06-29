@@ -385,6 +385,22 @@ func (r *Operator) UpdateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 			requestBody.Port = 80
 		}
 	}
+	if db.Spec.Type == nlptv1.FunctionService {
+		requestBody = &RequestBody{
+			Name:     db.ObjectMeta.Name,
+			Protocol: db.Spec.KongService.Protocol,
+			Host:     db.Spec.KongService.Host,
+			Port:     db.Spec.KongService.Port,
+			TimeOut:  db.Spec.KongService.TimeOut,
+			WirteOut: db.Spec.KongService.WirteOut,
+			ReadOut:  db.Spec.KongService.ReadOut,
+		}
+		fn, err := r.UpdateFunction(db)
+		if err != nil{
+			return fmt.Errorf("update function error: %+v ",err)
+		}
+		klog.V(5).Infof("update function result fn: %+v", fn)
+	}
 	responseBody := &ResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
@@ -395,7 +411,7 @@ func (r *Operator) UpdateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	if response.StatusCode != 200 {
 		return fmt.Errorf("request for update service error: receive wrong status code: %s", string(body))
 	}
-	if db.Spec.Type == nlptv1.DataService {
+	if db.Spec.Type == nlptv1.DataService || db.Spec.Type == nlptv1.FunctionService {
 		(*db).Spec.KongService.Host = responseBody.Host
 		(*db).Spec.KongService.Protocol = responseBody.Protocol
 		(*db).Spec.KongService.Port = responseBody.Port
@@ -564,3 +580,94 @@ func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, e
 	return  fn, nil
 }
 
+func (r *Operator) UpdateFunction(db *nlptv1.Serviceunit)(*FissionResInfoRsp,error){
+	klog.Infof("Enter UpdateFunction :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
+	pkg, err := r.UpdatePkgByFile(db)
+	if err!=nil{
+		return nil, fmt.Errorf("request for update pkg error: %+v", err)
+	}
+    db.Spec.FissionRefInfo.PkgName=pkg.Name
+    fn, err := r.UpdateFnByEnvAndPkg(db,pkg)
+    if err != nil {
+    	return nil, fmt.Errorf("request for update function error: %+v", err)
+	}
+	klog.V(5).Infof("update function name: %s\n", fn.Name)
+	return  fn, nil
+}
+
+func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,error)  {
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	//更新package的url
+	request = request.Put(fmt.Sprintf("%s://%s:%d%s%s", schema, r.FissionHost, r.FissionPort, PkgUrl,db.Spec.FissionRefInfo.PkgName))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &PkgRefInfoReq{}
+	requestBody.Metadata.Name = db.Spec.FissionRefInfo.PkgName
+	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
+	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
+	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
+		requestBody.Spec.Source.Type = "literal"
+		requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
+		requestBody.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
+	}else {
+		requestBody.Spec.Deployment.Type = "literal"
+		requestBody.Spec.Deployment.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
+	}
+	responseBody := &FissionResInfoRsp{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Errorf("request for update pkg error %+v", errs)
+		return nil, fmt.Errorf("request for update pkg error: %+v", errs)
+	}
+	klog.V(5).Infof("update pkg code and body: %d %s\n", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.Errorf("update pkg failed msg: %s\n", responseBody)
+		return nil, fmt.Errorf("request for update rate error: receive wrong status code: %s", string(body))
+	}
+	klog.V(5).Infof("update pkg name: %s\n", responseBody.Name)
+	return  responseBody, nil
+}
+
+func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInfoRsp)(*FissionResInfoRsp, error){
+	klog.Infof("Enter UpdateFnByEnvAndPkg :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Put(fmt.Sprintf("%s://%s:%d%s%s", schema, r.FissionHost, r.FissionPort, FunctionUrl,db.Spec.FissionRefInfo.FnName))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &FunctionReqInfo{}
+	requestBody.Metadata.Name = db.Spec.FissionRefInfo.FnName
+	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
+	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
+	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	requestBody.Spec.Package.Packageref.Namespace = db.ObjectMeta.Namespace
+	requestBody.Spec.Package.Packageref.Name = db.Spec.FissionRefInfo.PkgName
+	requestBody.Spec.Package.Packageref.Resourceversion = pkg.ResourceVersion
+	//函数入口
+	requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint
+	requestBody.Spec.InvokeStrategy.ExecutionStrategy.ExecutorType = "poolmgr"
+	requestBody.Spec.InvokeStrategy.StrategyType = "execution"
+	requestBody.Spec.FunctionTimeout = 120
+
+	responseBody := &FissionResInfoRsp{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Errorf("request for update function error %+v", errs)
+		return nil, fmt.Errorf("request for update function error: %+v", errs)
+	}
+
+	klog.V(5).Infof("update function code and body: %d %s\n", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.Errorf("update function failed msg: %s\n", responseBody)
+		return nil, fmt.Errorf("request for update function error: receive wrong status code: %s", string(body))
+	}
+	klog.V(5).Infof("update function name: %s\n", responseBody.Name)
+	return  responseBody, nil
+
+}
