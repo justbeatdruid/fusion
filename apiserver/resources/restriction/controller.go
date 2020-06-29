@@ -8,7 +8,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/errors"
 	"k8s.io/klog"
 	"net/http"
-
+	rserror "github.com/chinamobile/nlpt/apiserver/resources/restriction/error"
 	"github.com/chinamobile/nlpt/apiserver/resources/restriction/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/util"
@@ -74,16 +74,16 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "007000001",
-			Message:   c.errMsg.Restriction["007000001"],
+			ErrorCode: rserror.FailedToReadMessageContent,
+			Message:   c.errMsg.Restriction[rserror.FailedToReadMessageContent],
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "007000002",
-			Message:   c.errMsg.Restriction["007000002"],
+			ErrorCode: rserror.MessageBodyIsEmpty,
+			Message:   c.errMsg.Restriction[rserror.MessageBodyIsEmpty],
 			Detail:    "read entity error: data is null",
 		}
 	}
@@ -91,7 +91,7 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "007000010",
+			ErrorCode: rserror.IncorrectAuthenticationInformation,
 			Message:   c.errMsg.Trafficcontrol["012000010"],
 			Detail:    "auth model error",
 		}
@@ -100,7 +100,7 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 	body.Data.Namespace = authuser.Namespace
 	if db, err, code := c.service.CreateRestriction(body.Data); err != nil {
 		if errors.IsNameDuplicated(err) {
-			code = "007000011"
+			code = rserror.DuplicateAccessControlName
 		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
@@ -111,7 +111,7 @@ func (c *controller) CreateRestriction(req *restful.Request) (int, *CreateRespon
 	} else {
 		return http.StatusOK, &CreateResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: rserror.Success,
 			Data:      db,
 		}
 	}
@@ -123,22 +123,22 @@ func (c *controller) GetRestriction(req *restful.Request) (int, *GetResponse) {
 	if err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      1,
-			ErrorCode: "007000010",
-			Message:   c.errMsg.Api["007000010"],
+			ErrorCode: rserror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Api[rserror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
 	if db, err := c.service.GetRestriction(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      2,
-			ErrorCode: "007000004",
-			Message:   c.errMsg.Restriction["007000004"],
+			ErrorCode: rserror.QueryingASingleAccessControlBasedOnIdFails,
+			Message:   c.errMsg.Restriction[rserror.QueryingASingleAccessControlBasedOnIdFails],
 			Detail:    fmt.Errorf("get restriction error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: rserror.Success,
 			Data:      db,
 		}
 	}
@@ -150,22 +150,22 @@ func (c *controller) DeleteRestriction(req *restful.Request) (int, *DeleteRespon
 	if err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      1,
-			ErrorCode: "007000010",
-			Message:   c.errMsg.Api["007000010"],
+			ErrorCode: rserror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Api[rserror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
 	if err := c.service.DeleteRestriction(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      2,
-			ErrorCode: "007000005",
-			Message:   c.errMsg.Restriction["007000005"],
+			ErrorCode: rserror.FailedToDeleteAccessControl,
+			Message:   c.errMsg.Restriction[rserror.FailedToDeleteAccessControl],
 			Detail:    fmt.Errorf("delete restriction error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: rserror.Success,
 		}
 	}
 }
@@ -175,16 +175,16 @@ func (c *controller)BatchDeleteRestriction(req *restful.Request)(int, *BatchDele
 	if err :=req.ReadEntity(body);err!=nil{
 		return http.StatusInternalServerError,&BatchDeleteResponse{
 			Code:      1,
-			ErrorCode: "007000013",
-			Message:   c.errMsg.Restriction["007000013"],
+			ErrorCode: rserror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Restriction[rserror.IncorrectAuthenticationInformation],
 			Detail:   fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data.Operation != "delete" {
 		return http.StatusInternalServerError, &BatchDeleteResponse{
 			Code:      1,
-			ErrorCode: "007000020",
-			Message:   c.errMsg.Restriction["007000020"],
+			ErrorCode: rserror.RequestParameterError,
+			Message:   c.errMsg.Restriction[rserror.RequestParameterError],
 			Detail:    "operation params error",
 		}
 	}
@@ -192,8 +192,8 @@ func (c *controller)BatchDeleteRestriction(req *restful.Request)(int, *BatchDele
 	if err != nil {
 		return http.StatusInternalServerError, &BatchDeleteResponse{
 			Code:      1,
-			ErrorCode: "007000010",
-			Message:   c.errMsg.Restriction["007000010"],
+			ErrorCode: rserror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Restriction[rserror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
@@ -201,14 +201,14 @@ func (c *controller)BatchDeleteRestriction(req *restful.Request)(int, *BatchDele
 	if err:=c.service.BatchDeleteRestriction(body.Data.Restrictions,util.WithUser(authuser.Name),util.WithNamespace(authuser.Namespace));err!=nil{
 		return http.StatusInternalServerError, &BatchDeleteResponse{
 			Code:      2,
-			ErrorCode: "007000005",
-			Message:   c.errMsg.Restriction["007000005"],
+			ErrorCode: rserror.FailedToDeleteAccessControl,
+			Message:   c.errMsg.Restriction[rserror.FailedToDeleteAccessControl],
 			Detail:    fmt.Errorf("delete restriction error: %+v", err).Error(),
 		}
 	}else {
 		return http.StatusOK, &BatchDeleteResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: rserror.Success,
 		}
 	}
 }
@@ -223,8 +223,8 @@ func (c *controller) ListRestriction(req *restful.Request) (int, *ListResponse) 
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      1,
-			ErrorCode: "007000010",
-			Message:   c.errMsg.Trafficcontrol["007000010"],
+			ErrorCode: rserror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Trafficcontrol[rserror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
@@ -233,8 +233,8 @@ func (c *controller) ListRestriction(req *restful.Request) (int, *ListResponse) 
 		util.WithNamespace(authuser.Namespace),util.WithId(apiId)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
-			ErrorCode: "007000006",
-			Message:   c.errMsg.Restriction["007000006"],
+			ErrorCode: rserror.QueryAccessControlListFailed,
+			Message:   c.errMsg.Restriction[rserror.QueryAccessControlListFailed],
 			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
 		}
 	} else {
@@ -243,14 +243,14 @@ func (c *controller) ListRestriction(req *restful.Request) (int, *ListResponse) 
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:      3,
-				ErrorCode: "007000007",
-				Message:   c.errMsg.Restriction["007000007"],
+				ErrorCode: rserror.QueryAccessControlPagingParameterError,
+				Message:   c.errMsg.Restriction[rserror.QueryAccessControlPagingParameterError],
 				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 			}
 		}
 		return http.StatusOK, &ListResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: rserror.Success,
 			Data:      data,
 		}
 	}
@@ -275,8 +275,8 @@ func (c *controller) UpdateRestriction(req *restful.Request) (int, *UpdateRespon
 	if err := req.ReadEntity(&reqBody); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "007000001",
-			Message:   c.errMsg.Restriction["007000001"],
+			ErrorCode: rserror.FailedToReadMessageContent,
+			Message:   c.errMsg.Restriction[rserror.FailedToReadMessageContent],
 			Detail:    fmt.Errorf("cannot read entity: %+v, reqbody:%v, req:%v", err, reqBody, req).Error(),
 		}
 	}
@@ -286,8 +286,8 @@ func (c *controller) UpdateRestriction(req *restful.Request) (int, *UpdateRespon
 		klog.Infof("get body restriction of updating: %+v", reqBody)
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
-			ErrorCode: "007000002",
-			Message:   c.errMsg.Restriction["007000002"],
+			ErrorCode: rserror.MessageBodyIsEmpty,
+			Message:   c.errMsg.Restriction[rserror.MessageBodyIsEmpty],
 			Detail:    "read entity error: data is null",
 		}
 	}
@@ -296,17 +296,17 @@ func (c *controller) UpdateRestriction(req *restful.Request) (int, *UpdateRespon
 	if err != nil {
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:      1,
-			ErrorCode: "007000010",
-			Message:   c.errMsg.Restriction["007000010"],
+			ErrorCode: rserror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Restriction[rserror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
 
 	if db, err := c.service.UpdateRestriction(req.PathParameter("id"), data,
 		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
-		code := "007000009"
+		code := rserror.UpdateAccessControlFailed
 		if errors.IsNameDuplicated(err) {
-			code = "007000011"
+			code = rserror.DuplicateAccessControlName
 		}
 		return http.StatusInternalServerError, &UpdateResponse{
 			Code:      2,
@@ -317,7 +317,7 @@ func (c *controller) UpdateRestriction(req *restful.Request) (int, *UpdateRespon
 	} else {
 		return http.StatusOK, &UpdateResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: rserror.Success,
 			Data:      db,
 		}
 	}
@@ -328,8 +328,8 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      1,
-			ErrorCode: "007000001",
-			Message:   c.errMsg.Restriction["007000001"],
+			ErrorCode: rserror.FailedToReadMessageContent,
+			Message:   c.errMsg.Restriction[rserror.FailedToReadMessageContent],
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
@@ -338,8 +338,8 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 	if err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      1,
-			ErrorCode: "007000010",
-			Message:   c.errMsg.Restriction["007000010"],
+			ErrorCode: rserror.IncorrectAuthenticationInformation,
+			Message:   c.errMsg.Restriction[rserror.IncorrectAuthenticationInformation],
 			Detail:    "auth model error",
 		}
 	}
@@ -348,14 +348,14 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, interface{}) {
 		util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &BindResponse{
 			Code:      2,
-			ErrorCode: "007000009",
-			Message:   c.errMsg.Restriction["007000009"],
+			ErrorCode: rserror.BindingOrUnbindingAPIFailed,
+			Message:   c.errMsg.Restriction[rserror.BindingOrUnbindingAPIFailed],
 			Detail:    fmt.Errorf("bind api error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &BindResponse{
 			Code:      0,
-			ErrorCode: "0",
+			ErrorCode: rserror.Success,
 			Data:      api,
 		}
 	}
