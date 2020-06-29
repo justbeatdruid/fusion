@@ -425,3 +425,34 @@ func (s *Service) insertAddFlag(task model.Task) {
 	}
 	return
 }
+
+//GetTaskRunlog ...
+func (s *Service) GetTaskRunlog(offet, limit int, dagID string) (interface{}, error) {
+	dagRun, num, total, err := model.GetTbDagRun(offet, limit, dagID)
+	if err != nil {
+		klog.Errorf("Get task Runlog falied ,err:%v", err)
+		return nil, err
+	}
+	runlog := []TaskLog{}
+	for i := range dagRun {
+		singlelog := TaskLog{}
+		singlelog.DagID = dagRun[i].DagId
+		singlelog.ExecDate = dagRun[i].ExecDate
+		singlelog.StartDate = dagRun[i].StartDate
+		singlelog.EndDate = dagRun[i].EndDate
+		singlelog.DagStatus = dagRun[i].DagStatus
+		json.Unmarshal([]byte(dagRun[i].Remark), &singlelog.DagInfo)
+		runlog = append(runlog, singlelog)
+	}
+
+	body := map[string]interface{}{}
+
+	body["items"] = runlog
+	body["count"] = num
+	body["total"] = total
+	body["page"] = offet
+	body["limit"] = limit
+
+	return body, nil
+
+}

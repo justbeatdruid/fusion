@@ -27,6 +27,7 @@ type Serviceunit struct {
 	Type         v1.ServiceType     `json:"type"`
 	DatasourceID *v1.Datasource     `json:"datasources,omitempty"`
 	KongSevice   v1.KongServiceInfo `json:"kongService"`
+	FissionRefInfo v1.FissionRefInfo `json:"fissionRefInfo"`
 	Users        user.Users         `json:"users"`
 	Description  string             `json:"description"`
 
@@ -59,6 +60,7 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 		DatasourceID: app.DatasourceID,
 		//Datasource:   app.Datasource,
 		KongService:   app.KongSevice,
+		FissionRefInfo: app.FissionRefInfo,
 		Description:   app.Description,
 		Result:        app.Result,
 		DisplayStatus: app.DisplayStatus,
@@ -141,6 +143,7 @@ func ToModel(obj *v1.Serviceunit, opts ...util.OpOption) *Serviceunit {
 		Type:         obj.Spec.Type,
 		DatasourceID: obj.Spec.DatasourceID,
 		KongSevice:   obj.Spec.KongService,
+		FissionRefInfo: obj.Spec.FissionRefInfo,
 		Description:  obj.Spec.Description,
 
 		Status:        obj.Status.Status,
@@ -291,6 +294,19 @@ func (s *Service) Validate(a *Serviceunit) error {
 	case v1.WebService:
 		if len(a.KongSevice.Host) == 0 || len(a.KongSevice.Protocol) == 0 {
 			return fmt.Errorf("webservice is null")
+		}
+	case v1.FunctionService:
+		if len(a.FissionRefInfo.FnName) == 0 {
+			return fmt.Errorf("function name is null")
+		}
+		if len(a.FissionRefInfo.FnFile) == 0 {
+			return fmt.Errorf("function file is null")
+		}
+		if len(a.FissionRefInfo.Entrypoint) == 0 {
+			return fmt.Errorf("function entry point is null")
+		}
+		if len(a.FissionRefInfo.Language) == 0 {
+			return fmt.Errorf("function language is null")
 		}
 	default:
 		return fmt.Errorf("wrong type: %s", a.Type)

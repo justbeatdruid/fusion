@@ -7,7 +7,9 @@ import (
 	"time"
 
 	"github.com/chinamobile/nlpt/apiserver/database/model"
+	"github.com/chinamobile/nlpt/pkg/auth/cas"
 	"github.com/chinamobile/nlpt/pkg/util"
+	"k8s.io/klog"
 )
 
 //SchedualPlan ...
@@ -95,6 +97,7 @@ type Dataservice struct {
 	Status             bool
 	DagInfo            DagInfo
 	DagStatus          int
+	User               User
 }
 
 // OperationReq ...
@@ -185,14 +188,24 @@ func (ds *Dataservice) Validate(service *Service, opts ...util.OpOption) error {
 	return nil
 }
 
-// DagStatus ...
+//TaskLog ...
+type TaskLog struct {
+	DagID     string `json:"DagId"`
+	ExecDate  time.Time
+	StartDate time.Time
+	EndDate   time.Time
+	DagStatus int
+	DagInfo   DagInfo `json:"taskInfo"`
+}
+
+// DagInfo ...
 type DagInfo struct {
 	ErrorMessage    string `json:"errorMessage"`
 	NumWrite        int64  `json:"numWrite"`
 	SourceTableName string `json:"sourceTableName"`
 	ByteRead        int64  `json:"byteRead"`
 	CostTime        string `json:"costTime"`
-	NumRead         int64  `json:"NumRead"` //realtime or periodic
+	NumRead         int64  `json:"NumRead"`
 	NumFilter       int64  `json:"numFilter"`
 	TargetTableName string `json:"targetTableName"`
 	ByteWrite       int64  `json:"byteWrite"`
@@ -214,7 +227,7 @@ func ToAPI(ds *model.Task, service *Service, opts ...util.OpOption) *Dataservice
 		DagID:       ds.DagId,
 		Name:        ds.Name,
 		Description: ds.Description,
-		Namespace:   "default",
+		Namespace:   ds.Namespace,
 		Type:        ds.Type,
 		Status:      ds.Status,
 		StartTime:   ds.StartTime.Format(TimeStr),
@@ -225,12 +238,18 @@ func ToAPI(ds *model.Task, service *Service, opts ...util.OpOption) *Dataservice
 	json.Unmarshal([]byte(ds.DataTargetConfig), &apiTask.DataTargetConfig)
 	_, apiTask.DataTargetConfig.RelationalDbTarget.Name, _ = service.GetDataSource(apiTask.DataTargetConfig.RelationalDbTarget.TargetID, opts...)
 	_, apiTask.DataSourceConfig.RelationalDb.Name, _ = service.GetDataSource(apiTask.DataSourceConfig.RelationalDb.SourceID, opts...)
-	dagRun, num, err := model.GetTbDagRun(apiTask.DagID)
+	dagRun, num, _, err := model.GetTbDagRun(0, 1, apiTask.DagID)
 	if num > 0 && err == nil {
 		apiTask.DagStatus = dagRun[0].DagStatus
 		apiTask.ExecDate = dagRun[0].ExecDate.Format(TimeStr)
 		json.Unmarshal([]byte(dagRun[0].Remark), &apiTask.DagInfo)
 
+	}
+	apiTask.User.UserID = ds.UserId
+	apiTask.User.UserName, err = cas.GetUserNameByID(ds.UserId)
+	if err != nil {
+		apiTask.User.UserName = apiTask.User.UserID
+		klog.Errorf("cannot get username with id %s: %+v", ds.UserId, err)
 	}
 	return apiTask
 }

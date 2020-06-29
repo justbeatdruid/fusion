@@ -380,6 +380,49 @@ func (c *controller) ListDataservice(req *restful.Request) (int, *ListResponse) 
 
 }
 
+//GetTaskRunlog ...
+func (c *controller) GetTaskRunlog(req *restful.Request) (int, *ListResponse) {
+	pageStr := req.QueryParameter("page")
+	limitStr := req.QueryParameter("limit")
+	page, err := strconv.Atoi(pageStr)
+	if err != nil || page <= 0 {
+		klog.Errorf("offset para error, offset: %+v, err :%v", pageStr, err)
+		page = service.DefaultPage
+	}
+	limit, err := strconv.Atoi(limitStr)
+	if err != nil || limit > service.Maxlimit || limit <= 0 {
+		klog.Errorf("limit para error, offset: %+v, err :%v", limitStr, err)
+		limit = service.Maxlimit
+	}
+	_, err = auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      1,
+			ErrorCode: "005000003",
+			Message:   c.errMsg.DataService["005000003"],
+			Detail:    "auth model error",
+		}
+	}
+
+	ds, err := c.service.GetTaskRunlog(page, limit, req.PathParameter("id"))
+	//ds, err := c.service.ListDataservice(page, limit, name, authuser.Name, authuser.Namespace)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      1,
+			ErrorCode: "000000001",
+			Message:   c.errMsg.Common["000000001"],
+			Detail:    fmt.Errorf("get database error: %+v", err).Error(),
+		}
+	}
+
+	return http.StatusOK, &ListResponse{
+		Code:      0,
+		ErrorCode: "0",
+		Data:      ds,
+	}
+
+}
+
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
 }

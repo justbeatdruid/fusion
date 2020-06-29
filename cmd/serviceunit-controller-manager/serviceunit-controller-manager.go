@@ -43,17 +43,26 @@ func init() {
 	klog.InitFlags(nil)
 }
 
+const (
+	//TODO 域名
+	FissionController   = "controller.fission"
+	FissionControllerPort   = 80
+)
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
 	var operatorHost string
 	var operatorPort int
+	var fissionHost string
+	var fissionPort int
 	var operatorCAFile string
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
 	flag.StringVar(&operatorHost, "operator-host", "127.0.0.1", "Host of database warehose service.")
 	flag.IntVar(&operatorPort, "operator-port", 800, "Port of database warehose service.")
+	flag.StringVar(&fissionHost, "fission-host", FissionController, "Host of database warehose service.")
+	flag.IntVar(&fissionPort, "fission-port", FissionControllerPort, "Port of database warehose service.")
 	flag.StringVar(&operatorCAFile, "operator-cafile", "", "Certificate for TLS communication with database warehose service.")
 	flag.Parse()
 
@@ -78,7 +87,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	operator, err := controllers.NewOperator(operatorHost, operatorPort, operatorCAFile)
+	operator, err := controllers.NewOperator(operatorHost, operatorPort, fissionHost, fissionPort, operatorCAFile)
 	if err != nil {
 		setupLog.Error(err, "unable to create operator")
 		os.Exit(1)

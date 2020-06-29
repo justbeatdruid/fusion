@@ -249,12 +249,12 @@ func (c *controller) ModifyTopicgroup(req *restful.Request) (int, *CreateRespons
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	data, err := c.service.ModifyTopicgroup(id, body, util.WithNamespace(authUser.Namespace))
+	data, msg, err := c.service.ModifyTopicgroup(id, body, util.WithNamespace(authUser.Namespace))
 	if err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
 			ErrorCode: tgerror.ErrorModify,
-			Message:   fmt.Sprintf(c.errMsg.TopicGroup[tgerror.ErrorModify], err),
+			Message:   fmt.Sprintf(c.errMsg.TopicGroup[tgerror.ErrorModify], msg),
 			Detail:    fmt.Sprintf("modify topic group error: %+v", err),
 		}
 	}
@@ -281,7 +281,7 @@ func (c *controller) DeleteTopicgroups(req *restful.Request) (int, *ListResponse
 		}
 	}
 	for _, id := range ids {
-		if _, err := c.service.DeleteTopicgroup(id, util.WithNamespace(authUser.Namespace)); err != nil {
+		if _, _, err := c.service.DeleteTopicgroup(id, util.WithNamespace(authUser.Namespace)); err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:    1,
 				Message: fmt.Errorf("delete topicgroup error: %+v", err).Error(),
@@ -305,11 +305,11 @@ func (c *controller) DeleteTopicgroup(req *restful.Request) (int, *DeleteRespons
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	if tp, err := c.service.DeleteTopicgroup(id, util.WithNamespace(authUser.Namespace)); err != nil {
+	if tp, msg, err := c.service.DeleteTopicgroup(id, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: tgerror.ErrorDelete,
-			Message:   c.errMsg.TopicGroup[tgerror.ErrorDelete],
+			Message:   fmt.Sprintf(c.errMsg.TopicGroup[tgerror.ErrorDelete], msg),
 			Detail:    fmt.Sprintf("delete topicgroup error: %+v", err),
 		}
 	} else {

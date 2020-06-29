@@ -25,6 +25,8 @@ var retryStatus = []int{http.StatusBadRequest, http.StatusInternalServerError}
 type Operator struct {
 	Host   string
 	Port   int
+	FissionHost string
+	FissionPort int
 	CAFile string
 }
 
@@ -159,23 +161,22 @@ type FissionResInfoRsp struct {
 }
 
 const (
-	FissionController   = "controller.fission"
-	FissionPort         = 80
-	FissionRouter       = "router.fission"
-	EnvUrl              = "/v2/environments"         //成功
-	PkgUrl              = "/v2/packages" //读取消息体失败
-	FunctionUrl         = "/v2/functions" //创建Topic失败
-	NodeJsImage         ="fission/node-env"
-	NodeJsBuild         ="fission/node-builder"
-	PythonImage         ="fission/python-env"
-	PythonBuild         ="fission/python-builder"
-	GoImage             ="fission/go-env"
-	GoBuild             ="fission/go-builder"
-	Command             = "build"
-	NodeJs              = "nodejs"
-	Python              = "python"
-	Go                  = "go"
-	Zip                 = ".zip"
+	FissionRouterPort       = 80
+	FissionRouter           = "router.fission"
+	EnvUrl                  = "/v2/environments"         //成功
+	PkgUrl                  = "/v2/packages" //读取消息体失败
+	FunctionUrl             = "/v2/functions" //创建Topic失败
+	NodeJsImage             ="fission/node-env"
+	NodeJsBuild             ="fission/node-builder"
+	PythonImage             ="fission/python-env"
+	PythonBuild             ="fission/python-builder"
+	GoImage                 ="fission/go-env"
+	GoBuild                 ="fission/go-builder"
+	Command                 = "build"
+	NodeJs                  = "nodejs"
+	Python                  = "python"
+	Go                      = "go"
+	Zip                     = ".zip"
 )
 
 type FunctionReqInfo struct {
@@ -227,11 +228,13 @@ func (r *requestLogger) Println(v ...interface{}) {
 	klog.V(4).Infof("%+v", v)
 }
 
-func NewOperator(host string, port int, cafile string) (*Operator, error) {
+func NewOperator(host string, port int, fissionHost string, fissionPort int, cafile string) (*Operator, error) {
 	klog.Infof("NewOperator  event:%s %d %s", host, port, cafile)
 	return &Operator{
 		Host:   host,
 		Port:   port,
+		FissionHost:   fissionHost,
+		FissionPort:   fissionPort,
 		CAFile: cafile,
 	}, nil
 }
@@ -283,7 +286,7 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 			Name:     db.ObjectMeta.Name,
 			Protocol: "http",
 			Host:     FissionRouter,
-			Port:     FissionPort,
+			Port:     FissionRouterPort,
 			TimeOut:  60000,
 			WirteOut: 60000,
 			ReadOut:  60000,
@@ -423,7 +426,7 @@ func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error)
 	klog.Infof("Enter CreateEnv :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, FissionController, FissionPort, EnvUrl))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, r.FissionHost, r.FissionPort, EnvUrl))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -467,7 +470,7 @@ func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit, env *FissionResInfoRs
 	klog.Infof("Enter CreatePkgByFile :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, FissionController, FissionPort, PkgUrl))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, r.FissionHost, r.FissionPort, PkgUrl))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -477,7 +480,7 @@ func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit, env *FissionResInfoRs
 	requestBody.Metadata.Name = name
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Environment.Name = env.Name
-	requestBody.Spec.Environment.Namespace = "default"
+	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
 	if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
 		requestBody.Spec.Source.Type = "literal"
 		requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
@@ -506,7 +509,7 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, env *FissionResIn
 	klog.Infof("Enter CreateFnByEnvAndPkg :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, FissionController, FissionPort, FunctionUrl))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, r.FissionHost, r.FissionPort, FunctionUrl))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -519,6 +522,7 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, env *FissionResIn
 	requestBody.Spec.Package.Packageref.Namespace = pkg.Namespace
 	requestBody.Spec.Package.Packageref.Name = pkg.Name
 	requestBody.Spec.Package.Packageref.Resourceversion = pkg.ResourceVersion
+	//函数入口
 	requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint
 	requestBody.Spec.InvokeStrategy.ExecutionStrategy.ExecutorType = "poolmgr"
 	requestBody.Spec.InvokeStrategy.StrategyType = "execution"

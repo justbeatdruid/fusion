@@ -70,6 +70,13 @@ type ResetPositionResponse = Wrapped
 type AddPartitions = Wrapped
 type SendMessagesResponse = ListResponse
 type BatchGrantResponse = ListResponse
+type RefreshResponse struct {
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Message   string      `json:"message"`
+	Data      interface{} `json:"data"`
+	Detail    string      `json:"detail"`
+}
 
 /*type DeleteResponse struct {
 	Code    int    `json:"code"`
@@ -1666,5 +1673,75 @@ func (c *controller) SkipMessages(req *restful.Request) (int, *ResetPositionResp
 		Message:   "success",
 		Detail:    "success",
 	}
+
+}
+
+
+func (c *controller) Refresh(req *restful.Request) (int, *RefreshResponse) {
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &RefreshResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+
+	id := req.PathParameter("id")
+	subName := req.PathParameter("subName")
+
+	crd, err := c.service.Get(id, util.WithNamespace(authUser.Namespace))
+	if err != nil {
+		return http.StatusInternalServerError, &RefreshResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorRefresh,
+			Message:   c.errMsg.Topic[tperror.ErrorRefresh],
+			Detail:    fmt.Sprintf("reset cursor error: %+v", err),
+		}
+	}
+
+	if err != nil {
+		return http.StatusInternalServerError, &RefreshResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorRefresh,
+			Message:   c.errMsg.Topic[tperror.ErrorRefresh],
+			Detail:    fmt.Sprintf("refresh error: %+v", err),
+		}
+	}
+
+	connector := service.NewConnector(c.tpConfig)
+	stats, err := connector.GetStats(crd)
+	if err != nil {
+		return http.StatusInternalServerError, &RefreshResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorRefresh,
+			Message:   c.errMsg.Topic[tperror.ErrorRefresh],
+			Detail:    fmt.Sprintf("refresh error: %+v", err),
+		}
+	}
+
+	for k, v := range stats.Subscriptions {
+		if k == subName {
+			return http.StatusOK, &RefreshResponse{
+				Code: success,
+				ErrorCode: tperror.Success,
+				Detail : "success",
+				Data: service.ToSubscriptionStatModel(v),
+			}
+		}
+	}
+
+	return http.StatusOK, &RefreshResponse{
+		Code: success,
+		ErrorCode: tperror.Success,
+		Detail : "success",
+		Data: nil,
+	}
+
+
+
+
+
 
 }
