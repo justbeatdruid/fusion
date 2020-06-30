@@ -9,6 +9,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/util"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/chinamobile/nlpt/crds/topicgroup/api/v1"
 
@@ -38,6 +39,9 @@ type Service struct {
 	kubeClient  *clientset.Clientset
 	client      dynamic.NamespaceableResourceInterface
 	topicClient dynamic.NamespaceableResourceInterface
+}
+func (s *Service) GetClient() dynamic.NamespaceableResourceInterface {
+	return s.client
 }
 
 func NewService(client dynamic.Interface, kubeClient *clientset.Clientset) *Service {
@@ -227,6 +231,7 @@ func (s *Service) DeleteTopicgroup(id string, opts ...util.OpOption) (*Topicgrou
 	if err != nil {
 		return nil, message, err
 	}
+	util.WaitDelete(s, tg.ObjectMeta)
 	return ToModel(tg), message, nil
 }
 
@@ -262,6 +267,9 @@ func (s *Service) ModifyTopicgroup(id string, topicgroup *Topicgroup, opts ...ut
 
 func (s *Service) MergePolicies(req *Policies, db *v1.Policies) *v1.Policies {
 	p := ToPolicesApi(req)
+	if db == nil {
+		db = &v1.Policies{}
+	}
 	if p.SubscriptionAuthMode != nil {
 		db.SubscriptionAuthMode = p.SubscriptionAuthMode
 	}
@@ -419,7 +427,7 @@ func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupE
 			ErrorCode: tgerror.ErrorCreateTopicgroup,
 		}
 	}
-	klog.V(5).Infof("get v1.topicgroup of creating: %+v", tp)
+	klog.V(5).Infof("get v1.topicgroup of creating: %+v, time: %+v", tp, time.Now().Unix())
 	return tp, tgerror.TopicgroupError{}
 }
 

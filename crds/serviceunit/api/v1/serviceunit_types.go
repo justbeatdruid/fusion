@@ -148,6 +148,8 @@ type FissionRefInfo struct {
 	FnName  string `json:"fnName"`     //函数名称
 	FnFile  string `json:"fnFile"`     //函数源码文件
 	Entrypoint string  `json:"entryPoint"`  //函数入口
+	PkgResourceVersion string `json:"pkgResourceVersion"`
+	FnResourceVersion string `json:"fnResourceVersion"`
 }
 
 // +kubebuilder:object:root=true

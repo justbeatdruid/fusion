@@ -16,11 +16,13 @@ import (
 )
 
 const METRICS_NAME = "fusion_api_count_total"
+const API_METRICS_NAME = "fusion_api_call_count"
 
 type Manager struct {
 	lister     *cache.ApiLister
 	kubeClient *clientset.Clientset
 	CountDesc  *prometheus.Desc
+	apiCountDesc  *prometheus.Desc
 }
 
 func (c *Manager) List(namespace string) ([]*v1.Api, error) {
@@ -60,6 +62,7 @@ func (c *Manager) GetCount() (namespacedApiCount map[string]int) {
 
 func (c *Manager) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.CountDesc
+	ch <- c.apiCountDesc
 }
 
 func (c *Manager) Collect(ch chan<- prometheus.Metric) {
@@ -72,6 +75,24 @@ func (c *Manager) Collect(ch chan<- prometheus.Metric) {
 			namespace,
 		)
 	}
+	for namespace, _ := range namespacedApiCount {
+		list, err := c.List(namespace)
+		if err != nil {
+			klog.Errorf("list api error: %+v", err)
+			return
+		}
+		for _, api := range list {
+			ch <- prometheus.MustNewConstMetric(
+				c.apiCountDesc,
+				prometheus.CounterValue,
+				float64(api.Status.CalledCount),
+				namespace,
+				api.ObjectMeta.Name,
+				api.Spec.Name,
+			)
+		}
+	}
+
 }
 
 func NewManager(instance string, listers *cache.Listers, kubeClient *clientset.Clientset) *Manager {
@@ -82,6 +103,12 @@ func NewManager(instance string, listers *cache.Listers, kubeClient *clientset.C
 			METRICS_NAME,
 			"Number of APIs.",
 			[]string{"namespace"},
+			prometheus.Labels{"instance": instance},
+		),
+		apiCountDesc: prometheus.NewDesc(
+			API_METRICS_NAME,
+			"Number call count of APIs.",
+			[]string{"namespace","apiId", "apiName"},
 			prometheus.Labels{"instance": instance},
 		),
 	}
