@@ -126,6 +126,7 @@ type PkgRefInfoReq struct {
 	Metadata struct {
 		Name string `json:"name"`
 		Namespace string `json:"namespace"`
+		ResourceVersion string `json:"resourceVersion"`
 	} `json:"metadata"`
 	Spec struct {
 		Environment struct {
@@ -183,6 +184,7 @@ type FunctionReqInfo struct {
 	Metadata struct {
 		Name string `json:"name"`
 		Namespace string `json:"namespace"`
+		ResourceVersion string `json:"resourceVersion"`
 	} `json:"metadata"`
 	Spec struct {
 		Environment struct {
@@ -572,12 +574,12 @@ func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, e
 		return nil, fmt.Errorf("request for create pkg error: %+v", err)
 	}
 	(*db).Spec.FissionRefInfo.PkgName = pkg.Name
-	db.Spec.FissionRefInfo.PkgResourceVersion = pkg.ResourceVersion
+	(*db).Spec.FissionRefInfo.PkgResourceVersion = pkg.ResourceVersion
 	fn, err := r.CreateFnByEnvAndPkg(db, env, pkg)
 	if err != nil {
 		return nil, fmt.Errorf("request for create function error: %+v", err)
 	}
-	db.Spec.FissionRefInfo.FnResourceVersion = fn.ResourceVersion
+	(*db).Spec.FissionRefInfo.FnResourceVersion = fn.ResourceVersion
 	klog.V(5).Infof("create function name: %s\n", fn.Name)
 	return  fn, nil
 }
@@ -588,11 +590,13 @@ func (r *Operator) UpdateFunction(db *nlptv1.Serviceunit)(*FissionResInfoRsp,err
 	if err!=nil{
 		return nil, fmt.Errorf("request for update pkg error: %+v", err)
 	}
-    db.Spec.FissionRefInfo.PkgName=pkg.Name
+	(*db).Spec.FissionRefInfo.PkgResourceVersion=pkg.ResourceVersion
+	(*db).Spec.FissionRefInfo.PkgName=pkg.Name
     fn, err := r.UpdateFnByEnvAndPkg(db,pkg)
     if err != nil {
     	return nil, fmt.Errorf("request for update function error: %+v", err)
 	}
+	(*db).Spec.FissionRefInfo.FnResourceVersion=fn.ResourceVersion
 	klog.V(5).Infof("update function name: %s\n", fn.Name)
 	return  fn, nil
 }
@@ -611,6 +615,7 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
 	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	requestBody.Metadata.ResourceVersion = db.Spec.FissionRefInfo.PkgResourceVersion
 	if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
 		requestBody.Spec.Source.Type = "literal"
 		requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
@@ -653,6 +658,7 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	requestBody.Spec.Package.Packageref.Resourceversion = pkg.ResourceVersion
 	//函数入口
 	requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint
+	requestBody.Metadata.ResourceVersion = db.Spec.FissionRefInfo.FnResourceVersion
 	requestBody.Spec.InvokeStrategy.ExecutionStrategy.ExecutorType = "poolmgr"
 	requestBody.Spec.InvokeStrategy.StrategyType = "execution"
 	requestBody.Spec.FunctionTimeout = 120
