@@ -313,6 +313,17 @@ func (c *controller) UpdateTrafficcontrol(req *restful.Request) (int, *UpdateRes
 				Message:   err.Error()[comma:],
 			}
 		}
+		if strings.Contains(err.Error(),"at least one limit config must exist"){
+			code = tcerror.ThereMustBeAtLeastOneTimeLimit
+			return http.StatusInternalServerError, &CreateResponse{
+				Code:      2,
+				ErrorCode: tcerror.FailedToCreateTrafficControl,
+				Message:  c.errMsg.Trafficcontrol[code],
+				Detail:    fmt.Errorf("update trafficcontrol error: %+v", err).Error(),
+			}
+		}
+
+
 		if errors.IsNameDuplicated(err) {
 			code = tcerror.FlowControlWithDuplicateName
 		}

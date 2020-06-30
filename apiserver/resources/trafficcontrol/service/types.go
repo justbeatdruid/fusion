@@ -303,6 +303,9 @@ func (s *Service) assignment(target *v1.Trafficcontrol, reqData interface{}) err
 			if reqConfig, ok := data["config"]; ok {
 				klog.V(5).Infof("get config : %+v", reqConfig)
 				if config, ok := reqConfig.(map[string]interface{}); ok {
+					if (source.Config.Year + source.Config.Month + source.Config.Day + source.Config.Hour + source.Config.Minute + source.Config.Second) == 0 {
+						return fmt.Errorf("at least one limit config must exist.")
+					}
 					if _, ok = config["year"]; ok {
 						target.Spec.Config.Year = source.Config.Year
 					}
