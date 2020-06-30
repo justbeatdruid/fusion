@@ -138,8 +138,8 @@ func (c *controller) GetApplication(req *restful.Request) (int, *GetResponse) {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      1,
 			Detail:    fmt.Errorf("get application error: %+v", err).Error(),
-			ErrorCode: aperror.QueryingASingleApplicationBasedOnIdFails,
-			Message:   c.errMsg.Application[aperror.QueryingASingleApplicationBasedOnIdFails],
+			ErrorCode: aperror.QueryingASingleApplicationFailedById,
+			Message:   c.errMsg.Application[aperror.QueryingASingleApplicationFailedById],
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
