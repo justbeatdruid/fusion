@@ -131,8 +131,8 @@ func (c *controller) GetRestriction(req *restful.Request) (int, *GetResponse) {
 	if db, err := c.service.GetRestriction(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      2,
-			ErrorCode: rserror.QueryingASingleAccessControlBasedOnIdFails,
-			Message:   c.errMsg.Restriction[rserror.QueryingASingleAccessControlBasedOnIdFails],
+			ErrorCode: rserror.QueryingASingleAccessControlFailedById,
+			Message:   c.errMsg.Restriction[rserror.QueryingASingleAccessControlFailedById],
 			Detail:    fmt.Errorf("get restriction error: %+v", err).Error(),
 		}
 	} else {

@@ -139,8 +139,8 @@ func (c *controller) GetTrafficcontrol(req *restful.Request) (int, *GetResponse)
 	if db, err := c.service.GetTrafficcontrol(id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      2,
-			ErrorCode: tcerror.QuerySingleFlowControlFailureBasedOnId,
-			Message:   c.errMsg.Trafficcontrol[tcerror.IncorrectAuthenticationInformation],
+			ErrorCode: tcerror.QuerySingleFlowControlFailedById,
+			Message:   c.errMsg.Trafficcontrol[tcerror.QuerySingleFlowControlFailedById],
 			Detail:    fmt.Errorf("get trafficcontrol error: %+v", err).Error(),
 		}
 	} else {
