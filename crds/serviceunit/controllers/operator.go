@@ -599,7 +599,7 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	//更新package的url
-	request = request.Put(fmt.Sprintf("%s://%s:%d%s%s", schema, r.FissionHost, r.FissionPort, PkgUrl,db.Spec.FissionRefInfo.PkgName))
+	request = request.Put(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, PkgUrl,db.Spec.FissionRefInfo.PkgName))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -636,7 +636,7 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	klog.Infof("Enter UpdateFnByEnvAndPkg :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Put(fmt.Sprintf("%s://%s:%d%s%s", schema, r.FissionHost, r.FissionPort, FunctionUrl,db.Spec.FissionRefInfo.FnName))
+	request = request.Put(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, FunctionUrl,db.Spec.FissionRefInfo.FnName))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
