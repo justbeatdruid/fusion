@@ -572,10 +572,12 @@ func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, e
 		return nil, fmt.Errorf("request for create pkg error: %+v", err)
 	}
 	(*db).Spec.FissionRefInfo.PkgName = pkg.Name
+	db.Spec.FissionRefInfo.PkgResourceVersion = pkg.ResourceVersion
 	fn, err := r.CreateFnByEnvAndPkg(db, env, pkg)
 	if err != nil {
 		return nil, fmt.Errorf("request for create function error: %+v", err)
 	}
+	db.Spec.FissionRefInfo.FnResourceVersion = fn.ResourceVersion
 	klog.V(5).Infof("create function name: %s\n", fn.Name)
 	return  fn, nil
 }
