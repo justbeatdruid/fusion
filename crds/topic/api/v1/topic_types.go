@@ -117,6 +117,9 @@ const (
 	Unbinding                    Status = "unBinding"
 	UnbindFailed                 Status = "unBindFailed"
 	UnbindSuccess                Status = "unBindSuccess"
+	Importing                    Status = "importing"
+	ImportFailed                 Status = "importFailed"
+	ImportSuccess                Status = "importSuccess"
 )
 
 type ShowStatus string
@@ -144,6 +147,9 @@ const (
 	BindingOfShow                      ShowStatus = "绑定中"
 	UnbindingOfShow                    ShowStatus = "解除绑定中"
 	UnbindFailedOfShow                 ShowStatus = "解除绑定失败"
+	ImportingOfShow                    ShowStatus = "导入中"
+	ImportSuccessOfShow                ShowStatus = "导入成功"
+	ImportFailedOfShow                 ShowStatus = "导入失败"
 
 )
 
@@ -274,6 +280,8 @@ func initShowStatusMap() {
 	ShowStatusMap[Bound] = BindingSucceededOfShow
 	ShowStatusMap[Unbinding] = UnbindingOfShow
 	ShowStatusMap[UnbindFailed] = UnbindFailedOfShow
-
+	ShowStatusMap[Importing]    = ImportingOfShow
+	ShowStatusMap[ImportFailed] = ImportFailedOfShow
+	ShowStatusMap[ImportSuccess] = ImportSuccessOfShow
 
 }

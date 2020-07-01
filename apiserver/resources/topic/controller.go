@@ -322,16 +322,18 @@ func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorAuthError,
-			Message:   fmt.Sprintf("auth model error: %+v", err),
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
 			Data:      nil,
-			Detail:    "",
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
 	for _, id := range ids {
-		if _, err := c.service.DeleteTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
+		if _, msg, err := c.service.DeleteTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
 			return http.StatusInternalServerError, &ListResponse{
-				Code:    fail,
-				Message: fmt.Errorf("delete topic error: %+v", err).Error(),
+				Code:      fail,
+				ErrorCode: tperror.ErrorDeleteTopic,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorDeleteTopic], msg),
+				Detail:    fmt.Sprintf("delete topic error: %+v", err),
 			}
 		}
 	}
@@ -352,11 +354,11 @@ func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	if topic, err := c.service.DeleteTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
+	if topic, msg, err := c.service.DeleteTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorDeleteTopic,
-			Message:   c.errMsg.Topic[tperror.ErrorDeleteTopic],
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorDeleteTopic], msg),
 			Detail:    fmt.Sprintf("delete topic error: %+v", err),
 		}
 	} else {
@@ -449,6 +451,18 @@ func (ts TopicList) GetItem(i int) (interface{}, error) {
 
 //TODO 导入Topic待完善
 func (c *controller) ImportTopics(req *restful.Request, response *restful.Response) (int, *ImportResponse) {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ImportResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Data:      nil,
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+
+
 	spec := &parser.TopicExcelSpec{
 		SheetName:        "topics",
 		MultiPartFileKey: "uploadfile",
@@ -473,10 +487,18 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 		partitionNum, _ := strconv.Atoi(tp[4])
 		persistent, _ := strconv.ParseBool(tp[5])
 
-		//根据topicGroup名称查找当前租户下是否有同名的资源
+
+		if err := c.service.ImportTopicgroup(tp[1], authuser); err != nil {
+			return http.StatusInternalServerError, &ImportResponse{
+				Code:      1,
+				ErrorCode: tperror.ErrorImportBadRequest,
+				Message:   c.errMsg.Topic[tperror.ErrorImportBadRequest],
+				Detail:    fmt.Sprintf("import topics error: %+v", err),
+			}
+		}
+
 
 		topic := &service.Topic{
-			//Tenant:       tp[0],
 			TopicGroup:   tp[1],
 			Name:         tp[2],
 			Partitioned:  &partitioned,
@@ -493,16 +515,7 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 			}
 		}
 		topic.URL = topic.GetUrl()
-		authuser, err := auth.GetAuthUser(req)
-		if err != nil {
-			return http.StatusInternalServerError, &ImportResponse{
-				Code:      fail,
-				ErrorCode: tperror.ErrorAuthError,
-				Message:   fmt.Sprintf("auth model error: %+v", err),
-				Data:      nil,
-				Detail:    "",
-			}
-		}
+
 		//TODO 数据重复判断
 		if c.service.IsTopicUrlExist(topic.GetUrl(), util.WithNamespace(authuser.Namespace)) {
 			return http.StatusInternalServerError, &ImportResponse{
@@ -515,7 +528,7 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 		topic.Users = user.InitWithOwner(authuser.Name)
 		topic.Namespace = authuser.Namespace
 		// 创建Topic
-		t, tpErr := c.service.CreateTopic(topic)
+		t, tpErr := c.service.ImportTopic(topic)
 		if tpErr.Err != nil {
 			return http.StatusInternalServerError, &ImportResponse{
 				Code:      1,
@@ -833,11 +846,11 @@ func (c *controller) GrantPermissions(req *restful.Request) (int, *GrantResponse
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	if tp, err := c.service.GrantPermissions(id, authUserId, actions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
+	if tp, msg, err := c.service.GrantPermissions(id, authUserId, actions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GrantResponse{
 			Code:      2,
 			ErrorCode: tperror.ErrorGrantPermissions,
-			Message:   c.errMsg.Topic[tperror.ErrorGrantPermissions],
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorGrantPermissions], msg),
 			Detail:    fmt.Errorf("grant permissions error: %+v", err).Error(),
 		}
 	} else {
@@ -873,11 +886,11 @@ func (c *controller) ModifyPermissions(req *restful.Request) (int, *GrantRespons
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	if tp, err := c.service.ModifyPermissions(id, authUserId, actions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
+	if tp, msg, err := c.service.ModifyPermissions(id, authUserId, actions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &GrantResponse{
 			Code:      2,
 			ErrorCode: tperror.ErrorModifyPermissions,
-			Message:   c.errMsg.Topic[tperror.ErrorModifyPermissions],
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorModifyPermissions], msg),
 			Detail:    fmt.Errorf("create database error: %+v", err).Error(),
 		}
 	} else {
@@ -902,11 +915,11 @@ func (c *controller) DeletePermissions(req *restful.Request) (int, *DeleteRespon
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	if topic, err := c.service.DeletePermissions(id, authUserId, util.WithNamespace(authUser.Namespace)); err != nil {
+	if topic, msg, err := c.service.DeletePermissions(id, authUserId, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
 			ErrorCode: tperror.ErrorRevokePermissions,
-			Message:   c.errMsg.Topic[tperror.ErrorRevokePermissions],
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorRevokePermissions], msg),
 			Detail:    fmt.Sprintf("delete permissions error: %+v", err),
 		}
 	} else {
@@ -1604,11 +1617,11 @@ func (c *controller) BatchGrantPermissions(req *restful.Request) (int, *BatchGra
 	}
 
 	for _, GrantPermissions := range BGP.ClientAuths {
-		if tp, err := c.service.GrantPermissions(id, GrantPermissions.ID, GrantPermissions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
+		if tp, msg, err := c.service.GrantPermissions(id, GrantPermissions.ID, GrantPermissions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
 			return http.StatusInternalServerError, &BatchGrantResponse{
 				Code:      fail,
 				ErrorCode: tperror.ErrorGrantPermissions,
-				Message:   c.errMsg.Topic[tperror.ErrorGrantPermissions],
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorGrantPermissions], msg),
 				Detail:    fmt.Errorf("grant %s permissions error: %+v", GrantPermissions.ID, err).Error(),
 			}
 		} else {

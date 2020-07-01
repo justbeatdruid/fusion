@@ -72,6 +72,27 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	}
 
+	if topic.Status.Status == nlptv1.Importing {
+		if ok, _ := r.Operator.isNamespacesExist(topic); ok{
+			if err := r.Operator.CreateTopic(topic); err != nil {
+				topic.Spec.Url = topic.GetUrl()
+				topic.Status.Status = nlptv1.ImportFailed
+				topic.Status.Message = fmt.Sprintf("create topic error:%+v", err)
+				klog.Errorf("create topic failed, err: %+v", err)
+			} else {
+				topic.Spec.Url = topic.GetUrl()
+				topic.Status.Status = nlptv1.ImportSuccess
+				topic.Status.Message = "success"
+			}
+
+			if err := r.Update(ctx, topic); err != nil {
+				klog.Errorf("Update Topic Failed: %+v", *topic)
+			}
+
+		}
+
+	}
+
 	if topic.Status.Status == nlptv1.Deleting {
 		topic.Status.Status = nlptv1.Deleting
 		if err := r.Operator.DeleteTopic(topic); err != nil {

@@ -42,7 +42,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-	//删除指定Topicgroup以及其下所有Topic
+	//删除指定Topicgroup
 	ws.Route(ws.DELETE("/topicgroups/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
