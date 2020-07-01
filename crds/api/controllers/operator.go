@@ -11,10 +11,12 @@ import (
 	"github.com/parnurzeal/gorequest"
 
 	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
+	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"k8s.io/klog"
 )
 
 const path string = "/routes"
+const HttpTriggerUrl string =  "/v2/triggers/http"
 
 var headers = map[string]string{
 	"Content-Type": "application/json",
@@ -28,6 +30,7 @@ type Operator struct {
 	CAFile         string
 	PrometheusHost string
 	PrometheusPort int
+	FissionAddress FissionAddress
 }
 
 type RequestBody struct {
@@ -288,7 +291,46 @@ func (r *requestLogger) Println(v ...interface{}) {
 	klog.V(4).Infof("%+v", v)
 }
 
-func NewOperator(host string, port int, portal int, cafile string, prometheusHost string, prometheusPort int) (*Operator, error) {
+type FissionAddress struct {
+	ControllerHost string    `json:"controllerHost"`
+	ControllerPort int      `json:"controllerPort"`
+}
+
+type RouteReqInfo struct {
+	Metadata struct {
+		Name string `json:"name"`
+		Namespace string `json:"namespace"`
+	} `json:"metadata"`
+	Spec struct {
+		Host string `json:"host"`
+		Relativeurl string `json:"relativeurl"`
+		Method string `json:"method"`
+		Functionref struct {
+			Type string `json:"type"`
+			Name string `json:"name"`
+			Functionweights interface{} `json:"functionweights"`
+		} `json:"functionref"`
+		Createingress bool `json:"createingress"`
+		Ingressconfig struct {
+			Annotations interface{} `json:"annotations"`
+			Path string `json:"path"`
+			Host string `json:"host"`
+			TLS string `json:"tls"`
+		} `json:"ingressconfig"`
+	} `json:"spec"`
+}
+
+type FissionResInfoRsp struct {
+	Name string `json:"name"`
+	Namespace string `json:"namespace"`
+	SelfLink string `json:"selfLink"`
+	UID string `json:"uid"`
+	ResourceVersion string `json:"resourceVersion"`
+	Generation int `json:"generation"`
+	CreationTimestamp time.Time `json:"creationTimestamp"`
+}
+
+func NewOperator(host string, port int, portal int, cafile string, prometheusHost string, prometheusPort int, address FissionAddress) (*Operator, error) {
 	klog.Infof("NewOperator  event:%s %d %s", host, port, cafile)
 	return &Operator{
 		Host:           host,
@@ -297,10 +339,11 @@ func NewOperator(host string, port int, portal int, cafile string, prometheusHos
 		CAFile:         cafile,
 		PrometheusHost: prometheusHost,
 		PrometheusPort: prometheusPort,
+		FissionAddress: address,
 	}, nil
 }
 
-func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
+func (r *Operator) CreateRouteByKong(db *nlptv1.Api, su *suv1.Serviceunit) (err error) {
 	klog.Infof("Enter CreateRouteByKong name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -321,7 +364,9 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 	requestBody.Name = db.ObjectMeta.Name
 	//设置为true会删除前缀 route When matching a Route via one of the paths, strip the matching prefix from the upstream request URL. Defaults to true.
 	requestBody.StripPath = false
-	if db.Spec.Serviceunit.Type == "data" {
+
+	switch db.Spec.Serviceunit.Type {
+	case string(suv1.DataService):
 		//data  后端服务协议使用服务单元的协议信息 method使用API请求中定义的
 		methods = append(methods, strings.ToUpper(string(db.Spec.ApiDefineInfo.Method)))
 		protocols = append(protocols, strings.ToLower(string(db.Spec.Serviceunit.Protocol)))
@@ -330,7 +375,7 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 		queryPath := fmt.Sprintf("%s%s%s%s%s", "/api/v1/apis/", db.ObjectMeta.Namespace, "/", db.ObjectMeta.Name, "/data")
 		paths = append(paths, queryPath)
 		requestBody.Paths = paths
-	} else {
+	case string(suv1.WebService):
 		////web 类型使用 KongApi.Method KongApi.Protocol 后端服务协议使用服务单元的协议信息 method使用API请求中定义的
 		requestBody.Paths = db.Spec.KongApi.Paths
 		methods = append(methods, strings.ToUpper(string(db.Spec.ApiDefineInfo.Method)))
@@ -340,6 +385,19 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api) (err error) {
 		if len(db.Spec.KongApi.Hosts) != 0 {
 			requestBody.Hosts = db.Spec.KongApi.Hosts
 		}
+	case string(suv1.FunctionService):
+		//function 需要先再fission创建httptrigger 后端服务协议使用服务单元的协议信息 method使用API请求中定义的
+		if err := r.CreateRouteByFission(db, su); err != nil {
+			return fmt.Errorf("request for create route by fission error: %+v", err)
+		}
+		methods = append(methods, strings.ToUpper(string(db.Spec.ApiDefineInfo.Method)))
+		protocols = append(protocols, strings.ToLower(string(db.Spec.Serviceunit.Protocol)))
+		requestBody.Protocols = protocols
+		requestBody.Methods = methods
+		queryPath := fmt.Sprintf("%s%s%s%s%s", "/api/v1/apis/", db.ObjectMeta.Namespace, "/", db.ObjectMeta.Name, "/function")
+		paths = append(paths, queryPath)
+		requestBody.Paths = paths
+
 	}
 	responseBody := &ResponseBody{}
 	klog.Infof("begin send create route requeset body: %+v", responseBody)
@@ -851,3 +909,40 @@ func (r *Operator) syncApiCallFrequencyFromKong(m map[string]int) error {
 	klog.Infof("sync api call frequency from kong result:  %+v", m)
 	return nil
 }
+
+func (r *Operator) CreateRouteByFission(db *nlptv1.Api, su *suv1.Serviceunit) (err error) {
+	klog.Infof("Enter CreateRouteByFission name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, r.FissionAddress.ControllerHost, r.FissionAddress.ControllerPort, HttpTriggerUrl))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	methods := strings.ToUpper(string(db.Spec.ApiDefineInfo.Method))
+	funcPath := fmt.Sprintf("%s%s%s%s%s", "/api/v1/apis/", db.ObjectMeta.Namespace, "/", db.ObjectMeta.Name, "/function")
+
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &RouteReqInfo{}
+	requestBody.Metadata.Name = db.ObjectMeta.Name
+	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
+	requestBody.Spec.Functionref.Type = "name"
+	requestBody.Spec.Functionref.Name = su.Spec.FissionRefInfo.FnName
+	requestBody.Spec.Relativeurl = funcPath
+	requestBody.Spec.Method = methods
+	requestBody.Spec.Createingress = false
+	responseBody := &FissionResInfoRsp{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Errorf("send  create route by fission error %+v", errs)
+		return fmt.Errorf("request for create route by fission error: %+v", errs)
+	}
+
+	klog.V(5).Infof("creation route by fission response code and body: %d, %s",  response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.Errorf("create route by fission failed msg: %s\n", responseBody)
+		return fmt.Errorf("request for create route by fission error: receive wrong body: %s", string(body))
+	}
+	klog.V(5).Infof("ID==: %s\n", responseBody.Name)
+	return nil
+}
+

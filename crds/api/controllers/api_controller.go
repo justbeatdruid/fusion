@@ -170,16 +170,6 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if api.Status.Action == nlptv1.Publish && api.Status.PublishStatus == nlptv1.UnRelease {
 		// call kong api create
 		api.Status.Status = nlptv1.Running
-		klog.Infof("new api: %s:%s, publish status: %s", api.Spec.Name, api.ObjectMeta.Name, api.Status.PublishStatus)
-		if err := r.Operator.CreateRouteByKong(api); err != nil {
-			api.Status.Status = nlptv1.Error
-			api.Status.Message = err.Error()
-			r.Update(ctx, api)
-			return ctrl.Result{}, nil
-		}
-		klog.Infof("new api: %s:%s %s", api.Spec.KongApi.PrometheusID, api.Spec.KongApi.AclID, api.Spec.KongApi.JwtID)
-		api.Status.Status = nlptv1.Success
-		api.Status.PublishStatus = nlptv1.Released
 		//发布成功更新服务单元api的计数
 		su := &suv1.Serviceunit{}
 		suNamespacedName := types.NamespacedName{
@@ -194,6 +184,17 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, nil
 		}
 		klog.Infof("get su info %+v", *su)
+		klog.Infof("new api: %s:%s, publish status: %s", api.Spec.Name, api.ObjectMeta.Name, api.Status.PublishStatus)
+		if err := r.Operator.CreateRouteByKong(api, su); err != nil {
+			api.Status.Status = nlptv1.Error
+			api.Status.Message = err.Error()
+			r.Update(ctx, api)
+			return ctrl.Result{}, nil
+		}
+		klog.Infof("new api: %s:%s %s", api.Spec.KongApi.PrometheusID, api.Spec.KongApi.AclID, api.Spec.KongApi.JwtID)
+		api.Status.Status = nlptv1.Success
+		api.Status.PublishStatus = nlptv1.Released
+
 		r.AddApiToServiceUnit(ctx, su, api)
 		api.Status.AccessLink = nlptv1.AccessLink(fmt.Sprintf("%s://%s:%d%s",
 			strings.ToLower(string(api.Spec.ApiDefineInfo.Protocol)),
