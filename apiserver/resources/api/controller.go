@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/360EntSecGroup-Skylar/excelize"
@@ -150,6 +151,9 @@ func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 				Message:   "服务单元未发布",
 				Detail:    fmt.Errorf("create api error: %+v", err).Error(),
 			}
+		}
+		if strings.Contains(err.Error(),"path duplicated"){
+			code = "001000023"
 		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,

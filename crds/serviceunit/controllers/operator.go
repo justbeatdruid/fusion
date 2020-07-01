@@ -314,6 +314,9 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		(*db).Spec.KongService.Host = responseBody.Host
 		(*db).Spec.KongService.Protocol = responseBody.Protocol
 		(*db).Spec.KongService.Port = responseBody.Port
+		(*db).Spec.KongService.ReadOut = responseBody.ReadTimeout
+		(*db).Spec.KongService.WirteOut = responseBody.WriteTimeout
+		(*db).Spec.KongService.TimeOut = responseBody.ConnectTimeout
 	}
 	(*db).Spec.KongService.ID = responseBody.ID
 	return nil
@@ -604,6 +607,11 @@ func (r *Operator) UpdateFunction(db *nlptv1.Serviceunit)(*FissionResInfoRsp,err
 func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,error)  {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
+	//查询package的resourceversion
+	PkgResourceVersion,err:=r.getPkgVersion(db)
+	if err!=nil{
+		return nil,fmt.Errorf("get pkgResourceVersion error: %v",err)
+	}
 	//更新package的url
 	request = request.Put(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, PkgUrl,db.Spec.FissionRefInfo.PkgName))
 	for k, v := range headers {
@@ -615,7 +623,7 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
 	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
-	requestBody.Metadata.ResourceVersion = db.Spec.FissionRefInfo.PkgResourceVersion
+	requestBody.Metadata.ResourceVersion = PkgResourceVersion
 	if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
 		requestBody.Spec.Source.Type = "literal"
 		requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
@@ -631,7 +639,7 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 		return nil, fmt.Errorf("request for update pkg error: %+v", errs)
 	}
 	klog.V(5).Infof("update pkg code and body: %d %s\n", response.StatusCode, string(body))
-	if response.StatusCode != 201 {
+	if response.StatusCode != 200 {
 		klog.Errorf("update pkg failed msg: %s\n", responseBody)
 		return nil, fmt.Errorf("request for update rate error: receive wrong status code: %s", string(body))
 	}
@@ -671,11 +679,26 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	}
 
 	klog.V(5).Infof("update function code and body: %d %s\n", response.StatusCode, string(body))
-	if response.StatusCode != 201 {
+	if response.StatusCode != 200 {
 		klog.Errorf("update function failed msg: %s\n", responseBody)
 		return nil, fmt.Errorf("request for update function error: receive wrong status code: %s", string(body))
 	}
 	klog.V(5).Infof("update function name: %s\n", responseBody.Name)
 	return  responseBody, nil
+
+}
+//获取pkg的最新resourceVersion
+func (r *Operator) getPkgVersion(db *nlptv1.Serviceunit)(string,error){
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	//查询package的resourceversion
+	request = request.Get(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, PkgUrl,db.Spec.FissionRefInfo.PkgName)).Query("namespace="+db.Namespace)
+	responseBody := &PkgRefInfoReq{}
+	_, _, errs := request.Send("").EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Errorf("request for get pkg error %+v", errs)
+		return "", fmt.Errorf("request for get pkg error: %+v", errs)
+	}
+	return  responseBody.Metadata.ResourceVersion,nil
 
 }
