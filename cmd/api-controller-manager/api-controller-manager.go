@@ -50,6 +50,11 @@ func init() {
 	klog.InitFlags(nil)
 }
 
+const (
+	//TODO 域名
+	FissionController   = "controller.fission"
+	FissionControllerPort   = 80
+)
 func main() {
 	var metricsAddr string
 	var enableLeaderElection bool
@@ -59,6 +64,8 @@ func main() {
 	var portalPort int
 	var prometheusHost string
 	var prometheusPort int
+	var fissionHost string
+	var fissionPort  int
 	flag.StringVar(&metricsAddr, "metrics-addr", ":8080", "The address the metric endpoint binds to.")
 	flag.BoolVar(&enableLeaderElection, "enable-leader-election", false,
 		"Enable leader election for controller manager. Enabling this will ensure there is only one active controller manager.")
@@ -68,6 +75,8 @@ func main() {
 	flag.StringVar(&prometheusHost, "prometheus-host", "127.0.0.1", "Host of prometheus service.")
 	flag.IntVar(&prometheusPort, "prometheus-port", 32008, "Port of prometheus service.")
 	flag.StringVar(&operatorCAFile, "operator-cafile", "", "Certificate for TLS communication with database warehose service.")
+	flag.StringVar(&fissionHost, "fission-host", FissionController, "Host of fission service.")
+	flag.IntVar(&fissionPort, "fission-port", FissionControllerPort, "Port of fission service.")
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(func(o *zap.Options) {
@@ -91,7 +100,13 @@ func main() {
 		os.Exit(1)
 	}
 
-	operator, err := controllers.NewOperator(operatorHost, operatorPort, portalPort, operatorCAFile, prometheusHost, prometheusPort)
+	var address = &controllers.FissionAddress{
+		ControllerHost: fissionHost,
+		ControllerPort: fissionPort,
+	}
+	
+
+	operator, err := controllers.NewOperator(operatorHost, operatorPort, portalPort, operatorCAFile, prometheusHost, prometheusPort, *address)
 	if err != nil {
 		setupLog.Error(err, "unable to create operator")
 		os.Exit(1)
