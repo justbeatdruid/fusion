@@ -5,6 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/chinamobile/nlpt/pkg/auth"
+	"github.com/chinamobile/nlpt/pkg/auth/user"
+	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/parnurzeal/gorequest"
 	"net/http"
 	"strings"
@@ -94,6 +97,17 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topCo
 	}
 }
 
+func (s *Service) ImportTopic(model *Topic) (*Topic, tperror.TopicError) {
+	if tpErr := model.Validate(); tpErr.Err != nil {
+		return nil, tpErr
+	}
+	tp, tpErr := s.Import(ToAPI(model))
+	if tpErr.Err != nil {
+		return nil, tpErr
+	}
+
+	return ToModel(tp), tperror.TopicError{}
+}
 func (s *Service) CreateTopic(model *Topic) (*Topic, tperror.TopicError) {
 	if tpErr := model.Validate(); tpErr.Err != nil {
 		return nil, tpErr
@@ -122,22 +136,22 @@ func (s *Service) GetTopic(id string, opts ...util.OpOption) (*Topic, error) {
 	return ToModel(tp), nil
 }
 
-func (s *Service) DeleteTopic(id string, opts ...util.OpOption) (*Topic, error) {
+func (s *Service) DeleteTopic(id string, opts ...util.OpOption) (*Topic, string, error) {
 	tp, err := s.Delete(id, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("cannot update status to delete: %+v", err)
+		return nil, "Topic不存在", fmt.Errorf("cannot update status to delete: %+v", err)
 	}
 
 	util.WaitDelete(s, tp.ObjectMeta)
-	return ToModel(tp), nil
+	return ToModel(tp), "", nil
 }
 
-func (s *Service) DeletePermissions(id string, authUserId string, opts ...util.OpOption) (*Topic, error) {
-	tp, err := s.DeletePer(id, authUserId, opts...)
+func (s *Service) DeletePermissions(id string, authUserId string, opts ...util.OpOption) (*Topic, string, error) {
+	tp, msg, err := s.DeletePer(id, authUserId, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("cannot update status to delete permission: %+v", err)
+		return nil, msg, fmt.Errorf("cannot update status to delete permission: %+v", err)
 	}
-	return ToModel(tp), nil
+	return ToModel(tp), "", nil
 }
 
 //带时间查询
@@ -178,6 +192,59 @@ func (s *Service) IsTopicUrlExist(url string, opts ...util.OpOption) bool {
 		}
 	}
 	return false
+}
+
+func (s *Service) Import(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
+
+	if s.IsTopicExist(tp) {
+		return nil, tperror.TopicError{
+			Err:       fmt.Errorf("topic exists: %+v", tp.GetUrl()),
+			ErrorCode: tperror.ErrorTopicExists,
+			Message:   fmt.Sprintf(s.errMsg.Topic[tperror.ErrorTopicExists], tp.GetUrl()),
+		}
+	}
+
+	//添加标签
+	if tp.ObjectMeta.Labels == nil {
+		tp.ObjectMeta.Labels = make(map[string]string)
+	}
+	tp.ObjectMeta.Labels[Label] = tp.Spec.TopicGroup
+	tp.Status.Status = v1.Importing
+	tp.Status.Message = "importing"
+
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tp)
+	if err != nil {
+		return nil, tperror.TopicError{
+			Err:       fmt.Errorf("convert crd to unstructured error: %+v", err),
+			ErrorCode: tperror.ErrorCreateTopic,
+		}
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	err = kubernetes.EnsureNamespace(s.kubeClient, tp.Namespace)
+	if err != nil {
+		return nil, tperror.TopicError{
+			Err:       fmt.Errorf("cannot ensure k8s namespace: %+v", err),
+			ErrorCode: tperror.ErrorEnsureNamespace,
+			Message:   "",
+		}
+	}
+	crd, err = s.client.Namespace(tp.Namespace).Create(crd, metav1.CreateOptions{})
+	if err != nil {
+		return nil, tperror.TopicError{
+			Err:       fmt.Errorf("error creating crd: %+v", err),
+			ErrorCode: tperror.ErrorCreateTopic,
+		}
+	}
+
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tp); err != nil {
+		return nil, tperror.TopicError{
+			Err:       fmt.Errorf("convert unstructured to crd error: %+v", err),
+			ErrorCode: tperror.ErrorCreateTopic,
+		}
+	}
+	klog.V(5).Infof("get v1.topic of creating: %+v", tp)
+	return tp, tperror.TopicError{}
 }
 func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 	//get topicgroup name from id
@@ -296,10 +363,10 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topic, error) {
 	return s.UpdateStatus(tp)
 }
 
-func (s *Service) DeletePer(id string, authUserId string, opts ...util.OpOption) (*v1.Topic, error) {
+func (s *Service) DeletePer(id string, authUserId string, opts ...util.OpOption) (*v1.Topic, string, error) {
 	tp, err := s.Get(id, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("error delete crd: %+v", err)
+		return nil, "Topic不存在", fmt.Errorf("error delete crd: %+v", err)
 	}
 	//查询授权用户id的标签
 	v, ok := tp.ObjectMeta.Labels[authUserId]
@@ -308,7 +375,7 @@ func (s *Service) DeletePer(id string, authUserId string, opts ...util.OpOption)
 			tp.ObjectMeta.Labels[authUserId] = "false"
 		} else {
 			//TODO 如果value非true，则认为该权限已经在回收中，禁止重复操作
-			return nil, fmt.Errorf("revoke permission error, permission has already revoking")
+			return nil, "删除权限中，请勿重复操作", fmt.Errorf("revoke permission error, permission has already revoking")
 		}
 		delete(tp.ObjectMeta.Labels, authUserId)
 	}
@@ -320,7 +387,12 @@ func (s *Service) DeletePer(id string, authUserId string, opts ...util.OpOption)
 		}
 	}
 	tp.Status.AuthorizationStatus = v1.DeletingAuthorization
-	return s.UpdateStatus(tp)
+	tp, err =  s.UpdateStatus(tp)
+	if err != nil {
+		return nil, "数据库错误", fmt.Errorf("error delete crd: %+v", err)
+	}
+
+	return tp, "", nil
 }
 
 //更新状态
@@ -465,12 +537,12 @@ func (s *Service) GetPulsarClient() (pulsar.Client, error) {
 //
 //}
 
-func (s *Service) GrantPermissions(topicId string, authUserId string, actions v1.Actions, opts ...util.OpOption) (*Topic, error) {
+func (s *Service) GrantPermissions(topicId string, authUserId string, actions v1.Actions, opts ...util.OpOption) (*Topic, string, error) {
 	//1.根据id查询topic
 	tp, err := s.Get(topicId, opts...)
 	if err != nil {
 		klog.Errorf("error get crd: %+v", err)
-		return nil, fmt.Errorf("error get crd: %+v", err)
+		return nil, "Topic不存在", fmt.Errorf("error get crd: %+v", err)
 	}
 
 	//2.处理actions
@@ -484,14 +556,14 @@ func (s *Service) GrantPermissions(topicId string, authUserId string, actions v1
 	}
 
 	if _, ok := tp.ObjectMeta.Labels[authUserId]; ok {
-		return nil, fmt.Errorf("already grant this user permissions:%+v", authUserId)
+		return nil, "不能重复授权", fmt.Errorf("already grant this user permissions:%+v", authUserId)
 	}
 	tp.ObjectMeta.Labels[authUserId] = "true"
 
 	//4.根据auth id查询name
 	authUserName, err := s.QueryAuthUserNameById(authUserId, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("grant permission error:%+v", err)
+		return nil, "授权用户不存在", fmt.Errorf("grant permission error:%+v", err)
 	}
 
 	perm := v1.Permission{
@@ -507,18 +579,18 @@ func (s *Service) GrantPermissions(topicId string, authUserId string, actions v1
 	tp.Status.AuthorizationStatus = v1.Authorizing
 	v1Tp, err := s.UpdateStatus(tp)
 	if err != nil {
-		return nil, fmt.Errorf("cannot update object: %+v", err)
+		return nil, "数据库错误", fmt.Errorf("cannot update object: %+v", err)
 	}
 
-	return ToModel(v1Tp), nil
+	return ToModel(v1Tp), "", nil
 }
 
-func (s *Service) ModifyPermissions(topicId string, authUserId string, actions v1.Actions, opts ...util.OpOption) (*Topic, error) {
+func (s *Service) ModifyPermissions(topicId string, authUserId string, actions v1.Actions, opts ...util.OpOption) (*Topic, string, error) {
 	//1.根据id查询topic
 	tp, err := s.Get(topicId, opts...)
 	if err != nil {
 		klog.Errorf("error get crd: %+v", err)
-		return nil, fmt.Errorf("error get crd: %+v", err)
+		return nil, "Topic不存在", fmt.Errorf("error get crd: %+v", err)
 	}
 
 	//2.处理actions
@@ -528,17 +600,17 @@ func (s *Service) ModifyPermissions(topicId string, authUserId string, actions v
 	}
 	//3.给topic加auth id的标签，key：auth id
 	if tp.ObjectMeta.Labels == nil {
-		return nil, fmt.Errorf("not authorization:%+v", authUserId)
+		return nil, "当前用户未授权", fmt.Errorf("not authorization:%+v", authUserId)
 	}
 
 	if _, ok := tp.ObjectMeta.Labels[authUserId]; !ok {
-		return nil, fmt.Errorf("not authorization:%+v", authUserId)
+		return nil, "当前用户未授权", fmt.Errorf("not authorization:%+v", authUserId)
 	}
 
 	//4.根据auth id查询name
 	_, err = s.QueryAuthUserNameById(authUserId, opts...)
 	if err != nil {
-		return nil, fmt.Errorf("grant permission error:%+v", err)
+		return nil, "授权用户不存在", fmt.Errorf("grant permission error:%+v", err)
 	}
 
 	for i, p := range tp.Spec.Permissions {
@@ -555,10 +627,10 @@ func (s *Service) ModifyPermissions(topicId string, authUserId string, actions v
 
 	v1Tp, err := s.UpdateStatus(tp)
 	if err != nil {
-		return nil, fmt.Errorf("cannot update object: %+v", err)
+		return nil, "数据库错误", fmt.Errorf("cannot update object: %+v", err)
 	}
 
-	return ToModel(v1Tp), nil
+	return ToModel(v1Tp), "", nil
 }
 
 func (s *Service) QueryAuthUserNameById(id string, opts ...util.OpOption) (string, error) {
@@ -598,6 +670,29 @@ func (s *Service) GetTopicgroup(id string, namespace string) (*topicgroupv1.Topi
 	}
 
 	return tg, nil
+
+}
+
+func (s *Service) GetTopicgroupByName(name string, namespace string) (*topicgroupv1.Topicgroup, error) {
+
+	crd, err := s.topicGroupClient.Namespace(namespace).List(metav1.ListOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+
+	tps := &topicgroupv1.TopicgroupList{}
+
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+
+	for _, topicgroup := range tps.Items {
+		if topicgroup.Spec.Name == name {
+			return &topicgroup, nil
+		}
+	}
+
+	return nil, nil
 
 }
 
@@ -804,4 +899,52 @@ func (s *Service) ResetPositionByTime(RP *ResetPosition, tp *Topic) error {
 		errMsg := fmt.Errorf("reset position error, url: %s, Error code: %d, Error Message: %+v", url, response.StatusCode, b)
 		return errMsg
 	}
+}
+
+func (s *Service) ImportTopicgroup(name string, authuser auth.AuthUser) error {
+	namespace := authuser.Namespace
+	//根据topicGroup名称查找当前租户下是否有同名的资源
+	tg, err := s.GetTopicgroupByName(name, namespace)
+	if err != nil {
+		return fmt.Errorf("cannot get object: %+v", err)
+	}
+
+	if tg != nil {
+		return nil
+	}
+
+	tg = &topicgroupv1.Topicgroup{}
+	tg.TypeMeta.Kind = "Topicgroup"
+	tg.TypeMeta.APIVersion = topicgroupv1.GroupVersion.Group + "/" + v1.GroupVersion.Version
+
+	tg.ObjectMeta.Name = names.NewID()
+	tg.ObjectMeta.Namespace = namespace
+
+	tg.Spec = topicgroupv1.TopicgroupSpec{
+		Name: name,
+	}
+
+
+	tg.Status = topicgroupv1.TopicgroupStatus{
+		Status:  topicgroupv1.Importing,
+		Message: "importing topicgroup",
+	}
+
+	tg.ObjectMeta.Labels = user.AddUsersLabels(user.InitWithOwner(authuser.Name), tg.ObjectMeta.Labels)
+
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tg)
+
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	err = kubernetes.EnsureNamespace(s.kubeClient, tg.Namespace)
+	if err != nil {
+		return fmt.Errorf("cannot ensure k8s namespace: %+v", err)
+	}
+	crd, err = s.topicGroupClient.Namespace(namespace).Create(crd, metav1.CreateOptions{})
+	if err != nil {
+		return fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+
+	return nil
+
 }

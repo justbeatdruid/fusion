@@ -40,6 +40,7 @@ const (
 	ErrorModifyPermissions                = "010000032" //修改权限失败
 	ErrorResetPosition                    = "010000033" //重置消费位置失败
 	ErrorRefresh                          = "010000034" //刷新失败
+	ErrorImport                           = "010000035" //导入失败：原因：%+v
 )
 
 type TopicError struct {

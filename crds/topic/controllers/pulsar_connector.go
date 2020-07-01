@@ -19,6 +19,7 @@ const (
 	nonPersistentPermissionUrl = "/admin/v2/non-persistent/%s/%s/%s/permissions/%s"
 	statsUrl                   = "/stats"
 	partitionedStatsUrl        = "/partitioned-stats"
+	namespaceUrl               = "/admin/v2/namespaces/%s/%s"
 )
 
 type requestLogger struct {
@@ -197,6 +198,13 @@ func (r *Connector) getUrl(topic *nlptv1.Topic) string {
 	return fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl)
 }
 
+func (r *Connector) getNamespaceUrl(topic *nlptv1.Topic) string {
+	url := namespaceUrl
+	url = fmt.Sprintf(url, topic.Namespace, topic.Spec.TopicGroup)
+	return fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
+}
+
+
 //删除授权
 func (r *Connector) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err error) {
 	request := r.GetHttpRequest()
@@ -334,4 +342,26 @@ func (r *Connector) AddPartitionsOfTopic(topic *nlptv1.Topic) error {
 		return nil
 	}
 	return fmt.Errorf("Increment partitions error: %+v; %+v ", body, errs)
+}
+
+
+func (r *Connector) isNamespacesExist(topic *nlptv1.Topic) (bool, error) {
+	request := r.GetHttpRequest()
+	url := r.getNamespaceUrl(topic)
+
+	response, body, errs := request.Get(url).Send("").End()
+	if errs != nil {
+		klog.Errorf("get namespace policy finished, url: %+v, response: %+v, errs: %+v", url, response, errs)
+		return true, fmt.Errorf("get namespace policy error: %+v ", errs)
+	}
+
+	if response.StatusCode == http.StatusOK {
+		return true, nil
+	}
+
+	if response.StatusCode == http.StatusNotFound && (strings.Contains(body, `Tenant does not exist`) || strings.Contains(body, `Namespace does not exist`)) {
+		return false, nil
+
+	}
+	return true, nil
 }

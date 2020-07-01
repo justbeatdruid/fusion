@@ -24,76 +24,88 @@ const (
 type selector struct {
 	route  string
 	method string
+	eventName string
 }
 
 var resourceCategory string = "unset"
 
+
+
 var accepted = []selector{
-	{"/api/v1/apis", POST},
-	{"/api/v1/applications", POST},
-	{"/api/v1/applies", POST},
-	{"/api/v1/datasources", POST},
-	{"/api/v1/serviceunits", POST},
-	{"/api/v1/apis/{id}", DELETE},
-	{"/api/v1/applications/{id}", DELETE},
-	{"/api/v1/applies/{id}", DELETE},
-	{"/api/v1/datasources/{id}", DELETE},
-	{"/api/v1/serviceunits/{id}", DELETE},
+	{"/api/v1/apis", POST, ""},
+	{"/api/v1/applications", POST,""},
+	{"/api/v1/applies", POST,""},
+	{"/api/v1/datasources", POST,""},
+	{"/api/v1/serviceunits", POST,""},
+	{"/api/v1/apis/{id}", DELETE,""},
+	{"/api/v1/applications/{id}", DELETE,""},
+	{"/api/v1/applies/{id}", DELETE,""},
+	{"/api/v1/datasources/{id}", DELETE,""},
+	{"/api/v1/serviceunits/{id}", DELETE,""},
 
 	//serviceunit
-	{"api/v1/serviceunits/{id}", PATCH},
-	{"api/v1/serviceunits/{id}", POST},
-	{"api/v1/serviceunits/{id}/users", POST},
-	{"api/v1/serviceunits/{id}/users/{userid}", DELETE},
-	{"api/v1/serviceunits/{id}/users/{userid}", PUT},
-	{"api/v1/serviceunits/{id}/owner", PUT},
+	{"api/v1/serviceunits/{id}", PATCH,""},
+	{"api/v1/serviceunits/{id}", POST,""},
+	{"api/v1/serviceunits/{id}/users", POST,""},
+	{"api/v1/serviceunits/{id}/users/{userid}", DELETE,""},
+	{"api/v1/serviceunits/{id}/users/{userid}", PUT,""},
+	{"api/v1/serviceunits/{id}/owner", PUT,""},
 
 	//restriction
-	{"api/v1/restrictions", POST},
-	{"api/v1/restrictions/{id}/apis", POST},
-	{"api/v1/restrictions/{id}", DELETE},
-	{"api/v1/restrictions/{id}", PATCH},
+	{"api/v1/restrictions", POST,""},
+	{"api/v1/restrictions/{id}/apis", POST,""},
+	{"api/v1/restrictions/{id}", DELETE,""},
+	{"api/v1/restrictions/{id}", PATCH,""},
 
 	//application
-	{"api/v1/applications/{id}", PATCH},
-	{"api/v1/applications/{id}/users", POST},
-	{"api/v1/applications/{id}/users/{userid}", DELETE},
-	{"api/v1/applications/{id}/users/{userid}", PUT},
-	{"api/v1/applications/{id}/owner", PUT},
+	{"api/v1/applications/{id}", PATCH,""},
+	{"api/v1/applications/{id}/users", POST,""},
+	{"api/v1/applications/{id}/users/{userid}", DELETE,""},
+	{"api/v1/applications/{id}/users/{userid}", PUT,""},
+	{"api/v1/applications/{id}/owner", PUT,""},
 
 	//trafficcontrol
-	{"api/v1/trafficcontrols", POST},
-	{"api/v1/trafficcontrols/{id}/apis", POST},
-	{"api/v1/trafficcontrols/{id}", DELETE},
-	{"api/v1/trafficcontrols/{id}", PATCH},
+	{"api/v1/trafficcontrols", POST,""},
+	{"api/v1/trafficcontrols/{id}/apis", POST,""},
+	{"api/v1/trafficcontrols/{id}", DELETE,""},
+	{"api/v1/trafficcontrols/{id}", PATCH,""},
 
 	//apis
-	{"api/v1/apis/{id}", PATCH},
-	{"api/v1/apis/{id}/release", POST},
-	{"api/v1/apis/{id}/release", DELETE},
-	{"api/v1/apis/{id}/applications/{appid}", POST},
-	{"api/v1/api/test", POST},
+	{"api/v1/apis/{id}", PATCH,""},
+	{"api/v1/apis/{id}/release", POST,""},
+	{"api/v1/apis/{id}/release", DELETE,""},
+	{"api/v1/apis/{id}/applications/{appid}", POST,""},
+	{"api/v1/api/test", POST,""},
 
 	//clientauth
-	{"/api/v1/clientauths", POST},
-	{"/api/v1/clientauths/{id}", DELETE},
-	{"/api/v1/clientauths/{id}/token", POST},
+	{"/api/v1/clientauths", POST, ""},
+	{"/api/v1/clientauths/{id}", DELETE, ""},
+	{"/api/v1/clientauths/{id}/token", POST, "重新生成token"},
+	{"/api/v1/clientauths", DELETE, "批量删除"},
 
 	//topic
-	{"/api/v1/topics", POST},
-	{"/api/v1/topics/{id}", DELETE},
-	{"/api/v1/topics/import", POST},
-	{"/api/v1/topics/{id}/permissions/{auth-user-id}", POST},
-	{"/api/v1/topics/{id}/permissions/{auth-user-id}", PUT},
-	{"/api/v1/topics/{id}/permissions/{auth-user-id}", DELETE},
-	{"/api/v1/topics/{id}/partitions/{partitions}", PUT},
-	{"/api/v1/topics/applications/{app-id}", POST},
-	{"/api/v1/topics/messages", POST},
+	{"/api/v1/topics", POST, ""},
+	{"/api/v1/topics", DELETE, "批量删除"},
+	{"/api/v1/topics/{id}", DELETE, ""},
+	{"/api/v1/topics/import", POST, "导入"},
+	{"/api/v1/topics/export", GET, "导出"},
+
+	{"/api/v1/topics/{id}/permissions/{auth-user-id}", POST, "设置权限"},
+	{"/api/v1/topics/{id}/permissions/{auth-user-id}", PUT, "修改权限"},
+	{"/api/v1/topics/{id}/permissions/{auth-user-id}", DELETE, "删除权限"},
+	{"/api/v1/topics/{id}/partitions/{partitions}", PUT, "增加分区"},
+	{"/api/v1/topics/applications/{app-id}", POST, "应用绑定/解绑定"},
+	{"/api/v1/topics/messages", POST, "发送消息"},
+	{"/api/v1/topics/messagePosition", POST, "重置消费位移"},
+	{"/api/v1/topics/{id}/subscription/{subName}/skip/{numMessages}", POST, "重置消费位移"},
+	{"/api/v1/topics/{id}/subscription/{subName}/skip_all", POST, "重置消费位移"},
+
+
 
 	//topicgroup
-	{"/api/v1/topicgroups", POST},
-	{"/api/v1/topicgroups/{id}", DELETE},
-	{"/api/v1/topicgroups/{id}", PUT},
+	{"/api/v1/topicgroups", POST, ""},
+	{"/api/v1/topicgroups/{id}", DELETE, ""},
+	{"/api/v1/topicgroups/{id}", PUT, "高级配置"},
 }
 
 // return event, resource and if this request should be uploaded as event
@@ -102,18 +114,24 @@ func filter(req *restful.Request) (string, string, string, bool) {
 		if req.Request.Method == a.method && req.SelectedRoutePath() == a.route {
 			entity := req.GetEntity()
 			if entity == nil {
-				return getEventName(a.method), getResourceType(a.route), "", true
+				return getEvent(a), getResourceType(a.route), "", true
 			}
 			body, err := json.Marshal(entity)
 			if err != nil {
-				return getEventName(a.method), getResourceType(a.route), "", true
+				return getEvent(a), getResourceType(a.route), "", true
 			}
-			return getEventName(a.method), getResourceType(a.route), string(body), true
+			return getEvent(a), getResourceType(a.route), string(body), true
 		}
 	}
 	return "", "", "", false
 }
 
+func getEvent(s selector) string {
+	if len(s.eventName) > 0 {
+		return s.eventName
+	}
+	return getEventName(s.method)
+}
 func getResourceType(path string) string {
 	ss := strings.Split(path, "/")
 	if len(ss) > 3 {
@@ -139,6 +157,7 @@ func getResourceType(path string) string {
 	}
 	return "未知"
 }
+
 
 func getEventName(method string) string {
 	switch strings.ToUpper(method) {
