@@ -45,8 +45,8 @@ func init() {
 
 const (
 	//TODO 域名
-	FissionController   = "10.160.32.24"
-	FissionControllerPort   = 31313
+	FissionController   = "controller.fission"
+	FissionControllerPort   = 80
 )
 func main() {
 	var metricsAddr string
