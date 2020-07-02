@@ -145,10 +145,10 @@ type PkgRefInfoReq struct {
 			Checksum struct {
 			} `json:"checksum"`
 		} `json:"deployment"`
+		BuildCommand string `json:"buildcmd,omitempty"`
 	} `json:"spec"`
 	Status struct {
 	} `json:"status"`
-	BuildCommand string `json:"buildcmd,omitempty"`
 }
 
 type FissionResInfoRsp struct {
@@ -510,7 +510,7 @@ func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit, env *FissionResInfoRs
 	if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
 		requestBody.Spec.Source.Type = "literal"
 		requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
-		requestBody.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
+		requestBody.Spec.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
 	}else {
 		requestBody.Spec.Deployment.Type = "literal"
 		requestBody.Spec.Deployment.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
@@ -632,7 +632,7 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 	if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
 		requestBody.Spec.Source.Type = "literal"
 		requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
-		requestBody.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
+		requestBody.Spec.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
 	}else {
 		requestBody.Spec.Deployment.Type = "literal"
 		requestBody.Spec.Deployment.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
