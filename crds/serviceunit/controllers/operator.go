@@ -324,6 +324,11 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 
 func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	klog.Infof("delete service %s %s", db.ObjectMeta.Name, db.Spec.KongService.ID)
+	//删除函数api
+	err = r.DeleteFunction(db)
+	if err != nil {
+		return fmt.Errorf("delete function error: %+v",err)
+	}
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	for k, v := range headers {
@@ -701,4 +706,69 @@ func (r *Operator) getPkgVersion(db *nlptv1.Serviceunit)(string,error){
 	}
 	return  responseBody.Metadata.ResourceVersion,nil
 
+}
+
+func (r *Operator) DeleteFunction(db *nlptv1.Serviceunit)error{
+	klog.Infof("Enter CreateFunction :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
+	err := r.DeleteFn(db)
+	if err != nil {
+		return  fmt.Errorf("request for delete function error: %+v", err)
+	}
+	err = r.DeletePkg(db)
+	if err != nil{
+		return fmt.Errorf("request for delete package error: %+v", err)
+	}
+	err = r.DeleteEnv(db)
+	if err != nil{
+		return fmt.Errorf("request for delete env error: %+v", err)
+	}
+	return nil
+}
+
+func (r *Operator) DeleteFn(db *nlptv1.Serviceunit)error{
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort,FunctionUrl,db.Spec.FissionRefInfo.FnName)).Query("namespace="+db.Namespace)
+	response, body, errs := request.Send("").End()
+	if len(errs) > 0 {
+		klog.Errorf("request for delete function error %+v", errs)
+		return fmt.Errorf("request for delete function error: %+v", errs)
+	}
+	klog.V(5).Infof("delete function code: %d %s\n", response.StatusCode,body)
+	if response.StatusCode != 200 {
+		return fmt.Errorf("request for delete function error: receive wrong status code: %s", string(body))
+	}
+	return nil
+}
+
+func (r *Operator) DeletePkg(db *nlptv1.Serviceunit) error {
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort,PkgUrl,db.Spec.FissionRefInfo.PkgName)).Query("namespace="+db.Namespace)
+	response, body, errs := request.Send("").End()
+	if len(errs) > 0 {
+		klog.Errorf("request for delete package error %+v", errs)
+		return fmt.Errorf("request for delete package error: %+v", errs)
+	}
+	klog.V(5).Infof("delete package code: %d %s\n", response.StatusCode,body)
+	if response.StatusCode != 200 {
+		return fmt.Errorf("request for delete package error: receive wrong status code: %s", string(body))
+	}
+	return nil
+}
+
+func (r *Operator) DeleteEnv(db *nlptv1.Serviceunit) error {
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort,EnvUrl,db.Spec.FissionRefInfo.EnvName)).Query("namespace="+db.Namespace)
+	response, body, errs := request.Send("").End()
+	if len(errs) > 0 {
+		klog.Errorf("request for delete environment error %+v", errs)
+		return fmt.Errorf("request for delete environment error: %+v", errs)
+	}
+	klog.V(5).Infof("delete environment code: %d %s\n", response.StatusCode,body)
+	if response.StatusCode != 200 {
+		return fmt.Errorf("request for delete environment error: receive wrong status code: %s", string(body))
+	}
+	return nil
 }
