@@ -77,8 +77,13 @@ type OpertationRequest = struct {
 	Data      *service.OperationReq `json:"data,omitempty"`
 }
 
-//PingResponse ...
-type PingResponse = DeleteResponse
+type StatisticsResponse = struct {
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Message   string      `json:"message"`
+	Data      interface{} `json:"data"`
+	Detail    string      `json:"detail"`
+}
 
 //CreateDataservice ...
 func (c *controller) CreateDataservice(req *restful.Request) (int, *CreateResponse) {
@@ -384,6 +389,8 @@ func (c *controller) ListDataservice(req *restful.Request) (int, *ListResponse) 
 func (c *controller) GetTaskRunlog(req *restful.Request) (int, *ListResponse) {
 	pageStr := req.QueryParameter("page")
 	limitStr := req.QueryParameter("limit")
+	execTime := req.QueryParameters("exectime")
+
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page <= 0 {
 		klog.Errorf("offset para error, offset: %+v, err :%v", pageStr, err)
@@ -404,7 +411,7 @@ func (c *controller) GetTaskRunlog(req *restful.Request) (int, *ListResponse) {
 		}
 	}
 
-	ds, err := c.service.GetTaskRunlog(page, limit, req.PathParameter("id"))
+	ds, err := c.service.GetTaskRunlog(page, limit, req.PathParameter("id"), execTime)
 	//ds, err := c.service.ListDataservice(page, limit, name, authuser.Name, authuser.Namespace)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
@@ -421,6 +428,35 @@ func (c *controller) GetTaskRunlog(req *restful.Request) (int, *ListResponse) {
 		Data:      ds,
 	}
 
+}
+
+func (c *controller) DoStatisticsDataservices(req *restful.Request) (int, *StatisticsResponse) {
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &StatisticsResponse{
+			Code:      1,
+			ErrorCode: "005000003",
+			Message:   c.errMsg.DataService["005000003"],
+			Detail:    "auth model error",
+		}
+	}
+	statisticData, err := c.service.StatisticsDataservices(authuser.Namespace)
+	if err != nil {
+		return http.StatusInternalServerError, &StatisticsResponse{
+			Code:      1,
+			ErrorCode: "000000001",
+			Message:   c.errMsg.Common["000000001"],
+			Detail:    fmt.Sprintf("do statistics on dataservice error, %+v", err),
+		}
+	}
+
+	return http.StatusOK, &StatisticsResponse{
+		Code:      0,
+		ErrorCode: "",
+		Message:   "",
+		Data:      statisticData,
+		Detail:    "success",
+	}
 }
 
 func returns200(b *restful.RouteBuilder) {
