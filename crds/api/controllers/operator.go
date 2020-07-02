@@ -514,6 +514,11 @@ func (r *Operator) DeleteRouteByKong(db *nlptv1.Api) (err error) {
 		request = request.Set(k, v)
 	}
 	id := db.Spec.KongApi.KongID
+	if db.Spec.Serviceunit.Type == string(suv1.FunctionService) {
+		if err := r.DeleteRouteByFission(db); err != nil {
+			return fmt.Errorf("request for create route by fission error: %+v", err)
+		}
+	}
 	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
 	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id)).End()
 	request = request.Retry(3, 5*time.Second, retryStatus...)
@@ -943,6 +948,26 @@ func (r *Operator) CreateRouteByFission(db *nlptv1.Api, su *suv1.Serviceunit) (e
 		return fmt.Errorf("request for create route by fission error: receive wrong body: %s", string(body))
 	}
 	klog.V(5).Infof("ID==: %s\n", responseBody.Name)
+	return nil
+}
+
+func (r *Operator) DeleteRouteByFission(db *nlptv1.Api) (err error) {
+	klog.Infof("Enter DeleteRouteByFission name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	id := db.ObjectMeta.Name
+	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionAddress.ControllerHost, r.FissionAddress.ControllerPort, HttpTriggerUrl, id))
+	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionAddress.ControllerHost, r.FissionAddress.ControllerPort, HttpTriggerUrl, id)).End()
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	if len(errs) > 0 {
+		klog.Errorf("send  delete route by fission error %+v", errs)
+		return fmt.Errorf("request for delete route by fission error: %+v", errs)
+	}
+
+	klog.V(5).Infof("delete route by fission response code and body: %d, %s",  response.StatusCode, string(body))
+	if response.StatusCode != 204 {
+		return fmt.Errorf("request for delete  route by fission error: receive wrong body: %s", string(body))
+	}
 	return nil
 }
 
