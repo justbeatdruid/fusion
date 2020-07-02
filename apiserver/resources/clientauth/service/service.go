@@ -151,6 +151,20 @@ func (s *Service) List(opts ...util.OpOption) (*v1.ClientauthList, error) {
 	return cas, nil
 }
 
+
+func (s *Service) GetTopic(id string, opts ...util.OpOption) (*topicv1.Topic, error) {
+	op := util.OpList(opts...)
+	crd, err := s.topicClient.Namespace(op.Namespace()).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	tp := &topicv1.Topic{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tp); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	//klog.V(5).Infof("get v1.topic: %+v", tp)
+	return tp, nil
+}
 func (s *Service) ListTopicsWithAuthId(id string, ops ...util.OpOption) (*topicv1.TopicList, error) {
 	op := util.OpList(ops...)
 	var opts metav1.ListOptions
