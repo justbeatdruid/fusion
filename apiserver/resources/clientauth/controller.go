@@ -239,6 +239,7 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 	expireAtEnd := req.QueryParameter("expireAtEnd")
 	createUser := req.QueryParameter("createUser")
 	tenant := req.QueryParameter("tenant")
+	topic  := req.QueryParameter("topic")
 	AuthUser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
@@ -271,6 +272,10 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 	if len(authUser) > 0 {
 		//通过ca字段来匹配
 		ca = c.ListTopicByauthUser(authUser, ca)
+	}
+
+	if len(topic) > 0 {
+		ca = c.ListAuthUserByTopic(topic, ca, AuthUser.Namespace)
 	}
 	//token失效时间段筛选
 	if len(expireAtSta) > 0 && len(expireAtEnd) > 0 {
@@ -343,6 +348,33 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 			Data: data,
 		}
 	}
+}
+
+
+//通过已授权Topic匹配
+func (c *controller) ListAuthUserByTopic(topic string, cas []*service.Clientauth, namespace string) []*service.Clientauth {
+	var casResult []*service.Clientauth
+	for _, ca := range cas {
+		tp, err := c.service.GetTopic(topic, util.WithNamespace(namespace))
+		if err != nil || tp == nil {
+			casResult = append(casResult, ca)
+			continue
+		}
+
+		var show = true
+		for _, p := range tp.Spec.Permissions {
+			if p.AuthUserID == ca.ID {
+				show = false
+				break
+			}
+		}
+
+		if show {
+			casResult = append(casResult, ca)
+
+		}
+	}
+	return casResult
 }
 
 //通过authUser匹配
