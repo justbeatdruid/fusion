@@ -136,7 +136,7 @@ func (s *Service) ListDataservice(offet, limit int, name, namespace, taskType st
 		userIDs = s.getUserIdByName(namespace, createUser)
 	}
 
-	dss, num, total, err := model.GetTasks((offet-1)*limit, limit, name, namespace, taskType, status, userIDs, createTime)
+	dss, num, total, err := model.GetTasks((offet-1)*limit, limit, name, namespace, taskType, status, userIDs, createTime, createUser)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
@@ -427,8 +427,8 @@ func (s *Service) insertAddFlag(task model.Task) {
 }
 
 //GetTaskRunlog ...
-func (s *Service) GetTaskRunlog(offet, limit int, dagID string) (interface{}, error) {
-	dagRun, num, total, err := model.GetTbDagRun(offet, limit, dagID)
+func (s *Service) GetTaskRunlog(offet, limit int, dagID string, execTime []string) (interface{}, error) {
+	dagRun, num, total, err := model.GetTbDagRun(offet, limit, dagID, execTime)
 	if err != nil {
 		klog.Errorf("Get task Runlog falied ,err:%v", err)
 		return nil, err
@@ -452,6 +452,25 @@ func (s *Service) GetTaskRunlog(offet, limit int, dagID string) (interface{}, er
 	body["total"] = total
 	body["page"] = offet
 	body["limit"] = limit
+
+	return body, nil
+
+}
+
+//StatisticsDataservices ...
+func (s *Service) StatisticsDataservices(namespace string) (interface{}, error) {
+	num, total, success, err := model.GetStatisticsDataservices(namespace)
+	if err != nil {
+		klog.Errorf("Get Statistics data falied ,err:%v", err)
+		return nil, err
+	}
+
+	body := map[string]interface{}{}
+
+	body["open"] = num
+	body["success"] = success
+
+	body["total"] = total
 
 	return body, nil
 

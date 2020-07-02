@@ -146,7 +146,7 @@ func DeleteTaskByID(id int) (err error) {
 }
 
 // GetTasks ...
-func GetTasks(offet, limit int, name, namespace, taskType string, status int, userID []string, createTime []string) (tasks []Task, num, total int64, err error) {
+func GetTasks(offet, limit int, name, namespace, taskType string, status int, userID []string, createTime []string, createUser string) (tasks []Task, num, total int64, err error) {
 	o := orm.NewOrm()
 
 	qs := o.QueryTable("Task").Filter("Namespace", namespace)
@@ -172,8 +172,11 @@ func GetTasks(offet, limit int, name, namespace, taskType string, status int, us
 		}
 
 	}
-	if len(userID) != 0 {
-		qs = qs.Filter("UserId_in", userID)
+	if createUser != "" {
+		if len(userID) == 0 {
+			return
+		}
+		qs = qs.Filter("UserId__in", userID)
 	}
 	num, err = qs.Offset(offet).Limit(limit).OrderBy("-Id").All(&tasks)
 
@@ -182,10 +185,22 @@ func GetTasks(offet, limit int, name, namespace, taskType string, status int, us
 }
 
 // GetTbDagRun ...
-func GetTbDagRun(offet, limit int, dagID string) (dagRun []TbDagRun, num int64, total int64, err error) {
+func GetTbDagRun(offet, limit int, dagID string, execTime []string) (dagRun []TbDagRun, num int64, total int64, err error) {
+
 	o := orm.NewOrm()
-	num, err = o.QueryTable("TbDagRun").Filter("DagId", dagID).Offset(offet).Limit(limit).OrderBy("-ExecDate").All(&dagRun)
-	total, err = o.QueryTable("TbDagRun").Filter("DagId", dagID).Count()
+	qs := o.QueryTable("TbDagRun").Filter("DagId", dagID)
+	if len(execTime) == 2 {
+		start, err1 := time.Parse("2006-01-02 15:04:05", execTime[0])
+		end, err2 := time.Parse("2006-01-02 15:04:05", execTime[1])
+		if err1 == nil && err2 == nil {
+			qs = qs.Filter("ExecDate__gte", start).Filter("ExecDate__lte", end)
+		} else {
+			klog.Errorf("execTime:%v,err1:%v, err2:%v", execTime, err1, err2)
+		}
+
+	}
+	num, err = qs.Offset(offet).Limit(limit).OrderBy("-ExecDate").All(&dagRun)
+	total, err = qs.Count()
 	return
 }
 
@@ -245,7 +260,7 @@ func OperationTaskStatus(operation, namespace string, ids []string) (task []Task
 	return task, err
 }
 
-// OperationTaskStatus ...
+// UpdateTaskJob ...
 func UpdateTaskJob(dagid, job string) error {
 
 	o := orm.NewOrm()
@@ -272,4 +287,29 @@ func GetTaskByStartTime() (tasks []Task, err error) {
 
 	return
 
+}
+
+// GetStatisticsDataservices ...
+func GetStatisticsDataservices(namespace string) (open, total, success int64, err error) {
+	o := orm.NewOrm()
+
+	qs := o.QueryTable("Task").Filter("Namespace", namespace)
+
+	total, err = qs.Count()
+	qs = qs.Filter("Status", true)
+	open, err = qs.Count()
+
+	var dagID orm.ParamsList
+
+	num, err := o.Raw("select dag_id from task where namespace = ?", namespace).ValuesFlat(&dagID)
+	if err != nil {
+		klog.Errorf("exec get sql failed,err: %v", err)
+		return
+	}
+	klog.Errorf("dagID: %v,num:%v", dagID, num)
+	var list orm.ParamsList
+	success, err = o.QueryTable("TbDagRun").Distinct().Filter("DagId__in", dagID).Filter("DagStatus", 0).ValuesFlat(&list, "DagId")
+	klog.Errorf("list: %v, success:%v, err:%v", list, len(list), success, err)
+
+	return
 }

@@ -238,7 +238,7 @@ func ToAPI(ds *model.Task, service *Service, opts ...util.OpOption) *Dataservice
 	json.Unmarshal([]byte(ds.DataTargetConfig), &apiTask.DataTargetConfig)
 	_, apiTask.DataTargetConfig.RelationalDbTarget.Name, _ = service.GetDataSource(apiTask.DataTargetConfig.RelationalDbTarget.TargetID, opts...)
 	_, apiTask.DataSourceConfig.RelationalDb.Name, _ = service.GetDataSource(apiTask.DataSourceConfig.RelationalDb.SourceID, opts...)
-	dagRun, num, _, err := model.GetTbDagRun(0, 1, apiTask.DagID)
+	dagRun, num, _, err := model.GetTbDagRun(0, 1, apiTask.DagID, []string{})
 	if num > 0 && err == nil {
 		apiTask.DagStatus = dagRun[0].DagStatus
 		apiTask.ExecDate = dagRun[0].ExecDate.Format(TimeStr)

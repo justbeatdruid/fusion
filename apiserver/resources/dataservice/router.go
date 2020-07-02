@@ -60,10 +60,19 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.operationDataservice).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
 	ws.Route(ws.GET("/dataservices/taskrunlog/{id}").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list a task all runlog").
 		To(r.getTaskRunlog).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	ws.Route(ws.GET("/dataservices/statistics").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("statistic dataservices").
+		To(r.doStatisticsdataservices).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
@@ -100,5 +109,10 @@ func (r *router) updateDateService(request *restful.Request, response *restful.R
 
 func (r *router) getTaskRunlog(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.GetTaskRunlog(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) doStatisticsdataservices(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.DoStatisticsDataservices(request)
 	response.WriteHeaderAndEntity(code, result)
 }
