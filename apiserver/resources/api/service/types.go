@@ -368,7 +368,8 @@ func (s *Service) Validate(a *Api) error {
 		}
 	}
 
-	if su.Spec.Type == "data" {
+	switch su.Spec.Type {
+	case "data":
 		if len(a.ApiDefineInfo.Method) == 0 {
 			a.ApiDefineInfo.Method = a.Method
 		}
@@ -402,16 +403,14 @@ func (s *Service) Validate(a *Api) error {
 				}
 			}
 		}
-	}
-	//参数校验
-	if su.Spec.Type == "web" {
+	case "web", "function":
 		switch a.ApiDefineInfo.Protocol {
 		case v1.HTTP, v1.HTTPS:
 		default:
 			return fmt.Errorf("wrong protocol type: %s. ", a.ApiDefineInfo.Protocol)
 		}
 		switch a.ApiDefineInfo.Method {
-		case v1.GET, v1.POST, v1.PUT, v1.DELETE, v1.PATCH:
+		case v1.GET, v1.POST, v1.PUT, v1.DELETE, v1.PATCH, v1.OPTIONS, v1.HEAD:
 		default:
 			return fmt.Errorf("wrong method type: %s. ", a.ApiDefineInfo.Method)
 		}
@@ -439,14 +438,15 @@ func (s *Service) Validate(a *Api) error {
 			}
 		}
 		// kongapi paths  正常返回值
-		if len(a.KongApi.Paths) == 0 {
-			return fmt.Errorf("api paths is null. ")
+		if su.Spec.Type == "web" && len(a.KongApi.Paths) == 0 {
+			return fmt.Errorf("web api paths is null. ")
 		}
-		// return example is not required
-		//if len(a.ApiReturnInfo.NormalExample) == 0 {
-		//	return fmt.Errorf("normal example is null. ")
-		//}
+		// return example is required
+		if len(a.ApiReturnInfo.NormalExample) == 0 {
+			return fmt.Errorf("normal example is null. ")
+		}
 	}
+	
 	a.UpdatedAt = util.Now()
 
 	//data api need service unit publish

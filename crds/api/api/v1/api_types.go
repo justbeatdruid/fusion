@@ -132,8 +132,8 @@ const (
 	GET    Method = "GET"
 	DELETE Method = "DELETE"
 	PUT    Method = "PUT"
-	OPTION Method = "OPTION"
-	LIST   Method = "LIST"
+	OPTIONS Method = "OPTIONS"
+	HEAD   Method = "HEAD"
 	PATCH  Method = "PATCH"
 )
 
