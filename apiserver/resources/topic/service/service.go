@@ -387,7 +387,7 @@ func (s *Service) DeletePer(id string, authUserId string, opts ...util.OpOption)
 		}
 	}
 	tp.Status.AuthorizationStatus = v1.DeletingAuthorization
-	tp, err =  s.UpdateStatus(tp)
+	tp, err = s.UpdateStatus(tp)
 	if err != nil {
 		return nil, "数据库错误", fmt.Errorf("error delete crd: %+v", err)
 	}
@@ -760,10 +760,10 @@ func (s *Service) BatchBindApi(appid string, topics []BindInfo, opts ...util.OpO
 		}
 
 		application := v1.Application{
-			ID:      appid,
-			Status:  v1.Binding,
-			Actions: t.Actions,
-			DisplayStatus : v1.ShowStatusMap[v1.Binding],
+			ID:            appid,
+			Status:        v1.Binding,
+			Actions:       t.Actions,
+			DisplayStatus: v1.ShowStatusMap[v1.Binding],
 		}
 
 		if tp.Spec.Applications == nil {
@@ -797,7 +797,7 @@ func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.
 		for _, application := range tp.Spec.Applications {
 			if application.ID == appid {
 				topicIsBound = true
-				if application.Status == v1.Bound || application.Status == v1.Binding{
+				if application.Status == v1.Bound || application.Status == v1.Binding {
 					application.Status = v1.Unbinding
 					tp.Status.BindStatus = v1.BindingOrUnBinding
 					application.DisplayStatus = v1.ShowStatusMap[application.Status]
@@ -812,7 +812,6 @@ func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.
 				break
 			}
 		}
-
 
 		if !topicIsBound {
 			return fmt.Errorf("topic(%+v) does not bind the application(%+v)", tp.Spec.Name, app.Spec.Name)
@@ -923,7 +922,6 @@ func (s *Service) ImportTopicgroup(name string, authuser auth.AuthUser) error {
 	tg.Spec = topicgroupv1.TopicgroupSpec{
 		Name: name,
 	}
-
 
 	tg.Status = topicgroupv1.TopicgroupStatus{
 		Status:  topicgroupv1.Importing,

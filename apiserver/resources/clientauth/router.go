@@ -63,6 +63,15 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	//修改Topic描述/备注
+	ws.Route(ws.PUT("/clientauths/{id}/description").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("modify clientauth description").
+		To(r.modifyDescription).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 }
 
 func (r *router) createClientauth(request *restful.Request, response *restful.Response) {
@@ -93,5 +102,10 @@ func (r *router) deleteClientauths(request *restful.Request, response *restful.R
 //重新生成token
 func (r *router) regenerateToken(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.RegenerateToken(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) modifyDescription(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ModifyDescription(request)
 	response.WriteHeaderAndEntity(code, result)
 }

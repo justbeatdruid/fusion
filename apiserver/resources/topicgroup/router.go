@@ -75,6 +75,15 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.getTopics).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	//修改Topic描述/备注
+	ws.Route(ws.PUT("/topicgroups/{id}/description").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("modify totopicgroup description").
+		To(r.modifyDescription).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func (r *router) createTopicgroup(request *restful.Request, response *restful.Response) {
@@ -109,5 +118,10 @@ func (r *router) deleteTopicgroups(request *restful.Request, response *restful.R
 
 func (r *router) modifyTopicgroup(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ModifyTopicgroup(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) modifyDescription(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ModifyDescription(request)
 	response.WriteHeaderAndEntity(code, result)
 }

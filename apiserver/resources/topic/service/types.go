@@ -186,10 +186,10 @@ type SendMessages struct {
 	MessageBody string `json:"messageBody"`
 }
 type ResetPosition struct {
-	ID             string `json:"id"`      //topicId
-	SubName        string `json:"subName"` //订阅者的名称
-	MessageId       string  `json:"messageId"`
-	Timestamp      int64  `json:"timestamp"` //以ms为单位
+	ID        string `json:"id"`      //topicId
+	SubName   string `json:"subName"` //订阅者的名称
+	MessageId string `json:"messageId"`
+	Timestamp int64  `json:"timestamp"` //以ms为单位
 }
 type GrantPermissions struct {
 	ID      string     `json:"id"`      //认证用户的id

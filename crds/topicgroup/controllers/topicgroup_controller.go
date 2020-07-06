@@ -258,8 +258,6 @@ func (r *TopicgroupReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 			}
 		}
 
-
-
 		if namespace.Status.Status == nlptv1.Updating {
 			namespace.Status.Status = nlptv1.Updated
 			namespace.Status.Message = "modify topic group polices successfully"

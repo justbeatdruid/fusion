@@ -3,6 +3,7 @@ package topicgroup
 import (
 	"fmt"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic"
+	tperror "github.com/chinamobile/nlpt/apiserver/resources/topic/error"
 	topicservice "github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
 	"github.com/chinamobile/nlpt/apiserver/resources/topicgroup/service"
@@ -395,6 +396,66 @@ func (c *controller) ListTopicgroup(req *restful.Request) (int, *ListResponse) {
 			}
 		}
 	}
+}
+
+func (c *controller) ModifyDescription(req *restful.Request) (int, *Wrapped) {
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.TopicGroup[tperror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+
+	id := req.PathParameter("id")
+	desc := &service.Topicgroup{}
+
+	crd, err := c.service.Get(id, util.WithNamespace(authUser.Namespace))
+	if err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorModifyDescription,
+			Message:   fmt.Sprintf(c.errMsg.TopicGroup[tgerror.ErrorModifyDescription], "Topic分组不存在"),
+			Detail:    fmt.Sprintf("modify description error: %+v", err),
+		}
+	}
+
+	if err := req.ReadEntity(desc); err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorReadEntity,
+			Message:   c.errMsg.TopicGroup[tgerror.ErrorReadEntity],
+			Detail:    fmt.Sprintf("cannot read entity: %+v", err),
+		}
+	}
+
+	if len([]rune(desc.Description)) > service.MaxDescriptionLen {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorModifyDescription,
+			Message:   fmt.Sprintf(c.errMsg.TopicGroup[tgerror.ErrorModifyDescription], "长度不能超过1024个字符"),
+			Detail:    fmt.Sprintf("modify description error: %+v", err),
+		}
+	}
+	crd.Spec.Description = desc.Description
+	_, msg, err := c.service.UpdateStatus(crd)
+	if err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tgerror.ErrorModifyDescription,
+			Message:   fmt.Sprintf(c.errMsg.TopicGroup[tgerror.ErrorModifyDescription], msg),
+			Detail:    fmt.Sprintf("modify description error: %+v", err),
+		}
+	}
+
+	return http.StatusOK, &Wrapped{
+		Code:      0,
+		ErrorCode: "success",
+		Detail:    "success",
+	}
+
 }
 
 func returns200(b *restful.RouteBuilder) {

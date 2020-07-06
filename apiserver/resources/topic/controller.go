@@ -462,7 +462,6 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 		}
 	}
 
-
 	spec := &parser.TopicExcelSpec{
 		SheetName:        "topics",
 		MultiPartFileKey: "uploadfile",
@@ -487,7 +486,6 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 		partitionNum, _ := strconv.Atoi(tp[4])
 		persistent, _ := strconv.ParseBool(tp[5])
 
-
 		if err := c.service.ImportTopicgroup(tp[1], authuser); err != nil {
 			return http.StatusInternalServerError, &ImportResponse{
 				Code:      1,
@@ -496,7 +494,6 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 				Detail:    fmt.Sprintf("import topics error: %+v", err),
 			}
 		}
-
 
 		topic := &service.Topic{
 			TopicGroup:   tp[1],
@@ -705,7 +702,6 @@ func (c *controller) ListTopicByTopicGroup(topicGroup string, tps []*service.Top
 func (c *controller) ListTopicByApplication(application string, tps []*service.Topic) []*service.Topic {
 	var tpsResult []*service.Topic
 
-
 	for _, tp := range tps {
 		var apps = make([]v1.Application, 0)
 
@@ -721,7 +717,6 @@ func (c *controller) ListTopicByApplication(application string, tps []*service.T
 			tpsResult = append(tpsResult, tp)
 		}
 	}
-
 
 	return tpsResult
 }
@@ -1636,6 +1631,65 @@ func (c *controller) BatchGrantPermissions(req *restful.Request) (int, *BatchGra
 
 }
 
+func (c *controller) ModifyDescription(req *restful.Request) (int, *Wrapped) {
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+
+	id := req.PathParameter("id")
+	desc := &service.Topic{}
+
+	crd, err := c.service.Get(id, util.WithNamespace(authUser.Namespace))
+	if err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tperror.ErrorModifyDescription,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorModifyDescription], "Topic不存在"),
+			Detail:    fmt.Sprintf("modify description error: %+v", err),
+		}
+	}
+
+	if err := req.ReadEntity(desc); err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tperror.ErrorReadEntity,
+			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
+			Detail:    fmt.Sprintf("cannot read entity: %+v", err),
+		}
+	}
+
+	if len([]rune(desc.Description)) > service.MaxDescriptionLen {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tperror.ErrorModifyDescription,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorModifyDescription], "长度不能超过1024个字符"),
+			Detail:    fmt.Sprintf("modify description error: %+v", err),
+		}
+	}
+	crd.Spec.Description = desc.Description
+	if _, err = c.service.UpdateStatus(crd); err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tperror.ErrorModifyDescription,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorModifyDescription], "数据库错误"),
+			Detail:    fmt.Sprintf("modify description error: %+v", err),
+		}
+	}
+
+	return http.StatusOK, &Wrapped{
+		Code:      0,
+		ErrorCode: "success",
+		Detail:    "success",
+	}
+
+}
+
 func (c *controller) SkipMessages(req *restful.Request) (int, *ResetPositionResponse) {
 	id := req.PathParameter("id")
 	subName := req.PathParameter("subName")
@@ -1689,7 +1743,6 @@ func (c *controller) SkipMessages(req *restful.Request) (int, *ResetPositionResp
 
 }
 
-
 func (c *controller) Refresh(req *restful.Request) (int, *RefreshResponse) {
 	authUser, err := auth.GetAuthUser(req)
 	if err != nil {
@@ -1737,24 +1790,19 @@ func (c *controller) Refresh(req *restful.Request) (int, *RefreshResponse) {
 	for k, v := range stats.Subscriptions {
 		if k == subName {
 			return http.StatusOK, &RefreshResponse{
-				Code: success,
+				Code:      success,
 				ErrorCode: tperror.Success,
-				Detail : "success",
-				Data: service.ToSubscriptionStatModel(v),
+				Detail:    "success",
+				Data:      service.ToSubscriptionStatModel(v),
 			}
 		}
 	}
 
 	return http.StatusOK, &RefreshResponse{
-		Code: success,
+		Code:      success,
 		ErrorCode: tperror.Success,
-		Detail : "success",
-		Data: nil,
+		Detail:    "success",
+		Data:      nil,
 	}
-
-
-
-
-
 
 }

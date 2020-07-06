@@ -151,7 +151,6 @@ func (s *Service) List(opts ...util.OpOption) (*v1.ClientauthList, error) {
 	return cas, nil
 }
 
-
 func (s *Service) GetTopic(id string, opts ...util.OpOption) (*topicv1.Topic, error) {
 	op := util.OpList(opts...)
 	crd, err := s.topicClient.Namespace(op.Namespace()).Get(id, metav1.GetOptions{})
