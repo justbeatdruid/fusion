@@ -55,8 +55,6 @@ func (r *TopicSynchronizer) SyncTopicStats() error {
 	return nil
 }
 
-
-
 func (r *TopicSynchronizer) syncStats(tp nlptv1.Topic) {
 	ctx := context.Background()
 	stats, err := r.Connector.GetStats(tp)
@@ -66,8 +64,8 @@ func (r *TopicSynchronizer) syncStats(tp nlptv1.Topic) {
 	tp.Spec.Stats = *stats
 	if err := r.Update(ctx, &tp); err != nil {
 		klog.Errorf("update topic stats error")
-	}else {
-		klog.Info("finished sync stats of topic:",  tp.Spec.Name)
+	} else {
+		klog.Info("finished sync stats of topic:", tp.Spec.Name)
 	}
 }
 func (r *TopicSynchronizer) Start(stop <-chan struct{}) error {

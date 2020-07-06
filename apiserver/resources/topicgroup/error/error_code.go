@@ -15,6 +15,7 @@ const (
 	ErrorDuplicatedTopicgroup = "011000010" //创建Topic分组失败，原因：Topic分组已存在
 	ErrorQueryTopicgroupInfo  = "011000011" //查询Topic分组失败
 	ErrorEnsureNamespace      = "011000012" //确认k8s命名空间失败
+	ErrorModifyDescription    = "011000013" //修改描述失败，原因：%+v
 
 )
 

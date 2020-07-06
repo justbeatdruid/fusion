@@ -73,7 +73,7 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	if topic.Status.Status == nlptv1.Importing {
-		if ok, _ := r.Operator.isNamespacesExist(topic); ok{
+		if ok, _ := r.Operator.isNamespacesExist(topic); ok {
 			if err := r.Operator.CreateTopic(topic); err != nil {
 				topic.Spec.Url = topic.GetUrl()
 				topic.Status.Status = nlptv1.ImportFailed

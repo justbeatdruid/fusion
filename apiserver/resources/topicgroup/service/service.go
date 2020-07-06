@@ -40,6 +40,7 @@ type Service struct {
 	client      dynamic.NamespaceableResourceInterface
 	topicClient dynamic.NamespaceableResourceInterface
 }
+
 func (s *Service) GetClient() dynamic.NamespaceableResourceInterface {
 	return s.client
 }
@@ -474,7 +475,7 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topicgroup, stri
 }
 
 //更新状态
-func (s *Service) UpdateStatus(tg *v1.Topicgroup) (*v1.Topicgroup, string,  error) {
+func (s *Service) UpdateStatus(tg *v1.Topicgroup) (*v1.Topicgroup, string, error) {
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(tg)
 	if err != nil {
 		return nil, "数据库错误", fmt.Errorf("convert crd to unstructured error: %+v", err)

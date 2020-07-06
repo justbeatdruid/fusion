@@ -30,26 +30,26 @@ type TopicSpec struct {
 	// Important: Run "make" to regenerate code after modifying this file
 
 	// Foo is an example field of Topic. Edit Topic_types.go to remove/update
-	Name             string             `json:"name"`
-	TopicGroup       string             `json:"topicGroup"`      //topic分组ID
-	PartitionNum     int                `json:"partitionNum"`    //topic的分区数量，partitioned为true时，需要指定。默认为1
-	OldPartitionNum  int                `json:"oldPartitionNum"` //保存修改前的分区数，用于更新失败回滚
-	Partitioned      bool               `json:"partitioned"`     //是否多分区，默认为false。true：代表多分区Topic
-	Persistent       bool               `json:"persistent"`      //是否持久化，默认为true，非必填
-	Url              string             `json:"url"`             //Topic url
-	Permissions      []Permission       `json:"permissions"`
-	Stats            Stats              `json:"stats"`            //Topic的统计数据
-	PartitionedStats []PartitionedStats `json:"partitionedStats"` //多分区Topic的统计数据
-	Applications     map[string]Application      `json:"applications"`     //已绑定的应用ID列表
-	Description      string             `json:"description"`      //描述
-	DisplayStatus    ShowStatus         `json:"disStatus"`
+	Name             string                 `json:"name"`
+	TopicGroup       string                 `json:"topicGroup"`      //topic分组ID
+	PartitionNum     int                    `json:"partitionNum"`    //topic的分区数量，partitioned为true时，需要指定。默认为1
+	OldPartitionNum  int                    `json:"oldPartitionNum"` //保存修改前的分区数，用于更新失败回滚
+	Partitioned      bool                   `json:"partitioned"`     //是否多分区，默认为false。true：代表多分区Topic
+	Persistent       bool                   `json:"persistent"`      //是否持久化，默认为true，非必填
+	Url              string                 `json:"url"`             //Topic url
+	Permissions      []Permission           `json:"permissions"`
+	Stats            Stats                  `json:"stats"`            //Topic的统计数据
+	PartitionedStats []PartitionedStats     `json:"partitionedStats"` //多分区Topic的统计数据
+	Applications     map[string]Application `json:"applications"`     //已绑定的应用ID列表
+	Description      string                 `json:"description"`      //描述
+	DisplayStatus    ShowStatus             `json:"disStatus"`
 }
 
 type Application struct {
-	ID      string  `json:"id"`      //应用ID
-	Status  Status  `json:"status"`  //Topic的绑定状态
-	Actions Actions `json:"actions"` //Topic的应用权限
-	Message string  `json:"message"` //绑定消息
+	ID            string     `json:"id"`        //应用ID
+	Status        Status     `json:"status"`    //Topic的绑定状态
+	Actions       Actions    `json:"actions"`   //Topic的应用权限
+	Message       string     `json:"message"`   //绑定消息
 	DisplayStatus ShowStatus `json:"disStatus"` //显示状态
 }
 type Actions []string
@@ -150,7 +150,6 @@ const (
 	ImportingOfShow                    ShowStatus = "导入中"
 	ImportSuccessOfShow                ShowStatus = "导入成功"
 	ImportFailedOfShow                 ShowStatus = "导入失败"
-
 )
 
 // +kubebuilder:object:root=true
@@ -280,7 +279,7 @@ func initShowStatusMap() {
 	ShowStatusMap[Bound] = BindingSucceededOfShow
 	ShowStatusMap[Unbinding] = UnbindingOfShow
 	ShowStatusMap[UnbindFailed] = UnbindFailedOfShow
-	ShowStatusMap[Importing]    = ImportingOfShow
+	ShowStatusMap[Importing] = ImportingOfShow
 	ShowStatusMap[ImportFailed] = ImportFailedOfShow
 	ShowStatusMap[ImportSuccess] = ImportSuccessOfShow
 

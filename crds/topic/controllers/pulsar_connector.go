@@ -204,7 +204,6 @@ func (r *Connector) getNamespaceUrl(topic *nlptv1.Topic) string {
 	return fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, url)
 }
 
-
 //删除授权
 func (r *Connector) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err error) {
 	request := r.GetHttpRequest()
@@ -343,7 +342,6 @@ func (r *Connector) AddPartitionsOfTopic(topic *nlptv1.Topic) error {
 	}
 	return fmt.Errorf("Increment partitions error: %+v; %+v ", body, errs)
 }
-
 
 func (r *Connector) isNamespacesExist(topic *nlptv1.Topic) (bool, error) {
 	request := r.GetHttpRequest()

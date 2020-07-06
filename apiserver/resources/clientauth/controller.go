@@ -239,7 +239,7 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 	expireAtEnd := req.QueryParameter("expireAtEnd")
 	createUser := req.QueryParameter("createUser")
 	tenant := req.QueryParameter("tenant")
-	topic  := req.QueryParameter("topic")
+	topic := req.QueryParameter("topic")
 	AuthUser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ListResponse{
@@ -349,7 +349,6 @@ func (c *controller) ListClientauths(req *restful.Request) (int, *ListResponse) 
 		}
 	}
 }
-
 
 //通过已授权Topic匹配
 func (c *controller) ListAuthUserByTopic(topic string, cas []*service.Clientauth, namespace string) []*service.Clientauth {
@@ -470,6 +469,66 @@ func (c *controller) RegenerateToken(req *restful.Request) (int, *CreateResponse
 		Code:    success,
 		Data:    ca,
 		Message: "success",
+	}
+
+}
+
+func (c *controller) ModifyDescription(req *restful.Request) (int, *Wrapped) {
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: "013000003",
+			Message:   c.errMsg.ClientAuth["013000003"],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+
+	id := req.PathParameter("id")
+	desc := &service.Clientauth{}
+
+	crd, err := c.service.Get(id, util.WithNamespace(authUser.Namespace))
+	if err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: "013000015",
+			Message:   fmt.Sprintf(c.errMsg.ClientAuth["013000015"], "消息认证用户不存在"),
+			Detail:    fmt.Sprintf("modify description error: %+v", err),
+		}
+	}
+
+	if err := req.ReadEntity(desc); err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: "013000004",
+			Message:   c.errMsg.ClientAuth["013000004"],
+			Detail:    fmt.Sprintf("cannot read entity: %+v", err),
+		}
+	}
+
+	if len([]rune(desc.Description)) > service.MaxDescriptionLen {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: "013000015",
+			Message:   fmt.Sprintf(c.errMsg.ClientAuth["013000015"], "长度不能超过1024个字符"),
+			Detail:    fmt.Sprintf("modify description error: %+v", err),
+		}
+	}
+	crd.Spec.Description = desc.Description
+	_, err = c.service.UpdateStatus(crd)
+	if err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: "013000015",
+			Message:   fmt.Sprintf(c.errMsg.ClientAuth["013000015"], "数据库错误"),
+			Detail:    fmt.Sprintf("modify description error: %+v", err),
+		}
+	}
+
+	return http.StatusOK, &Wrapped{
+		Code:      0,
+		ErrorCode: "success",
+		Detail:    "success",
 	}
 
 }

@@ -98,28 +98,27 @@ const (
 	DeleteFailed Status = "deleteFailed"
 	Deleting     Status = "deleting"
 	//Error    Status = "error"
-	UpdateFailed Status = "updateFailed"
-	Updating     Status = "updating"
-	Updated      Status = "updated"
-	Importing                    Status = "importing"
-	ImportFailed                 Status = "importFailed"
-	ImportSuccess                Status = "importSuccess"
-
+	UpdateFailed  Status = "updateFailed"
+	Updating      Status = "updating"
+	Updated       Status = "updated"
+	Importing     Status = "importing"
+	ImportFailed  Status = "importFailed"
+	ImportSuccess Status = "importSuccess"
 )
 
 type ShowStatus string //界面显示状态
 const (
-	CreatingOfShow     ShowStatus = "创建中"
-	CreatedOfShow      ShowStatus = "创建成功"
-	CreateFailedOfShow ShowStatus = "创建失败"
-	UpdatingOfShow     ShowStatus = "更新中"
-	UpdatedOfShow      ShowStatus = "更新成功"
-	UpdateFailedOfShow ShowStatus = "更新失败"
-	DeletingOfShow     ShowStatus = "删除中"
-	DeleteFailedOfShow ShowStatus = "删除失败"
-	ImportingOfShow                    ShowStatus = "导入中"
-	ImportSuccessOfShow                ShowStatus = "导入成功"
-	ImportFailedOfShow                 ShowStatus = "导入失败"
+	CreatingOfShow      ShowStatus = "创建中"
+	CreatedOfShow       ShowStatus = "创建成功"
+	CreateFailedOfShow  ShowStatus = "创建失败"
+	UpdatingOfShow      ShowStatus = "更新中"
+	UpdatedOfShow       ShowStatus = "更新成功"
+	UpdateFailedOfShow  ShowStatus = "更新失败"
+	DeletingOfShow      ShowStatus = "删除中"
+	DeleteFailedOfShow  ShowStatus = "删除失败"
+	ImportingOfShow     ShowStatus = "导入中"
+	ImportSuccessOfShow ShowStatus = "导入成功"
+	ImportFailedOfShow  ShowStatus = "导入失败"
 )
 
 var ShowStatusMap map[Status]ShowStatus = make(map[Status]ShowStatus, 0)
@@ -170,7 +169,7 @@ func initShowStatusMap() {
 	ShowStatusMap[UpdateFailed] = UpdateFailedOfShow
 	ShowStatusMap[Deleting] = DeletingOfShow
 	ShowStatusMap[DeleteFailed] = DeleteFailedOfShow
-	ShowStatusMap[Importing]    = ImportingOfShow
+	ShowStatusMap[Importing] = ImportingOfShow
 	ShowStatusMap[ImportFailed] = ImportFailedOfShow
 	ShowStatusMap[ImportSuccess] = ImportSuccessOfShow
 }

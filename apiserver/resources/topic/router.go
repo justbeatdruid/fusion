@@ -217,6 +217,15 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	//修改Topic描述/备注
+	ws.Route(ws.PUT("/topics/{id}/description").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("modify topic description").
+		To(r.modifyDescription).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 }
 
 func (r *router) createTopic(request *restful.Request, response *restful.Response) {
@@ -337,5 +346,10 @@ func (r *router) skipMessages(request *restful.Request, response *restful.Respon
 
 func (r *router) refreshConsumers(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.SkipMessages(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) modifyDescription(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ModifyDescription(request)
 	response.WriteHeaderAndEntity(code, result)
 }

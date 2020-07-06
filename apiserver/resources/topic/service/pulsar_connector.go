@@ -11,10 +11,10 @@ import (
 )
 
 const (
-	skipAllUrl    = "/admin/v2/%s/%s/%s/%s/subscription/%s/skip_all"
-	skillNMessage = "/admin/v2/%s/%s/%s/%s/subscription/%s/skip/%d"
-	getStatsUrl   = "/admin/v2/%s/%s/%s/%s/stats"
-	partitionedStatsUrl        = "/admin/v2/%s/%s/%s/%s/partitioned-stats"
+	skipAllUrl          = "/admin/v2/%s/%s/%s/%s/subscription/%s/skip_all"
+	skillNMessage       = "/admin/v2/%s/%s/%s/%s/subscription/%s/skip/%d"
+	getStatsUrl         = "/admin/v2/%s/%s/%s/%s/stats"
+	partitionedStatsUrl = "/admin/v2/%s/%s/%s/%s/partitioned-stats"
 )
 
 //Connector 定义连接Pulsar所需要的参数
@@ -55,7 +55,6 @@ func (r *Connector) SkipAllMessages(tp *v1.Topic, subscriptionName string) error
 		domain = "non-persistent"
 	}
 
-
 	url := fmt.Sprintf(skipAllUrl, domain, tp.Namespace, tp.Spec.TopicGroup, tp.Spec.Name, subscriptionName)
 	url = fmt.Sprintf("%s://%s:%d%s", "http", r.Host, r.Port, url)
 
@@ -92,7 +91,6 @@ func (r *Connector) SkipMessages(tp *v1.Topic, subscriptionName string, numMessa
 
 	return nil
 }
-
 
 func (r *Connector) GetStats(tp *v1.Topic) (*v1.Stats, error) {
 	request := r.getHttpRequest()
