@@ -428,7 +428,7 @@ func (s *Service) insertAddFlag(task model.Task) {
 
 //GetTaskRunlog ...
 func (s *Service) GetTaskRunlog(offet, limit int, dagID string, execTime []string) (interface{}, error) {
-	dagRun, num, total, err := model.GetTbDagRun(offet, limit, dagID, execTime)
+	dagRun, num, total, success, failed, running, err := model.GetTbDagRun(offet, limit, dagID, execTime)
 	if err != nil {
 		klog.Errorf("Get task Runlog falied ,err:%v", err)
 		return nil, err
@@ -450,6 +450,10 @@ func (s *Service) GetTaskRunlog(offet, limit int, dagID string, execTime []strin
 	body["items"] = runlog
 	body["count"] = num
 	body["total"] = total
+	body["success"] = success
+	body["failed"] = failed
+	body["running"] = running
+
 	body["page"] = offet
 	body["limit"] = limit
 
