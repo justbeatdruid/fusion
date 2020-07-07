@@ -69,17 +69,20 @@ func (s *Service) CreateTopicgroup(model *Topicgroup) (*Topicgroup, tgerror.Topi
 }
 
 func (s *Service) ListTopicgroup(opts ...util.OpOption) ([]*Topicgroup, error) {
+	klog.Info(">>>>>>>>ListTopicgroup in time:", time.Now())
 	tgs, err := s.List(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)
 	}
+	klog.Info(">>>>>>>>>ListTopicgroup out time:", time.Now())
+
 	return s.ToListModel(tgs), nil
 }
 func (s *Service) ToListModel(items *v1.TopicgroupList) []*Topicgroup {
 	var app = make([]*Topicgroup, len(items.Items))
 	for i := range items.Items {
 		app[i] = ToModel(&items.Items[i])
-		app[i].TopicCount = s.GetTopicCountOfTopicgroup(app[i].Name, util.WithNamespace(app[i].Namespace))
+		//app[i].TopicCount = s.GetTopicCountOfTopicgroup(app[i].Name, util.WithNamespace(app[i].Namespace))
 	}
 	return app
 }
