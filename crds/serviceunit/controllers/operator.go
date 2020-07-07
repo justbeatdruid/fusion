@@ -148,6 +148,7 @@ type PkgRefInfoReq struct {
 		BuildCommand string `json:"buildcmd,omitempty"`
 	} `json:"spec"`
 	Status struct {
+		BuildStatus string `json:"buildstatus"`
 	} `json:"status"`
 }
 
@@ -555,6 +556,17 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, env *FissionResIn
 	requestBody.Spec.FunctionTimeout = 120
 	
 	responseBody := &FissionResInfoRsp{}
+
+	//判断package的状态是否完成
+	time.Sleep(time.Duration(30)*time.Second)
+    Pkg,err := r.getPkgVersion(db)
+	if err!=nil {
+        return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+	}
+	//单文件成功状态是none,zip包成功状态是succeeded
+	if Pkg.Status.BuildStatus!="none"&&Pkg.Status.BuildStatus!="succeeded"{
+		return nil, fmt.Errorf("request for create package error,package status is: %+v",Pkg.Status.BuildStatus)
+	}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
 		klog.Errorf("request for create function error %+v", errs)
@@ -613,7 +625,7 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	//查询package的resourceversion
-	PkgResourceVersion,err:=r.getPkgVersion(db)
+	Pkg,err:=r.getPkgVersion(db)
 	if err!=nil{
 		return nil,fmt.Errorf("get pkgResourceVersion error: %v",err)
 	}
@@ -628,7 +640,7 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
 	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
-	requestBody.Metadata.ResourceVersion = PkgResourceVersion
+	requestBody.Metadata.ResourceVersion = Pkg.Metadata.ResourceVersion
 	if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
 		requestBody.Spec.Source.Type = "literal"
 		requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
@@ -677,6 +689,17 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	requestBody.Spec.FunctionTimeout = 120
 
 	responseBody := &FissionResInfoRsp{}
+
+	//判断package的状态是否完成
+	time.Sleep(time.Duration(15)*time.Second)
+	Pkg,err := r.getPkgVersion(db)
+	if err!=nil {
+		return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+	}
+	//单文件成功状态是none,zip包成功状态是succeeded
+	if Pkg.Status.BuildStatus!="none"&&Pkg.Status.BuildStatus!="succeeded"{
+		return nil, fmt.Errorf("request for update package error,package status is: %+v",Pkg.Status.BuildStatus)
+	}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
 		klog.Errorf("request for update function error %+v", errs)
@@ -692,8 +715,8 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	return  responseBody, nil
 
 }
-//获取pkg的最新resourceVersion
-func (r *Operator) getPkgVersion(db *nlptv1.Serviceunit)(string,error){
+//获取pkg的信息
+func (r *Operator) getPkgVersion(db *nlptv1.Serviceunit)(*PkgRefInfoReq,error){
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	//查询package的resourceversion
@@ -702,10 +725,9 @@ func (r *Operator) getPkgVersion(db *nlptv1.Serviceunit)(string,error){
 	_, _, errs := request.Send("").EndStruct(responseBody)
 	if len(errs) > 0 {
 		klog.Errorf("request for get pkg error %+v", errs)
-		return "", fmt.Errorf("request for get pkg error: %+v", errs)
+		return nil, fmt.Errorf("request for get pkg error: %+v", errs)
 	}
-	return  responseBody.Metadata.ResourceVersion,nil
-
+	return  responseBody,nil
 }
 
 func (r *Operator) DeleteFunction(db *nlptv1.Serviceunit)error{
