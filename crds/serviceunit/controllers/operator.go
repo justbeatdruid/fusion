@@ -669,11 +669,6 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 }
 
 func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInfoRsp)(*FissionResInfoRsp, error){
-	//查询function的resourceversion
-	Fn,err:=r.getFnVersion(db)
-	if err!=nil{
-		return nil,fmt.Errorf("get FnResourceVersion error: %v",err)
-	}
 	klog.Infof("Enter UpdateFnByEnvAndPkg :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -689,10 +684,8 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Package.Packageref.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Package.Packageref.Name = db.Spec.FissionRefInfo.PkgName
-	requestBody.Spec.Package.Packageref.Resourceversion = pkg.ResourceVersion
 	//函数入口
 	requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint
-	requestBody.Metadata.ResourceVersion = Fn.Metadata.ResourceVersion
 	requestBody.Spec.InvokeStrategy.ExecutionStrategy.ExecutorType = "poolmgr"
 	requestBody.Spec.InvokeStrategy.StrategyType = "execution"
 	requestBody.Spec.FunctionTimeout = 120
@@ -708,9 +701,16 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 		}
 		//单文件成功状态是none,zip包成功状态是succeeded
 		if Pkg.Status.BuildStatus=="none"||Pkg.Status.BuildStatus=="succeeded"{
+			requestBody.Spec.Package.Packageref.Resourceversion = Pkg.Metadata.ResourceVersion
 			break
 		}
 	}
+	//查询function的resourceversion
+	Fn,err:=r.getFnVersion(db)
+	if err!=nil{
+		return nil,fmt.Errorf("get FnResourceVersion error: %v",err)
+	}
+	requestBody.Metadata.ResourceVersion = Fn.Metadata.ResourceVersion
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
 		klog.Errorf("request for update function error %+v", errs)
