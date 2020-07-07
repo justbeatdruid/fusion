@@ -307,6 +307,10 @@ func GetStatisticsDataservices(namespace string) (open, total, success int64, er
 		return
 	}
 	klog.Errorf("dagID: %v,num:%v", dagID, num)
+	if num == 0 {
+		return
+	}
+
 	var list orm.ParamsList
 	success, err = o.QueryTable("TbDagRun").Distinct().Filter("DagId__in", dagID).Filter("DagStatus", 0).ValuesFlat(&list, "DagId")
 	klog.Errorf("list: %v, success:%v, err:%v", list, len(list), success, err)
