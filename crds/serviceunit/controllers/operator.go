@@ -111,6 +111,7 @@ type EnvReqInfo struct {
 		Namespace string `json:"namespace"`
 	} `json:"metadata"`
 	Spec struct {
+		Version int `json:"version"`
 		Runtime struct {
 			Image string `json:"image"`
 		} `json:"runtime"`
@@ -475,6 +476,7 @@ func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error)
 		requestBody.Spec.Builder.Image = GoBuild
 	}
 	requestBody.Spec.Builder.Command = Command
+	requestBody.Spec.Version = 2
 	requestBody.Spec.Poolsize = 3
 	requestBody.Spec.Keeparchive = false
 
