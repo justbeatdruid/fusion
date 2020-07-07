@@ -560,21 +560,22 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, env *FissionResIn
 	responseBody := &FissionResInfoRsp{}
 
 	//判断package的状态是否完成
-	time.Sleep(time.Duration(30)*time.Second)
-    Pkg,err := r.getPkgVersion(db)
-	if err!=nil {
-        return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
-	}
-	//单文件成功状态是none,zip包成功状态是succeeded
-	if Pkg.Status.BuildStatus!="none"&&Pkg.Status.BuildStatus!="succeeded"{
-		return nil, fmt.Errorf("request for create package error,package status is: %+v",Pkg.Status.BuildStatus)
+	for i:=1;i<15;i++{
+		time.Sleep(time.Duration(i)*time.Second)
+		Pkg,err := r.getPkgVersion(db)
+		if err!=nil {
+			return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+		}
+		//单文件成功状态是none,zip包成功状态是succeeded
+		if Pkg.Status.BuildStatus=="none"||Pkg.Status.BuildStatus=="succeeded"{
+			break
+		}
 	}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
 		klog.Errorf("request for create function error %+v", errs)
 		return nil, fmt.Errorf("request for create function error: %+v", errs)
 	}
-
 	klog.V(5).Infof("create function code and body: %d %s\n", response.StatusCode, string(body))
 	if response.StatusCode != 201 {
 		klog.Errorf("create function failed msg: %s\n", responseBody)
@@ -591,6 +592,7 @@ func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, e
 		return nil, fmt.Errorf("request for create env error: %+v", err)
 	}
 	(*db).Spec.FissionRefInfo.EnvName = env.Name
+	time.Sleep(5*time.Second)
 	pkg, err := r.CreatePkgByFile(db, env)
 	if err != nil {
 		return nil, fmt.Errorf("request for create pkg error: %+v", err)
