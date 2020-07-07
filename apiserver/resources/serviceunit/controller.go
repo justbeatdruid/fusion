@@ -67,6 +67,7 @@ type ImportResponse struct {
 	ErrorCode string `json:"errorCode"`
 	Message   string `json:"message"`
 	Detail    string `json:"detail"`
+	Data      string `json:"data"`
 }
 
 const UploadPath string  = "/data/upload/serviceunit/"
@@ -706,6 +707,7 @@ func (c *controller) ImportServiceunits(req *restful.Request, response *restful.
 	return http.StatusOK, &ImportResponse{
 		Code:      0,
 		ErrorCode: "0",
+		Data: UploadPath + handler.Filename,
 	}
 }
 
