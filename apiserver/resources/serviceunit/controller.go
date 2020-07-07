@@ -67,7 +67,7 @@ type ImportResponse struct {
 	ErrorCode string `json:"errorCode"`
 	Message   string `json:"message"`
 	Detail    string `json:"detail"`
-	Data      string `json:"data"`
+	Data      string `json:"data,omitempty"`
 }
 
 const UploadPath string  = "/data/upload/serviceunit/"
