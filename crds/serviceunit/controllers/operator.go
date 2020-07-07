@@ -669,6 +669,11 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 }
 
 func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInfoRsp)(*FissionResInfoRsp, error){
+	//查询function的resourceversion
+	Fn,err:=r.getFnVersion(db)
+	if err!=nil{
+		return nil,fmt.Errorf("get FnResourceVersion error: %v",err)
+	}
 	klog.Infof("Enter UpdateFnByEnvAndPkg :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -687,7 +692,7 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	requestBody.Spec.Package.Packageref.Resourceversion = pkg.ResourceVersion
 	//函数入口
 	requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint
-	requestBody.Metadata.ResourceVersion = db.Spec.FissionRefInfo.FnResourceVersion
+	requestBody.Metadata.ResourceVersion = Fn.Metadata.ResourceVersion
 	requestBody.Spec.InvokeStrategy.ExecutionStrategy.ExecutorType = "poolmgr"
 	requestBody.Spec.InvokeStrategy.StrategyType = "execution"
 	requestBody.Spec.FunctionTimeout = 120
@@ -736,6 +741,20 @@ func (r *Operator) getPkgVersion(db *nlptv1.Serviceunit)(*PkgRefInfoReq,error){
 	return  responseBody,nil
 }
 
+//获取function的信息
+func (r *Operator) getFnVersion(db *nlptv1.Serviceunit)(*FunctionReqInfo,error){
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	//查询function的resourceversion
+	request = request.Get(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, FunctionUrl,db.Spec.FissionRefInfo.FnName)).Query("namespace="+db.Namespace)
+	responseBody := &FunctionReqInfo{}
+	_, _, errs := request.Send("").EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Errorf("request for get function error %+v", errs)
+		return nil, fmt.Errorf("request for get function error: %+v", errs)
+	}
+	return  responseBody,nil
+}
 func (r *Operator) DeleteFunction(db *nlptv1.Serviceunit)error{
 	klog.Infof("Enter CreateFunction :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	err := r.DeleteFn(db)
