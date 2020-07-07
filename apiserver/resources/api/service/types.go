@@ -570,7 +570,9 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		if config, ok := kongInfo.(map[string]interface{}); ok {
 			//web 类型直接使用kong传入的参数  path method
 			if _, ok = config["paths"]; ok {
-				target.Spec.KongApi.Paths = source.KongApi.Paths
+				if target.Spec.Serviceunit.Type == "web" {
+					target.Spec.KongApi.Paths = source.KongApi.Paths
+				}
 			}
 			if target.Spec.Serviceunit.Type == "web" {
 				target.Spec.KongApi.Methods = []string{strings.ToUpper(string(source.ApiDefineInfo.Method))}
