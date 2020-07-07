@@ -695,14 +695,16 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	responseBody := &FissionResInfoRsp{}
 
 	//判断package的状态是否完成
-	time.Sleep(time.Duration(15)*time.Second)
-	Pkg,err := r.getPkgVersion(db)
-	if err!=nil {
-		return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
-	}
-	//单文件成功状态是none,zip包成功状态是succeeded
-	if Pkg.Status.BuildStatus!="none"&&Pkg.Status.BuildStatus!="succeeded"{
-		return nil, fmt.Errorf("request for update package error,package status is: %+v",Pkg.Status.BuildStatus)
+	for i:=1;i<15;i++{
+		time.Sleep(time.Duration(i)*time.Second)
+		Pkg,err := r.getPkgVersion(db)
+		if err!=nil {
+			return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+		}
+		//单文件成功状态是none,zip包成功状态是succeeded
+		if Pkg.Status.BuildStatus=="none"||Pkg.Status.BuildStatus=="succeeded"{
+			break
+		}
 	}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
