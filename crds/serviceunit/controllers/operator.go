@@ -510,15 +510,20 @@ func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit, env *FissionResInfoRs
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Environment.Name = env.Name
 	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
-	if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
-		requestBody.Spec.Source.Type = "literal"
-		requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
-		requestBody.Spec.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
+    //判断是否是文件还是在线编辑代码
+	if len(db.Spec.FissionRefInfo.FnFile)>0 {
+		if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
+			requestBody.Spec.Source.Type = "literal"
+			requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
+			requestBody.Spec.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
+		}else {
+			requestBody.Spec.Deployment.Type = "literal"
+			requestBody.Spec.Deployment.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
+		}
 	}else {
 		requestBody.Spec.Deployment.Type = "literal"
-		requestBody.Spec.Deployment.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
+		requestBody.Spec.Deployment.Literal = db.Spec.FissionRefInfo.FnCode
 	}
-
 	responseBody := &FissionResInfoRsp{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
@@ -645,13 +650,19 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
 	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
 	requestBody.Metadata.ResourceVersion = Pkg.Metadata.ResourceVersion
-	if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
-		requestBody.Spec.Source.Type = "literal"
-		requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
-		requestBody.Spec.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
+	//判断是否是文件还是在线编辑
+	if len(db.Spec.FissionRefInfo.FnFile)>0{
+		if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
+			requestBody.Spec.Source.Type = "literal"
+			requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
+			requestBody.Spec.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
+		}else {
+			requestBody.Spec.Deployment.Type = "literal"
+			requestBody.Spec.Deployment.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
+		}
 	}else {
 		requestBody.Spec.Deployment.Type = "literal"
-		requestBody.Spec.Deployment.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
+		requestBody.Spec.Deployment.Literal = db.Spec.FissionRefInfo.FnCode
 	}
 	responseBody := &FissionResInfoRsp{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
