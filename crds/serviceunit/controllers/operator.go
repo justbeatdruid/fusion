@@ -782,6 +782,10 @@ func (r *Operator) DeleteFn(db *nlptv1.Serviceunit)error{
 		return fmt.Errorf("request for delete function error: %+v", errs)
 	}
 	klog.V(5).Infof("delete function code: %d %s\n", response.StatusCode,body)
+	//function不存在，返回404
+	if response.StatusCode ==404{
+		return nil
+	}
 	if response.StatusCode != 200 {
 		return fmt.Errorf("request for delete function error: receive wrong status code: %s", string(body))
 	}
@@ -798,6 +802,10 @@ func (r *Operator) DeletePkg(db *nlptv1.Serviceunit) error {
 		return fmt.Errorf("request for delete package error: %+v", errs)
 	}
 	klog.V(5).Infof("delete package code: %d %s\n", response.StatusCode,body)
+	//package不存在，返回404
+	if response.StatusCode ==404{
+		return nil
+	}
 	if response.StatusCode != 200 {
 		return fmt.Errorf("request for delete package error: receive wrong status code: %s", string(body))
 	}
@@ -814,6 +822,10 @@ func (r *Operator) DeleteEnv(db *nlptv1.Serviceunit) error {
 		return fmt.Errorf("request for delete environment error: %+v", errs)
 	}
 	klog.V(5).Infof("delete environment code: %d %s\n", response.StatusCode,body)
+	//env不存在，返回404
+	if response.StatusCode ==404{
+		return nil
+	}
 	if response.StatusCode != 200 {
 		return fmt.Errorf("request for delete environment error: receive wrong status code: %s", string(body))
 	}
