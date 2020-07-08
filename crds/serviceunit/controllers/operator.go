@@ -662,7 +662,7 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 		}
 	}else {
 		requestBody.Spec.Deployment.Type = "literal"
-		requestBody.Spec.Deployment.Literal = db.Spec.FissionRefInfo.FnCode
+		requestBody.Spec.Deployment.Literal = []byte(db.Spec.FissionRefInfo.FnCode)
 	}
 	responseBody := &FissionResInfoRsp{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
