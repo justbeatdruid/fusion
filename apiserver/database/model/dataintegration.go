@@ -185,7 +185,7 @@ func GetTasks(offet, limit int, name, namespace, taskType string, status int, us
 }
 
 // GetTbDagRun ...
-func GetTbDagRun(offet, limit int, dagID string, execTime []string) (dagRun []TbDagRun, num int64, total int64, err error) {
+func GetTbDagRun(offet, limit int, dagID string, execTime []string) (dagRun []TbDagRun, num, total, success, failed, running int64, err error) {
 
 	o := orm.NewOrm()
 	qs := o.QueryTable("TbDagRun").Filter("DagId", dagID)
@@ -201,6 +201,9 @@ func GetTbDagRun(offet, limit int, dagID string, execTime []string) (dagRun []Tb
 	}
 	num, err = qs.Offset(offet).Limit(limit).OrderBy("-ExecDate").All(&dagRun)
 	total, err = qs.Count()
+	success, err = qs.Filter("DagStatus", 0).Count()
+	failed, err = qs.Filter("DagStatus", 2).Count()
+	running, err = qs.Filter("DagStatus__in", []int{1, 3, 4, 5, 6, 7, 8}).Count()
 	return
 }
 

@@ -560,21 +560,22 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, env *FissionResIn
 	responseBody := &FissionResInfoRsp{}
 
 	//判断package的状态是否完成
-	time.Sleep(time.Duration(30)*time.Second)
-    Pkg,err := r.getPkgVersion(db)
-	if err!=nil {
-        return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
-	}
-	//单文件成功状态是none,zip包成功状态是succeeded
-	if Pkg.Status.BuildStatus!="none"&&Pkg.Status.BuildStatus!="succeeded"{
-		return nil, fmt.Errorf("request for create package error,package status is: %+v",Pkg.Status.BuildStatus)
+	for i:=1;i<15;i++{
+		time.Sleep(time.Duration(i)*time.Second)
+		Pkg,err := r.getPkgVersion(db)
+		if err!=nil {
+			return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+		}
+		//单文件成功状态是none,zip包成功状态是succeeded
+		if Pkg.Status.BuildStatus=="none"||Pkg.Status.BuildStatus=="succeeded"{
+			break
+		}
 	}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
 		klog.Errorf("request for create function error %+v", errs)
 		return nil, fmt.Errorf("request for create function error: %+v", errs)
 	}
-
 	klog.V(5).Infof("create function code and body: %d %s\n", response.StatusCode, string(body))
 	if response.StatusCode != 201 {
 		klog.Errorf("create function failed msg: %s\n", responseBody)
@@ -591,6 +592,7 @@ func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, e
 		return nil, fmt.Errorf("request for create env error: %+v", err)
 	}
 	(*db).Spec.FissionRefInfo.EnvName = env.Name
+	time.Sleep(5*time.Second)
 	pkg, err := r.CreatePkgByFile(db, env)
 	if err != nil {
 		return nil, fmt.Errorf("request for create pkg error: %+v", err)
@@ -682,10 +684,8 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Package.Packageref.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Package.Packageref.Name = db.Spec.FissionRefInfo.PkgName
-	requestBody.Spec.Package.Packageref.Resourceversion = pkg.ResourceVersion
 	//函数入口
 	requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint
-	requestBody.Metadata.ResourceVersion = db.Spec.FissionRefInfo.FnResourceVersion
 	requestBody.Spec.InvokeStrategy.ExecutionStrategy.ExecutorType = "poolmgr"
 	requestBody.Spec.InvokeStrategy.StrategyType = "execution"
 	requestBody.Spec.FunctionTimeout = 120
@@ -693,15 +693,24 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	responseBody := &FissionResInfoRsp{}
 
 	//判断package的状态是否完成
-	time.Sleep(time.Duration(15)*time.Second)
-	Pkg,err := r.getPkgVersion(db)
-	if err!=nil {
-		return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+	for i:=1;i<15;i++{
+		time.Sleep(time.Duration(i)*time.Second)
+		Pkg,err := r.getPkgVersion(db)
+		if err!=nil {
+			return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+		}
+		//单文件成功状态是none,zip包成功状态是succeeded
+		if Pkg.Status.BuildStatus=="none"||Pkg.Status.BuildStatus=="succeeded"{
+			requestBody.Spec.Package.Packageref.Resourceversion = Pkg.Metadata.ResourceVersion
+			break
+		}
 	}
-	//单文件成功状态是none,zip包成功状态是succeeded
-	if Pkg.Status.BuildStatus!="none"&&Pkg.Status.BuildStatus!="succeeded"{
-		return nil, fmt.Errorf("request for update package error,package status is: %+v",Pkg.Status.BuildStatus)
+	//查询function的resourceversion
+	Fn,err:=r.getFnVersion(db)
+	if err!=nil{
+		return nil,fmt.Errorf("get FnResourceVersion error: %v",err)
 	}
+	requestBody.Metadata.ResourceVersion = Fn.Metadata.ResourceVersion
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
 		klog.Errorf("request for update function error %+v", errs)
@@ -732,6 +741,20 @@ func (r *Operator) getPkgVersion(db *nlptv1.Serviceunit)(*PkgRefInfoReq,error){
 	return  responseBody,nil
 }
 
+//获取function的信息
+func (r *Operator) getFnVersion(db *nlptv1.Serviceunit)(*FunctionReqInfo,error){
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	//查询function的resourceversion
+	request = request.Get(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, FunctionUrl,db.Spec.FissionRefInfo.FnName)).Query("namespace="+db.Namespace)
+	responseBody := &FunctionReqInfo{}
+	_, _, errs := request.Send("").EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Errorf("request for get function error %+v", errs)
+		return nil, fmt.Errorf("request for get function error: %+v", errs)
+	}
+	return  responseBody,nil
+}
 func (r *Operator) DeleteFunction(db *nlptv1.Serviceunit)error{
 	klog.Infof("Enter CreateFunction :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	err := r.DeleteFn(db)
@@ -759,6 +782,10 @@ func (r *Operator) DeleteFn(db *nlptv1.Serviceunit)error{
 		return fmt.Errorf("request for delete function error: %+v", errs)
 	}
 	klog.V(5).Infof("delete function code: %d %s\n", response.StatusCode,body)
+	//function不存在，返回404
+	if response.StatusCode ==404{
+		return nil
+	}
 	if response.StatusCode != 200 {
 		return fmt.Errorf("request for delete function error: receive wrong status code: %s", string(body))
 	}
@@ -775,6 +802,10 @@ func (r *Operator) DeletePkg(db *nlptv1.Serviceunit) error {
 		return fmt.Errorf("request for delete package error: %+v", errs)
 	}
 	klog.V(5).Infof("delete package code: %d %s\n", response.StatusCode,body)
+	//package不存在，返回404
+	if response.StatusCode ==404{
+		return nil
+	}
 	if response.StatusCode != 200 {
 		return fmt.Errorf("request for delete package error: receive wrong status code: %s", string(body))
 	}
@@ -791,6 +822,10 @@ func (r *Operator) DeleteEnv(db *nlptv1.Serviceunit) error {
 		return fmt.Errorf("request for delete environment error: %+v", errs)
 	}
 	klog.V(5).Infof("delete environment code: %d %s\n", response.StatusCode,body)
+	//env不存在，返回404
+	if response.StatusCode ==404{
+		return nil
+	}
 	if response.StatusCode != 200 {
 		return fmt.Errorf("request for delete environment error: receive wrong status code: %s", string(body))
 	}
