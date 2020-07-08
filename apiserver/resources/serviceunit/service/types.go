@@ -415,6 +415,7 @@ func (s *Service) assignment(target *v1.Serviceunit, reqData interface{}) error 
 		target.Spec.APIs = make([]v1.Api, 0)
 	}
 	if _,ok := data["fissionRefInfo"];ok{
+		target.Spec.FissionRefInfo.FnCode=source.FissionRefInfo.FnCode
 		target.Spec.FissionRefInfo.FnFile=source.FissionRefInfo.FnFile
 		target.Spec.FissionRefInfo.BuildCmd=source.FissionRefInfo.BuildCmd
 		target.Spec.FissionRefInfo.Entrypoint=source.FissionRefInfo.Entrypoint
