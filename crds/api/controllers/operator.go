@@ -516,7 +516,7 @@ func (r *Operator) DeleteRouteByKong(db *nlptv1.Api) (err error) {
 	id := db.Spec.KongApi.KongID
 	if db.Spec.Serviceunit.Type == string(suv1.FunctionService) {
 		if err := r.DeleteRouteByFission(db); err != nil {
-			return fmt.Errorf("request for create route by fission error: %+v", err)
+			return fmt.Errorf("request for delete route by fission error: %+v", err)
 		}
 	}
 	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
@@ -726,11 +726,9 @@ func (r *Operator) DeletePluginByKong(pluginId string) (err error) {
 	}
 	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", pluginId)).End()
 	request = request.Retry(3, 5*time.Second, retryStatus...)
-
 	if len(errs) > 0 {
 		return fmt.Errorf("request for delete plugin error: %+v", errs)
 	}
-
 	klog.V(5).Infof("delete plugin response code: %d%s", response.StatusCode, string(body))
 	if response.StatusCode != 204 {
 		return fmt.Errorf("request for delete api error: receive wrong status code: %d", response.StatusCode)
@@ -956,8 +954,9 @@ func (r *Operator) DeleteRouteByFission(db *nlptv1.Api) (err error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	id := db.ObjectMeta.Name
+	ns := db.ObjectMeta.Namespace
 	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionAddress.ControllerHost, r.FissionAddress.ControllerPort, HttpTriggerUrl, id))
-	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionAddress.ControllerHost, r.FissionAddress.ControllerPort, HttpTriggerUrl, id)).End()
+	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s?namespace=%s", schema, r.FissionAddress.ControllerHost, r.FissionAddress.ControllerPort, HttpTriggerUrl, id, ns)).End()
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 	if len(errs) > 0 {
 		klog.Errorf("send  delete route by fission error %+v", errs)
@@ -965,7 +964,7 @@ func (r *Operator) DeleteRouteByFission(db *nlptv1.Api) (err error) {
 	}
 
 	klog.V(5).Infof("delete route by fission response code and body: %d, %s",  response.StatusCode, string(body))
-	if response.StatusCode != 204 {
+	if response.StatusCode != 200 {
 		return fmt.Errorf("request for delete  route by fission error: receive wrong body: %s", string(body))
 	}
 	return nil
