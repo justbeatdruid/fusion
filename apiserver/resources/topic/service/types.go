@@ -211,10 +211,14 @@ func ToAPI(app *Topic) *v1.Topic {
 	crd.ObjectMeta.Namespace = app.Namespace
 
 	crd.Spec = v1.TopicSpec{
-		Name:         app.Name,
-		TopicGroup:   app.TopicGroup,
-		PartitionNum: app.PartitionNum,
-		Description:  app.Description,
+		Name:             app.Name,
+		TopicGroup:       app.TopicGroup,
+		PartitionNum:     app.PartitionNum,
+		Description:      app.Description,
+		Permissions:      make([]v1.Permission, 0),
+		PartitionedStats: make([]v1.PartitionedStats, 0),
+		Applications:     make(map[string]v1.Application),
+		Stats:            v1.Stats{},
 	}
 
 	if app.Persistent != nil {

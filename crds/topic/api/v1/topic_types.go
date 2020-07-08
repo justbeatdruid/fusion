@@ -31,18 +31,18 @@ type TopicSpec struct {
 
 	// Foo is an example field of Topic. Edit Topic_types.go to remove/update
 	Name             string                 `json:"name"`
-	TopicGroup       string                 `json:"topicGroup"`      //topic分组ID
-	PartitionNum     int                    `json:"partitionNum"`    //topic的分区数量，partitioned为true时，需要指定。默认为1
-	OldPartitionNum  int                    `json:"oldPartitionNum"` //保存修改前的分区数，用于更新失败回滚
-	Partitioned      bool                   `json:"partitioned"`     //是否多分区，默认为false。true：代表多分区Topic
-	Persistent       bool                   `json:"persistent"`      //是否持久化，默认为true，非必填
-	Url              string                 `json:"url"`             //Topic url
-	Permissions      []Permission           `json:"permissions"`
-	Stats            Stats                  `json:"stats"`            //Topic的统计数据
-	PartitionedStats []PartitionedStats     `json:"partitionedStats"` //多分区Topic的统计数据
-	Applications     map[string]Application `json:"applications"`     //已绑定的应用ID列表
-	Description      string                 `json:"description"`      //描述
-	DisplayStatus    ShowStatus             `json:"disStatus"`
+	TopicGroup       string                 `json:"topicGroup"`                //topic分组ID
+	PartitionNum     int                    `json:"partitionNum"`              //topic的分区数量，partitioned为true时，需要指定。默认为1
+	OldPartitionNum  int                    `json:"oldPartitionNum,omitempty"` //保存修改前的分区数，用于更新失败回滚
+	Partitioned      bool                   `json:"partitioned"`               //是否多分区，默认为false。true：代表多分区Topic
+	Persistent       bool                   `json:"persistent"`                //是否持久化，默认为true，非必填
+	Url              string                 `json:"url,omitempty"`             //Topic url
+	Permissions      []Permission           `json:"permissions,omitempty"`
+	Stats            Stats                  `json:"stats,omitempty"`            //Topic的统计数据
+	PartitionedStats []PartitionedStats     `json:"partitionedStats,omitempty"` //多分区Topic的统计数据
+	Applications     map[string]Application `json:"applications,omitempty"`     //已绑定的应用ID列表
+	Description      string                 `json:"description"`                //描述
+	DisplayStatus    ShowStatus             `json:"disStatus,omitempty"`
 }
 
 type Application struct {
@@ -183,52 +183,52 @@ type Stats struct {
 	StorageSize         int64                       `json:"storageSize"`
 	BacklogSize         int64                       `json:"backlogSize"`
 	DeduplicationStatus string                      `json:"deduplicationStatus"`
-	Subscriptions       map[string]SubscriptionStat `json:"subscriptions"`
-	Partitions          map[string]Stats            `json:"partitions"`
-	Publishers          []Publisher                 `json:"publishers"`
+	Subscriptions       map[string]SubscriptionStat `json:"subscriptions,omitempty"`
+	Partitions          map[string]Stats            `json:"partitions,omitempty"`
+	Publishers          []Publisher                 `json:"publishers,omitempty"`
 }
 
 type PartitionedStats struct {
-	PartitionNo int   `json:"partitionNo"` //分区编号
-	Stats       Stats `json:"stats"`
+	PartitionNo int   `json:"partitionNo,omitempty"` //分区编号
+	Stats       Stats `json:"stats,omitempty"`
 }
 type Publisher struct {
-	MsgRateIn       string `json:"msgRateIn"`
-	MsgThroughputIn string `json:"msgThroughputIn"`
-	AverageMsgSize  string `json:"averageMsgSize"`
-	ProducerId      int64  `json:"producerId"`
-	ProducerName    string `json:"producerName"`
-	Address         string `json:"address"`
+	MsgRateIn       string `json:"msgRateIn,omitempty"`
+	MsgThroughputIn string `json:"msgThroughputIn,omitempty"`
+	AverageMsgSize  string `json:"averageMsgSize,omitempty"`
+	ProducerId      int64  `json:"producerId,omitempty"`
+	ProducerName    string `json:"producerName,omitempty"`
+	Address         string `json:"address,omitempty"`
 	ConnectedSince  string `json:"connectedSince"`
 }
 type SubscriptionStat struct {
-	MsgRateOut                       string         `json:"msgRateOut"`
-	MsgThroughputOut                 string         `json:"msgThroughputOut"`
-	MsgRateRedeliver                 string         `json:"msgRateRedeliver"`
-	MsgBacklog                       int64          `json:"msgBacklog"`
-	BlockedSubscriptionOnUnackedMsgs bool           `json:"blockedSubscriptionOnUnackedMsgs"`
-	MsgDelayed                       int64          `json:"msgDelayed"`
-	UnackedMessages                  int64          `json:"unackedMessages"`
-	Type                             string         `json:"type"`
-	MsgRateExpired                   string         `json:"msgRateExpired"`
-	LastExpireTimestamp              int64          `json:"lastExpireTimestamp"`
-	LastConsumedFlowTimestamp        int64          `json:"lastConsumedFlowTimestamp"`
-	LastConsumedTimestamp            int64          `json:"lastConsumedTimestamp"`
-	LastAckedTimestamp               int64          `json:"lastAckedTimestamp"`
-	Consumers                        []ConsumerStat `json:"consumers"`
-	IsReplicated                     bool           `json:"isReplicated"`
+	MsgRateOut                       string         `json:"msgRateOut,omitempty"`
+	MsgThroughputOut                 string         `json:"msgThroughputOut,omitempty"`
+	MsgRateRedeliver                 string         `json:"msgRateRedeliver,omitempty"`
+	MsgBacklog                       int64          `json:"msgBacklog,omitempty"`
+	BlockedSubscriptionOnUnackedMsgs bool           `json:"blockedSubscriptionOnUnackedMsgs,omitempty"`
+	MsgDelayed                       int64          `json:"msgDelayed,omitempty"`
+	UnackedMessages                  int64          `json:"unackedMessages,omitempty"`
+	Type                             string         `json:"type,omitempty"`
+	MsgRateExpired                   string         `json:"msgRateExpired,omitempty"`
+	LastExpireTimestamp              int64          `json:"lastExpireTimestamp,omitempty"`
+	LastConsumedFlowTimestamp        int64          `json:"lastConsumedFlowTimestamp,omitempty"`
+	LastConsumedTimestamp            int64          `json:"lastConsumedTimestamp,omitempty"`
+	LastAckedTimestamp               int64          `json:"lastAckedTimestamp,omitempty"`
+	Consumers                        []ConsumerStat `json:"consumers,omitempty"`
+	IsReplicated                     bool           `json:"isReplicated,omitempty"`
 }
 
 type ConsumerStat struct {
-	MsgRateOut            string `json:"msgRateOut"`
-	MsgThroughputOut      string `json:"msgThroughputOut"`
-	ConsumerName          string `json:"consumerName"`
-	AvailablePermits      int    `json:"availablePermits"`
-	UnackedMessages       int    `json:"unackedMessages"`
-	LastAckedTimestamp    int64  `json:"lastAckedTimestamp"`
-	LastConsumedTimestamp int64  `json:"lastConsumedTimestamp"`
-	ConnectedSince        string `json:"connectedSince"`
-	Address               string `json:"address"`
+	MsgRateOut            string `json:"msgRateOut,omitempty"`
+	MsgThroughputOut      string `json:"msgThroughputOut,omitempty"`
+	ConsumerName          string `json:"consumerName,omitempty"`
+	AvailablePermits      int    `json:"availablePermits,omitempty"`
+	UnackedMessages       int    `json:"unackedMessages,omitempty"`
+	LastAckedTimestamp    int64  `json:"lastAckedTimestamp,omitempty"`
+	LastConsumedTimestamp int64  `json:"lastConsumedTimestamp,omitempty"`
+	ConnectedSince        string `json:"connectedSince,omitempty"`
+	Address               string `json:"address,omitempty"`
 }
 
 func init() {
