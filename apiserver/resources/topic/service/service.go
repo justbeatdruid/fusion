@@ -665,6 +665,7 @@ func (s *Service) ModifyApplicationPermissions(topicId string, appId string, act
 		if k == appId {
 			v.Actions = actions
 			v.Status = v1.UpdatingAuthorization
+			tp.Spec.Applications[k] = v
 			break
 		}
 	}

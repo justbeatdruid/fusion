@@ -204,6 +204,20 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		for appid, application := range topic.Spec.Applications {
 			switch application.Status {
 			case nlptv1.UpdatingAuthorization:
+				p := nlptv1.Permission{
+					AuthUserID:   "",
+					AuthUserName: application.ID,
+					Actions:      application.Actions,
+				}
+				if err := r.Operator.GrantPermission(topic, &p); err != nil {
+					application.Status = nlptv1.UpdatingAuthorizationFailed
+					application.DisplayStatus = nlptv1.ShowStatusMap[application.Status]
+					application.Message = fmt.Sprintf("update authorization: %+v", err)
+				} else {
+					application.Status = nlptv1.UpdatingAuthorizationSuccess
+					application.DisplayStatus = nlptv1.ShowStatusMap[application.Status]
+					application.Message = "update authorization successfully"
+				}
 			case nlptv1.Binding:
 				//actions := make([]string, 0)
 				//actions = append(actions, nlptv1.Consume)
