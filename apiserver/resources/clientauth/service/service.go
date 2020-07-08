@@ -205,8 +205,7 @@ func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Clientauth, erro
 	if ca.Spec.AuthorizedMap != nil {
 		return nil, fmt.Errorf("Existence authorization ")
 	}
-	ca.Status.Status = v1.Delete
-	return s.UpdateStatus(ca)
+	return s.Delete(id, opts...)
 }
 
 //更新状态
