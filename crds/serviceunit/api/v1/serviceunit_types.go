@@ -147,7 +147,7 @@ type FissionRefInfo struct {
 	BuildCmd  string `json:"buildCmd"`  //编译脚本
 	FnName  string `json:"fnName"`     //函数名称
 	FnFile  string `json:"fnFile"`     //函数源码文件
-	FnCode  []byte `json:"fnCode"`     //函数在线编辑源代码
+	FnCode  string `json:"fnCode"`     //函数在线编辑源代码
 	Entrypoint string  `json:"entryPoint"`  //函数入口
 	PkgResourceVersion string `json:"pkgResourceVersion"`
 	FnResourceVersion string `json:"fnResourceVersion"`
