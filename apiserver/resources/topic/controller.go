@@ -547,74 +547,74 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 
 }
 
-//查询topic的消息
-func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) {
-	topicName := req.QueryParameter("topicName")
-	startTime := req.QueryParameter("startTime")
-	endTime := req.QueryParameter("endTime")
-	topicGroup := req.QueryParameter("topicGroup")
-
-	authUser, err := auth.GetAuthUser(req)
-	if err != nil {
-		return http.StatusInternalServerError, &MessageResponse{
-			Code:      fail,
-			ErrorCode: tperror.ErrorAuthError,
-			Message:   fmt.Sprintf("auth model error: %+v", err),
-			Data:      nil,
-			Detail:    "",
-		}
-	}
-	//先查出所有topic的信息
-	tps, err := c.service.ListTopic(util.WithNamespace(authUser.Namespace))
-	if err != nil {
-		return http.StatusInternalServerError, &MessageResponse{
-			Code:      1,
-			ErrorCode: tperror.ErrorQueryMessage,
-			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorGetTopicList]),
-			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
-		}
-	}
-	//topicName筛选
-	if len(topicName) > 0 {
-		//通过topicName字段来匹配topic
-		tps = c.ListTopicByTopicName(topicName, tps)
-	}
-	//topicGroup筛选
-	if len(topicGroup) > 0 {
-		//通过topicGroup字段来匹配topic
-		tps = c.ListTopicByTopicGroup(topicGroup, tps)
-	}
-	var tpUrls []string
-	for _, tp := range tps {
-		tpUrls = append(tpUrls, tp.URL)
-	}
-	//时间筛选
-	if len(startTime) > 0 && len(endTime) > 0 {
-		start, err := strconv.ParseInt(startTime, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &MessageResponse{
-				Code:      fail,
-				ErrorCode: tperror.ErrorQueryMessageStartTime,
-				Message:   c.errMsg.Topic[tperror.ErrorQueryMessageStartTime],
-				Detail:    fmt.Sprintf("startTime parameter error: %+v", err),
-			}
-		}
-		end, err := strconv.ParseInt(endTime, 10, 64)
-		if err != nil {
-			return http.StatusInternalServerError, &MessageResponse{
-				Code:      fail,
-				ErrorCode: tperror.ErrorQueryMessageEndTime,
-				Message:   c.errMsg.Topic[tperror.ErrorQueryMessageEndTime],
-				Detail:    fmt.Sprintf("endTime parameter error: %+v", err),
-			}
-		}
-		httpStatus, messageResponse := c.ListMessagesByTopicUrlTime(tpUrls, start, end, req)
-		return httpStatus, messageResponse
-	} else { //没有时间
-		httpStatus, messageResponse := c.ListMessagesByTopicUrl(tpUrls, req)
-		return httpStatus, messageResponse
-	}
-}
+////查询topic的消息
+//func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) {
+//	topicName := req.QueryParameter("topicName")
+//	startTime := req.QueryParameter("startTime")
+//	endTime := req.QueryParameter("endTime")
+//	topicGroup := req.QueryParameter("topicGroup")
+//
+//	authUser, err := auth.GetAuthUser(req)
+//	if err != nil {
+//		return http.StatusInternalServerError, &MessageResponse{
+//			Code:      fail,
+//			ErrorCode: tperror.ErrorAuthError,
+//			Message:   fmt.Sprintf("auth model error: %+v", err),
+//			Data:      nil,
+//			Detail:    "",
+//		}
+//	}
+//	//先查出所有topic的信息
+//	tps, err := c.service.ListTopic(util.WithNamespace(authUser.Namespace))
+//	if err != nil {
+//		return http.StatusInternalServerError, &MessageResponse{
+//			Code:      1,
+//			ErrorCode: tperror.ErrorQueryMessage,
+//			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorGetTopicList]),
+//			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
+//		}
+//	}
+//	//topicName筛选
+//	if len(topicName) > 0 {
+//		//通过topicName字段来匹配topic
+//		tps = c.ListTopicByTopicName(topicName, tps)
+//	}
+//	//topicGroup筛选
+//	if len(topicGroup) > 0 {
+//		//通过topicGroup字段来匹配topic
+//		tps = c.ListTopicByTopicGroup(topicGroup, tps)
+//	}
+//	var tpUrls []string
+//	for _, tp := range tps {
+//		tpUrls = append(tpUrls, tp.URL)
+//	}
+//	//时间筛选
+//	if len(startTime) > 0 && len(endTime) > 0 {
+//		start, err := strconv.ParseInt(startTime, 10, 64)
+//		if err != nil {
+//			return http.StatusInternalServerError, &MessageResponse{
+//				Code:      fail,
+//				ErrorCode: tperror.ErrorQueryMessageStartTime,
+//				Message:   c.errMsg.Topic[tperror.ErrorQueryMessageStartTime],
+//				Detail:    fmt.Sprintf("startTime parameter error: %+v", err),
+//			}
+//		}
+//		end, err := strconv.ParseInt(endTime, 10, 64)
+//		if err != nil {
+//			return http.StatusInternalServerError, &MessageResponse{
+//				Code:      fail,
+//				ErrorCode: tperror.ErrorQueryMessageEndTime,
+//				Message:   c.errMsg.Topic[tperror.ErrorQueryMessageEndTime],
+//				Detail:    fmt.Sprintf("endTime parameter error: %+v", err),
+//			}
+//		}
+//		httpStatus, messageResponse := c.ListMessagesByTopicUrlTime(tpUrls, start, end, req)
+//		return httpStatus, messageResponse
+//	} else { //没有时间
+//		httpStatus, messageResponse := c.ListMessagesByTopicUrl(tpUrls, req)
+//		return httpStatus, messageResponse
+//	}
+//}
 
 //通过topicUrl查询topic的消息(不带时间)
 func (c *controller) ListMessagesByTopicUrl(topicUrls []string, req *restful.Request) (int, *MessageResponse) {
@@ -1147,8 +1147,8 @@ func (c *controller) QueryMessage(req *restful.Request) (int, *MessageResponse) 
 			}
 		}
 
-		startTime = time.Unix(startTimeInt64, 0).Format("2006-01-02 15:04:05")
-		endTime = time.Unix(endTimeInt64, 0).Format("2006-01-02 15:04:05")
+		startTime = time.Unix(startTimeInt64, 0).Format("2006-01-02 15:04:05 UTC")
+		endTime = time.Unix(endTimeInt64, 0).Format("2006-01-02 15:04:05 UTC")
 		sql = fmt.Sprintf(timeSql, startTime, endTime)
 		sql = fmt.Sprintf(order, tenant, topicGroup, topic, sql, tenant, topicGroup, topic, sql, start, end)
 	}
@@ -1163,6 +1163,7 @@ func (c *controller) QueryTopicMessage(sql string) (int, *MessageResponse) {
 		Port:       c.tpConfig.PrestoPort,
 	}
 	messages, err := pulsarsql.QueryTopicMessages(connector, sql)
+
 	if err != nil {
 		return http.StatusInternalServerError, &MessageResponse{
 			Code:      1,
