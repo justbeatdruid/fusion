@@ -20,6 +20,7 @@ import (
 
 const (
 	NameReg = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]{2,255}$"
+	PathReg = "^^(/[A-Za-z0-9]+)+((/\\{[A-Za-z0-9]+\\})*(/[A-Za-z0-9]+)*)*"
 )
 
 type Api struct {
@@ -359,6 +360,16 @@ func (s *Service) Validate(a *Api) error {
 	}
 
 	if su.Spec.Type == "web" {
+		if len(a.ApiDefineInfo.Path)==0{
+			return fmt.Errorf("path is null")
+		}else if ok,_:=regexp.MatchString(PathReg,a.ApiDefineInfo.Path);!ok{
+			return fmt.Errorf("path is illegal: %v",a.ApiDefineInfo.Path)
+		}
+		if len(a.KongApi.Paths[0])==0{
+			return fmt.Errorf("KongApi.Paths is null")
+		}else if ok,_:=regexp.MatchString(PathReg,a.KongApi.Paths[0]);!ok{
+			return fmt.Errorf("KongApi.Paths is illegal: %v",a.KongApi.Paths[0])
+		}
 		for _, p := range apiList.Items {
 			for _, path := range p.Spec.KongApi.Paths {
 				if path == a.KongApi.Paths[0] && p.Spec.ApiDefineInfo.Method == a.ApiDefineInfo.Method {
@@ -552,6 +563,9 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 				target.Spec.ApiDefineInfo.Protocol = source.ApiDefineInfo.Protocol
 			}
 			if _, ok = config["path"]; ok {
+				if ok, _ := regexp.MatchString(PathReg, source.ApiDefineInfo.Path); !ok {
+					return fmt.Errorf("path is illegal: %v", source.ApiDefineInfo.Path)
+				}
 				target.Spec.ApiDefineInfo.Path = source.ApiDefineInfo.Path
 			}
 			if _, ok = config["matchMode"]; ok {
@@ -570,6 +584,9 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 		if config, ok := kongInfo.(map[string]interface{}); ok {
 			//web 类型直接使用kong传入的参数  path method
 			if _, ok = config["paths"]; ok {
+				if ok, _ := regexp.MatchString(PathReg, source.KongApi.Paths[0]); !ok {
+					return fmt.Errorf("KongApi.Paths is illegal: %v", source.KongApi.Paths[0])
+				}
 				if target.Spec.Serviceunit.Type == "web" {
 					target.Spec.KongApi.Paths = source.KongApi.Paths
 				}
