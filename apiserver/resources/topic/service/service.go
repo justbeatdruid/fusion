@@ -632,6 +632,52 @@ func (s *Service) ModifyPermissions(topicId string, authUserId string, actions v
 
 	return ToModel(v1Tp), "", nil
 }
+func (s *Service) ModifyApplicationPermissions(topicId string, appId string, actions v1.Actions, opts ...util.OpOption) (*Topic, string, error) {
+	//1.根据id查询topic
+	tp, err := s.Get(topicId, opts...)
+	if err != nil {
+		klog.Errorf("error get crd: %+v", err)
+		return nil, "Topic不存在", fmt.Errorf("error get crd: %+v", err)
+	}
+
+	//2.处理actions
+	as := v1.Actions{}
+	for _, ac := range actions {
+		as = append(as, ac)
+	}
+	//3.给topic加app id的标签，key：app id
+	if tp.ObjectMeta.Labels == nil {
+		return nil, "当前应用未授权", fmt.Errorf("not authorization:%+v", appId)
+	}
+
+	if _, ok := tp.ObjectMeta.Labels[appId]; !ok {
+		return nil, "当前应用未授权", fmt.Errorf("not authorization:%+v", appId)
+	}
+
+	op := util.OpList(opts...)
+	//4.根据auth id查询name
+	_, err = s.getApplication(appId, op.Namespace())
+	if err != nil {
+		return nil, "授权应用不存在", fmt.Errorf("grant permission error:%+v", err)
+	}
+
+	for k, v := range tp.Spec.Applications{
+		if k == appId {
+			v.Actions = actions
+			v.Status = v1.UpdatingAuthorization
+			tp.Spec.Applications[k] = v
+			break
+		}
+	}
+
+	tp.Status.BindStatus = v1.BindingOrUnBinding
+	v1Tp, err := s.UpdateStatus(tp)
+	if err != nil {
+		return nil, "数据库错误", fmt.Errorf("cannot update object: %+v", err)
+	}
+
+	return ToModel(v1Tp), "", nil
+}
 
 func (s *Service) QueryAuthUserNameById(id string, opts ...util.OpOption) (string, error) {
 	ca, err := s.QueryAuthUserById(id, opts...)
@@ -769,6 +815,13 @@ func (s *Service) BatchBindApi(appid string, topics []BindInfo, opts ...util.OpO
 		if tp.Spec.Applications == nil {
 			tp.Spec.Applications = make(map[string]v1.Application)
 		}
+
+		//添加标签
+		if tp.ObjectMeta.Labels == nil {
+			tp.ObjectMeta.Labels = make(map[string]string)
+		}
+		tp.ObjectMeta.Labels[appid] = "true"
+
 		tp.Spec.Applications[appid] = application
 		tp.Status.BindStatus = v1.BindingOrUnBinding
 		if tp, err = s.UpdateStatus(tp); err != nil {
@@ -804,11 +857,20 @@ func (s *Service) BatchReleaseApi(appid string, topics []BindInfo, opts ...util.
 
 				} else if application.Status == v1.BindFailed {
 					//绑定失败的场景，允许直接解绑定
+					//查询授权用户id的标签
+
 					application.Status = v1.UnbindSuccess
 					application.DisplayStatus = v1.ShowStatusMap[application.Status]
 
 				}
 				tp.Spec.Applications[appid] = application
+				v, ok := tp.ObjectMeta.Labels[appid]
+				if ok {
+					if v == "true" {
+						tp.ObjectMeta.Labels[appid] = "false"
+					}
+					delete(tp.ObjectMeta.Labels, appid)
+				}
 				break
 			}
 		}

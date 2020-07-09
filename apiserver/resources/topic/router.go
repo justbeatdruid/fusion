@@ -137,6 +137,15 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.PUT("/topics/{id}/applications/{app-id}/permission").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("modify application permission").
+		To(r.modifyApplicationPermission).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+
 	ws.Route(ws.GET("/topics/{id}/subscriptions").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -345,11 +354,16 @@ func (r *router) skipMessages(request *restful.Request, response *restful.Respon
 }
 
 func (r *router) refreshConsumers(request *restful.Request, response *restful.Response) {
-	code, result := r.controller.SkipMessages(request)
+	code, result := r.controller.Refresh(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 
 func (r *router) modifyDescription(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ModifyDescription(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) modifyApplicationPermission(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ModifyApplicationPermission(request)
 	response.WriteHeaderAndEntity(code, result)
 }

@@ -1806,3 +1806,43 @@ func (c *controller) Refresh(req *restful.Request) (int, *RefreshResponse) {
 	}
 
 }
+
+func (c *controller) ModifyApplicationPermission(req *restful.Request) (int, *Wrapped) {
+    authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+
+	id := req.PathParameter("id")
+	appId := req.PathParameter("app-id")
+
+	actions := &GrantPermissionRequest{}
+	if err := req.ReadEntity(actions); err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tperror.ErrorReadEntity,
+			Message:   c.errMsg.Topic[tperror.ErrorReadEntity],
+			Detail:    fmt.Sprintf("modify permissions error: %+v", err),
+		}
+	}
+
+	if tp, msg, err := c.service.ModifyApplicationPermissions(id, appId, actions.Actions, util.WithNamespace(authUser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &GrantResponse{
+			Code:      2,
+			ErrorCode: tperror.ErrorModifyPermissions,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorModifyPermissions], msg),
+			Detail:    fmt.Errorf("create database error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &GrantResponse{
+			Code:      success,
+			ErrorCode: tperror.Success,
+			Data:      tp,
+		}
+	}
+}
