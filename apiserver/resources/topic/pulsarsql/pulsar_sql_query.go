@@ -93,6 +93,8 @@ func QueryTopicMessages(c Connector, sql string) ([]service.Messages, error) {
 					id = strings.ReplaceAll(id, ",", ":")
 					m.ID = id
 					m.Size = size
+					b, _ := json.Marshal(m.Message)
+					m.Message = string(b)
 					M = append(M, m)
 				}
 				return M, nil
