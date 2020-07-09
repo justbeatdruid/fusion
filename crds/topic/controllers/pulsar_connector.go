@@ -136,7 +136,7 @@ func (r *Connector) CreatePartitionedTopic(topic *nlptv1.Topic) (err error) {
 	if response.StatusCode == 204 {
 		return nil
 	} else {
-		errMsg := fmt.Sprintf("Create topic error, url: %s, Error code: %d, Error Message: %+v", topicUrl, response.StatusCode, errs)
+		errMsg := fmt.Sprintf("Create topic error, url: %s, Error code: %d, Error Message: %+v, body: %+v", topicUrl, response.StatusCode, errs, response)
 		klog.Error(errMsg)
 		return errors.New(errMsg)
 	}

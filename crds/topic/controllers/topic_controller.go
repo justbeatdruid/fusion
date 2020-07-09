@@ -67,7 +67,7 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		//更新数据库的状态
 		//klog.Infof("Final Topic: %+v", *topic)
 		if err := r.Update(ctx, topic); err != nil {
-			klog.Errorf("Update Topic Failed: %+v", *topic)
+			klog.Errorf("Update Topic Failed: %+v, err: %+v", *topic, err)
 		}
 
 	}
