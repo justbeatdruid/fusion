@@ -145,31 +145,16 @@ func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 		if errors.IsNameDuplicated(err) {
 			code = "001000022"
 		} else if errors.IsUnpublished(err) {
-			return http.StatusInternalServerError, &CreateResponse{
-				Code:      2,
-				ErrorCode: code,
-				Message:   "服务单元未发布",
-				Detail:    fmt.Errorf("create api error: %+v", err).Error(),
-			}
+			code = "001000026"
 		}
 		if strings.Contains(err.Error(),"path duplicated"){
 			code = "001000023"
 		}
 		if strings.Contains(err.Error(),"path is illegal"){
-			return http.StatusInternalServerError, &CreateResponse{
-				Code:      2,
-				ErrorCode: code,
-				Message:   "请求path错误",
-				Detail:    fmt.Errorf("create api error: %+v", err).Error(),
-			}
+			code = "001000024"
 		}
 		if strings.Contains(err.Error(),"KongApi.Paths is illegal"){
-			return http.StatusInternalServerError, &CreateResponse{
-				Code:      2,
-				ErrorCode: code,
-				Message:   "后端请求path错误",
-				Detail:    fmt.Errorf("create api error: %+v", err).Error(),
-			}
+			code = "001000025"
 		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
@@ -233,20 +218,10 @@ func (c *controller) PatchApi(req *restful.Request) (int, interface{}) {
 			code = "001000022"
 		}
 		if strings.Contains(err.Error(),"path is illegal"){
-			return http.StatusInternalServerError, &CreateResponse{
-				Code:      2,
-				ErrorCode: code,
-				Message:   "请求path错误",
-				Detail:    fmt.Errorf("create api error: %+v", err).Error(),
-			}
+			code ="001000024"
 		}
 		if strings.Contains(err.Error(),"KongApi.Paths is illegal"){
-			return http.StatusInternalServerError, &CreateResponse{
-				Code:      2,
-				ErrorCode: code,
-				Message:   "后端请求path错误",
-				Detail:    fmt.Errorf("create api error: %+v", err).Error(),
-			}
+			code ="001000025"
 		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
