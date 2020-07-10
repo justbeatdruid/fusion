@@ -31,6 +31,8 @@ type Datasource struct {
 
 	Mongo *v1.Mongo `json:"mongo,omitempty"`
 
+	Hive *v1.Hive `json:"hive"`
+
 	Status    string    `json:"status"`
 	UpdatedAt util.Time `json:"updatedAt"`
 	CreatedAt util.Time `json:"createdAt"`
@@ -84,6 +86,8 @@ func ToAPI(ds *Datasource, specOnly bool) *v1.Datasource {
 		crd.ObjectMeta.Annotations["subject"] = ds.DataWarehouse.SubjectName
 	} else if ds.Type == v1.MongoType {
 		crd.Spec.Mongo = ds.Mongo
+	} else if ds.Type == v1.HiveType {
+		crd.Spec.Hive = ds.Hive
 	}
 	status := ds.Status
 	if len(status) == 0 {
@@ -146,6 +150,8 @@ func ToModel(obj *v1.Datasource) *Datasource {
 		ds.MessageQueue = obj.Spec.MessageQueue
 	case v1.MongoType:
 		ds.Mongo = obj.Spec.Mongo
+	case v1.HiveType:
+		ds.Hive = obj.Spec.Hive
 	}
 	ds.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
 	return ds
@@ -205,6 +211,10 @@ func (s *Service) Validate(a *Datasource) error {
 	case v1.MongoType:
 		if err := s.CheckMongo(a.Mongo); err != nil {
 			return fmt.Errorf("mongo validate error: %+v", err)
+		}
+	case v1.HiveType:
+		if err := s.CheckHive(a.Hive); err != nil {
+			return fmt.Errorf("hive validate error: %+v", err)
 		}
 	default:
 		return fmt.Errorf("unknown datasource type: %s", a.Type)

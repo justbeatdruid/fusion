@@ -42,6 +42,8 @@ type DatasourceSpec struct {
 
 	Mongo *Mongo `json:"mongo,omitempty"`
 
+	Hive *Hive `json:"hive,omitempty"`
+
 	Location string `json:"localtion"`
 	AuthType string `json:"authType"`
 }
@@ -57,6 +59,7 @@ const (
 	DataWarehouseType Type = "datawarehouse"
 	TopicType         Type = "pulsar"
 	MongoType         Type = "mongo"
+	HiveType          Type = "hive"
 )
 
 type RDB struct {
@@ -162,6 +165,15 @@ type Mongo struct {
 	Database string `json:"database"`
 	Username string `json:"username"`
 	Password string `json:"password"`
+}
+
+type Hive struct {
+	Host      string `json:"host"`
+	Port      int    `json:"port"`
+	Database  string `json:"database"`
+	HDFSPath  string `json:"hdfsPath"`
+	DefaultFs string `json:"defaultFs"`
+	JDBCUrl   string `json:"jdbcUrl"`
 }
 
 // +kubebuilder:object:root=true

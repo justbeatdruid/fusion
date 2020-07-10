@@ -514,6 +514,8 @@ func (s *Service) Ping(ds *Datasource) error {
 		return s.CheckTopic(ds.Namespace, ds.MessageQueue)
 	case v1.MongoType:
 		return s.CheckMongo(ds.Mongo)
+	case v1.HiveType:
+		return s.CheckHive(ds.Hive)
 	default:
 		return fmt.Errorf("not supported for %s", ds.Type)
 	}
@@ -658,4 +660,20 @@ func (s *Service) CheckMongo(mongo *v1.Mongo) error {
 		return fmt.Errorf("database is null")
 	}
 	return mongodriver.Ping(mongo)
+}
+
+func (s *Service) CheckHive(h *v1.Hive) error {
+	if h == nil {
+		return fmt.Errorf("mongo is null")
+	}
+	if len(h.Host) == 0 {
+		return fmt.Errorf("host is null")
+	}
+	if h.Port < 1 || h.Port > 65536 {
+		return fmt.Errorf("invalid port")
+	}
+	if len(h.Database) == 0 {
+		return fmt.Errorf("database is null")
+	}
+	return nil
 }
