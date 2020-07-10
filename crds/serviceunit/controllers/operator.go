@@ -1,7 +1,6 @@
 package controllers
 
 import (
-	"encoding/base64"
 	"fmt"
 	"github.com/pkg/errors"
 	"io/ioutil"
@@ -523,11 +522,7 @@ func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit, env *FissionResInfoRs
 		}
 	}else {
 		requestBody.Spec.Deployment.Type = "literal"
-		content,err := base64.StdEncoding.DecodeString(db.Spec.FissionRefInfo.FnCode)
-		if err!=nil{
-			return nil,fmt.Errorf("base64 decode error : %+v",err)
-		}
-		requestBody.Spec.Deployment.Literal = content
+		requestBody.Spec.Deployment.Literal = []byte(db.Spec.FissionRefInfo.FnCode)
 	}
 	responseBody := &FissionResInfoRsp{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
@@ -667,11 +662,7 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 		}
 	}else {
 		requestBody.Spec.Deployment.Type = "literal"
-		content,err := base64.StdEncoding.DecodeString(db.Spec.FissionRefInfo.FnCode)
-		if err!=nil{
-			return nil,fmt.Errorf("base64 decode error : %+v",err)
-		}
-		requestBody.Spec.Deployment.Literal = content
+		requestBody.Spec.Deployment.Literal = []byte(db.Spec.FissionRefInfo.FnCode)
 	}
 	responseBody := &FissionResInfoRsp{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
