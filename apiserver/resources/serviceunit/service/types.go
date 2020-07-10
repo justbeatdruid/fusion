@@ -300,9 +300,9 @@ func (s *Service) Validate(a *Serviceunit) error {
 			return fmt.Errorf("function name is null")
 		}
 		//TODO FnFile和FnCode中只能有一个有值
-		if len(a.FissionRefInfo.FnFile) == 0 {
-			return fmt.Errorf("function file is null")
-		}
+		//if len(a.FissionRefInfo.FnFile) == 0 {
+		//	return fmt.Errorf("function file is null")
+		//}
 		if len(a.FissionRefInfo.Entrypoint) == 0 {
 			return fmt.Errorf("function entry point is null")
 		}
