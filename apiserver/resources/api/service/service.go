@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/chinamobile/nlpt/apiserver/database"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb/driver"
 	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/crds/api/api/v1"
@@ -39,11 +40,13 @@ type Service struct {
 
 	tenantEnabled bool
 
+	db *database.DatabaseConnection
+
 	dataService dw.Connector
 	localConfig appconfig.ErrorConfig
 }
 
-func NewService(client dynamic.Interface, dsConnector dw.Connector, kubeClient *clientset.Clientset, tenantEnabled bool, localConfig appconfig.ErrorConfig) *Service {
+func NewService(client dynamic.Interface, dsConnector dw.Connector, kubeClient *clientset.Clientset, tenantEnabled bool, localConfig appconfig.ErrorConfig, db *database.DatabaseConnection) *Service {
 	return &Service{
 		kubeClient:        kubeClient,
 		client:            client.Resource(v1.GetOOFSGVR()),
@@ -937,4 +940,48 @@ func (s *Service) bindPermitted(app *appv1.Application, opts ...util.OpOption) (
 		}
 	}
 	return true, nil
+}
+
+func (s *Service) listApplications(opts ...util.OpOption) ([]appv1.Application, error) {
+	op := util.OpList(opts...)
+	ns := op.Namespace()
+	u := op.User()
+	var options metav1.ListOptions
+	var labels []string
+	labels = append(labels, user.GetLabelSelector(u))
+	options.LabelSelector = strings.Join(labels, ",")
+	klog.V(5).Infof("list with label selector: %s", options.LabelSelector)
+	crd, err := s.applicationClient.Namespace(ns).List(options)
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	apps := &appv1.ApplicationList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apps); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.applicationList: %+v", apps)
+	return apps.Items, nil
+}
+
+func (s *Service) ListAllApplicationApis(opts ...util.OpOption) ([]*ApplicationScopedApi, error) {
+	apps, err := s.listApplications(opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot list application: %+v", err)
+	}
+	klog.V(5).Infof("get %d applications", len(apps))
+	result := make([]*ApplicationScopedApi, 0)
+	for _, app := range apps {
+		apis, err := s.ListApi("", app.ObjectMeta.Name, "", opts...)
+		if err != nil {
+			return nil, fmt.Errorf("list api error: %+v", err)
+		}
+		for _, api := range apis {
+			result = append(result, &ApplicationScopedApi{
+				BoundApplicationId:   app.ObjectMeta.Name,
+				BoundApplicationName: app.Spec.Name,
+				Api:                  *api,
+			})
+		}
+	}
+	return result, nil
 }
