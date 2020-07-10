@@ -360,15 +360,15 @@ func (s *Service) Validate(a *Api) error {
 	}
 
 	if su.Spec.Type == "web" {
-		if len(a.ApiDefineInfo.Path)==0{
+		if len(a.ApiDefineInfo.Path) == 0 {
 			return fmt.Errorf("path is null")
-		}else if ok,_:=regexp.MatchString(PathReg,a.ApiDefineInfo.Path);!ok{
-			return fmt.Errorf("path is illegal: %v",a.ApiDefineInfo.Path)
+		} else if ok, _ := regexp.MatchString(PathReg, a.ApiDefineInfo.Path); !ok {
+			return fmt.Errorf("path is illegal: %v", a.ApiDefineInfo.Path)
 		}
-		if len(a.KongApi.Paths[0])==0{
+		if len(a.KongApi.Paths[0]) == 0 {
 			return fmt.Errorf("KongApi.Paths is null")
-		}else if ok,_:=regexp.MatchString(PathReg,a.KongApi.Paths[0]);!ok{
-			return fmt.Errorf("KongApi.Paths is illegal: %v",a.KongApi.Paths[0])
+		} else if ok, _ := regexp.MatchString(PathReg, a.KongApi.Paths[0]); !ok {
+			return fmt.Errorf("KongApi.Paths is illegal: %v", a.KongApi.Paths[0])
 		}
 		for _, p := range apiList.Items {
 			for _, path := range p.Spec.KongApi.Paths {
@@ -457,7 +457,7 @@ func (s *Service) Validate(a *Api) error {
 			return fmt.Errorf("normal example is null. ")
 		}
 	}
-	
+
 	a.UpdatedAt = util.Now()
 
 	//data api need service unit publish
@@ -623,4 +623,10 @@ type Data struct {
 
 type Export struct {
 	IDs []string `json:"ids"`
+}
+
+type ApplicationScopedApi struct {
+	BoundApplicationId   string `json:"boundApplicationId"`
+	BoundApplicationName string `json:"boundApplicationName"`
+	Api
 }

@@ -30,7 +30,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient(), cfg.DataserviceConnector, cfg.GetKubeClient(), cfg.TenantEnabled, cfg.LocalConfig),
+		service.NewService(cfg.GetDynamicClient(), cfg.DataserviceConnector, cfg.GetKubeClient(), cfg.TenantEnabled, cfg.LocalConfig, cfg.Database),
 		cfg.LocalConfig,
 		cfg.Mutex,
 	}
@@ -147,13 +147,13 @@ func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 		} else if errors.IsUnpublished(err) {
 			code = "001000026"
 		}
-		if strings.Contains(err.Error(),"path duplicated"){
+		if strings.Contains(err.Error(), "path duplicated") {
 			code = "001000023"
 		}
-		if strings.Contains(err.Error(),"path is illegal"){
+		if strings.Contains(err.Error(), "path is illegal") {
 			code = "001000024"
 		}
-		if strings.Contains(err.Error(),"KongApi.Paths is illegal"){
+		if strings.Contains(err.Error(), "KongApi.Paths is illegal") {
 			code = "001000025"
 		}
 		return http.StatusInternalServerError, &CreateResponse{
@@ -217,11 +217,11 @@ func (c *controller) PatchApi(req *restful.Request) (int, interface{}) {
 		if errors.IsNameDuplicated(err) {
 			code = "001000022"
 		}
-		if strings.Contains(err.Error(),"path is illegal"){
-			code ="001000024"
+		if strings.Contains(err.Error(), "path is illegal") {
+			code = "001000024"
 		}
-		if strings.Contains(err.Error(),"KongApi.Paths is illegal"){
-			code ="001000025"
+		if strings.Contains(err.Error(), "KongApi.Paths is illegal") {
+			code = "001000025"
 		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
@@ -724,10 +724,10 @@ func (c *controller) ExportApis(req *restful.Request) (int, *ExportRequest) {
 	file := excelize.NewFile()
 	index := file.NewSheet("apis")
 	//  数组建立
-	s := []string{"id", "namespace", "name", "description","serviceunit.id","serviceunit.name","users.owner.id",
-		"users.owner.name", "apiType","authType","tags","apiBackendType","method", "protocol","returnType",
-		"apiDefineInfo.path","apiDefineInfo.matchMode","apiDefineInfo.method","apiDefineInfo.protocol",
-		"apiDefineInfo.cors","apiQueryInfo.webParams","publishStatus","updatedAt","releasedAt"}
+	s := []string{"id", "namespace", "name", "description", "serviceunit.id", "serviceunit.name", "users.owner.id",
+		"users.owner.name", "apiType", "authType", "tags", "apiBackendType", "method", "protocol", "returnType",
+		"apiDefineInfo.path", "apiDefineInfo.matchMode", "apiDefineInfo.method", "apiDefineInfo.protocol",
+		"apiDefineInfo.cors", "apiQueryInfo.webParams", "publishStatus", "updatedAt", "releasedAt"}
 
 	for i := range s {
 		file.SetCellValue("apis", string(i+65)+"1", s[i])
@@ -790,4 +790,66 @@ func returns200(b *restful.RouteBuilder) {
 
 func returns500(b *restful.RouteBuilder) {
 	b.Returns(http.StatusInternalServerError, "internal server error", nil)
+}
+
+func (c *controller) ListAllApplicationApis(req *restful.Request) (int, interface{}) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	name := req.QueryParameter("name")
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      1,
+			ErrorCode: "001000003",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
+		}
+	}
+	if api, err := c.service.ListAllApplicationApis(
+		util.WithNameLike(name), util.WithUser(authuser.Name),
+		util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      2,
+			ErrorCode: "001000010",
+			Message:   c.errMsg.Api["001000010"],
+			Detail:    fmt.Errorf("list api error: %+v", err).Error(),
+		}
+	} else {
+		var apis ApplicationScopedApiList = api
+		data, err := util.PageWrap(apis, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:      3,
+				ErrorCode: "001000011",
+				Message:   c.errMsg.Api["001000011"],
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
+		return http.StatusOK, &ListResponse{
+			Code:      0,
+			ErrorCode: "0",
+			Data:      data,
+		}
+	}
+}
+
+type ApplicationScopedApiList []*service.ApplicationScopedApi
+
+func (apis ApplicationScopedApiList) Len() int {
+	return len(apis)
+}
+
+func (apis ApplicationScopedApiList) GetItem(i int) (interface{}, error) {
+	if i >= len(apis) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return apis[i], nil
+}
+
+func (apis ApplicationScopedApiList) Less(i, j int) bool {
+	return apis[i].ReleasedAt.Time.After(apis[j].ReleasedAt.Time)
+}
+
+func (apis ApplicationScopedApiList) Swap(i, j int) {
+	apis[i], apis[j] = apis[j], apis[i]
 }
