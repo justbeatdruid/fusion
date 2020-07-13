@@ -70,6 +70,13 @@ type ImportResponse struct {
 	Data      string `json:"data,omitempty"`
 }
 
+type GetFnLogsResponse struct {
+	Code      int    `json:"code"`
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message"`
+	Detail    string `json:"detail"`
+	Logs      string `json:"logs"`
+}
 const UploadPath string  = "/data/upload/serviceunit/"
 
 func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateResponse) {
@@ -708,6 +715,33 @@ func (c *controller) ImportServiceunits(req *restful.Request, response *restful.
 		Code:      0,
 		ErrorCode: "0",
 		Data: UploadPath + handler.Filename,
+	}
+}
+
+func (c *controller) GetFnLogs(req *restful.Request, response *restful.Response)(int, *GetFnLogsResponse){
+     fnName:=req.QueryParameter("fnName")
+     authUser, err := auth.GetAuthUser(req)
+	 if err != nil {
+		return http.StatusInternalServerError, &GetFnLogsResponse{
+			Code:      1,
+			ErrorCode: "008000003",
+			Message:   c.errMsg.Application["008000003"],
+			Detail:    "auth model error",
+		}
+	}
+	nameSpace:=authUser.Namespace
+	logs,err:=c.service.GetLogs(fnName,nameSpace)
+	if err!=nil{
+		return http.StatusInternalServerError, &GetFnLogsResponse{
+			Code:      1,
+			ErrorCode: "008000025",
+			Message:   c.errMsg.Application["008000025"],
+			Detail:    "get function logs error",
+		}
+	}
+	return http.StatusOK, &GetFnLogsResponse{
+		Code:      0,
+        Logs:   logs,
 	}
 }
 
