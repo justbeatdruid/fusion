@@ -426,7 +426,7 @@ func (s *Service) Validate(a *Api) error {
 			return fmt.Errorf("wrong method type: %s. ", a.ApiDefineInfo.Method)
 		}
 		for i, p := range a.ApiQueryInfo.WebParams {
-			if len(p.Name) == 0 || len(p.BackendInfo.Name) == 0 {
+			if len(p.Name) == 0 {
 				return fmt.Errorf("%dth parameter name is null", i)
 			}
 			if len(p.Type) == 0 {
@@ -442,10 +442,15 @@ func (s *Service) Validate(a *Api) error {
 			default:
 				return fmt.Errorf("%dth query parameter location is wrong: %s", i, p.Location)
 			}
-			switch p.BackendInfo.Location {
-			case v1.Path, v1.Header, v1.Query, v1.Body:
-			default:
-				return fmt.Errorf("%dth backend parameter location is wrong: %s", i, p.BackendInfo.Location)
+			if su.Spec.Type == "web" {
+				if len(p.BackendInfo.Name) == 0 {
+					return fmt.Errorf("%dth parameter name is null", i)
+				}
+				switch p.BackendInfo.Location {
+				case v1.Path, v1.Header, v1.Query, v1.Body:
+				default:
+					return fmt.Errorf("%dth backend parameter location is wrong: %s", i, p.BackendInfo.Location)
+				}
 			}
 		}
 		// kongapi paths  正常返回值
