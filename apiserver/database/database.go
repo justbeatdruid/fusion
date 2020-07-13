@@ -400,7 +400,7 @@ func (d *DatabaseConnection) DeleteServiceunit(obj interface{}) error {
 func (d *DatabaseConnection) AddTopic(obj interface{}) error {
 	o, us, err := model.TopicGetFromObject(obj)
 	if err != nil {
-		return fmt.Errorf("get serviceunit from obj error: %+v", err)
+		return fmt.Errorf("get topic from obj error: %+v", err)
 	}
 	return d.AddObject(&o, us, len(us), nil, 0)
 }
@@ -412,7 +412,7 @@ func (d *DatabaseConnection) UpdateTopic(old, obj interface{}) error {
 	}
 	o, us, err := model.TopicGetFromObject(obj)
 	if err != nil {
-		return fmt.Errorf("get serviceunit from obj error: %+v", err)
+		return fmt.Errorf("get topic from obj error: %+v", err)
 	}
 	if model.Equal(ous, us) {
 		return d.UpdateObject(&o, nil, 0, nil, 0)
@@ -424,7 +424,7 @@ func (d *DatabaseConnection) UpdateTopic(old, obj interface{}) error {
 func (d *DatabaseConnection) DeleteTopic(obj interface{}) error {
 	o, _, err := model.TopicGetFromObject(obj)
 	if err != nil {
-		return fmt.Errorf("get serviceunit from obj error: %+v", err)
+		return fmt.Errorf("get topic from obj error: %+v", err)
 	}
 	return d.DeleteObject(&o)
 }
