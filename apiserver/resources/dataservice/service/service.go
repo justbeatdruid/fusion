@@ -38,7 +38,10 @@ func NewService(kubeClient *clientset.Clientset, client dynamic.Interface, elect
 		elector:    elector,
 	}
 
-	go elector.Campaign("data-intergration", service.dealIntegrationTask)
+	// disable data integration task
+	if false {
+		go elector.Campaign("data-intergration", service.dealIntegrationTask)
+	}
 
 	return service
 }

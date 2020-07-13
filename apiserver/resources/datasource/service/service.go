@@ -498,11 +498,11 @@ func (s *Service) Ping(ds *Datasource) error {
 	if ds == nil {
 		return fmt.Errorf("datasource is null")
 	}
-	if err := ds.ValidateConnection(); err != nil {
-		return fmt.Errorf("database connection validate error: %+v", err)
-	}
 	switch ds.Type {
 	case v1.RDBType:
+		if err := ds.ValidateConnection(); err != nil {
+			return err
+		}
 		return driver.PingRDB(ToAPI(ds, true))
 	case v1.DataWarehouseType:
 		_, err := s.GetDataWareshouse(ToAPI(ds, true).ObjectMeta.Annotations)
