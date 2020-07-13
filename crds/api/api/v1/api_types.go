@@ -94,6 +94,8 @@ type Serviceunit struct {
 	Port   int    `json:"Port"`
 	//API的协议从服务单元获取
 	Protocol string `json:"protocol"`
+	FissionFnName string `json:"fissionFnName"`
+
 }
 
 type Traffic struct {

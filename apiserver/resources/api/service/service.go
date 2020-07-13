@@ -102,6 +102,7 @@ func (s *Service) CreateApi(model *Api) (*Api, error, string) {
 	model.Serviceunit.Host = su.Spec.KongService.Host
 	model.Serviceunit.Protocol = su.Spec.KongService.Protocol
 	model.Serviceunit.Type = string(su.Spec.Type)
+	model.Serviceunit.FissionFnName = su.Spec.FissionRefInfo.FnName
 
 	//init publish count
 	model.PublishInfo.PublishCount = 0
