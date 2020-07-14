@@ -726,8 +726,8 @@ func (c *controller) GetFnLogs(req *restful.Request, response *restful.Response)
 		return http.StatusInternalServerError, &GetFnLogsResponse{
 			Code:      1,
 			ErrorCode: "008000003",
-			Message:   c.errMsg.Application["008000003"],
-			Detail:    "auth model error",
+			Message:   c.errMsg.Serviceunit["008000003"],
+			Detail:    fmt.Sprintf("auth model error: %+v",err),
 		}
 	}
 	nameSpace:=authUser.Namespace
@@ -736,8 +736,8 @@ func (c *controller) GetFnLogs(req *restful.Request, response *restful.Response)
 		return http.StatusInternalServerError, &GetFnLogsResponse{
 			Code:      1,
 			ErrorCode: "008000025",
-			Message:   c.errMsg.Application["008000025"],
-			Detail:    "get function logs error",
+			Message:   c.errMsg.Serviceunit["008000025"],
+			Detail:    fmt.Sprintf("get function logs error: %+v",err),
 		}
 	}
 	return http.StatusOK, &GetFnLogsResponse{
@@ -761,8 +761,8 @@ func (c *controller) TestFn(req *restful.Request, response *restful.Response)(in
 		return http.StatusInternalServerError, &TestFnResponse{
 			Code:      1,
 			ErrorCode: "008000003",
-			Message:   c.errMsg.Application["008000003"],
-			Detail:    "auth model error",
+			Message:   c.errMsg.Serviceunit["008000003"],
+			Detail:    fmt.Sprintf("auth model error: %+v",err),
 		}
 	}
 	namespace:=authUser.Namespace
@@ -771,8 +771,8 @@ func (c *controller) TestFn(req *restful.Request, response *restful.Response)(in
 		return http.StatusInternalServerError, &TestFnResponse{
 			Code:      1,
 			ErrorCode: "008000026",
-			Message:   c.errMsg.Application["008000026"],
-			Detail:    "test function error",
+			Message:   c.errMsg.Serviceunit["008000026"],
+			Detail:    fmt.Sprintf("test function error: %+v",err),
 		}
 	}
 	return http.StatusOK, &TestFnResponse{
