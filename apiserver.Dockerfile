@@ -24,7 +24,7 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=off go build -a -o /go/bin
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
-FROM registry.cmcc.com/library/ubuntu:18.04
+FROM ubuntu:18.04
 
 COPY --from=builder /go/bin/fusion-apiserver /usr/local/bin
 COPY fission-cli/   /usr/local/bin
