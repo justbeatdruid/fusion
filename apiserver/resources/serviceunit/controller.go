@@ -14,9 +14,8 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
-	"github.com/chinamobile/nlpt/pkg/util"
-
 	"github.com/chinamobile/nlpt/pkg/go-restful"
+	"github.com/chinamobile/nlpt/pkg/util"
 )
 
 type controller struct {
@@ -78,12 +77,7 @@ type GetFnLogsResponse struct {
 	Logs      string `json:"logs"`
 }
 
-type TestFunction struct {
-	FnName string `json:"fnName"`
-	Method string `json:"method"`
-	Body string `json:"body"`
-	Header string `json:"header"`
-}
+
 const UploadPath string  = "/data/upload/serviceunit/"
 
 func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateResponse) {
@@ -753,7 +747,7 @@ func (c *controller) GetFnLogs(req *restful.Request, response *restful.Response)
 }
 //函数调式
 func (c *controller) TestFn(req *restful.Request, response *restful.Response)(int, *TestFnResponse){
-    body:=&TestFunction{}
+    body:=&service.TestFunction{}
     if err := req.ReadEntity(body);err!=nil{
 		return http.StatusInternalServerError, &TestFnResponse{
 			Code:      1,

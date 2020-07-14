@@ -45,6 +45,12 @@ type Serviceunit struct {
 	Result        v1.Result    `json:"result"`
 	DisplayStatus v1.DisStatus `json:"disStatus"`
 }
+type TestFunction struct {
+	FnName string `json:"fnName"`
+	Method string `json:"method"`
+	Body string `json:"body"`
+	Header string `json:"header"`
+}
 
 // only used in creation options
 func ToAPI(app *Serviceunit) *v1.Serviceunit {

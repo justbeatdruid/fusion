@@ -2,7 +2,6 @@ package service
 
 import (
 	"fmt"
-	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit"
 	"io/ioutil"
 	"os/exec"
 	"strings"
@@ -546,7 +545,7 @@ func (s *Service) GetLogs(fnName,namespace string)(string,error){
 	return string(bytes),nil
 }
 
-func (s *Service) TestFn(data *serviceunit.TestFunction, namespace string)(string,error){
+func (s *Service) TestFn(data *TestFunction, namespace string)(string,error){
 	cmd := exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --body=`+data.Body+` --method `+data.Method+` --header `+data.Header)
 	//创建获取命令输出管道
 	stdout, err := cmd.StdoutPipe()
