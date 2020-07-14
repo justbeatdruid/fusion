@@ -546,7 +546,16 @@ func (s *Service) GetLogs(fnName,namespace string)(string,error){
 }
 
 func (s *Service) TestFn(data *TestFunction, namespace string)(string,error){
-	cmd := exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --body=`+data.Body+` --method `+data.Method+` --header `+data.Header)
+	var cmd *exec.Cmd
+	if len(data.Header)>0&&len(data.Body)>0{
+		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --body=`+data.Body+` --method `+data.Method+` --header `+data.Header)
+	}else if len(data.Header)>0 {
+		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --method `+data.Method+` --header `+data.Header)
+	}else if len(data.Body)>0{
+		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --body=`+data.Body+` --method `+data.Method)
+	}else {
+		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --method `+data.Method)
+	}
 	//创建获取命令输出管道
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
