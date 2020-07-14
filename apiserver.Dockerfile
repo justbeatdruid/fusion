@@ -28,7 +28,7 @@ FROM ubuntu:18.04
 
 COPY --from=builder /go/bin/fusion-apiserver /usr/local/bin
 COPY fission-cli/   /usr/local/bin
-RUN chmod +x fission
+RUN chmod +x /usr/local/bin/fission
 
 EXPOSE 8001
 
