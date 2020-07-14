@@ -78,7 +78,7 @@ func newDatabaseConnection(cfg DatabaseConfig) (*DatabaseConnection, error) {
 		return nil, fmt.Errorf("cannot register database: %+v", err)
 	}
 	orm.RegisterModel(new(model.Application), new(model.UserRelation), new(model.Task), new(model.TbDagRun), new(model.TbMetadata),
-		new(model.Relation), new(model.Api), new(model.Serviceunit))
+		new(model.Relation), new(model.Api), new(model.Serviceunit), new(model.Topic))
 	if err = orm.RunSyncdb("default", false, true); err != nil {
 		return nil, fmt.Errorf("cannot sync database: %+v", err)
 	}
@@ -393,6 +393,38 @@ func (d *DatabaseConnection) DeleteServiceunit(obj interface{}) error {
 	o, _, err := model.ServiceunitGetFromObject(obj)
 	if err != nil {
 		return fmt.Errorf("get serviceunit from obj error: %+v", err)
+	}
+	return d.DeleteObject(&o)
+}
+
+func (d *DatabaseConnection) AddTopic(obj interface{}) error {
+	o, us, err := model.TopicGetFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("get topic from obj error: %+v", err)
+	}
+	return d.AddObject(&o, us, len(us), nil, 0)
+}
+
+func (d *DatabaseConnection) UpdateTopic(old, obj interface{}) error {
+	_, ous, err := model.TopicGetFromObject(old)
+	if err != nil {
+		return fmt.Errorf("get users from obj error: %+v", err)
+	}
+	o, us, err := model.TopicGetFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("get topic from obj error: %+v", err)
+	}
+	if model.Equal(ous, us) {
+		return d.UpdateObject(&o, nil, 0, nil, 0)
+	}
+
+	return d.UpdateObject(&o, us, len(us), nil, 0)
+}
+
+func (d *DatabaseConnection) DeleteTopic(obj interface{}) error {
+	o, _, err := model.TopicGetFromObject(obj)
+	if err != nil {
+		return fmt.Errorf("get topic from obj error: %+v", err)
 	}
 	return d.DeleteObject(&o)
 }

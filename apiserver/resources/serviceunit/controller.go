@@ -14,9 +14,8 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
-	"github.com/chinamobile/nlpt/pkg/util"
-
 	"github.com/chinamobile/nlpt/pkg/go-restful"
+	"github.com/chinamobile/nlpt/pkg/util"
 )
 
 type controller struct {
@@ -61,7 +60,7 @@ type PingResponse = DeleteResponse
 // + update_sunyu
 type UpdateRequest = Wrapped
 type UpdateResponse = Wrapped
-
+type TestFnResponse = ImportResponse
 type ImportResponse struct {
 	Code      int    `json:"code"`
 	ErrorCode string `json:"errorCode"`
@@ -69,6 +68,15 @@ type ImportResponse struct {
 	Detail    string `json:"detail"`
 	Data      string `json:"data,omitempty"`
 }
+
+type GetFnLogsResponse struct {
+	Code      int    `json:"code"`
+	ErrorCode string `json:"errorCode"`
+	Message   string `json:"message"`
+	Detail    string `json:"detail"`
+	Logs      string `json:"logs"`
+}
+
 
 const UploadPath string  = "/data/upload/serviceunit/"
 
@@ -708,6 +716,68 @@ func (c *controller) ImportServiceunits(req *restful.Request, response *restful.
 		Code:      0,
 		ErrorCode: "0",
 		Data: UploadPath + handler.Filename,
+	}
+}
+
+func (c *controller) GetFnLogs(req *restful.Request, response *restful.Response)(int, *GetFnLogsResponse){
+     fnName:=req.QueryParameter("fnName")
+     authUser, err := auth.GetAuthUser(req)
+	 if err != nil {
+		return http.StatusInternalServerError, &GetFnLogsResponse{
+			Code:      1,
+			ErrorCode: "008000003",
+			Message:   c.errMsg.Application["008000003"],
+			Detail:    "auth model error",
+		}
+	}
+	nameSpace:=authUser.Namespace
+	logs,err:=c.service.GetLogs(fnName,nameSpace)
+	if err!=nil{
+		return http.StatusInternalServerError, &GetFnLogsResponse{
+			Code:      1,
+			ErrorCode: "008000025",
+			Message:   c.errMsg.Application["008000025"],
+			Detail:    "get function logs error",
+		}
+	}
+	return http.StatusOK, &GetFnLogsResponse{
+		Code:      0,
+        Logs:   logs,
+	}
+}
+//函数调式
+func (c *controller) TestFn(req *restful.Request, response *restful.Response)(int, *TestFnResponse){
+    body:=&service.TestFunction{}
+    if err := req.ReadEntity(body);err!=nil{
+		return http.StatusInternalServerError, &TestFnResponse{
+			Code:      1,
+			ErrorCode: "008000001",
+			Message:   c.errMsg.Serviceunit["008000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &TestFnResponse{
+			Code:      1,
+			ErrorCode: "008000003",
+			Message:   c.errMsg.Application["008000003"],
+			Detail:    "auth model error",
+		}
+	}
+	namespace:=authUser.Namespace
+    data,err:=c.service.TestFn(body,namespace)
+    if err!=nil{
+		return http.StatusInternalServerError, &TestFnResponse{
+			Code:      1,
+			ErrorCode: "008000026",
+			Message:   c.errMsg.Application["008000026"],
+			Detail:    "test function error",
+		}
+	}
+	return http.StatusOK, &TestFnResponse{
+		Code:      0,
+		Data:   data,
 	}
 }
 

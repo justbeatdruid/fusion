@@ -38,7 +38,10 @@ func NewService(kubeClient *clientset.Clientset, client dynamic.Interface, elect
 		elector:    elector,
 	}
 
-	go elector.Campaign("data-intergration", service.dealIntegrationTask)
+	// disable data integration task
+	if false {
+		go elector.Campaign("data-intergration", service.dealIntegrationTask)
+	}
 
 	return service
 }
@@ -428,7 +431,7 @@ func (s *Service) insertAddFlag(task model.Task) {
 
 //GetTaskRunlog ...
 func (s *Service) GetTaskRunlog(offet, limit int, dagID string, execTime []string) (interface{}, error) {
-	dagRun, num, total, success, failed, running, err := model.GetTbDagRun(offet, limit, dagID, execTime)
+	dagRun, num, total, success, failed, running, err := model.GetTbDagRun((offet-1)*limit, limit, dagID, execTime)
 	if err != nil {
 		klog.Errorf("Get task Runlog falied ,err:%v", err)
 		return nil, err

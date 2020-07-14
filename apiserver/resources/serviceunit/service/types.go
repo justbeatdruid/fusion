@@ -45,6 +45,12 @@ type Serviceunit struct {
 	Result        v1.Result    `json:"result"`
 	DisplayStatus v1.DisStatus `json:"disStatus"`
 }
+type TestFunction struct {
+	FnName string `json:"fnName"`
+	Method string `json:"method"`
+	Body string `json:"body"`
+	Header string `json:"header"`
+}
 
 // only used in creation options
 func ToAPI(app *Serviceunit) *v1.Serviceunit {
@@ -300,9 +306,9 @@ func (s *Service) Validate(a *Serviceunit) error {
 			return fmt.Errorf("function name is null")
 		}
 		//TODO FnFile和FnCode中只能有一个有值
-		if len(a.FissionRefInfo.FnFile) == 0 {
-			return fmt.Errorf("function file is null")
-		}
+		//if len(a.FissionRefInfo.FnFile) == 0 {
+		//	return fmt.Errorf("function file is null")
+		//}
 		if len(a.FissionRefInfo.Entrypoint) == 0 {
 			return fmt.Errorf("function entry point is null")
 		}
