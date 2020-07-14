@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/apiserver/resources/api/parser"
 	"net/http"
 	"strconv"
 	"strings"
@@ -27,7 +28,6 @@ type controller struct {
 	errMsg  config.ErrorConfig
 	lock    concurrency.Mutex
 }
-
 func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient(), cfg.DataserviceConnector, cfg.GetKubeClient(), cfg.TenantEnabled, cfg.LocalConfig, cfg.Database),
@@ -783,7 +783,116 @@ func (c *controller) ExportApis(req *restful.Request) (int, *ExportRequest) {
 		Message:   "",
 	}
 }
+//ImportApis import apis
+func (c*controller)ImportApis(req *restful.Request, response *restful.Response)(int,*ImportResponse) {
+	body := &CreateRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &ImportResponse{
+			Code:      1,
+			ErrorCode: "001000001",
+			Message:   c.errMsg.Api["001000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &ImportResponse{
+			Code:      1,
+			ErrorCode: "001000002",
+			Message:   c.errMsg.Api["001000002"],
+			Detail:    "read entity error: data is null",
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ImportResponse{
+			Code:      1,
+			ErrorCode: "0001000003",
+			Message:   "0001000003",
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+	body.Data.Users = user.InitWithOwner(authuser.Name)
+	body.Data.Namespace = authuser.Namespace
 
+	spec := &parser.ApiExcelSpec{
+		SheetName:        "apis",
+		MultiPartFileKey: "uploadfile",
+		TitleRowSpecList: []string{"api名称", "api类型", "认证方式", "标签", "描述", "数据跟新频率", "数据表",
+			"请求path", "请求协议", "匹配模式", "Method", "是否跨域", "入参定义", "host头域",
+			"后端请求path", "成功响应示例", "成功响应示例"},
+	}
+	apis, err := parser.ParseApisFromExcel(req, response, spec)
+	if err != nil {
+		return http.StatusInternalServerError, &ImportResponse{
+			Code:      1,
+			ErrorCode: "001000027",
+			Message:   "001000027",
+			Detail:    fmt.Sprintf("import apis error: %+v", err),
+		}
+	}
+
+	var successdata []service.Api
+	var faildata []service.Api
+
+	for _, ap := range apis.ParseData {
+		unlock, err := c.lock.Lock("api")
+		if err != nil {
+			return http.StatusInternalServerError, &ImportResponse{
+				Code:   2,
+				Detail: fmt.Sprintf("lock error: %+v", err),
+			}
+		}
+		defer func() {
+			_ = unlock()
+		}()
+		body.Data.Name = ap[0]
+		body.Data.ApiType = v1.ApiType(ap[1])
+		body.Data.AuthType = v1.AuthType(ap[2])
+		body.Data.Tags = ap[3]
+		body.Data.Description = ap[4]
+		body.Data.ApiDefineInfo.Path = ap[7]
+		body.Data.ApiDefineInfo.Protocol = v1.Protocol(ap[8])
+		body.Data.ApiDefineInfo.Method = v1.Method(ap[10])
+		body.Data.ApiDefineInfo.Cors = ap[11]
+		body.Data.KongApi.Paths[0] = ap[14]
+		body.Data.ApiReturnInfo.NormalExample = ap[15]
+		body.Data.ApiReturnInfo.FailureExample = ap[16]
+
+		klog.V(5).Infof("body namespace is : %s", body.Data.Namespace)
+		if api, err, code := c.service.CreateApi(body.Data); err != nil {
+			if errors.IsNameDuplicated(err) {
+				code = "001000022"
+			} else if errors.IsUnpublished(err) {
+				code = "001000026"
+			}
+			if strings.Contains(err.Error(), "path duplicated") {
+				code = "001000023"
+			}
+			if strings.Contains(err.Error(), "path is illegal") {
+				code = "001000024"
+			}
+			if strings.Contains(err.Error(), "KongApi.Paths is illegal") {
+				code = "001000025"
+			}
+			faildata = append(faildata, *api)
+			return http.StatusInternalServerError, &ImportResponse{
+				Code:      2,
+				ErrorCode: code,
+				Message:   c.errMsg.Api[code],
+				Detail:    fmt.Errorf("import api error: %+v", err).Error(),
+				Data:      faildata,
+			}
+		} else {
+			successdata = append(successdata, *api)
+		}
+
+	}
+	return http.StatusOK, &ImportResponse{
+		Code:      0,
+		ErrorCode: "0",
+		Data:      successdata,
+	}
+}
 func returns200(b *restful.RouteBuilder) {
 	b.Returns(http.StatusOK, "OK", "success")
 }

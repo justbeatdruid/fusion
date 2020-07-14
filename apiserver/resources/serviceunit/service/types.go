@@ -304,16 +304,39 @@ func (s *Service) Validate(a *Serviceunit) error {
 	case v1.FunctionService:
 		if len(a.FissionRefInfo.FnName) == 0 {
 			return fmt.Errorf("function name is null")
+		}else if ok, _ := regexp.MatchString(NameReg, a.FissionRefInfo.FnName); !ok {
+			return fmt.Errorf("functionname is illegal: %v", a.FissionRefInfo.FnName)
 		}
 		//TODO FnFile和FnCode中只能有一个有值
-		//if len(a.FissionRefInfo.FnFile) == 0 {
-		//	return fmt.Errorf("function file is null")
-		//}
+		if len(a.FissionRefInfo.FnFile) == 0 {
+			if len(a.FissionRefInfo.FnCode) == 0{
+				return fmt.Errorf("function file and code is null")
+			}
+		}else {
+			boolean:=strings.HasSuffix(a.FissionRefInfo.FnFile,".js")||
+				strings.HasSuffix(a.FissionRefInfo.FnFile,".py") ||
+				strings.HasSuffix(a.FissionRefInfo.FnFile,".zip") ||
+				strings.HasSuffix(a.FissionRefInfo.FnFile,".go")
+			if !boolean{
+				return fmt.Errorf("end of file must be .js or .py or .zip or .go")
+			}
+			if len(a.FissionRefInfo.FnCode) !=0{
+				return fmt.Errorf("function file and code can only be one")
+		}
+		}
 		if len(a.FissionRefInfo.Entrypoint) == 0 {
 			return fmt.Errorf("function entry point is null")
 		}
 		if len(a.FissionRefInfo.Language) == 0 {
 			return fmt.Errorf("function language is null")
+		}
+		if a.FissionRefInfo.Language!="nodejs" && a.FissionRefInfo.Language!="python" &&
+			a.FissionRefInfo.Language!="go"{
+			return fmt.Errorf("function language is not nodejs or python and go")
+		}else if a.FissionRefInfo.Language =="python"||a.FissionRefInfo.Language=="go"{
+			if len(a.FissionRefInfo.BuildCmd) ==0 {
+				return fmt.Errorf("function BuildCmd is null")
+			}
 		}
 	default:
 		return fmt.Errorf("wrong type: %s", a.Type)
@@ -421,6 +444,29 @@ func (s *Service) assignment(target *v1.Serviceunit, reqData interface{}) error 
 		target.Spec.APIs = make([]v1.Api, 0)
 	}
 	if _,ok := data["fissionRefInfo"];ok{
+		if target.Spec.FissionRefInfo.FnName !=source.FissionRefInfo.FnName{
+			return fmt.Errorf("can not be modified this name %v",target.Spec.FissionRefInfo.FnName)
+		}
+		if target.Spec.FissionRefInfo.Language != source.FissionRefInfo.Language{
+			return fmt.Errorf("can not be modified this language %v",target.Spec.FissionRefInfo.Language)
+		}
+		if len(source.FissionRefInfo.FnFile) == 0 {
+			if len(source.FissionRefInfo.FnCode) == 0{
+				return fmt.Errorf("function file and code is null")
+			}
+		}else {
+			boolean:=strings.HasSuffix(source.FissionRefInfo.FnFile,".js")||
+				strings.HasSuffix(source.FissionRefInfo.FnFile,".py") ||
+				strings.HasSuffix(source.FissionRefInfo.FnFile,".zip") ||
+				strings.HasSuffix(source.FissionRefInfo.FnFile,".go")
+			if !boolean{
+				return fmt.Errorf("end of file must be .js or .py or .zip or .go")
+			}
+			if len(source.FissionRefInfo.FnCode) !=0{
+				return fmt.Errorf("function file and code can only be one")
+		}
+		}
+
 		target.Spec.FissionRefInfo.FnCode=source.FissionRefInfo.FnCode
 		target.Spec.FissionRefInfo.FnFile=source.FissionRefInfo.FnFile
 		target.Spec.FissionRefInfo.BuildCmd=source.FissionRefInfo.BuildCmd
