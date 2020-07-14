@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/apiserver/resources/api/service"
 	"net/http"
 	"os"
 
@@ -13,7 +14,13 @@ import (
 type router struct {
 	controller *controller
 }
-
+type ImportResponse struct {
+	Code      int             `json:"code"`
+	ErrorCode string          `json:"errorCode"`
+	Message   string          `json:"message"`
+	Data      []service.Api   `json:"data"`
+	Detail    string          `json:"detail"`
+}
 func NewRouter(cfg *config.Config) *router {
 	return &router{newController(cfg)}
 }
@@ -151,6 +158,14 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.exportApis).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	//api import
+	ws.Route(ws.POST("/apis/import").
+		Consumes("multipart/form-data").
+		Produces(restful.MIME_JSON).
+		Doc("import apis from excel files").
+		To(r.importApis).
+		Do(returns200,returns500))
 }
 
 func process(f func(*restful.Request) (int, interface{}), request *restful.Request, response *restful.Response) {
@@ -220,4 +235,8 @@ func (r *router) exportApis(request *restful.Request, response *restful.Response
 	response.Header().Add("Content-Type", "application/vnd.ms-excel")
 	http.ServeFile(response.ResponseWriter, request.Request, "./tmp/api.xlsx")
 	defer os.Remove("./tmp/api.xlsx")
+}
+func (r *router) importApis(request *restful.Request,response *restful.Response){
+	code,result:=r.controller.ImportApis(request,response)
+	response.WriteHeaderAndEntity(code,result)
 }
