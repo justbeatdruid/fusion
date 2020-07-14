@@ -884,13 +884,13 @@ func (c*controller)ImportApis(req *restful.Request, response *restful.Response)(
 			}
 		} else {
 			successdata = append(successdata, *api)
-			return http.StatusOK, &ImportResponse{
-				Code:      0,
-				ErrorCode: "0",
-				Data:      successdata,
-			}
 		}
 
+	}
+	return http.StatusOK, &ImportResponse{
+		Code:      0,
+		ErrorCode: "0",
+		Data:      successdata,
 	}
 }
 func returns200(b *restful.RouteBuilder) {
