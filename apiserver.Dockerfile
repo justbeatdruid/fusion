@@ -28,6 +28,7 @@ FROM registry.cmcc.com/library/ubuntu:18.04
 
 COPY --from=builder /go/bin/fusion-apiserver /usr/local/bin
 COPY fission-cli/   /usr/local/bin
+RUN chmod +x fission
 
 EXPOSE 8001
 
