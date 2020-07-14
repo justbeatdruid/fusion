@@ -530,6 +530,7 @@ func (s *Service) GetLogs(fnName,namespace string)(string,error){
 	if err != nil {
 		return "",fmt.Errorf("Error:can not obtain stdout pipe for command:%s\n", err)
 	}
+	defer stdout.Close()
 	//执行命令
 	if err := cmd.Start(); err != nil {
 		return "",fmt.Errorf("Error:The command is err:%s", err)
@@ -561,6 +562,7 @@ func (s *Service) TestFn(data *TestFunction, namespace string)(string,error){
 	if err != nil {
 		return "",fmt.Errorf("Error:can not obtain stdout pipe for command:%s\n", err)
 	}
+	defer stdout.Close()
 	//执行命令
 	if err := cmd.Start(); err != nil {
 		return "",fmt.Errorf("Error:The command is err:%s", err)
