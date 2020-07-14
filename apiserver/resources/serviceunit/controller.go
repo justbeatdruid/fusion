@@ -61,7 +61,7 @@ type PingResponse = DeleteResponse
 // + update_sunyu
 type UpdateRequest = Wrapped
 type UpdateResponse = Wrapped
-
+type TestFnResponse = ImportResponse
 type ImportResponse struct {
 	Code      int    `json:"code"`
 	ErrorCode string `json:"errorCode"`
@@ -76,6 +76,13 @@ type GetFnLogsResponse struct {
 	Message   string `json:"message"`
 	Detail    string `json:"detail"`
 	Logs      string `json:"logs"`
+}
+
+type TestFunction struct {
+	FnName string `json:"fnName"`
+	Method string `json:"method"`
+	Body string `json:"body"`
+	Header string `json:"header"`
 }
 const UploadPath string  = "/data/upload/serviceunit/"
 
@@ -742,6 +749,41 @@ func (c *controller) GetFnLogs(req *restful.Request, response *restful.Response)
 	return http.StatusOK, &GetFnLogsResponse{
 		Code:      0,
         Logs:   logs,
+	}
+}
+//函数调式
+func (c *controller) TestFn(req *restful.Request, response *restful.Response)(int, *TestFnResponse){
+    body:=&TestFunction{}
+    if err := req.ReadEntity(body);err!=nil{
+		return http.StatusInternalServerError, &TestFnResponse{
+			Code:      1,
+			ErrorCode: "008000001",
+			Message:   c.errMsg.Serviceunit["008000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &TestFnResponse{
+			Code:      1,
+			ErrorCode: "008000003",
+			Message:   c.errMsg.Application["008000003"],
+			Detail:    "auth model error",
+		}
+	}
+	namespace:=authUser.Namespace
+    data,err:=c.service.TestFn(body,namespace)
+    if err!=nil{
+		return http.StatusInternalServerError, &TestFnResponse{
+			Code:      1,
+			ErrorCode: "008000026",
+			Message:   c.errMsg.Application["008000026"],
+			Detail:    "test function error",
+		}
+	}
+	return http.StatusOK, &TestFnResponse{
+		Code:      0,
+		Data:   data,
 	}
 }
 

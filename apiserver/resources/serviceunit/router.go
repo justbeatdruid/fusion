@@ -123,6 +123,15 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.getFnLogs).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	//调式函数
+	ws.Route(ws.POST("/serviceunits/function/test").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("test function").
+		To(r.testFn).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func (r *router) createServiceunit(request *restful.Request, response *restful.Response) {
@@ -199,5 +208,10 @@ func (r *router) importServiceunits(request *restful.Request, response *restful.
 
 func (r *router) getFnLogs(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.GetFnLogs(request, response)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) testFn(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.TestFn(request, response)
 	response.WriteHeaderAndEntity(code, result)
 }
