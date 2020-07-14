@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/apiserver/resources/serviceunit"
 	"io/ioutil"
 	"os/exec"
 	"strings"
@@ -525,6 +526,28 @@ func (s *Service) GetUsers(id, operator string) (user.UserList, bool, error) {
 //通过调用fission cli获取函数的日志
 func (s *Service) GetLogs(fnName,namespace string)(string,error){
 	cmd := exec.Command("/bin/bash", "-c", `fission fn log --name `+fnName+` --fns=`+namespace)
+	//创建获取命令输出管道
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return "",fmt.Errorf("Error:can not obtain stdout pipe for command:%s\n", err)
+	}
+	//执行命令
+	if err := cmd.Start(); err != nil {
+		return "",fmt.Errorf("Error:The command is err:%s", err)
+	}
+	//读取所有输出
+	bytes, err := ioutil.ReadAll(stdout)
+	if err != nil {
+		return "",fmt.Errorf("ReadAll Stdout error: %s", err)
+	}
+	if err := cmd.Wait(); err != nil {
+		return "",fmt.Errorf("wait error:%s", err)
+	}
+	return string(bytes),nil
+}
+
+func (s *Service) TestFn(data *serviceunit.TestFunction, namespace string)(string,error){
+	cmd := exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --body=`+data.Body+` --method `+data.Method+` --header `+data.Header)
 	//创建获取命令输出管道
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
