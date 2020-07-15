@@ -150,7 +150,7 @@ type PkgRefInfoReq struct {
 	} `json:"spec"`
 	Status struct {
 		BuildStatus string `json:"buildstatus"`
-		BuildLogs string `json:"buildLogs"`
+		BuildLog string `json:"buildlog"`
 	} `json:"status"`
 }
 
@@ -581,7 +581,7 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, env *FissionResIn
 		return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
 	}
 	if Pkg.Status.BuildStatus=="failed"{
-		return nil, fmt.Errorf("create function error: +%v",Pkg.Status.BuildLogs)
+		return nil, fmt.Errorf("create function error: +%v",Pkg.Status.BuildLog)
 	}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
@@ -722,6 +722,13 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 			requestBody.Spec.Package.Packageref.Resourceversion = Pkg.Metadata.ResourceVersion
 			break
 		}
+	}
+	Pkg,err := r.getPkgVersion(db)
+	if err!=nil {
+		return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+	}
+	if Pkg.Status.BuildStatus=="failed"{
+		return nil, fmt.Errorf("update function error: +%v",Pkg.Status.BuildLog)
 	}
 	//查询function的resourceversion
 	Fn,err:=r.getFnVersion(db)
