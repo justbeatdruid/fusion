@@ -150,6 +150,7 @@ type PkgRefInfoReq struct {
 	} `json:"spec"`
 	Status struct {
 		BuildStatus string `json:"buildstatus"`
+		BuildLogs string `json:"buildLogs"`
 	} `json:"status"`
 }
 
@@ -563,7 +564,6 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, env *FissionResIn
 	requestBody.Spec.FunctionTimeout = 120
 	
 	responseBody := &FissionResInfoRsp{}
-
 	//判断package的状态是否完成
 	for i:=1;i<15;i++{
 		time.Sleep(time.Duration(i)*time.Second)
@@ -575,6 +575,13 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, env *FissionResIn
 		if Pkg.Status.BuildStatus=="none"||Pkg.Status.BuildStatus=="succeeded"{
 			break
 		}
+	}
+	Pkg,err := r.getPkgVersion(db)
+	if err!=nil {
+		return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+	}
+	if Pkg.Status.BuildStatus=="failed"{
+		return nil, fmt.Errorf("create function error: +%v",Pkg.Status.BuildLogs)
 	}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
