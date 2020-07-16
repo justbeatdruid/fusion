@@ -38,7 +38,7 @@ type ServiceunitSpec struct {
 	APIs         []Api       `json:"apis"`
 	Description  string      `json:"description"`
 	//KongInfo
-	KongService   KongServiceInfo `json:"kongServiceInfo"`
+	KongService   *KongServiceInfo `json:"kongServiceInfo"`
 	Result        Result          `json:"result"`
 	DisplayStatus DisStatus       `json:"disStatus"`
 	FissionRefInfo FissionRefInfo `json:"fissionRefInfo"`

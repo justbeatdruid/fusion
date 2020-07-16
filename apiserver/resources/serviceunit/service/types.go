@@ -26,7 +26,7 @@ type Serviceunit struct {
 	Namespace    string             `json:"namespace"`
 	Type         v1.ServiceType     `json:"type"`
 	DatasourceID *v1.Datasource     `json:"datasources,omitempty"`
-	KongSevice   v1.KongServiceInfo `json:"kongService"`
+	KongSevice   *v1.KongServiceInfo `json:"kongService,omitempty"`
 	FissionRefInfo v1.FissionRefInfo `json:"fissionRefInfo"`
 	Users        user.Users         `json:"users"`
 	Description  string             `json:"description"`
@@ -142,34 +142,52 @@ func ToModel(obj *v1.Serviceunit, opts ...util.OpOption) *Serviceunit {
 	case v1.DELETEFAILED:
 		(*obj).Spec.DisplayStatus = v1.DeleteFailed
 	}
-	su := &Serviceunit{
-		ID:           obj.ObjectMeta.Name,
-		Name:         obj.Spec.Name,
-		Namespace:    obj.ObjectMeta.Namespace,
-		Type:         obj.Spec.Type,
-		DatasourceID: obj.Spec.DatasourceID,
-		KongSevice:   obj.Spec.KongService,
-		FissionRefInfo: obj.Spec.FissionRefInfo,
-		Description:  obj.Spec.Description,
+	su := &Serviceunit{}
+	switch obj.Spec.Type {
+	case "web", "data":
+		su := &Serviceunit{
+			ID:           obj.ObjectMeta.Name,
+			Name:         obj.Spec.Name,
+			Namespace:    obj.ObjectMeta.Namespace,
+			Type:         obj.Spec.Type,
+			DatasourceID: obj.Spec.DatasourceID,
+			KongSevice:   obj.Spec.KongService,
+			FissionRefInfo: obj.Spec.FissionRefInfo,
+			Description:  obj.Spec.Description,
 
-		Status:        obj.Status.Status,
-		CreatedAt:     util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
-		UpdatedAt:     util.NewTime(obj.Status.UpdatedAt.Time),
-		APICount:      obj.Status.APICount,
-		Published:     obj.Status.Published,
-		Result:        obj.Spec.Result,
-		DisplayStatus: obj.Spec.DisplayStatus,
-	}
-	u := util.OpList(opts...).User()
-	if len(u) > 0 {
-		su.Writable = user.WritePermitted(u, obj.ObjectMeta.Labels)
-	}
+			Status:        obj.Status.Status,
+			CreatedAt:     util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
+			UpdatedAt:     util.NewTime(obj.Status.UpdatedAt.Time),
+			APICount:      obj.Status.APICount,
+			Published:     obj.Status.Published,
+			Result:        obj.Spec.Result,
+			DisplayStatus: obj.Spec.DisplayStatus,
+		}
+		u := util.OpList(opts...).User()
+		if len(u) > 0 {
+			su.Writable = user.WritePermitted(u, obj.ObjectMeta.Labels)
+		}
+		su.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
+		//TODO UserCount
+		if group, ok := obj.ObjectMeta.Labels[v1.GroupLabel]; ok {
+			su.Group = group
+			su.GroupName = obj.Spec.Group.Name
+		}
+		return su
+	case "function":
+		su = &Serviceunit{
+			KongSevice:   nil,
+			FissionRefInfo: obj.Spec.FissionRefInfo,
+			CreatedAt:     util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
+			UpdatedAt:     util.NewTime(obj.Status.UpdatedAt.Time),
 
-	su.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
-	//TODO UserCount
-	if group, ok := obj.ObjectMeta.Labels[v1.GroupLabel]; ok {
-		su.Group = group
-		su.GroupName = obj.Spec.Group.Name
+		}
+		u := util.OpList(opts...).User()
+		if len(u) > 0 {
+			su.Writable = user.WritePermitted(u, obj.ObjectMeta.Labels)
+		}
+		su.Users = user.GetUsersFromLabels(obj.ObjectMeta.Labels)
+		return su
 	}
 	return su
 }
