@@ -191,13 +191,18 @@ type ApiQueryInfo struct {
 	WebParams []WebParams `json:"webParams"`
 }
 
+type RspHandlerInfo struct {
+	FuncName  string `json:"funcName"`
+}
+
 //define api
 type ApiDefineInfo struct {
-	Path      string   `json:"path"`
-	MatchMode string   `json:"matchMode"`
-	Method    Method   `json:"method"`
-	Protocol  Protocol `json:"protocol"` //直接从服务单元里面获取不需要前台传入
-	Cors      string   `json:"cors"`
+	Path      string           `json:"path"`
+	MatchMode string           `json:"matchMode"`
+	Method    Method           `json:"method"`
+	Protocol  Protocol         `json:"protocol"` //直接从服务单元里面获取不需要前台传入
+	Cors      string           `json:"cors"`
+	RspHandler RspHandlerInfo  `json:"rspHandler"`
 }
 
 //define api return
@@ -225,6 +230,7 @@ type KongApiInfo struct {
 	AclID         string   `json:"acl_id"`
 	CorsID        string   `json:"cors_id"`
 	PrometheusID  string   `json:"prometheus_id"`
+	RspHandlerID  string   `json:"rsp_id"`
 }
 
 type ApiBind struct {

@@ -13,6 +13,7 @@ import (
 	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"k8s.io/klog"
+	"github.com/chinamobile/nlpt/pkg/names"
 )
 
 const path string = "/routes"
@@ -255,6 +256,68 @@ type AddWhiteResponseBody struct {
 	Code    int         `json:"code"`
 }
 
+type RspHandlerRequestBody struct {
+	Name string `json:"name"`
+		Config struct {
+		FunctionURL string `json:"function_url"`
+		Remove struct {
+		} `json:"remove"`
+		Rename struct {
+		} `json:"rename"`
+		Replace struct {
+		} `json:"replace"`
+		Add struct {
+		} `json:"add"`
+		Append struct {
+		} `json:"append"`
+	} `json:"config"`
+}
+
+type RspHandlerResponseBody struct {
+	RunOn string `json:"run_on"`
+	Protocols []string `json:"protocols"`
+	Service interface{} `json:"service"`
+	CreatedAt int `json:"created_at"`
+	Route struct {
+		ID string `json:"id"`
+	} `json:"route"`
+	ID string `json:"id"`
+	Consumer interface{} `json:"consumer"`
+	Tags interface{} `json:"tags"`
+	Enabled bool `json:"enabled"`
+	Name string `json:"name"`
+	Config struct {
+		FunctionURL string `json:"function_url"`
+		Remove struct {
+			JSON []interface{} `json:"json"`
+			Headers []interface{} `json:"headers"`
+		} `json:"remove"`
+		Rename struct {
+			Headers []interface{} `json:"headers"`
+		} `json:"rename"`
+		Add struct {
+			Headers []interface{} `json:"headers"`
+			JSONTypes []interface{} `json:"json_types"`
+			JSON []interface{} `json:"json"`
+		} `json:"add"`
+		Replace struct {
+			Headers []interface{} `json:"headers"`
+			JSONTypes []interface{} `json:"json_types"`
+			JSON []interface{} `json:"json"`
+		} `json:"replace"`
+		Append struct {
+			Headers []interface{} `json:"headers"`
+			JSONTypes []interface{} `json:"json_types"`
+			JSON []interface{} `json:"json"`
+		} `json:"append"`
+	} `json:"config"`
+	Message string `json:"message"`
+	Fields struct {
+			Name string `json:"name"`
+		} `json:"fields"`
+	Code int `json:"code"`
+}
+
 /*
 {"host":"apps",
 "created_at":1578378841,
@@ -426,6 +489,15 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api, su *suv1.Serviceunit) (err 
 	}
 	if (*db).Spec.ApiDefineInfo.Cors == "true" {
 		if err := r.AddRouteCorsByKong(db); err != nil {
+			return fmt.Errorf("request for add route acl error: %+v", err)
+		}
+	}
+	if len ((*db).Spec.ApiDefineInfo.RspHandler.FuncName) != 0 {
+
+		if err := r.CreateRouteForFunction(db); err != nil {
+			return fmt.Errorf("request for create route for function error: %+v", err)
+		}
+		if err := r.AddRouteRspHandlerByKong(db); err != nil {
 			return fmt.Errorf("request for add route acl error: %+v", err)
 		}
 	}
@@ -966,6 +1038,74 @@ func (r *Operator) DeleteRouteByFission(db *nlptv1.Api) (err error) {
 	klog.V(5).Infof("delete route by fission response code and body: %d, %s",  response.StatusCode, string(body))
 	if response.StatusCode != 200 {
 		return fmt.Errorf("request for delete  route by fission error: receive wrong body: %s", string(body))
+	}
+	return nil
+}
+
+func (r *Operator) CreateRouteForFunction(db *nlptv1.Api) (err error) {
+	klog.Infof("Enter CreateRouteForFunction name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, r.FissionAddress.ControllerHost, r.FissionAddress.ControllerPort, HttpTriggerUrl))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	funcPath := fmt.Sprintf("%s%s%s%s%s", "/api/v1/plugins/", db.ObjectMeta.Namespace, "/", db.ObjectMeta.Name, "/function")
+	routeId := names.NewID()
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &RouteReqInfo{}
+	requestBody.Metadata.Name = db.ObjectMeta.Name + routeId
+	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
+	requestBody.Spec.Functionref.Type = "name"
+	requestBody.Spec.Functionref.Name = db.Spec.ApiDefineInfo.RspHandler.FuncName
+	requestBody.Spec.Relativeurl = funcPath
+	//TODO 当前版本只支持POST 由于要处理返回结果，所以需要用POST请求传入源API的响应body 后续可扩展支持其他类型
+	requestBody.Spec.Method = "POST"
+	requestBody.Spec.Createingress = false
+	responseBody := &FissionResInfoRsp{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		klog.Errorf("send  create route for function error %+v", errs)
+		return fmt.Errorf("request for create route for function error: %+v", errs)
+	}
+
+	klog.V(5).Infof("creation route for function response code and body: %d, %s",  response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.Errorf("create route for function failed msg: %s\n", responseBody)
+		return fmt.Errorf("request for create route for function error: receive wrong body: %s", string(body))
+	}
+	klog.V(5).Infof("ID==: %s\n", responseBody.Name)
+	return nil
+}
+
+
+func (r *Operator) AddRouteRspHandlerByKong(db *nlptv1.Api) (err error) {
+	id := db.Spec.KongApi.KongID
+	klog.Infof("begin create rsp handler %s", id)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &RspHandlerRequestBody{
+		Name: "rsp-handler", //插件名称
+	}
+	responseBody := &RspHandlerResponseBody{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return fmt.Errorf("request for create rsp handler error: %+v", errs)
+	}
+	klog.V(5).Infof("create rsp handler code: %d, body: %s ", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.Errorf("create rsp handler failed msg: %s\n", responseBody.Message)
+		return fmt.Errorf("request for create rsp handler error: receive wrong status code: %s", string(body))
+	}
+	(*db).Spec.KongApi.RspHandlerID = responseBody.ID
+
+	if err != nil {
+		return fmt.Errorf("create rsp handler error %s", responseBody.Message)
 	}
 	return nil
 }
