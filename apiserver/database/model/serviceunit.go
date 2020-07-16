@@ -15,6 +15,8 @@ type Serviceunit struct {
 	Namespace string
 	Name      string
 	Status    string
+	Group     string
+	Type      string
 	Raw       string `orm:"type(text)"`
 }
 
@@ -32,7 +34,7 @@ func (a *Serviceunit) ResourceId() string {
 
 const serviceunitType = "serviceunit"
 
-func ServiceunitFromServiceunit(api *v1.Serviceunit) (Serviceunit, []UserRelation, error) {
+func ServiceunitFromApi(api *v1.Serviceunit) (Serviceunit, []UserRelation, error) {
 	raw, err := json.Marshal(api)
 	if err != nil {
 		return Serviceunit{}, nil, fmt.Errorf("marshal crd v1.serviceunit error: %+v", err)
@@ -45,13 +47,15 @@ func ServiceunitFromServiceunit(api *v1.Serviceunit) (Serviceunit, []UserRelatio
 		Id:        api.ObjectMeta.Name,
 		Namespace: api.ObjectMeta.Namespace,
 		Name:      api.Spec.Name,
+		Group:     api.Spec.Group.ID,
+		Type:      string(api.Spec.Type),
 		Status:    string(api.Status.Status),
 
 		Raw: string(raw),
 	}, rls, nil
 }
 
-func ServiceunitToServiceunit(a Serviceunit) (*v1.Serviceunit, error) {
+func ServiceunitToApi(a Serviceunit) (*v1.Serviceunit, error) {
 	api := &v1.Serviceunit{}
 	err := json.Unmarshal([]byte(a.Raw), api)
 	if err != nil {
@@ -69,5 +73,5 @@ func ServiceunitGetFromObject(obj interface{}) (Serviceunit, []UserRelation, err
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(un.UnstructuredContent(), api); err != nil {
 		return Serviceunit{}, nil, fmt.Errorf("cannot convert from unstructured: %+v", err)
 	}
-	return ServiceunitFromServiceunit(api)
+	return ServiceunitFromApi(api)
 }

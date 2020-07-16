@@ -26,7 +26,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TenantEnabled, cfg.LocalConfig),
+		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TenantEnabled, cfg.LocalConfig, cfg.Database),
 		cfg.LocalConfig,
 		cfg.Mutex,
 	}
@@ -77,8 +77,7 @@ type GetFnLogsResponse struct {
 	Logs      string `json:"logs"`
 }
 
-
-const UploadPath string  = "/data/upload/serviceunit/"
+const UploadPath string = "/data/upload/serviceunit/"
 
 func (c *controller) CreateServiceunit(req *restful.Request) (int, *CreateResponse) {
 	unlock, err := c.lock.Lock("serviceunit")
@@ -683,7 +682,7 @@ func (c *controller) ImportServiceunits(req *restful.Request, response *restful.
 			return http.StatusInternalServerError, &ImportResponse{
 				Code:      1,
 				ErrorCode: "008000022",
-				Message:    c.errMsg.Serviceunit["008000022"],
+				Message:   c.errMsg.Serviceunit["008000022"],
 				Detail:    fmt.Sprintf("import file  error: %+v", err),
 			}
 		}
@@ -701,7 +700,7 @@ func (c *controller) ImportServiceunits(req *restful.Request, response *restful.
 	}
 
 	defer file.Close()
-	f, err := os.OpenFile(UploadPath + handler.Filename, os.O_RDWR|os.O_CREATE, 0666)
+	f, err := os.OpenFile(UploadPath+handler.Filename, os.O_RDWR|os.O_CREATE, 0666)
 	if _, err = io.Copy(f, file); err != nil {
 		klog.Error("import failed,copy file error.")
 		return http.StatusInternalServerError, &ImportResponse{
@@ -715,40 +714,41 @@ func (c *controller) ImportServiceunits(req *restful.Request, response *restful.
 	return http.StatusOK, &ImportResponse{
 		Code:      0,
 		ErrorCode: "0",
-		Data: UploadPath + handler.Filename,
+		Data:      UploadPath + handler.Filename,
 	}
 }
 
-func (c *controller) GetFnLogs(req *restful.Request, response *restful.Response)(int, *GetFnLogsResponse){
-     fnName:=req.QueryParameter("fnName")
-     authUser, err := auth.GetAuthUser(req)
-	 if err != nil {
+func (c *controller) GetFnLogs(req *restful.Request, response *restful.Response) (int, *GetFnLogsResponse) {
+	fnName := req.QueryParameter("fnName")
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
 		return http.StatusInternalServerError, &GetFnLogsResponse{
 			Code:      1,
 			ErrorCode: "008000003",
 			Message:   c.errMsg.Serviceunit["008000003"],
-			Detail:    fmt.Sprintf("auth model error: %+v",err),
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	nameSpace:=authUser.Namespace
-	logs,err:=c.service.GetLogs(fnName,nameSpace)
-	if err!=nil{
+	nameSpace := authUser.Namespace
+	logs, err := c.service.GetLogs(fnName, nameSpace)
+	if err != nil {
 		return http.StatusInternalServerError, &GetFnLogsResponse{
 			Code:      1,
 			ErrorCode: "008000025",
 			Message:   c.errMsg.Serviceunit["008000025"],
-			Detail:    fmt.Sprintf("get function logs error: %+v",err),
+			Detail:    fmt.Sprintf("get function logs error: %+v", err),
 		}
 	}
 	return http.StatusOK, &GetFnLogsResponse{
-		Code:      0,
-        Logs:   logs,
+		Code: 0,
+		Logs: logs,
 	}
 }
+
 //函数调式
-func (c *controller) TestFn(req *restful.Request, response *restful.Response)(int, *TestFnResponse){
-    body:=&service.TestFunction{}
-    if err := req.ReadEntity(body);err!=nil{
+func (c *controller) TestFn(req *restful.Request, response *restful.Response) (int, *TestFnResponse) {
+	body := &service.TestFunction{}
+	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &TestFnResponse{
 			Code:      1,
 			ErrorCode: "008000001",
@@ -762,22 +762,22 @@ func (c *controller) TestFn(req *restful.Request, response *restful.Response)(in
 			Code:      1,
 			ErrorCode: "008000003",
 			Message:   c.errMsg.Serviceunit["008000003"],
-			Detail:    fmt.Sprintf("auth model error: %+v",err),
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	namespace:=authUser.Namespace
-    data,err:=c.service.TestFn(body,namespace)
-    if err!=nil{
+	namespace := authUser.Namespace
+	data, err := c.service.TestFn(body, namespace)
+	if err != nil {
 		return http.StatusInternalServerError, &TestFnResponse{
 			Code:      1,
 			ErrorCode: "008000026",
 			Message:   c.errMsg.Serviceunit["008000026"],
-			Detail:    fmt.Sprintf("test function error: %+v",err),
+			Detail:    fmt.Sprintf("test function error: %+v", err),
 		}
 	}
 	return http.StatusOK, &TestFnResponse{
-		Code:      0,
-		Data:   data,
+		Code: 0,
+		Data: data,
 	}
 }
 

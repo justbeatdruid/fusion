@@ -6,6 +6,7 @@ import (
 	"os/exec"
 	"strings"
 
+	"github.com/chinamobile/nlpt/apiserver/database"
 	k8s "github.com/chinamobile/nlpt/apiserver/kubernetes"
 	datav1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
@@ -32,14 +33,18 @@ type Service struct {
 	groupClient      dynamic.NamespaceableResourceInterface
 
 	tenantEnabled bool
+
+	db *database.DatabaseConnection
 }
 
-func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool, localConfig appconfig.ErrorConfig) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, tenantEnabled bool, localConfig appconfig.ErrorConfig, db *database.DatabaseConnection) *Service {
 	return &Service{
 		kubeClient:       kubeClient,
 		client:           client.Resource(v1.GetOOFSGVR()),
 		datasourceClient: client.Resource(datav1.GetOOFSGVR()),
 		groupClient:      client.Resource(groupv1.GetOOFSGVR()),
+
+		db: db,
 
 		tenantEnabled: tenantEnabled,
 	}
@@ -227,6 +232,9 @@ func (s *Service) PatchServiceunit(id string, data interface{}, opts ...util.OpO
 }
 
 func (s *Service) List(opts ...util.OpOption) (*v1.ServiceunitList, error) {
+	if s.db.Enabled() {
+		return s.ListFromDatabase(opts...)
+	}
 	var options metav1.ListOptions
 	op := util.OpList(opts...)
 	group := op.Group()
@@ -523,57 +531,57 @@ func (s *Service) GetUsers(id, operator string) (user.UserList, bool, error) {
 }
 
 //通过调用fission cli获取函数的日志
-func (s *Service) GetLogs(fnName,namespace string)(string,error){
+func (s *Service) GetLogs(fnName, namespace string) (string, error) {
 	cmd := exec.Command("/bin/bash", "-c", `fission fn log --name `+fnName+` --fns=`+namespace)
 	//创建获取命令输出管道
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return "",fmt.Errorf("Error:can not obtain stdout pipe for command:%s\n", err)
+		return "", fmt.Errorf("Error:can not obtain stdout pipe for command:%s\n", err)
 	}
 	defer stdout.Close()
 	//执行命令
 	if err := cmd.Start(); err != nil {
-		return "",fmt.Errorf("Error:The command is err:%s", err)
+		return "", fmt.Errorf("Error:The command is err:%s", err)
 	}
 	//读取所有输出
 	bytes, err := ioutil.ReadAll(stdout)
 	if err != nil {
-		return "",fmt.Errorf("ReadAll Stdout error: %s", err)
+		return "", fmt.Errorf("ReadAll Stdout error: %s", err)
 	}
 	if err := cmd.Wait(); err != nil {
-		return "",fmt.Errorf("wait error:%s", err)
+		return "", fmt.Errorf("wait error:%s", err)
 	}
-	return string(bytes),nil
+	return string(bytes), nil
 }
 
-func (s *Service) TestFn(data *TestFunction, namespace string)(string,error){
+func (s *Service) TestFn(data *TestFunction, namespace string) (string, error) {
 	var cmd *exec.Cmd
-	if len(data.Header)>0&&len(data.Body)>0{
+	if len(data.Header) > 0 && len(data.Body) > 0 {
 		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --body=`+data.Body+` --method `+data.Method+` --header `+data.Header)
-	}else if len(data.Header)>0 {
+	} else if len(data.Header) > 0 {
 		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --method `+data.Method+` --header `+data.Header)
-	}else if len(data.Body)>0{
+	} else if len(data.Body) > 0 {
 		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --body=`+data.Body+` --method `+data.Method)
-	}else {
+	} else {
 		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --method `+data.Method)
 	}
 	//创建获取命令输出管道
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return "",fmt.Errorf("Error:can not obtain stdout pipe for command:%s\n", err)
+		return "", fmt.Errorf("Error:can not obtain stdout pipe for command:%s\n", err)
 	}
 	defer stdout.Close()
 	//执行命令
 	if err := cmd.Start(); err != nil {
-		return "",fmt.Errorf("Error:The command is err:%s", err)
+		return "", fmt.Errorf("Error:The command is err:%s", err)
 	}
 	//读取所有输出
 	bytes, err := ioutil.ReadAll(stdout)
 	if err != nil {
-		return "",fmt.Errorf("ReadAll Stdout error: %s", err)
+		return "", fmt.Errorf("ReadAll Stdout error: %s", err)
 	}
 	if err := cmd.Wait(); err != nil {
-		return "",fmt.Errorf("wait error:%s", err)
+		return "", fmt.Errorf("wait error:%s", err)
 	}
-	return string(bytes),nil
+	return string(bytes), nil
 }

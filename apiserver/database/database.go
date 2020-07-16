@@ -333,6 +333,32 @@ func (d *DatabaseConnection) QueryApplication(uid string, md *model.Application)
 	return
 }
 
+func (d *DatabaseConnection) QueryServiceunit(uid string, md *model.Serviceunit) (result []model.Serviceunit, err error) {
+	conditions := make([]model.Condition, 0)
+	if md == nil {
+		return nil, fmt.Errorf("model is null")
+	}
+	if len(md.Namespace) == 0 {
+		return nil, fmt.Errorf("namespace not set in model")
+	}
+	conditions = append(conditions, model.Condition{"namespace", model.Equals, md.Namespace})
+	if len(md.Group) > 0 {
+		conditions = append(conditions, model.Condition{"group", model.Equals, md.Group})
+	}
+	if len(md.Name) > 0 {
+		conditions = append(conditions, model.Condition{"name", model.Like, md.Name})
+	}
+	if len(md.Status) > 0 {
+		conditions = append(conditions, model.Condition{"status", model.Equals, md.Status})
+	}
+	if len(md.Type) > 0 {
+		conditions = append(conditions, model.Condition{"type", model.Equals, md.Type})
+	}
+
+	err = d.query(uid, md, conditions, &result)
+	return
+}
+
 func (d *DatabaseConnection) AddApi(obj interface{}) error {
 	o, us, err := model.ApiGetFromObject(obj)
 	if err != nil {
