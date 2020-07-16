@@ -52,10 +52,10 @@ func PingDatabase(db *sql.DB, timeout time.Duration) (err error) {
 	done := make(chan struct{})
 	wait := time.After(timeout)
 	go func() {
-		klog.Infof("connect database in progress")
+		klog.V(5).Infof("connect database in progress")
 		//TODO conext cancel
-		if err := db.Ping(); err != nil {
-			err = fmt.Errorf("ping database error: %+v", err)
+		if e := db.Ping(); e != nil {
+			err = fmt.Errorf("ping database error: %+v", e)
 		}
 		close(done)
 	}()
@@ -64,7 +64,11 @@ func PingDatabase(db *sql.DB, timeout time.Duration) (err error) {
 		klog.Errorf("connection timeout, cancel")
 		err = fmt.Errorf("connection timeout")
 	case <-done:
-		klog.Infof("connected")
+		if err != nil {
+			klog.V(5).Infof("%+v", err)
+		} else {
+			klog.V(5).Infof("connected")
+		}
 	}
 	return
 }
