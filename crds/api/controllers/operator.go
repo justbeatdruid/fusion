@@ -16,8 +16,12 @@ import (
 	"github.com/chinamobile/nlpt/pkg/names"
 )
 
-const path string = "/routes"
-const HttpTriggerUrl string =  "/v2/triggers/http"
+const (
+	path string             = "/routes"
+	HttpTriggerUrl string   =  "/v2/triggers/http"
+	FissionRouterPort       = 80
+	FissionRouter           = "router.fission"
+)
 
 var headers = map[string]string{
 	"Content-Type": "application/json",
@@ -1078,7 +1082,6 @@ func (r *Operator) CreateRouteForFunction(db *nlptv1.Api) (err error) {
 	return nil
 }
 
-
 func (r *Operator) AddRouteRspHandlerByKong(db *nlptv1.Api) (err error) {
 	id := db.Spec.KongApi.KongID
 	klog.Infof("begin create rsp handler %s", id)
@@ -1088,10 +1091,13 @@ func (r *Operator) AddRouteRspHandlerByKong(db *nlptv1.Api) (err error) {
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
+	funcPath := fmt.Sprintf("%s://%s:%d%s%s%s%s%s", schema, FissionRouter, FissionRouterPort,
+		"/api/v1/plugins/", db.ObjectMeta.Namespace, "/", db.ObjectMeta.Name, "/function")
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 	requestBody := &RspHandlerRequestBody{
 		Name: "rsp-handler", //插件名称
 	}
+	requestBody.Config.FunctionURL = funcPath
 	responseBody := &RspHandlerResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
