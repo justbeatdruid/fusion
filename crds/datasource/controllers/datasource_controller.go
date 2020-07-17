@@ -23,6 +23,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
+	mongodriver "github.com/chinamobile/nlpt/apiserver/resources/datasource/mongo/driver"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb/driver"
 	nlptv1 "github.com/chinamobile/nlpt/crds/datasource/api/v1"
 )
@@ -58,6 +59,31 @@ func (r *DatasourceReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 		if ds.Status.Status != lastStatus {
 			ds.Status.UpdatedAt = metav1.Now()
 		}
+		if err := r.Update(ctx, ds); err != nil {
+			logger.Error(err, "cannot update datasource")
+		}
+	} else if ds.Spec.Type == nlptv1.TopicType {
+		ds.Status.Status = nlptv1.Normal
+		if err := r.Update(ctx, ds); err != nil {
+			logger.Error(err, "cannot update datasource")
+		}
+	} else if ds.Spec.Type == nlptv1.MongoType {
+		lastStatus := ds.Status.Status
+		if err := mongodriver.Ping(ds.Spec.Mongo); err != nil {
+			ds.Status.Status = nlptv1.Abnormal
+			ds.Status.Detail = err.Error()
+		} else {
+			ds.Status.Status = nlptv1.Normal
+			ds.Status.Detail = ""
+		}
+		if ds.Status.Status != lastStatus {
+			ds.Status.UpdatedAt = metav1.Now()
+		}
+		if err := r.Update(ctx, ds); err != nil {
+			logger.Error(err, "cannot update datasource")
+		}
+	} else if ds.Spec.Type == nlptv1.HiveType {
+		ds.Status.Status = nlptv1.Normal
 		if err := r.Update(ctx, ds); err != nil {
 			logger.Error(err, "cannot update datasource")
 		}
