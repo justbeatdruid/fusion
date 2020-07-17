@@ -54,6 +54,13 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.GET("/serviceunits/fissions").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("list all  fissions serviceunits").
+		To(r.listSuFission).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.POST("/serviceunits/{id}/release").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -156,6 +163,11 @@ func (r *router) patchServiceunit(request *restful.Request, response *restful.Re
 
 func (r *router) listServiceunit(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListServiceunit(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) listSuFission(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ListSuFission(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 

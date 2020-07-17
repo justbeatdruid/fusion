@@ -55,6 +55,15 @@ type ListResponse = struct {
 	Message   string      `json:"message"`
 	Data      interface{} `json:"data,omitempty"`
 }
+
+type ListSuFissionResponse = struct {
+	Code      int         `json:"code"`
+	ErrorCode string      `json:"errorCode"`
+	Detail    string      `json:"detail"`
+	Message   string      `json:"message"`
+	Data      interface{} `json:"data,omitempty"`
+}
+
 type PingResponse = DeleteResponse
 
 // + update_sunyu
@@ -294,7 +303,61 @@ func (c *controller) ListServiceunit(req *restful.Request) (int, *ListResponse) 
 	}
 }
 
+func (c *controller) ListSuFission(req *restful.Request) (int, *ListSuFissionResponse) {
+	//page := req.QueryParameter("page")
+	//size := req.QueryParameter("size")
+	group := req.QueryParameter("group")
+	name := req.QueryParameter("name")
+	stype := req.QueryParameter("type")
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListSuFissionResponse{
+			Code:      1,
+			ErrorCode: "008000003",
+			Message:   c.errMsg.Serviceunit["008000003"],
+			Detail:    "auth model error",
+		}
+	}
+	if sufission, err := c.service.ListSuFission(util.WithGroup(group), util.WithNameLike(name), util.WithUser(authuser.Name),
+		util.WithNamespace(authuser.Namespace), util.WithStype(stype)); err != nil {
+		return http.StatusInternalServerError, &ListSuFissionResponse{
+			Code:      2,
+			ErrorCode: "008000008",
+			Message:   c.errMsg.Serviceunit["008000008"],
+			Detail:    fmt.Errorf("list serviceunit error: %+v", err).Error(),
+		}
+	} else {
+/*
+		var sufissions SuFissionList = sufission
+		//var sus ServiceunitList = sufission
+		data, err := util.PageWrap(sufissions, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListSuFissionResponse{
+				Code:      3,
+				ErrorCode: "008000009",
+				Message:   c.errMsg.Serviceunit["008000009"],
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
+*/
+		return http.StatusOK, &ListSuFissionResponse{
+			Code:      0,
+			ErrorCode: "0",
+			Data:      sufission,
+		}
+	}
+}
+
 type ServiceunitList []*service.Serviceunit
+type SuFissionList []*service.SuFission
+
+func (s SuFissionList) Len() int {
+	panic("implement me")
+}
+
+func (s SuFissionList) GetItem(i int) (interface{}, error) {
+	panic("implement me")
+}
 
 func (sus ServiceunitList) Len() int {
 	return len(sus)

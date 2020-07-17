@@ -44,6 +44,24 @@ type ServiceunitSpec struct {
 	FissionRefInfo FissionRefInfo `json:"fissionRefInfo"`
 }
 
+type SuFissionSpec struct {
+	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
+	// Important: Run "make" to regenerate code after modifying this file
+
+	Name         string      `json:"name"`
+	Group        Group       `json:"group"`
+	Type         ServiceType `json:"type"`
+	DatasourceID *Datasource `json:"datasourcesID,omitempty"`
+	APIs         []Api       `json:"apis"`
+	Description  string      `json:"description"`
+	//KongInfo
+	KongService   KongServiceInfo `json:"kongServiceInfo"`
+	Result        Result          `json:"result"`
+	DisplayStatus DisStatus       `json:"disStatus"`
+
+	FissionRefInfo FissionRefInfo `json:"fissionRefInfo"`
+}
+
 type KongServiceInfo struct {
 	Host     string `json:"host"`
 	ID       string `json:"id"`
@@ -151,6 +169,7 @@ type FissionRefInfo struct {
 	Entrypoint string  `json:"entryPoint"`  //函数入口
 	PkgResourceVersion string `json:"pkgResourceVersion"`
 	FnResourceVersion string `json:"fnResourceVersion"`
+	SuId	string	`json:"suId"`
 }
 
 // +kubebuilder:object:root=true
@@ -164,6 +183,14 @@ type Serviceunit struct {
 	Status ServiceunitStatus `json:"status,omitempty"`
 }
 
+type SuFission struct {
+	metav1.TypeMeta   `json:",inline"`
+	metav1.ObjectMeta `json:"metadata,omitempty"`
+
+	Spec   SuFissionSpec   `json:"spec,omitempty"`
+	Status ServiceunitStatus `json:"status,omitempty"`
+}
+
 // +kubebuilder:object:root=true
 
 // ServiceunitList contains a list of Serviceunit
@@ -171,6 +198,12 @@ type ServiceunitList struct {
 	metav1.TypeMeta `json:",inline"`
 	metav1.ListMeta `json:"metadata,omitempty"`
 	Items           []Serviceunit `json:"items"`
+}
+
+type SuFissionList struct {
+	metav1.TypeMeta `json:",inline"`
+	metav1.ListMeta `json:"metadata,omitempty"`
+	Items           []SuFission `json:"items"`
 }
 
 func init() {

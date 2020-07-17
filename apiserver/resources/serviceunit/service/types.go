@@ -45,6 +45,11 @@ type Serviceunit struct {
 	Result        v1.Result    `json:"result"`
 	DisplayStatus v1.DisStatus `json:"disStatus"`
 }
+
+type SuFission struct {
+	FissionRefInfo v1.FissionRefInfo `json:"fissionRefInfo"`
+}
+
 type TestFunction struct {
 	FnName string `json:"fnName"`
 	Method string `json:"method"`
@@ -71,6 +76,7 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 		Result:        app.Result,
 		DisplayStatus: app.DisplayStatus,
 	}
+	crd.Spec.FissionRefInfo.SuId = crd.ObjectMeta.Name
 	status := app.Status
 	if len(status) == 0 {
 		status = v1.Init
@@ -174,6 +180,29 @@ func ToModel(obj *v1.Serviceunit, opts ...util.OpOption) *Serviceunit {
 	return su
 }
 
+func ToModelFission(obj *v1.SuFission, opts ...util.OpOption) *SuFission {
+	switch obj.Spec.Result {
+	case v1.CREATING:
+		(*obj).Spec.DisplayStatus = v1.SuCreating
+	case v1.CREATESUCCESS:
+		(*obj).Spec.DisplayStatus = v1.CreateSuccess
+	case v1.CREATEFAILED:
+		(*obj).Spec.DisplayStatus = v1.CreateFailed
+	case v1.UPDATING:
+		(*obj).Spec.DisplayStatus = v1.SuUpdating
+	case v1.UPDATESUCCESS:
+		(*obj).Spec.DisplayStatus = v1.UpdateSuccess
+	case v1.UPDATEFAILED:
+		(*obj).Spec.DisplayStatus = v1.UpdateFailed
+	case v1.DELETEFAILED:
+		(*obj).Spec.DisplayStatus = v1.DeleteFailed
+	}
+	su := &SuFission{
+		FissionRefInfo: obj.Spec.FissionRefInfo,
+	}
+	return su
+}
+
 func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[string]*v1.Datasource, opts ...util.OpOption) []*Serviceunit {
 	if len(opts) > 0 {
 		nameLike := util.OpList(opts...).NameLike()
@@ -201,7 +230,6 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[
 				}
 				return sus
 			}
-
 		*/
 		var sus []*Serviceunit = make([]*Serviceunit, 0)
 		for _, item := range items.Items {
@@ -247,6 +275,62 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[
 		sus[i] = ToModel(&item, opts...)
 	}
 	return sus
+}
+
+func ToListModelFission(items *v1.SuFissionList, groups map[string]string, datas map[string]*v1.Datasource, opts ...util.OpOption) []*SuFission {
+	if len(opts) > 0 {
+		nameLike := util.OpList(opts...).NameLike()
+		stype := util.OpList(opts...).Stype()
+		var sufs []*SuFission = make([]*SuFission, 0)
+		for _, item := range items.Items {
+			if len(nameLike) > 0 {
+				if !strings.Contains(item.Spec.Name, nameLike) {
+					continue
+				}
+				if gid, ok := item.ObjectMeta.Labels[v1.GroupLabel]; ok {
+					item.Spec.Group.ID = gid
+				}
+				if gname, ok := groups[item.Spec.Group.ID]; ok {
+					item.Spec.Group.Name = gname
+				}
+				if item.Spec.Type == v1.DataService && item.Spec.DatasourceID != nil {
+					if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
+						item.Spec.DatasourceID = data
+					}
+				}
+			}
+			if len(stype) > 0 {
+				if string(item.Spec.Type) != stype {
+					continue
+				}
+			}
+			if item.Spec.Type != "function" {
+				continue
+			}
+			suf := ToModelFission(&item, opts...)
+			sufs = append(sufs, suf)
+		}
+		return sufs
+	}
+	var sufs []*SuFission = make([]*SuFission, len(items.Items))
+	for i, item := range items.Items {
+		if gid, ok := item.ObjectMeta.Labels[v1.GroupLabel]; ok {
+			item.Spec.Group.ID = gid
+		}
+		if gname, ok := groups[item.Spec.Group.ID]; ok {
+			item.Spec.Group.Name = gname
+		}
+		if item.Spec.Type == v1.DataService && item.Spec.DatasourceID != nil {
+			if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
+				item.Spec.DatasourceID = data
+			}
+		}
+		if item.Spec.Type != "function" {
+			continue
+		}
+		sufs[i] = ToModelFission(&item, opts...)
+	}
+	return sufs
 }
 
 // check create parameters

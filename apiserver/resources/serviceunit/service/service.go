@@ -81,6 +81,23 @@ func (s *Service) ListServiceunit(opts ...util.OpOption) ([]*Serviceunit, error)
 	return ToListModel(sus, groupMap, dataMap, opts...), nil
 }
 
+func (s *Service) ListSuFission(opts ...util.OpOption) ([]*SuFission, error) {
+	sus, err := s.ListFission(opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot list object: %+v", err)
+	}
+	groupMap, err := s.GetGroupMap(util.OpList(opts...).Namespace())
+	if err != nil {
+		return nil, fmt.Errorf("get groups error: %+v", err)
+	}
+	dataMap, err := s.GetDatasourceMap()
+	if err != nil {
+		return nil, fmt.Errorf("get datasource error: %+v", err)
+	}
+	return ToListModelFission(sus, groupMap, dataMap, opts...), nil
+}
+
+
 func (s *Service) GetServiceunit(id string, opts ...util.OpOption) (*Serviceunit, error) {
 	su, err := s.Get(id, opts...)
 	if err != nil {
@@ -267,6 +284,41 @@ func (s *Service) List(opts ...util.OpOption) (*v1.ServiceunitList, error) {
 	}
 	klog.V(5).Infof("get v1.serviceunitList: %+v", sus)
 	return sus, nil
+}
+
+func (s *Service) ListFission(opts ...util.OpOption) (*v1.SuFissionList, error) {
+	var options metav1.ListOptions
+	op := util.OpList(opts...)
+	group := op.Group()
+	ns := op.Namespace()
+	u := op.User()
+	var labels []string
+	if len(group) > 0 {
+		labels = append(labels, fmt.Sprintf("%s=%s", v1.GroupLabel, group))
+	}
+	var crdNamespace = defaultNamespace
+	if s.tenantEnabled {
+		if len(ns) == 0 {
+			return nil, fmt.Errorf("namespace not set")
+		}
+		crdNamespace = ns
+	} else {
+		if len(u) > 0 {
+			labels = append(labels, user.GetLabelSelector(u))
+		}
+	}
+	options.LabelSelector = strings.Join(labels, ",")
+	klog.V(5).Infof("list with label selector: %s", options.LabelSelector)
+	crd, err := s.client.Namespace(crdNamespace).List(options)
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	sufs := &v1.SuFissionList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), sufs); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.serviceunitList: %+v", sufs)
+	return sufs, nil
 }
 
 func (s *Service) Get(id string, opts ...util.OpOption) (*v1.Serviceunit, error) {
