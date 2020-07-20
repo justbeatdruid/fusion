@@ -610,11 +610,11 @@ func (s *Service) BatchBindApi(appid string, apis []v1.ApiBind, opts ...util.OpO
 		if err != nil {
 			return fmt.Errorf("cannot get api: %+v", err)
 		}
-		for _, existedapp := range api.Spec.Applications {
-			if existedapp.ID == appid {
-				return fmt.Errorf("application alrady bound to api")
-			}
-		}
+		//for _, existedapp := range api.Spec.Applications {
+		//	if existedapp.ID == appid {
+		//		return fmt.Errorf("application alrady bound to api")
+		//	}
+		//}
 		app, err := s.getApplication(appid, api.ObjectMeta.Namespace)
 		if err != nil {
 			return fmt.Errorf("get application error: %+v", err)
@@ -635,12 +635,17 @@ func (s *Service) BatchBindApi(appid string, apis []v1.ApiBind, opts ...util.OpO
 			return fmt.Errorf("cannot get api: %+v", err)
 		}
 		//绑定API
-		api.Status.Status = v1.Init
-		api.Status.Action = v1.Bind
-		api.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "true"
-		api.Spec.Applications = append(api.Spec.Applications, v1.Application{
-			ID: appid,
-		})
+		for _, existedapp := range api.Spec.Applications {
+			if existedapp.ID != appid {
+				api.Status.Status = v1.Init
+				api.Status.Action = v1.Bind
+				api.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "true"
+				api.Spec.Applications = append(api.Spec.Applications, v1.Application{
+					ID: appid,
+				})
+			}
+		}
+
 		api, err = s.UpdateSpec(api)
 		if err != nil {
 			return fmt.Errorf("cannot update api bind: %+v", err)
