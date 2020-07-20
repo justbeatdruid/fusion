@@ -143,9 +143,12 @@ func (r *Connector) CreatePartitionedTopic(topic *nlptv1.Topic) (err error) {
 }
 
 //DeleteTopic 调用Pulsar的Restful Admin API，删除Topic
-func (r *Connector) DeleteTopic(topic *nlptv1.Topic) (err error) {
+func (r *Connector) DeleteTopic(topic *nlptv1.Topic, force bool) (err error) {
 	request := r.GetHttpRequest()
 	topicUrl := r.getUrl(topic)
+	if force {
+		topicUrl = fmt.Sprintf("%s?force=true", topicUrl)
+	}
 	response, body, errs := request.Delete(topicUrl).Retry(3, 5*time.Second, http.StatusBadRequest, http.StatusInternalServerError).End()
 	if err != nil {
 		return fmt.Errorf("delete topic(%+v) error: %+v", topicUrl, errs)

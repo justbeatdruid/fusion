@@ -152,6 +152,9 @@ type TopicgroupList struct {
 }
 
 type RuntimeConfiguration struct {
+	BacklogQuotaDefaultRetentionPolicy string `json:"backlogQuotaDefaultRetentionPolicy"`
+	DefaultNumberOfNamespaceBundles int `json:"defaultNumberOfNamespaceBundles"`
+	DefaultRetentionSizeInMB   string `json:"defaultRetentionSizeInMB"`
 }
 
 func init() {

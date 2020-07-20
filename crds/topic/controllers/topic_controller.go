@@ -94,10 +94,25 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	}
 
 	if topic.Status.Status == nlptv1.Deleting {
-		topic.Status.Status = nlptv1.Deleting
-		if err := r.Operator.DeleteTopic(topic); err != nil {
+		if err := r.Operator.DeleteTopic(topic, false); err != nil {
 			topic.Status.Status = nlptv1.DeleteFailed
 			topic.Status.Message = fmt.Sprintf("delete topic error: %+v", err)
+			if err := r.Update(ctx, topic); err != nil {
+				klog.Errorf("Update Topic Failed: %+v", *topic)
+			}
+		} else {
+			//删除数据
+			if err = r.Delete(ctx, topic); err != nil {
+				klog.Errorf("delete Topic Failed: %+v", *topic)
+			}
+		}
+
+	}
+
+	if topic.Status.Status == nlptv1.ForceDeleting {
+		if err := r.Operator.DeleteTopic(topic, true); err != nil {
+			topic.Status.Status = nlptv1.ForceDeleteFailed
+			topic.Status.Message = fmt.Sprintf("force delete topic error: %+v", err)
 			if err := r.Update(ctx, topic); err != nil {
 				klog.Errorf("Update Topic Failed: %+v", *topic)
 			}

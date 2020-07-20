@@ -145,7 +145,6 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
-
 	ws.Route(ws.GET("/topics/{id}/subscriptions").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -234,6 +233,7 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.modifyDescription).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
 
 }
 
@@ -367,3 +367,4 @@ func (r *router) modifyApplicationPermission(request *restful.Request, response 
 	code, result := r.controller.ModifyApplicationPermission(request)
 	response.WriteHeaderAndEntity(code, result)
 }
+
