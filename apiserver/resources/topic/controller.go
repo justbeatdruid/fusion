@@ -328,7 +328,7 @@ func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
 		}
 	}
 	for _, id := range ids {
-		if _, msg, err := c.service.DeleteTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
+		if _, msg, err := c.service.DeleteTopic(id, false, util.WithNamespace(authUser.Namespace)); err != nil {
 			return http.StatusInternalServerError, &ListResponse{
 				Code:      fail,
 				ErrorCode: tperror.ErrorDeleteTopic,
@@ -344,6 +344,7 @@ func (c *controller) DeleteTopics(req *restful.Request) (int, *ListResponse) {
 }
 func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
+	force := req.QueryParameter("force")
 	authUser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
@@ -354,19 +355,35 @@ func (c *controller) DeleteTopic(req *restful.Request) (int, *DeleteResponse) {
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	if topic, msg, err := c.service.DeleteTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
+
+	//默认为非强制删除
+	var isForce = false
+	if len(force) > 0 {
+		isForce, err = strconv.ParseBool(force)
+		if err != nil {
+			return http.StatusInternalServerError, &DeleteResponse{
+				Code:      fail,
+				ErrorCode: tperror.ErrorForceDelete,
+				Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorForceDelete], "参数错误"),
+				Data:      nil,
+				Detail:    fmt.Sprintf("auth model error: %+v", err),
+			}
+		}
+	}
+
+	if topic, msg, err := c.service.DeleteTopic(id, isForce, util.WithNamespace(authUser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      fail,
-			ErrorCode: tperror.ErrorDeleteTopic,
-			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorDeleteTopic], msg),
-			Detail:    fmt.Sprintf("delete topic error: %+v", err),
+			ErrorCode: tperror.ErrorForceDelete,
+			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorForceDelete], msg),
+			Detail:    fmt.Sprintf("force delete topic error: %+v", err),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
 			Code:      success,
 			ErrorCode: tperror.Success,
 			Data:      topic,
-			Message:   "deleting",
+			Message:   "force deleting",
 		}
 	}
 }
@@ -546,75 +563,6 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 	}
 
 }
-
-////查询topic的消息
-//func (c *controller) ListMessages(req *restful.Request) (int, *MessageResponse) {
-//	topicName := req.QueryParameter("topicName")
-//	startTime := req.QueryParameter("startTime")
-//	endTime := req.QueryParameter("endTime")
-//	topicGroup := req.QueryParameter("topicGroup")
-//
-//	authUser, err := auth.GetAuthUser(req)
-//	if err != nil {
-//		return http.StatusInternalServerError, &MessageResponse{
-//			Code:      fail,
-//			ErrorCode: tperror.ErrorAuthError,
-//			Message:   fmt.Sprintf("auth model error: %+v", err),
-//			Data:      nil,
-//			Detail:    "",
-//		}
-//	}
-//	//先查出所有topic的信息
-//	tps, err := c.service.ListTopic(util.WithNamespace(authUser.Namespace))
-//	if err != nil {
-//		return http.StatusInternalServerError, &MessageResponse{
-//			Code:      1,
-//			ErrorCode: tperror.ErrorQueryMessage,
-//			Message:   fmt.Sprintf(c.errMsg.Topic[tperror.ErrorQueryMessage], c.errMsg.Topic[tperror.ErrorGetTopicList]),
-//			Detail:    fmt.Errorf("list database error: %+v", err).Error(),
-//		}
-//	}
-//	//topicName筛选
-//	if len(topicName) > 0 {
-//		//通过topicName字段来匹配topic
-//		tps = c.ListTopicByTopicName(topicName, tps)
-//	}
-//	//topicGroup筛选
-//	if len(topicGroup) > 0 {
-//		//通过topicGroup字段来匹配topic
-//		tps = c.ListTopicByTopicGroup(topicGroup, tps)
-//	}
-//	var tpUrls []string
-//	for _, tp := range tps {
-//		tpUrls = append(tpUrls, tp.URL)
-//	}
-//	//时间筛选
-//	if len(startTime) > 0 && len(endTime) > 0 {
-//		start, err := strconv.ParseInt(startTime, 10, 64)
-//		if err != nil {
-//			return http.StatusInternalServerError, &MessageResponse{
-//				Code:      fail,
-//				ErrorCode: tperror.ErrorQueryMessageStartTime,
-//				Message:   c.errMsg.Topic[tperror.ErrorQueryMessageStartTime],
-//				Detail:    fmt.Sprintf("startTime parameter error: %+v", err),
-//			}
-//		}
-//		end, err := strconv.ParseInt(endTime, 10, 64)
-//		if err != nil {
-//			return http.StatusInternalServerError, &MessageResponse{
-//				Code:      fail,
-//				ErrorCode: tperror.ErrorQueryMessageEndTime,
-//				Message:   c.errMsg.Topic[tperror.ErrorQueryMessageEndTime],
-//				Detail:    fmt.Sprintf("endTime parameter error: %+v", err),
-//			}
-//		}
-//		httpStatus, messageResponse := c.ListMessagesByTopicUrlTime(tpUrls, start, end, req)
-//		return httpStatus, messageResponse
-//	} else { //没有时间
-//		httpStatus, messageResponse := c.ListMessagesByTopicUrl(tpUrls, req)
-//		return httpStatus, messageResponse
-//	}
-//}
 
 //通过topicUrl查询topic的消息(不带时间)
 func (c *controller) ListMessagesByTopicUrl(topicUrls []string, req *restful.Request) (int, *MessageResponse) {

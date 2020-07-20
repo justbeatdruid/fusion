@@ -42,6 +42,7 @@ const (
 	ErrorRefresh                          = "010000034" //刷新失败
 	ErrorImport                           = "010000035" //导入失败，原因：%+v
 	ErrorModifyDescription                = "010000036" //修改描述失败，原因：%+v
+	ErrorForceDelete                      = "010000037" //强制删除失败，原因：%+v
 )
 
 type TopicError struct {

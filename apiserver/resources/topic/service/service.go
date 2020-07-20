@@ -136,8 +136,8 @@ func (s *Service) GetTopic(id string, opts ...util.OpOption) (*Topic, error) {
 	return ToModel(tp), nil
 }
 
-func (s *Service) DeleteTopic(id string, opts ...util.OpOption) (*Topic, string, error) {
-	tp, err := s.Delete(id, opts...)
+func (s *Service) DeleteTopic(id string, force bool, opts ...util.OpOption) (*Topic, string, error) {
+	tp, err := s.Delete(id, force, opts...)
 	if err != nil {
 		return nil, "Topic不存在", fmt.Errorf("cannot update status to delete: %+v", err)
 	}
@@ -354,12 +354,17 @@ func (s *Service) Get(id string, opts ...util.OpOption) (*v1.Topic, error) {
 	return tp, nil
 }
 
-func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Topic, error) {
+func (s *Service) Delete(id string, force bool, opts ...util.OpOption) (*v1.Topic, error) {
 	tp, err := s.Get(id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("error delete crd: %+v", err)
 	}
-	tp.Status.Status = v1.Deleting
+
+	if force {
+		tp.Status.Status = v1.ForceDeleting
+	} else {
+		tp.Status.Status = v1.Deleting
+	}
 	return s.UpdateStatus(tp)
 }
 
