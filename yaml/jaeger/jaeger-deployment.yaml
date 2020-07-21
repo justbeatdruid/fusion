@@ -1,0 +1,48 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: jaeger
+  namespace: default
+  labels:
+    app: jaeger
+spec:
+  type: NodePort
+  ports:
+    - name: service
+      nodePort: 31686
+      port: 16686
+      protocol: TCP
+      targetPort: 16686
+    - name: web
+      nodePort: 31831
+      port: 6831
+      protocol: UDP
+      targetPort: 6831
+    - name: server-config
+      nodePort: 31578
+      port: 5778
+      protocol: TCP
+      targetPort: 5778
+  selector:
+    app: jaeger
+---
+apiVersion: apps/v1 # for versions before 1.9.0 use apps/v1beta2
+kind: Deployment
+metadata:
+  name: jaeger-deployment
+spec:
+  selector:
+    matchLabels:
+      app: jaeger
+  replicas: 2 # tells deployment to run 2 pods matching the template
+  template:
+    metadata:
+      labels:
+        app: jaeger
+    spec:
+      containers:
+      - name: jaeger
+        image: jaegertracing/all-in-one:latest
+        ports:
+        - containerPort: 16686
