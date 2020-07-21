@@ -450,7 +450,7 @@ func GetLanguage(lan string) string {
 	}
 	return NodeJs
 }
-
+/*
 func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error) {
 	klog.Infof("Enter CreateEnv :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
@@ -495,8 +495,9 @@ func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error)
 	klog.V(5).Infof("create env name: %s\n", responseBody.Name)
 	return responseBody, nil
 }
+ */
 
-func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit, env *FissionResInfoRsp) (*FissionResInfoRsp, error){
+func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error){
 	klog.Infof("Enter CreatePkgByFile :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -509,7 +510,7 @@ func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit, env *FissionResInfoRs
 	name := fmt.Sprintf("%v-%v-pkg", db.Spec.FissionRefInfo.FnName, db.ObjectMeta.Name)
 	requestBody.Metadata.Name = name
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
-	requestBody.Spec.Environment.Name = env.Name
+	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.Language
 	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
     //判断是否是文件还是在线编辑代码
 	if len(db.Spec.FissionRefInfo.FnFile)>0 {
@@ -540,7 +541,7 @@ func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit, env *FissionResInfoRs
 	return  responseBody, nil
 }
 
-func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, env *FissionResInfoRsp, pkg *FissionResInfoRsp) (*FissionResInfoRsp, error){
+func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResInfoRsp) (*FissionResInfoRsp, error){
 	klog.Infof("Enter CreateFnByEnvAndPkg :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -552,8 +553,8 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, env *FissionResIn
 	requestBody := &FunctionReqInfo{}
 	requestBody.Metadata.Name = db.Spec.FissionRefInfo.FnName
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
-	requestBody.Spec.Environment.Name = env.Name
-	requestBody.Spec.Environment.Namespace = env.Namespace
+	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.Language
+	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Package.Packageref.Namespace = pkg.Namespace
 	requestBody.Spec.Package.Packageref.Name = pkg.Name
 	requestBody.Spec.Package.Packageref.Resourceversion = pkg.ResourceVersion
@@ -599,19 +600,21 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, env *FissionResIn
 
 func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error){
 	klog.Infof("Enter CreateFunction :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
+/*
     env, err := r.CreateEnv(db)
 	if err != nil {
 		return nil, fmt.Errorf("request for create env error: %+v", err)
 	}
-	(*db).Spec.FissionRefInfo.EnvName = env.Name
+*/
+	(*db).Spec.FissionRefInfo.EnvName = db.Spec.FissionRefInfo.Language
 	time.Sleep(5*time.Second)
-	pkg, err := r.CreatePkgByFile(db, env)
+	pkg, err := r.CreatePkgByFile(db)
 	if err != nil {
 		return nil, fmt.Errorf("request for create pkg error: %+v", err)
 	}
 	(*db).Spec.FissionRefInfo.PkgName = pkg.Name
 	(*db).Spec.FissionRefInfo.PkgResourceVersion = pkg.ResourceVersion
-	fn, err := r.CreateFnByEnvAndPkg(db, env, pkg)
+	fn, err := r.CreateFnByEnvAndPkg(db, pkg)
 	if err != nil {
 		return nil, fmt.Errorf("request for create function error: %+v", err)
 	}
@@ -790,10 +793,13 @@ func (r *Operator) DeleteFunction(db *nlptv1.Serviceunit)error{
 	if err != nil{
 		return fmt.Errorf("request for delete package error: %+v", err)
 	}
+	/*
 	err = r.DeleteEnv(db)
 	if err != nil{
 		return fmt.Errorf("request for delete env error: %+v", err)
 	}
+
+	 */
 	return nil
 }
 
@@ -836,7 +842,7 @@ func (r *Operator) DeletePkg(db *nlptv1.Serviceunit) error {
 	}
 	return nil
 }
-
+/*
 func (r *Operator) DeleteEnv(db *nlptv1.Serviceunit) error {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -856,3 +862,4 @@ func (r *Operator) DeleteEnv(db *nlptv1.Serviceunit) error {
 	}
 	return nil
 }
+ */
