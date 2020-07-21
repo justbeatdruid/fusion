@@ -120,6 +120,11 @@ const (
 	Importing                    Status = "importing"
 	ImportFailed                 Status = "importFailed"
 	ImportSuccess                Status = "importSuccess"
+	ForceDeleting                Status = "forceDeleting"
+	ForceDeleteFailed            Status = "forceDeleteFailed"
+	Terminating                  Status = "terminating"
+	Terminated                   Status = "terminated"
+	TerminatedFailed             Status = "terminatedFailed"
 )
 
 type ShowStatus string
@@ -150,6 +155,11 @@ const (
 	ImportingOfShow                    ShowStatus = "导入中"
 	ImportSuccessOfShow                ShowStatus = "导入成功"
 	ImportFailedOfShow                 ShowStatus = "导入失败"
+	ForceDeletingOfShow                ShowStatus = "强制删除中"
+	ForceDeleteFailedOfShow            ShowStatus = "强制删除失败"
+	TerminatingOfShow                  ShowStatus = "正在终止"
+	TerminatedOfShow                   ShowStatus = "已终止"
+	TerminatedFailedOfShow             ShowStatus = "终止失败"
 )
 
 // +kubebuilder:object:root=true
@@ -282,5 +292,11 @@ func initShowStatusMap() {
 	ShowStatusMap[Importing] = ImportingOfShow
 	ShowStatusMap[ImportFailed] = ImportFailedOfShow
 	ShowStatusMap[ImportSuccess] = ImportSuccessOfShow
+	ShowStatusMap[Terminating] = TerminatingOfShow
+	ShowStatusMap[Terminated] = TerminatedOfShow
+	ShowStatusMap[TerminatedFailed] = TerminatedFailedOfShow
+	ShowStatusMap[ForceDeleting] = ForceDeletingOfShow
+	ShowStatusMap[ForceDeleteFailed] = ForceDeleteFailedOfShow
+
 
 }

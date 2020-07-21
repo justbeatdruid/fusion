@@ -967,6 +967,25 @@ func (s *Service) ResetPositionByTime(RP *ResetPosition, tp *Topic) error {
 	}
 }
 
+func (s *Service) TerminateTopic(id string, opts ...util.OpOption) (*Topic, error) {
+	tp, err := s.Get(id, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("error delete crd: %+v", err)
+	}
+
+	if tp.Status.Status == v1.Terminated {
+		return nil, fmt.Errorf("topic was already terminated")
+	}
+	tp.Status.Status = v1.Terminating
+
+	tp, err = s.UpdateStatus(tp)
+	if err != nil {
+		return nil, fmt.Errorf("error update crd: %+v", err)
+	}
+
+	return ToModel(tp), nil
+}
+
 func (s *Service) ImportTopicgroup(name string, authuser auth.AuthUser) error {
 	namespace := authuser.Namespace
 	//根据topicGroup名称查找当前租户下是否有同名的资源

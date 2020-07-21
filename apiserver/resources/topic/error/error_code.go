@@ -43,6 +43,7 @@ const (
 	ErrorImport                           = "010000035" //导入失败，原因：%+v
 	ErrorModifyDescription                = "010000036" //修改描述失败，原因：%+v
 	ErrorForceDelete                      = "010000037" //强制删除失败，原因：%+v
+	ErrorTerminate                        = "010000038" //终止失败，原因：Topic不存在
 )
 
 type TopicError struct {

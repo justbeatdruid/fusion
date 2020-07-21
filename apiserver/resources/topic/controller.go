@@ -1431,6 +1431,15 @@ func (c *controller) SendMessages(req *restful.Request) (int, *SendMessagesRespo
 			Detail:    fmt.Sprintf("get database error: %+v", err),
 		}
 	}
+
+	if tp.Status == v1.Terminated {
+		return http.StatusInternalServerError, &SendMessagesResponse{
+			Code:      fail,
+			ErrorCode: tperror.ErrorSendMessagesError,
+			Message:   c.errMsg.Topic[tperror.ErrorSendMessagesError],
+			Detail:    fmt.Sprintf("topic was already terminated"),
+		}
+	}
 	messageId, err := c.service.SendMessages(tp.URL, sM.MessageBody, sM.Key)
 	if err != nil {
 		return http.StatusInternalServerError, &SendMessagesResponse{
@@ -1757,7 +1766,7 @@ func (c *controller) Refresh(req *restful.Request) (int, *RefreshResponse) {
 }
 
 func (c *controller) ModifyApplicationPermission(req *restful.Request) (int, *Wrapped) {
-    authUser, err := auth.GetAuthUser(req)
+	authUser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &Wrapped{
 			Code:      fail,
@@ -1791,6 +1800,36 @@ func (c *controller) ModifyApplicationPermission(req *restful.Request) (int, *Wr
 		return http.StatusOK, &GrantResponse{
 			Code:      success,
 			ErrorCode: tperror.Success,
+			Data:      tp,
+		}
+	}
+}
+
+func (c *controller) TerminateTopic(req *restful.Request) (int, *Wrapped) {
+	authUser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &Wrapped{
+			Code:      fail,
+			ErrorCode: tperror.ErrorAuthError,
+			Message:   c.errMsg.Topic[tperror.ErrorAuthError],
+			Detail:    fmt.Sprintf("auth model error: %+v", err),
+		}
+	}
+
+	id := req.PathParameter("id")
+
+	if tp, err := c.service.TerminateTopic(id, util.WithNamespace(authUser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &GrantResponse{
+			Code:      2,
+			ErrorCode: tperror.ErrorTerminate,
+			Message:   c.errMsg.Topic[tperror.ErrorTerminate],
+			Detail:    fmt.Errorf("terminate topic error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &GrantResponse{
+			Code:      success,
+			ErrorCode: tperror.Success,
+			Detail:    "success",
 			Data:      tp,
 		}
 	}

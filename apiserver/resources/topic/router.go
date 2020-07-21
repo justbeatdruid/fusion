@@ -234,6 +234,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	//终止Topic
+	ws.Route(ws.POST("/topics/{id}/terminate").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("terminate a topic").
+		To(r.terminateTopic).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 
 }
 
@@ -365,6 +373,12 @@ func (r *router) modifyDescription(request *restful.Request, response *restful.R
 
 func (r *router) modifyApplicationPermission(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ModifyApplicationPermission(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+
+func (r *router) terminateTopic(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.TerminateTopic(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 
