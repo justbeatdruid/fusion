@@ -125,6 +125,22 @@ func (r *TopicReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 
 	}
 
+	if topic.Status.Status == nlptv1.Terminating {
+		if err := r.Operator.TerminateTopic(topic); err != nil {
+			topic.Status.Status = nlptv1.TerminatedFailed
+			topic.Status.Message = fmt.Sprintf("terminate topic error: %+v", err)
+
+		} else {
+			topic.Status.Status = nlptv1.Terminated
+			topic.Status.Message = fmt.Sprintf("terminate topic success")
+		}
+
+		if err := r.Update(ctx, topic); err != nil {
+			klog.Errorf("Update Topic Failed: %+v", *topic)
+		}
+
+	}
+
 	if topic.Status.Status == nlptv1.Updating {
 		//增加topic分区
 		if err := r.Operator.AddPartitionsOfTopic(topic); err != nil {

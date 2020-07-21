@@ -20,6 +20,8 @@ const (
 	statsUrl                   = "/stats"
 	partitionedStatsUrl        = "/partitioned-stats"
 	namespaceUrl               = "/admin/v2/namespaces/%s/%s"
+	terminateUrl               = "/terminate"
+	partitionTerminateUrl      = "/terminate/partitions"
 )
 
 type requestLogger struct {
@@ -187,6 +189,22 @@ func (r *Connector) GrantPermission(topic *nlptv1.Topic, permission *nlptv1.Perm
 
 }
 
+func (r *Connector) getTerminateTopicUrl(topic *nlptv1.Topic) string {
+	url := persistentTopicUrl
+	if !topic.Spec.Persistent {
+		url = nonPersistentTopicUrl
+	}
+
+	if topic.Spec.Partitioned {
+		url += partitionTerminateUrl
+	} else {
+		url += terminateUrl
+	}
+	topicUrl := fmt.Sprintf(url, topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
+	return fmt.Sprintf("%s://%s:%d%s", protocol, r.Host, r.Port, topicUrl)
+
+
+}
 func (r *Connector) getUrl(topic *nlptv1.Topic) string {
 	url := persistentTopicUrl
 	if !topic.Spec.Persistent {
@@ -365,4 +383,23 @@ func (r *Connector) isNamespacesExist(topic *nlptv1.Topic) (bool, error) {
 
 	}
 	return true, nil
+}
+
+func (r *Connector) TerminateTopic(topic *nlptv1.Topic) error {
+	request := r.GetHttpRequest()
+	url := r.getTerminateTopicUrl(topic)
+	response, _, errs := request.Post(url).End()
+	if errs != nil {
+		return fmt.Errorf("terminate topic error: %+v, response: %+v", errs, response)
+	}
+
+	if response.StatusCode != http.StatusOK{
+		return fmt.Errorf("terminate topic error: %+v, response: %+v", errs, response)
+	}
+
+	return nil
+
+
+
+
 }
