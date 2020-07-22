@@ -388,8 +388,15 @@ func (s *Service) Validate(a *Serviceunit) error {
 	case v1.FunctionService:
 		if len(a.FissionRefInfo.FnName) == 0 {
 			return fmt.Errorf("function name is null")
-		}else if ok, _ := regexp.MatchString(NameReg, a.FissionRefInfo.FnName); !ok {
-			return fmt.Errorf("functionname is illegal: %v", a.FissionRefInfo.FnName)
+		}else {
+			if ok, _ := regexp.MatchString(NameReg, a.FissionRefInfo.FnName); !ok {
+				return fmt.Errorf("functionname is illegal: %v", a.FissionRefInfo.FnName)
+			}
+			for _, p := range suList.Items{
+				if a.FissionRefInfo.FnName == p.Spec.FissionRefInfo.FnName{
+					return fmt.Errorf("functionname is duplicated: %v", a.FissionRefInfo.FnName)
+				}
+			}
 		}
 		//TODO FnFile和FnCode中只能有一个有值
 		if len(a.FissionRefInfo.FnFile) == 0 {
@@ -418,8 +425,10 @@ func (s *Service) Validate(a *Serviceunit) error {
 			a.FissionRefInfo.Language!="go"{
 			return fmt.Errorf("function language is not nodejs or python and go")
 		}else if a.FissionRefInfo.Language =="python"||a.FissionRefInfo.Language=="go"{
-			if len(a.FissionRefInfo.BuildCmd) ==0 {
-				return fmt.Errorf("function BuildCmd is null")
+			if len(a.FissionRefInfo.FnCode)==0{
+				if len(a.FissionRefInfo.BuildCmd) ==0 {
+					return fmt.Errorf("function BuildCmd is null")
+				}
 			}
 		}
 	default:
