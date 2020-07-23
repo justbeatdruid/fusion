@@ -119,6 +119,17 @@ type EnvReqInfo struct {
 			Image string `json:"image"`
 			Command string `json:"command"`
 		} `json:"builder"`
+		Resources struct {
+			Limits struct {
+				Cpu string	`json:"cpu"`
+				Memory string `json:"cpu"`
+			}
+			Requests struct {
+				Cpu string `json:"cpu"`
+				Memory string `json:"memory"`
+			}
+		}
+
 		Poolsize int `json:"poolsize"`   //3
 		Keeparchive bool `json:"keeparchive"` //false
 	} `json:"spec"`
@@ -450,7 +461,7 @@ func GetLanguage(lan string) string {
 	}
 	return NodeJs
 }
-/*
+
 func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error) {
 	klog.Infof("Enter CreateEnv :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
@@ -465,6 +476,10 @@ func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error)
 	name := fmt.Sprintf("%v-%v", languageInfo, db.ObjectMeta.Name)
 	requestBody.Metadata.Name = name
 	requestBody.Metadata.Namespace =  db.ObjectMeta.Namespace
+	requestBody.Spec.Resources.Requests.Cpu = db.Spec.FissionRefInfo.Resource.Mincpu
+	requestBody.Spec.Resources.Requests.Memory = db.Spec.FissionRefInfo.Resource.Minmemory
+	requestBody.Spec.Resources.Limits.Cpu = db.Spec.FissionRefInfo.Resource.Maxcpu
+	requestBody.Spec.Resources.Limits.Memory = db.Spec.FissionRefInfo.Resource.Maxmemory
 	switch languageInfo  {
 	case NodeJs:
 		requestBody.Spec.Runtime.Image = NodeJsImage
@@ -495,7 +510,7 @@ func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error)
 	klog.V(5).Infof("create env name: %s\n", responseBody.Name)
 	return responseBody, nil
 }
- */
+
 
 func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error){
 	klog.Infof("Enter CreatePkgByFile :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
@@ -600,13 +615,16 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResIn
 
 func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error){
 	klog.Infof("Enter CreateFunction :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
-/*
-    env, err := r.CreateEnv(db)
-	if err != nil {
-		return nil, fmt.Errorf("request for create env error: %+v", err)
+	if len(db.Spec.FissionRefInfo.Resource.Maxcpu) == 0 && len(db.Spec.FissionRefInfo.Resource.Mincpu) == 0 &&
+		len(db.Spec.FissionRefInfo.Resource.Maxmemory) == 0 && len(db.Spec.FissionRefInfo.Resource.Minmemory) == 0 {
+		(*db).Spec.FissionRefInfo.EnvName = db.Spec.FissionRefInfo.Language
+	} else {
+		env, err := r.CreateEnv(db)
+		if err != nil {
+			return nil, fmt.Errorf("request for create env error: %+v", err)
+		}
+		(*db).Spec.FissionRefInfo.EnvName = env.Name
 	}
-*/
-	(*db).Spec.FissionRefInfo.EnvName = db.Spec.FissionRefInfo.Language
 	time.Sleep(5*time.Second)
 	pkg, err := r.CreatePkgByFile(db)
 	if err != nil {
@@ -793,13 +811,13 @@ func (r *Operator) DeleteFunction(db *nlptv1.Serviceunit)error{
 	if err != nil{
 		return fmt.Errorf("request for delete package error: %+v", err)
 	}
-	/*
-	err = r.DeleteEnv(db)
-	if err != nil{
-		return fmt.Errorf("request for delete env error: %+v", err)
+	if len(db.Spec.FissionRefInfo.Resource.Maxmemory) != 0 || len(db.Spec.FissionRefInfo.Resource.Minmemory) != 0 ||
+		len(db.Spec.FissionRefInfo.Resource.Maxcpu) != 0 || len(db.Spec.FissionRefInfo.Resource.Mincpu) != 0 {
+		err = r.DeleteEnv(db)
+		if err != nil{
+			return fmt.Errorf("request for delete env error: %+v", err)
+		}
 	}
-
-	 */
 	return nil
 }
 
@@ -842,7 +860,7 @@ func (r *Operator) DeletePkg(db *nlptv1.Serviceunit) error {
 	}
 	return nil
 }
-/*
+
 func (r *Operator) DeleteEnv(db *nlptv1.Serviceunit) error {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -862,4 +880,3 @@ func (r *Operator) DeleteEnv(db *nlptv1.Serviceunit) error {
 	}
 	return nil
 }
- */
