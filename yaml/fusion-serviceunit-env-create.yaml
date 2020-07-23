@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fusion-env-create
+spec:
+  template:
+    metadata:
+      name: fusion-env-create
+    spec:
+      initContainers:
+      - name: wait-for-env
+        image: registry.cmcc.com/library/busybox:latest
+        command: [ "/bin/sh", "-c", "until nc -zv 10.160.32.24 80 -w1; do echo 'waiting for env'; sleep 1; done" ]
+      containers:
+        - name: fusion-env-create
+          image: registry.cmcc.com/library/curl:latest
+          args:
+          - /bin/sh
+          - -c
+          - |
+              curl -iXPOST http://10.160.32.24:80/v2/environments -H 'Content-Type:application/json' -d '{"metadata":{"name":"NodeJs","namespace":"default"},"spec":{"version":2,"runtime":{"image":"fission/node-env"}},"builder":{"image":"fission/node-builder","command":"build"},"poolsize":3,keeparchive:false}'
+              curl -iXPOST http://10.160.32.24:80/v2/environments -H 'Content-Type:application/json' -d '{"metadata":{"name":"NodeJs","namespace":"default"},"spec":{"version":2,"runtime":{"image":"fission/python-env"}},"builder":{"image":"fission/python-builder","command":"build"},"poolsize":3,keeparchive:false}'
+              curl -iXPOST http://10.160.32.24:80/v2/environments -H 'Content-Type:application/json' -d '{"metadata":{"name":"Go","namespace":"default"},"spec":{"version":2,"runtime":{"image":"fission/go-env"}},"builder":{"image":"fission/go-builder","command":"build"},"poolsize":3,keeparchive:false}'
+      restartPolicy: OnFailure
