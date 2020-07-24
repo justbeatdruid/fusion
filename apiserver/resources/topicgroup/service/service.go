@@ -2,6 +2,7 @@ package service
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/apiserver/database"
 	"github.com/chinamobile/nlpt/apiserver/kubernetes"
 	"github.com/chinamobile/nlpt/apiserver/resources/topic/service"
 	tgerror "github.com/chinamobile/nlpt/apiserver/resources/topicgroup/error"
@@ -39,16 +40,18 @@ type Service struct {
 	kubeClient  *clientset.Clientset
 	client      dynamic.NamespaceableResourceInterface
 	topicClient dynamic.NamespaceableResourceInterface
+	db          *database.DatabaseConnection
 }
 
 func (s *Service) GetClient() dynamic.NamespaceableResourceInterface {
 	return s.client
 }
 
-func NewService(client dynamic.Interface, kubeClient *clientset.Clientset) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, db *database.DatabaseConnection) *Service {
 	return &Service{client: client.Resource(oofsGVR),
 		topicClient: client.Resource(topicv1.GetOOFSGVR()),
-		kubeClient:  kubeClient}
+		kubeClient:  kubeClient,
+		db:          db}
 }
 
 func (s *Service) CreateTopicgroup(model *Topicgroup) (*Topicgroup, tgerror.TopicgroupError) {
@@ -436,6 +439,9 @@ func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupE
 }
 
 func (s *Service) List(opts ...util.OpOption) (*v1.TopicgroupList, error) {
+	if s.db.Enabled() {
+		return s.ListFromDatabase(opts...)
+	}
 	op := util.OpList(opts...)
 	crd, err := s.client.Namespace(op.Namespace()).List(metav1.ListOptions{})
 	if err != nil {
