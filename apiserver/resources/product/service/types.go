@@ -6,13 +6,16 @@ import (
 	"time"
 
 	"github.com/chinamobile/nlpt/apiserver/database/model"
+	"github.com/chinamobile/nlpt/pkg/auth/cas"
 )
 
 type Product struct {
 	// basic information
 	Id            string   `json:"id"`
 	Tenant        string   `json:"tenant"`
+	TenantName    string   `json:"tenantName"`
 	User          string   `json:"user"`
+	Username      string   `json:"username"`
 	Category      string   `json:"category"`
 	Title         string   `json:"title"`
 	ApiId         string   `json:"apiId"`
@@ -79,6 +82,13 @@ func FromModel(m model.Product, ss []model.Scenario) (Product, error) {
 		return Product{}, fmt.Errorf("cannot unmarshal introductionImages json: %+v", err)
 	}
 	result.IntroductionImages = introductionImages
+
+	username, err := cas.GetUserNameByID(m.User)
+	if err == nil {
+		result.Username = username
+	} else {
+		result.Username = "用户数据错误"
+	}
 
 	return result, nil
 }
