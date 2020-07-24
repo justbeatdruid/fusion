@@ -88,3 +88,38 @@ func (d *DatabaseConnection) GetProduct(id string) (model.Product, []model.Scena
 	}
 	return product, ss, nil
 }
+
+func (d *DatabaseConnection) UpdateProduct(p model.Product, ss []model.Scenario) (err error) {
+	if err = d.Begin(); err != nil {
+		return fmt.Errorf("begin txn error: %+v", err)
+	}
+	_, err = d.Update(&p)
+	if err != nil {
+		d.Rollback()
+		return err
+	}
+	if ss != nil {
+		os := []model.Scenario{}
+		if _, err := d.QueryTable("Scenario").Filter("ProductId", p.Id).All(&os); err != nil {
+			d.Rollback()
+			return err
+		}
+		for _, s := range os {
+			if _, err := d.Delete(&s); err != nil {
+				d.Rollback()
+				return err
+			}
+		}
+		for _, s := range ss {
+			_, err = d.Insert(&s)
+			if err != nil {
+				d.Rollback()
+				return err
+			}
+		}
+	}
+	if err = d.Commit(); err != nil {
+		return fmt.Errorf("commit txn error: %+v", err)
+	}
+	return nil
+}

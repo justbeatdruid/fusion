@@ -47,6 +47,22 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.PUT("/products").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("update product").
+		To(r.updateProduct).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	ws.Route(ws.PUT("/products/status").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("update product status").
+		To(r.updateProductStatus).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 }
 
 func (r *router) createProduct(request *restful.Request, response *restful.Response) {
@@ -66,5 +82,15 @@ func (r *router) deleteProduct(request *restful.Request, response *restful.Respo
 
 func (r *router) listProduct(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListProduct(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) updateProduct(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.UpdateProduct(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) updateProductStatus(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.UpdateProductStatus(request)
 	response.WriteHeaderAndEntity(code, result)
 }
