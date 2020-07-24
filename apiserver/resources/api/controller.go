@@ -786,6 +786,8 @@ func (c *controller) ExportApis(req *restful.Request) (int, *ExportRequest) {
 //ImportApis import apis
 func (c*controller)ImportApis(req *restful.Request, response *restful.Response)(int,*ImportResponse) {
 	body := &CreateRequest{}
+	//body.Data.Serviceunit.ID = "696825d137ed8321"
+	//body.Data.Serviceunit.Group = "kong"
 	if err := req.ReadEntity(body); err != nil {
 		return http.StatusInternalServerError, &ImportResponse{
 			Code:      1,
@@ -811,6 +813,7 @@ func (c*controller)ImportApis(req *restful.Request, response *restful.Response)(
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
+
 	body.Data.Users = user.InitWithOwner(authuser.Name)
 	body.Data.Namespace = authuser.Namespace
 
@@ -835,16 +838,6 @@ func (c*controller)ImportApis(req *restful.Request, response *restful.Response)(
 	var faildata []service.Api
 
 	for _, ap := range apis.ParseData {
-		unlock, err := c.lock.Lock("api")
-		if err != nil {
-			return http.StatusInternalServerError, &ImportResponse{
-				Code:   2,
-				Detail: fmt.Sprintf("lock error: %+v", err),
-			}
-		}
-		defer func() {
-			_ = unlock()
-		}()
 		body.Data.Name = ap[0]
 		body.Data.ApiType = v1.ApiType(ap[1])
 		body.Data.AuthType = v1.AuthType(ap[2])
@@ -858,7 +851,7 @@ func (c*controller)ImportApis(req *restful.Request, response *restful.Response)(
 		body.Data.ApiReturnInfo.NormalExample = ap[15]
 		body.Data.ApiReturnInfo.FailureExample = ap[16]
 
-		klog.V(5).Infof("body namespace is : %s", body.Data.Namespace)
+
 		if api, err, code := c.service.CreateApi(body.Data); err != nil {
 			if errors.IsNameDuplicated(err) {
 				code = "001000022"

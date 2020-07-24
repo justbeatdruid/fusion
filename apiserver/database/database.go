@@ -78,7 +78,7 @@ func newDatabaseConnection(cfg DatabaseConfig) (*DatabaseConnection, error) {
 		return nil, fmt.Errorf("cannot register database: %+v", err)
 	}
 	orm.RegisterModel(new(model.Application), new(model.UserRelation), new(model.Task), new(model.TbDagRun), new(model.TbMetadata),
-		new(model.Relation), new(model.Api), new(model.Serviceunit), new(model.Topic), new(model.TopicGroup))
+		new(model.Relation), new(model.Api), new(model.Serviceunit), new(model.Topic), new(model.TopicGroup),new(model.Product), new(model.Scenario))
 	if err = orm.RunSyncdb("default", false, true); err != nil {
 		return nil, fmt.Errorf("cannot sync database: %+v", err)
 	}
@@ -141,8 +141,6 @@ func (d *DatabaseConnection) query(uid string, md model.Table, conditions []mode
 		case model.In:
 			o = "IN"
 			v = `(` + v + `)`
-		case model.Is:
-			o = "IS"
 		}
 
 		if and {

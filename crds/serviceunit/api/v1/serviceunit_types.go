@@ -170,6 +170,14 @@ type FissionRefInfo struct {
 	PkgResourceVersion string `json:"pkgResourceVersion"`
 	FnResourceVersion string `json:"fnResourceVersion"`
 	SuId	string	`json:"suId"`
+	Resource	Resource `json:resource`
+}
+
+type Resource struct {
+	Mincpu string `json:mincpu`
+	Maxcpu string `json:maxcpu`
+	Minmemory string `json:minmemory`
+	Maxmemory string `json:maxmemory`
 }
 
 // +kubebuilder:object:root=true
