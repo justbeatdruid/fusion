@@ -41,7 +41,7 @@ type ServiceunitSpec struct {
 	KongService   KongServiceInfo `json:"kongServiceInfo"`
 	Result        Result          `json:"result"`
 	DisplayStatus DisStatus       `json:"disStatus"`
-	FissionRefInfo FissionRefInfo `json:"fissionRefInfo"`
+	FissionRefInfo *FissionRefInfo `json:"fissionRefInfo"`
 }
 
 type SuFissionSpec struct {
@@ -59,7 +59,7 @@ type SuFissionSpec struct {
 	Result        Result          `json:"result"`
 	DisplayStatus DisStatus       `json:"disStatus"`
 
-	FissionRefInfo FissionRefInfo `json:"fissionRefInfo"`
+	FissionRefInfo *FissionRefInfo `json:"fissionRefInfo"`
 }
 
 type KongServiceInfo struct {
@@ -170,10 +170,10 @@ type FissionRefInfo struct {
 	PkgResourceVersion string `json:"pkgResourceVersion"`
 	FnResourceVersion string `json:"fnResourceVersion"`
 	SuId	string	`json:"suId"`
-	Resource	Resource `json:resource`
+	Resources	*Resources `json:resources`
 }
 
-type Resource struct {
+type Resources struct {
 	Mincpu string `json:mincpu`
 	Maxcpu string `json:maxcpu`
 	Minmemory string `json:minmemory`
