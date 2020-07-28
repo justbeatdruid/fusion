@@ -457,7 +457,7 @@ func (d *DatabaseConnection) DeleteTopic(obj interface{}) error {
 }
 
 func (d *DatabaseConnection) AddTopicgroup(obj interface{}) error {
-	o, us, err := model.TopicGetFromObject(obj)
+	o, us, _, err := model.TopicgroupGetFromObject(obj)
 	if err != nil {
 		return fmt.Errorf("get topic from obj error: %+v", err)
 	}
@@ -465,11 +465,11 @@ func (d *DatabaseConnection) AddTopicgroup(obj interface{}) error {
 }
 
 func (d *DatabaseConnection) UpdateTopicgroup(old, obj interface{}) error {
-	_, ous, err := model.TopicGetFromObject(old)
+	_, ous, _, err := model.TopicgroupGetFromObject(old)
 	if err != nil {
 		return fmt.Errorf("get users from obj error: %+v", err)
 	}
-	o, us, err := model.TopicGetFromObject(obj)
+	o, us, _, err := model.TopicgroupGetFromObject(obj)
 	if err != nil {
 		return fmt.Errorf("get topic from obj error: %+v", err)
 	}
@@ -481,7 +481,7 @@ func (d *DatabaseConnection) UpdateTopicgroup(old, obj interface{}) error {
 }
 
 func (d *DatabaseConnection) DeleteTopicgroup(obj interface{}) error {
-	o, _, err := model.TopicGetFromObject(obj)
+	o, _, _, err := model.TopicgroupGetFromObject(obj)
 	if err != nil {
 		return fmt.Errorf("get topic from obj error: %+v", err)
 	}

@@ -34,6 +34,10 @@ func initGVM(db *database.DatabaseConnection) {
 			addFunc = db.AddTopic
 			updateFunc = db.UpdateTopic
 			deleteFunc = db.DeleteTopic
+		case "topicgroups":
+			addFunc = db.AddTopicgroup
+			updateFunc = db.UpdateTopicgroup
+			deleteFunc = db.DeleteTopicgroup
 		default:
 			goto next
 		}
