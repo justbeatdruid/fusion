@@ -27,7 +27,7 @@ type Serviceunit struct {
 	Type         v1.ServiceType     `json:"type"`
 	DatasourceID *v1.Datasource     `json:"datasources,omitempty"`
 	KongSevice   v1.KongServiceInfo `json:"kongService"`
-	FissionRefInfo v1.FissionRefInfo `json:"fissionRefInfo"`
+	FissionRefInfo *v1.FissionRefInfo `json:"fissionRefInfo"`
 	Users        user.Users         `json:"users"`
 	Description  string             `json:"description"`
 
@@ -47,7 +47,7 @@ type Serviceunit struct {
 }
 
 type SuFission struct {
-	FissionRefInfo v1.FissionRefInfo `json:"fissionRefInfo"`
+	FissionRefInfo *v1.FissionRefInfo `json:"fissionRefInfo"`
 }
 
 type TestFunction struct {
@@ -77,6 +77,12 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 		DisplayStatus: app.DisplayStatus,
 	}
 	crd.Spec.FissionRefInfo.SuId = crd.ObjectMeta.Name
+	crd.Spec.FissionRefInfo.Resources = &v1.Resources{
+		Mincpu:    app.FissionRefInfo.Resources.Mincpu,
+		Maxcpu:    app.FissionRefInfo.Resources.Maxcpu,
+		Minmemory: app.FissionRefInfo.Resources.Minmemory,
+		Maxmemory: app.FissionRefInfo.Resources.Maxmemory,
+	}
 	status := app.Status
 	if len(status) == 0 {
 		status = v1.Init
