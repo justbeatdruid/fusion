@@ -9,7 +9,11 @@ curl localhost:8001/api/v1/serviceunits -H 'content-type:application/json' -H 'X
         "language": "nodejs",
         "fnName": "func7",
         "fnFile" : "/data/upload/serviceunit/rsp.js",
-        "entryPoint": "module.exports"
+        "entryPoint": "module.exports",
+        "resource": {
+          maxcpu: xxx
+
+        }
      }
   }
 }'

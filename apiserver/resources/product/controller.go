@@ -177,6 +177,94 @@ func (c *controller) ListProduct(req *restful.Request) (int, *ListResponse) {
 	}
 }
 
+func (c *controller) UpdateProduct(req *restful.Request) (int, *CreateResponse) {
+	body := &CreateRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		code := "000000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   "",
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   1,
+			Detail: "read entity error: data is null",
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "000000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   "",
+			Detail:    "auth model error",
+		}
+	}
+	body.Data.Tenant = authuser.Namespace
+	body.Data.User = authuser.Name
+	if apl, err := c.service.UpdateProduct(body.Data); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      2,
+			ErrorCode: "",
+			Message:   "",
+			Detail:    fmt.Errorf("update product error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
+			Code: 0,
+			Data: apl,
+		}
+	}
+}
+
+func (c *controller) UpdateProductStatus(req *restful.Request) (int, *CreateResponse) {
+	body := &CreateRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		code := "000000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   "",
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data == nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   1,
+			Detail: "read entity error: data is null",
+		}
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "000000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   "",
+			Detail:    "auth model error",
+		}
+	}
+	body.Data.Tenant = authuser.Namespace
+	body.Data.User = authuser.Name
+	if apl, err := c.service.UpdateProductStatus(body.Data); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      2,
+			ErrorCode: "",
+			Message:   "",
+			Detail:    fmt.Errorf("update product error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
+			Code: 0,
+			Data: apl,
+		}
+	}
+}
+
 type ProductList []*service.Product
 
 func (apls ProductList) Len() int {

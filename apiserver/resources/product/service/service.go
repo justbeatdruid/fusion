@@ -17,10 +17,12 @@ type Service struct {
 func NewService(tenantEnabled bool, db *database.DatabaseConnection) *Service {
 	return &Service{
 		tenantEnabled: tenantEnabled,
+		db:            db,
 	}
 }
 
 func (s *Service) CreateProduct(model *Product) (*Product, error) {
+	model.Status = "unpublished"
 	p, ss, err := ToModel(*model)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get model: %+v", err)
@@ -68,4 +70,52 @@ func (s *Service) DeleteProduct(id string) error {
 		return fmt.Errorf("cannot write database: %+v", err)
 	}
 	return nil
+}
+
+func (s *Service) UpdateProduct(model *Product) (*Product, error) {
+	existedProduct, err := s.GetProduct(model.Id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot find product with id %s: %+v", model.Id, err)
+	}
+	if existedProduct.User != model.User {
+		return nil, fmt.Errorf("permission denied: wrong user")
+	}
+	if existedProduct.Tenant != model.Tenant {
+		return nil, fmt.Errorf("permission denied: wrong tenant")
+	}
+	p, ss, err := ToModel(*model)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get model: %+v", err)
+	}
+	if err := s.db.UpdateProduct(p, ss); err != nil {
+		return nil, fmt.Errorf("cannot write database: %+v", err)
+	}
+	return model, nil
+}
+
+func (s *Service) UpdateProductStatus(model *Product) (*Product, error) {
+	existedProduct, err := s.GetProduct(model.Id)
+	if err != nil {
+		return nil, fmt.Errorf("cannot find product with id %s: %+v", model.Id, err)
+	}
+	if existedProduct.User != model.User {
+		return nil, fmt.Errorf("permission denied: wrong user")
+	}
+	if existedProduct.Tenant != model.Tenant {
+		return nil, fmt.Errorf("permission denied: wrong tenant")
+	}
+	switch model.Status {
+	case "online", "offline":
+	default:
+		return nil, fmt.Errorf("wrong status: %s", model.Status)
+	}
+	existedProduct.Status = model.Status
+	p, _, err := ToModel(*existedProduct)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get model: %+v", err)
+	}
+	if err := s.db.UpdateProduct(p, nil); err != nil {
+		return nil, fmt.Errorf("cannot write database: %+v", err)
+	}
+	return model, nil
 }

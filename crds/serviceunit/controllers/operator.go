@@ -185,12 +185,15 @@ const (
 	NodeJsBuild             ="fission/node-builder"
 	PythonImage             ="fission/python-env"
 	PythonBuild             ="fission/python-builder"
-	GoImage                 ="fission/go-env"
-	GoBuild                 ="fission/go-builder"
+	GoImage13               ="fission/go-env-1.13:1.10.0"
+	GoImage12				="fission/go-env-1.12:1.10.0"
+	GoBuild13               ="fission/go-builder-1.13:1.10.0"
+	GoBuild12               ="fission/go-builder-1.12:1.10.0"
 	Command                 = "build"
 	NodeJs                  = "nodejs"
 	Python                  = "python"
-	Go                      = "go"
+	Go13                    = "go-1.13"
+	Go12                    = "go-1.12"
 	Zip                     = ".zip"
 )
 
@@ -456,8 +459,10 @@ func GetLanguage(lan string) string {
 		return NodeJs
 	case Python:
 		return Python
-	case Go:
-		return Go
+	case Go12:
+		return Go12
+	case Go13:
+		return Go13
 	}
 	return NodeJs
 }
@@ -474,6 +479,12 @@ func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error)
 	requestBody := &EnvReqInfo{}
 	languageInfo := db.Spec.FissionRefInfo.Language
 	name := fmt.Sprintf("%v-%v", languageInfo, db.ObjectMeta.Name)
+	if languageInfo == "go-1.12" {
+		name = fmt.Sprintf("%v-%v", "go-12", db.ObjectMeta.Name)
+	}
+	if languageInfo == "go-1.13" {
+		name = fmt.Sprintf("%v-%v", "go-13", db.ObjectMeta.Name)
+	}
 	requestBody.Metadata.Name = name
 	requestBody.Metadata.Namespace =  db.ObjectMeta.Namespace
 	requestBody.Spec.Resources.Requests.Cpu = db.Spec.FissionRefInfo.Resource.Mincpu
@@ -487,9 +498,12 @@ func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error)
 	case Python:
 		requestBody.Spec.Runtime.Image = PythonImage
 		requestBody.Spec.Builder.Image = PythonBuild
-	case Go:
-		requestBody.Spec.Runtime.Image = GoImage
-		requestBody.Spec.Builder.Image = GoBuild
+	case Go13:
+		requestBody.Spec.Runtime.Image = GoImage13
+		requestBody.Spec.Builder.Image = GoBuild13
+	case Go12:
+		requestBody.Spec.Runtime.Image = GoImage12
+		requestBody.Spec.Builder.Image = GoBuild12
 	}
 	requestBody.Spec.Builder.Command = Command
 	requestBody.Spec.Version = 2
@@ -618,6 +632,12 @@ func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, e
 	if len(db.Spec.FissionRefInfo.Resource.Maxcpu) == 0 && len(db.Spec.FissionRefInfo.Resource.Mincpu) == 0 &&
 		len(db.Spec.FissionRefInfo.Resource.Maxmemory) == 0 && len(db.Spec.FissionRefInfo.Resource.Minmemory) == 0 {
 		(*db).Spec.FissionRefInfo.EnvName = db.Spec.FissionRefInfo.Language
+		if db.Spec.FissionRefInfo.Language == "go-1.12" {
+			(*db).Spec.FissionRefInfo.EnvName = "go-12"
+		}
+		if db.Spec.FissionRefInfo.Language == "go-1.13" {
+			(*db).Spec.FissionRefInfo.EnvName = "go-13"
+		}
 	} else {
 		env, err := r.CreateEnv(db)
 		if err != nil {
