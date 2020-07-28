@@ -785,25 +785,6 @@ func (c *controller) ExportApis(req *restful.Request) (int, *ExportRequest) {
 }
 //ImportApis import apis
 func (c*controller)ImportApis(req *restful.Request, response *restful.Response)(int,*ImportResponse) {
-	body := &CreateRequest{}
-	//body.Data.Serviceunit.ID = "696825d137ed8321"
-	//body.Data.Serviceunit.Group = "kong"
-	if err := req.ReadEntity(body); err != nil {
-		return http.StatusInternalServerError, &ImportResponse{
-			Code:      1,
-			ErrorCode: "001000001",
-			Message:   c.errMsg.Api["001000001"],
-			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
-		}
-	}
-	if body.Data == nil {
-		return http.StatusInternalServerError, &ImportResponse{
-			Code:      1,
-			ErrorCode: "001000002",
-			Message:   c.errMsg.Api["001000002"],
-			Detail:    "read entity error: data is null",
-		}
-	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ImportResponse{
@@ -813,9 +794,11 @@ func (c*controller)ImportApis(req *restful.Request, response *restful.Response)(
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-
-	body.Data.Users = user.InitWithOwner(authuser.Name)
-	body.Data.Namespace = authuser.Namespace
+	// uri中获取参数id和分组
+	//body.Data.Serviceunit.ID = "696825d137ed8321"
+	//body.Data.Serviceunit.Group = "kong"
+	authuserName := user.InitWithOwner(authuser.Name)
+	nameSpace := authuser.Namespace
 
 	spec := &parser.ApiExcelSpec{
 		SheetName:        "apis",
@@ -838,21 +821,34 @@ func (c*controller)ImportApis(req *restful.Request, response *restful.Response)(
 	var faildata []service.Api
 
 	for _, ap := range apis.ParseData {
-		body.Data.Name = ap[0]
-		body.Data.ApiType = v1.ApiType(ap[1])
-		body.Data.AuthType = v1.AuthType(ap[2])
-		body.Data.Tags = ap[3]
-		body.Data.Description = ap[4]
-		body.Data.ApiDefineInfo.Path = ap[7]
-		body.Data.ApiDefineInfo.Protocol = v1.Protocol(ap[8])
-		body.Data.ApiDefineInfo.Method = v1.Method(ap[10])
-		body.Data.ApiDefineInfo.Cors = ap[11]
-		body.Data.KongApi.Paths[0] = ap[14]
-		body.Data.ApiReturnInfo.NormalExample = ap[15]
-		body.Data.ApiReturnInfo.FailureExample = ap[16]
+		api:=&service.Api{
+			Namespace:             nameSpace,
+			Name:                  ap[0],
+			Description:           ap[4],
+			Serviceunit:           v1.Serviceunit{
+				ID:"696825d137ed8321",
+				Group:"kong",
+			},
+			Users:               authuserName,
+			ApiType:               v1.ApiType(ap[1]),
+			AuthType:              v1.AuthType(ap[2]),
+			Tags:                  ap[3],
+			ApiDefineInfo:         v1.ApiDefineInfo{
+				Path:ap[7],
+				Protocol:v1.Protocol(ap[8]),
+				Method:v1.Method(ap[10]),
+				Cors:ap[11],
+			},
+			KongApi:               v1.KongApiInfo{
+				Paths:[]string{ap[14]},
+			},
+			ApiReturnInfo:         v1.ApiReturnInfo{
+				NormalExample:ap[15],
+				FailureExample:ap[16],
+			},
+		}
 
-
-		if api, err, code := c.service.CreateApi(body.Data); err != nil {
+		if api, err, code := c.service.CreateApi(api); err != nil {
 			if errors.IsNameDuplicated(err) {
 				code = "001000022"
 			} else if errors.IsUnpublished(err) {
@@ -878,7 +874,6 @@ func (c*controller)ImportApis(req *restful.Request, response *restful.Response)(
 		} else {
 			successdata = append(successdata, *api)
 		}
-
 	}
 	return http.StatusOK, &ImportResponse{
 		Code:      0,
