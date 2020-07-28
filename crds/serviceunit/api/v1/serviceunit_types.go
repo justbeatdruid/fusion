@@ -41,7 +41,7 @@ type ServiceunitSpec struct {
 	KongService   KongServiceInfo `json:"kongServiceInfo"`
 	Result        Result          `json:"result"`
 	DisplayStatus DisStatus       `json:"disStatus"`
-	FissionRefInfo *FissionRefInfo `json:"fissionRefInfo"`
+	FissionRefInfo FissionRefInfo `json:"fissionRefInfo"`
 }
 
 type SuFissionSpec struct {
@@ -59,7 +59,7 @@ type SuFissionSpec struct {
 	Result        Result          `json:"result"`
 	DisplayStatus DisStatus       `json:"disStatus"`
 
-	FissionRefInfo *FissionRefInfo `json:"fissionRefInfo"`
+	FissionRefInfo FissionRefInfo `json:"fissionRefInfo"`
 }
 
 type KongServiceInfo struct {
@@ -170,14 +170,14 @@ type FissionRefInfo struct {
 	PkgResourceVersion string `json:"pkgResourceVersion"`
 	FnResourceVersion string `json:"fnResourceVersion"`
 	SuId	string	`json:"suId"`
-	Resources	*Resources `json:resources`
+	Resources	*Resources `json:"resources"`
 }
 
 type Resources struct {
-	Mincpu string `json:mincpu`
-	Maxcpu string `json:maxcpu`
-	Minmemory string `json:minmemory`
-	Maxmemory string `json:maxmemory`
+	Mincpu string `json:"mincpu"`
+	Maxcpu string `json:"maxcpu"`
+	Minmemory string `json:"minmemory"`
+	Maxmemory string `json:"maxmemory"`
 }
 
 // +kubebuilder:object:root=true

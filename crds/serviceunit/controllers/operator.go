@@ -122,7 +122,7 @@ type EnvReqInfo struct {
 		Resources struct {
 			Limits struct {
 				Cpu string	`json:"cpu"`
-				Memory string `json:"cpu"`
+				Memory string `json:"memory"`
 			} `json:"limits"`
 			Requests struct {
 				Cpu string `json:"cpu"`
@@ -185,7 +185,7 @@ const (
 	PythonImage             ="fission/python-env"
 	PythonBuild             ="fission/python-builder"
 	GoImage13               ="fission/go-env-1.13:1.10.0"
-	GoImage12				="fission/go-env-1.12:1.10.0"
+	GoImage12		="fission/go-env-1.12:1.10.0"
 	GoBuild13               ="fission/go-builder-1.13:1.10.0"
 	GoBuild12               ="fission/go-builder-1.12:1.10.0"
 	Command                 = "build"
@@ -622,8 +622,8 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResIn
 
 func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error){
 	klog.Infof("Enter CreateFunction :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
-	if len(db.Spec.FissionRefInfo.Resource.Maxcpu) == 0 && len(db.Spec.FissionRefInfo.Resource.Mincpu) == 0 &&
-		len(db.Spec.FissionRefInfo.Resource.Maxmemory) == 0 && len(db.Spec.FissionRefInfo.Resource.Minmemory) == 0 {
+	if len(db.Spec.FissionRefInfo.Resources.Maxcpu) == 0 && len(db.Spec.FissionRefInfo.Resources.Mincpu) == 0 &&
+		len(db.Spec.FissionRefInfo.Resources.Maxmemory) == 0 && len(db.Spec.FissionRefInfo.Resources.Minmemory) == 0 {
 		(*db).Spec.FissionRefInfo.EnvName = db.Spec.FissionRefInfo.Language
 	} else {
 		env, err := r.CreateEnv(db)
