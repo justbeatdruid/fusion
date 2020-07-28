@@ -818,8 +818,8 @@ func (r *Operator) DeleteFunction(db *nlptv1.Serviceunit)error{
 	if err != nil{
 		return fmt.Errorf("request for delete package error: %+v", err)
 	}
-	if len(db.Spec.FissionRefInfo.Resource.Maxmemory) != 0 || len(db.Spec.FissionRefInfo.Resource.Minmemory) != 0 ||
-		len(db.Spec.FissionRefInfo.Resource.Maxcpu) != 0 || len(db.Spec.FissionRefInfo.Resource.Mincpu) != 0 {
+	if len(db.Spec.FissionRefInfo.Resources.Maxmemory) != 0 || len(db.Spec.FissionRefInfo.Resources.Minmemory) != 0 ||
+		len(db.Spec.FissionRefInfo.Resources.Maxcpu) != 0 || len(db.Spec.FissionRefInfo.Resources.Mincpu) != 0 {
 		err = r.DeleteEnv(db)
 		if err != nil{
 			return fmt.Errorf("request for delete env error: %+v", err)
