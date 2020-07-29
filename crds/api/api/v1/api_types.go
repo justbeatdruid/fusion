@@ -82,6 +82,38 @@ type ApiSpec struct {
 
 	Traffic     Traffic     `json:"traffic"`
 	Restriction Restriction `json:"restriction"`
+	ResponseTransformer    ResponseTransformer	`json:"responseTransformer"`
+}
+
+type ResponseTransformer struct {
+	Id	string `json:"id"`
+	ConsumerId string `json:"consumerId,omitempty"`
+	Name string `json:"name"`
+	Config ResTransformerConfig `json:"config,omitempty"`
+}
+type ResTransformerConfig struct {
+	Remove struct {
+		Json	[]string `json:"json,omitempty"`
+		Headers	[]string `json:"headers,omitempty"`
+	} `json:"remove,omitempty"`
+	Rename struct {
+		Headers	[]string	`json:"headers,omitempty"`
+	}	`json:"rename,omitempty"`
+	Replace	struct {
+		Json	[]string	`json:"json,omitempty"`
+		Json_types	[]string	`json:"json_types,omitempty"`
+		Headers	[]string `json:"headers,omitempty"`
+	}	`json:"replace,omitempty"`
+	Add struct {
+		Json	[]string	`json:"json,omitempty"`
+		Json_types	[]string	`json:"json_types,omitempty"`
+		Headers	[]string `json:"headers,omitempty"`
+	}	`json:"add,omitempty"`
+	Append struct {
+		Json	[]string	`json:"json,omitempty"`
+		Json_types	[]string	`json:"json_types,omitempty"`
+		Headers	[]string `json:"headers,omitempty"`
+	}	`json:"append,omitempty"`
 }
 
 type Serviceunit struct {

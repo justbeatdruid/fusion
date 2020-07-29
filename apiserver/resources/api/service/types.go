@@ -70,6 +70,7 @@ type Api struct {
 	PublishInfo v1.PublishInfo
 
 	ApplicationBindStatus *v1.ApiApplicationStatus `json:"applicationBindStatus"`
+	ResTransformer v1.ResponseTransformer `json:"resTransformer"`
 }
 
 type Statistics struct {
@@ -110,6 +111,7 @@ func ToAPI(api *Api) *v1.Api {
 		Traffic:            api.Traffic,
 		Restriction:        api.Restriction,
 		PublishInfo:        api.PublishInfo,
+		ResponseTransformer: api.ResTransformer,
 	}
 
 	crd.Status = v1.ApiStatus{
@@ -168,6 +170,7 @@ func ToModel(obj *v1.Api) *Api {
 		FailedCount:      obj.Status.FailedCount,
 		LatencyCount:     obj.Status.LatencyCount,
 		CallFrequency:    obj.Status.CallFrequency,
+		ResTransformer:	obj.Spec.ResponseTransformer,
 	}
 
 	if len(model.Method) == 0 {
