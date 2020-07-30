@@ -170,7 +170,7 @@ type FissionRefInfo struct {
 	PkgResourceVersion string `json:"pkgResourceVersion"`
 	FnResourceVersion string `json:"fnResourceVersion"`
 	SuId	string	`json:"suId"`
-	Resources	*Resources `json:"resources"`
+	Resources	Resources `json:"resources"`
 }
 
 type Resources struct {

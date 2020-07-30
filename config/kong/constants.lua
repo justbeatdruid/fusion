@@ -35,6 +35,7 @@ local plugins = {
   "proxy-cache",
   "session",
   "rsp-handler",
+  "upstream-url-penetrate",
 }
 
 local plugin_map = {}
