@@ -217,7 +217,6 @@ type FunctionReqInfo struct {
 		} `json:"package"`
 		Secrets interface{} `json:"secrets"`
 		Configmaps interface{} `json:"configmaps"`
-		Resources interface{} `json:"resources"`
 		InvokeStrategy struct {
 			ExecutionStrategy struct {
 				ExecutorType string `json:"ExecutorType"`
@@ -229,6 +228,16 @@ type FunctionReqInfo struct {
 			StrategyType string `json:"StrategyType"`
 		} `json:"InvokeStrategy"`
 		FunctionTimeout int `json:"functionTimeout"`
+		Resources struct {
+			Limits struct {
+				Cpu string	`json:"cpu"`
+				Memory string `json:"memory"`
+			} `json:"limits"`
+			Requests struct {
+				Cpu string `json:"cpu"`
+				Memory string `json:"memory"`
+			} `json:"requests"`
+		} `json:"resources"`
 	} `json:"spec"`
 }
 
@@ -532,8 +541,12 @@ func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit) (*FissionResInfoRsp, 
 	name := fmt.Sprintf("%v-%v-pkg", db.Spec.FissionRefInfo.FnName, db.ObjectMeta.Name)
 	requestBody.Metadata.Name = name
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
-	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.Language
-	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
+	if db.Spec.FissionRefInfo.Language == db.Spec.FissionRefInfo.EnvName {
+		requestBody.Spec.Environment.Namespace = "default"
+	} else {
+		requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	}
     //判断是否是文件还是在线编辑代码
 	if len(db.Spec.FissionRefInfo.FnFile)>0 {
 		if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
@@ -575,8 +588,16 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResIn
 	requestBody := &FunctionReqInfo{}
 	requestBody.Metadata.Name = db.Spec.FissionRefInfo.FnName
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
-	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.Language
-	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
+	if db.Spec.FissionRefInfo.Language == db.Spec.FissionRefInfo.EnvName {
+		requestBody.Spec.Environment.Namespace = "default"
+	} else {
+		requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+		requestBody.Spec.Resources.Requests.Cpu = db.Spec.FissionRefInfo.Resources.Mincpu
+		requestBody.Spec.Resources.Requests.Memory = db.Spec.FissionRefInfo.Resources.Minmemory
+		requestBody.Spec.Resources.Limits.Cpu = db.Spec.FissionRefInfo.Resources.Maxcpu
+		requestBody.Spec.Resources.Limits.Memory = db.Spec.FissionRefInfo.Resources.Maxmemory
+	}
 	requestBody.Spec.Package.Packageref.Namespace = pkg.Namespace
 	requestBody.Spec.Package.Packageref.Name = pkg.Name
 	requestBody.Spec.Package.Packageref.Resourceversion = pkg.ResourceVersion
@@ -683,7 +704,11 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 	requestBody.Metadata.Name = db.Spec.FissionRefInfo.PkgName
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
-	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	if db.Spec.FissionRefInfo.Language == db.Spec.FissionRefInfo.EnvName {
+		requestBody.Spec.Environment.Namespace = "default"
+	} else {
+		requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	}
 	requestBody.Metadata.ResourceVersion = Pkg.Metadata.ResourceVersion
 	//判断是否是文件还是在线编辑
 	if len(db.Spec.FissionRefInfo.FnFile)>0{
@@ -727,7 +752,15 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	requestBody.Metadata.Name = db.Spec.FissionRefInfo.FnName
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
-	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	if db.Spec.FissionRefInfo.Language == db.Spec.FissionRefInfo.EnvName {
+		requestBody.Spec.Environment.Namespace = "default"
+	} else {
+		requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+		requestBody.Spec.Resources.Requests.Cpu = db.Spec.FissionRefInfo.Resources.Mincpu
+		requestBody.Spec.Resources.Requests.Memory = db.Spec.FissionRefInfo.Resources.Minmemory
+		requestBody.Spec.Resources.Limits.Cpu = db.Spec.FissionRefInfo.Resources.Maxcpu
+		requestBody.Spec.Resources.Limits.Memory = db.Spec.FissionRefInfo.Resources.Maxmemory
+	}
 	requestBody.Spec.Package.Packageref.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Package.Packageref.Name = db.Spec.FissionRefInfo.PkgName
 	//函数入口
