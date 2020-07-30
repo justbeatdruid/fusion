@@ -121,14 +121,14 @@ type EnvReqInfo struct {
 		} `json:"builder"`
 		Resources struct {
 			Limits struct {
-				Cpu string	`json:"cpu"`
-				Memory string `json:"memory"`
-			} `json:"limits"`
+				Cpu string	`json:"cpu,omitempty"`
+				Memory string `json:"memory,omitempty"`
+			} `json:"limits,omitempty"`
 			Requests struct {
-				Cpu string `json:"cpu"`
-				Memory string `json:"memory"`
-			} `json:"requests"`
-		} `json:"resources"`
+				Cpu string `json:"cpu,omitempty"`
+				Memory string `json:"memory,omitempty"`
+			} `json:"requests,omitempty"`
+		} `json:"resources,omitempty"`
 		Poolsize int `json:"poolsize"`   //3
 		Keeparchive bool `json:"keeparchive"` //false
 	} `json:"spec"`
@@ -230,15 +230,15 @@ type FunctionReqInfo struct {
 		FunctionTimeout int `json:"functionTimeout"`
 		Resources struct {
 			Limits struct {
-				Cpu string	`json:"cpu"`
-				Memory string `json:"memory"`
-			} `json:"limits"`
+				Cpu string	`json:"cpu,omitempty"`
+				Memory string `json:"memory,omitempty"`
+			} `json:"limits,omitempty"`
 			Requests struct {
-				Cpu string `json:"cpu"`
-				Memory string `json:"memory"`
-			} `json:"requests"`
-		} `json:"resources"`
-	} `json:"spec"`
+				Cpu string `json:"cpu,omitempty"`
+				Memory string `json:"memory,omitempty"`
+			} `json:"requests,omitempty"`
+		} `json:"resources,omitempty"`
+	} `json:"spec,omitempty"`
 }
 
 var logger = &requestLogger{}
