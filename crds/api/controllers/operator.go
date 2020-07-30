@@ -12,15 +12,15 @@ import (
 
 	nlptv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
-	"k8s.io/klog"
 	"github.com/chinamobile/nlpt/pkg/names"
+	"k8s.io/klog"
 )
 
 const (
-	path string             = "/routes"
-	HttpTriggerUrl string   =  "/v2/triggers/http"
-	FissionRouterPort       = 80
-	FissionRouter           = "router.fission"
+	path              string = "/routes"
+	HttpTriggerUrl    string = "/v2/triggers/http"
+	FissionRouterPort        = 80
+	FissionRouter            = "router.fission"
 )
 
 var headers = map[string]string{
@@ -261,10 +261,10 @@ type AddWhiteResponseBody struct {
 }
 
 type RspHandlerRequestBody struct {
-	Name string `json:"name"`
-		Config struct {
+	Name   string `json:"name"`
+	Config struct {
 		FunctionURL string `json:"function_url"`
-		Remove struct {
+		Remove      struct {
 		} `json:"remove"`
 		Rename struct {
 		} `json:"rename"`
@@ -278,91 +278,91 @@ type RspHandlerRequestBody struct {
 }
 
 type RspHandlerResponseBody struct {
-	RunOn string `json:"run_on"`
-	Protocols []string `json:"protocols"`
-	Service interface{} `json:"service"`
-	CreatedAt int `json:"created_at"`
-	Route struct {
+	RunOn     string      `json:"run_on"`
+	Protocols []string    `json:"protocols"`
+	Service   interface{} `json:"service"`
+	CreatedAt int         `json:"created_at"`
+	Route     struct {
 		ID string `json:"id"`
 	} `json:"route"`
-	ID string `json:"id"`
+	ID       string      `json:"id"`
 	Consumer interface{} `json:"consumer"`
-	Tags interface{} `json:"tags"`
-	Enabled bool `json:"enabled"`
-	Name string `json:"name"`
-	Config struct {
+	Tags     interface{} `json:"tags"`
+	Enabled  bool        `json:"enabled"`
+	Name     string      `json:"name"`
+	Config   struct {
 		FunctionURL string `json:"function_url"`
-		Remove struct {
-			JSON []interface{} `json:"json"`
+		Remove      struct {
+			JSON    []interface{} `json:"json"`
 			Headers []interface{} `json:"headers"`
 		} `json:"remove"`
 		Rename struct {
 			Headers []interface{} `json:"headers"`
 		} `json:"rename"`
 		Add struct {
-			Headers []interface{} `json:"headers"`
+			Headers   []interface{} `json:"headers"`
 			JSONTypes []interface{} `json:"json_types"`
-			JSON []interface{} `json:"json"`
+			JSON      []interface{} `json:"json"`
 		} `json:"add"`
 		Replace struct {
-			Headers []interface{} `json:"headers"`
+			Headers   []interface{} `json:"headers"`
 			JSONTypes []interface{} `json:"json_types"`
-			JSON []interface{} `json:"json"`
+			JSON      []interface{} `json:"json"`
 		} `json:"replace"`
 		Append struct {
-			Headers []interface{} `json:"headers"`
+			Headers   []interface{} `json:"headers"`
 			JSONTypes []interface{} `json:"json_types"`
-			JSON []interface{} `json:"json"`
+			JSON      []interface{} `json:"json"`
 		} `json:"append"`
 	} `json:"config"`
 	Message string `json:"message"`
-	Fields struct {
-			Name string `json:"name"`
-		} `json:"fields"`
+	Fields  struct {
+		Name string `json:"name"`
+	} `json:"fields"`
 	Code int `json:"code"`
 }
 
 // Response Transformer
 type ResTransformerRequestBody struct {
-	ConsumerId string	`json:"consumerId,omitempty"`
-	Name   string    `json:"name"`
-	Config ConfigResTransformer `json:"config"`
+	ConsumerId string               `json:"consumerId,omitempty"`
+	Name       string               `json:"name"`
+	Config     ConfigResTransformer `json:"config"`
 }
 type ConfigResTransformer struct {
 	Remove struct {
-		Json	[]string `json:"json"`
-		Headers	[]string `json:"headers"`
+		Json    []string `json:"json"`
+		Headers []string `json:"headers"`
 	} `json:"remove"`
 	Rename struct {
-		Headers	[]string	`json:"headers"`
-	}	`json:"rename"`
-	Replace	struct {
-		Json	[]string	`json:"json"`
-		Json_types	[]string	`json:"json_types"`
-		Headers	[]string `json:"headers"`
-	}	`json:"replace"`
+		Headers []string `json:"headers"`
+	} `json:"rename"`
+	Replace struct {
+		Json       []string `json:"json"`
+		Json_types []string `json:"json_types"`
+		Headers    []string `json:"headers"`
+	} `json:"replace"`
 	Add struct {
-		Json	[]string	`json:"json"`
-		Json_types	[]string	`json:"json_types"`
-		Headers	[]string `json:"headers"`
-	}	`json:"add"`
+		Json       []string `json:"json"`
+		Json_types []string `json:"json_types"`
+		Headers    []string `json:"headers"`
+	} `json:"add"`
 	Append struct {
-		Json	[]string	`json:"json"`
-		Json_types	[]string	`json:"json_types"`
-		Headers	[]string `json:"headers"`
-	}	`json:"append"`
+		Json       []string `json:"json"`
+		Json_types []string `json:"json_types"`
+		Headers    []string `json:"headers"`
+	} `json:"append"`
 }
 
 type ResTransformerResponseBody struct {
-	CreatedAt int `json:"created_at"`
+	CreatedAt int                  `json:"created_at"`
 	Config    ConfigResTransformer `json:"config"`
-	ID        string      `json:"id"`
-	Service   interface{} `json:"service"`
-	Name      string      `json:"name"`
-	Protocols []string    `json:"protocols"`
-	Enabled   bool        `json:"enabled"`
-	RunOn     string      `json:"run_on"`
-	Consumer  interface{} `json:"consumer"`
+	ID        string               `json:"id"`
+	Service   interface{}          `json:"service"`
+	Name      string               `json:"name"`
+	Protocols []string             `json:"protocols"`
+	Enabled   bool                 `json:"enabled"`
+	RunOn     string               `json:"run_on"`
+	Consumer  interface{}          `json:"consumer"`
 	Route     struct {
 		ID string `json:"id"`
 	} `json:"route"`
@@ -409,41 +409,41 @@ func (r *requestLogger) Println(v ...interface{}) {
 }
 
 type FissionAddress struct {
-	ControllerHost string    `json:"controllerHost"`
-	ControllerPort int      `json:"controllerPort"`
+	ControllerHost string `json:"controllerHost"`
+	ControllerPort int    `json:"controllerPort"`
 }
 
 type RouteReqInfo struct {
 	Metadata struct {
-		Name string `json:"name"`
+		Name      string `json:"name"`
 		Namespace string `json:"namespace"`
 	} `json:"metadata"`
 	Spec struct {
-		Host string `json:"host"`
+		Host        string `json:"host"`
 		Relativeurl string `json:"relativeurl"`
-		Method string `json:"method"`
+		Method      string `json:"method"`
 		Functionref struct {
-			Type string `json:"type"`
-			Name string `json:"name"`
+			Type            string      `json:"type"`
+			Name            string      `json:"name"`
 			Functionweights interface{} `json:"functionweights"`
 		} `json:"functionref"`
 		Createingress bool `json:"createingress"`
 		Ingressconfig struct {
 			Annotations interface{} `json:"annotations"`
-			Path string `json:"path"`
-			Host string `json:"host"`
-			TLS string `json:"tls"`
+			Path        string      `json:"path"`
+			Host        string      `json:"host"`
+			TLS         string      `json:"tls"`
 		} `json:"ingressconfig"`
 	} `json:"spec"`
 }
 
 type FissionResInfoRsp struct {
-	Name string `json:"name"`
-	Namespace string `json:"namespace"`
-	SelfLink string `json:"selfLink"`
-	UID string `json:"uid"`
-	ResourceVersion string `json:"resourceVersion"`
-	Generation int `json:"generation"`
+	Name              string    `json:"name"`
+	Namespace         string    `json:"namespace"`
+	SelfLink          string    `json:"selfLink"`
+	UID               string    `json:"uid"`
+	ResourceVersion   string    `json:"resourceVersion"`
+	Generation        int       `json:"generation"`
 	CreationTimestamp time.Time `json:"creationTimestamp"`
 }
 
@@ -546,13 +546,13 @@ func (r *Operator) CreateRouteByKong(db *nlptv1.Api, su *suv1.Serviceunit) (err 
 			return fmt.Errorf("request for add route acl error: %+v", err)
 		}
 	}
-	if len ((*db).Spec.ApiDefineInfo.RspHandler.FuncName) != 0 {
+	if len((*db).Spec.ApiDefineInfo.RspHandler.FuncName) != 0 {
 
 		if err := r.CreateRouteForFunction(db); err != nil {
 			return fmt.Errorf("request for create route for function error: %+v", err)
 		}
 		if err := r.AddRouteRspHandlerByKong(db); err != nil {
-			return fmt.Errorf("request for add route acl error: %+v", err)
+			return fmt.Errorf("request for add route rsp handler error: %+v", err)
 		}
 	}
 	return nil
@@ -888,6 +888,15 @@ func (r *Operator) UpdateRouteByKong(db *nlptv1.Api) (err error) {
 			return fmt.Errorf("request for add route acl error: %+v", err)
 		}
 	}
+	//更新自定义返回 无自定义返回 配置自定义返回 添加插件及route
+	if len(db.Spec.KongApi.RspHandlerID) == 0 && len(db.Spec.ApiDefineInfo.RspHandler.FuncName) != 0 {
+		if err := r.CreateRouteForFunction(db); err != nil {
+			return fmt.Errorf("update request for create route for function error: %+v", err)
+		}
+		if err := r.AddRouteRspHandlerByKong(db); err != nil {
+			return fmt.Errorf("update request for add route rsp handler error: %+v", err)
+		}
+	}
 	//更新鉴权方式 APP鉴权到无鉴权 删除插件
 	if len(db.Spec.KongApi.JwtID) != 0 && db.Spec.AuthType == nlptv1.NOAUTH {
 		if err := r.DeletePluginByKong(db.Spec.KongApi.JwtID); err != nil {
@@ -901,6 +910,19 @@ func (r *Operator) UpdateRouteByKong(db *nlptv1.Api) (err error) {
 			return fmt.Errorf("request for delete route acl error: %+v", err)
 		}
 		(*db).Spec.KongApi.AclID = ""
+	}
+	//更新自定义返回 自定义返回到未配置自定义 删除插件
+	if len(db.Spec.KongApi.RspHandlerID) != 0 && len(db.Spec.ApiDefineInfo.RspHandler.FuncName) == 0 {
+		if err := r.DeleteRouteForFunction(db); err != nil {
+			klog.Infof("request for delete route for function by fission error: %+v", err)
+			return fmt.Errorf("request for delete route for function by fission error: %+v", err)
+		}
+
+		if err := r.DeletePluginByKong(db.Spec.KongApi.RspHandlerID); err != nil {
+			klog.Infof("request for delete route rsp handler error: %+v", err)
+			return fmt.Errorf("request for delete route rsp handler error: %+v", err)
+		}
+		(*db).Spec.KongApi.RspHandlerID = ""
 	}
 	return nil
 }
@@ -1052,6 +1074,7 @@ func (r *Operator) CreateRouteByFission(db *nlptv1.Api, su *suv1.Serviceunit) (e
 
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 	requestBody := &RouteReqInfo{}
+	//函数api的在fission中创建route 使用api的name作为 route name
 	requestBody.Metadata.Name = db.ObjectMeta.Name
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Functionref.Type = "name"
@@ -1066,7 +1089,7 @@ func (r *Operator) CreateRouteByFission(db *nlptv1.Api, su *suv1.Serviceunit) (e
 		return fmt.Errorf("request for create route by fission error: %+v", errs)
 	}
 
-	klog.V(5).Infof("creation route by fission response code and body: %d, %s",  response.StatusCode, string(body))
+	klog.V(5).Infof("creation route by fission response code and body: %d, %s", response.StatusCode, string(body))
 	if response.StatusCode != 201 {
 		klog.Errorf("create route by fission failed msg: %s\n", responseBody)
 		return fmt.Errorf("request for create route by fission error: receive wrong body: %s", string(body))
@@ -1089,7 +1112,7 @@ func (r *Operator) DeleteRouteByFission(db *nlptv1.Api) (err error) {
 		return fmt.Errorf("request for delete route by fission error: %+v", errs)
 	}
 
-	klog.V(5).Infof("delete route by fission response code and body: %d, %s",  response.StatusCode, string(body))
+	klog.V(5).Infof("delete route by fission response code and body: %d, %s", response.StatusCode, string(body))
 	if response.StatusCode != 200 {
 		return fmt.Errorf("request for delete  route by fission error: receive wrong body: %s", string(body))
 	}
@@ -1108,6 +1131,7 @@ func (r *Operator) CreateRouteForFunction(db *nlptv1.Api) (err error) {
 	routeId := names.NewID()
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 	requestBody := &RouteReqInfo{}
+	//API的自定义返回函数 在fission上创建route时使用api的id 加随机数
 	requestBody.Metadata.Name = db.ObjectMeta.Name + routeId
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Functionref.Type = "name"
@@ -1123,12 +1147,35 @@ func (r *Operator) CreateRouteForFunction(db *nlptv1.Api) (err error) {
 		return fmt.Errorf("request for create route for function error: %+v", errs)
 	}
 
-	klog.V(5).Infof("creation route for function response code and body: %d, %s",  response.StatusCode, string(body))
+	klog.V(5).Infof("creation route for function response code and body: %d, %s", response.StatusCode, string(body))
 	if response.StatusCode != 201 {
 		klog.Errorf("create route for function failed msg: %s\n", responseBody)
 		return fmt.Errorf("request for create route for function error: receive wrong body: %s", string(body))
 	}
 	klog.V(5).Infof("ID==: %s\n", responseBody.Name)
+	(*db).Spec.KongApi.RspHandlerRoute = responseBody.Name
+
+	return nil
+}
+
+func (r *Operator) DeleteRouteForFunction(db *nlptv1.Api) (err error) {
+	klog.Infof("Enter DeleteRouteForFunction name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	id := db.Spec.KongApi.RspHandlerRoute
+	ns := db.ObjectMeta.Namespace
+	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionAddress.ControllerHost, r.FissionAddress.ControllerPort, HttpTriggerUrl, id))
+	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s?namespace=%s", schema, r.FissionAddress.ControllerHost, r.FissionAddress.ControllerPort, HttpTriggerUrl, id, ns)).End()
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	if len(errs) > 0 {
+		klog.Errorf("send  delete route for function by fission error %+v", errs)
+		return fmt.Errorf("request for delete route for function by fission error: %+v", errs)
+	}
+
+	klog.V(5).Infof("delete route for function by fission response code and body: %d, %s", response.StatusCode, string(body))
+	if response.StatusCode != 200 {
+		return fmt.Errorf("request for delete  route by fission error: receive wrong body: %s", string(body))
+	}
 	return nil
 }
 
