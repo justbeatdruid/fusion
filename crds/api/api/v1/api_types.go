@@ -80,8 +80,40 @@ type ApiSpec struct {
 	//api publishInfo
 	PublishInfo PublishInfo `json:"publishInfo"`
 
-	Traffic     Traffic     `json:"traffic"`
-	Restriction Restriction `json:"restriction"`
+	Traffic             Traffic             `json:"traffic"`
+	Restriction         Restriction         `json:"restriction"`
+	ResponseTransformer ResponseTransformer `json:"responseTransformer"`
+}
+
+type ResponseTransformer struct {
+	Id         string               `json:"id"`
+	ConsumerId string               `json:"consumerId,omitempty"`
+	Name       string               `json:"name"`
+	Config     ResTransformerConfig `json:"config,omitempty"`
+}
+type ResTransformerConfig struct {
+	Remove struct {
+		Json    []string `json:"json,omitempty"`
+		Headers []string `json:"headers,omitempty"`
+	} `json:"remove,omitempty"`
+	Rename struct {
+		Headers []string `json:"headers,omitempty"`
+	} `json:"rename,omitempty"`
+	Replace struct {
+		Json       []string `json:"json,omitempty"`
+		Json_types []string `json:"json_types,omitempty"`
+		Headers    []string `json:"headers,omitempty"`
+	} `json:"replace,omitempty"`
+	Add struct {
+		Json       []string `json:"json,omitempty"`
+		Json_types []string `json:"json_types,omitempty"`
+		Headers    []string `json:"headers,omitempty"`
+	} `json:"add,omitempty"`
+	Append struct {
+		Json       []string `json:"json,omitempty"`
+		Json_types []string `json:"json_types,omitempty"`
+		Headers    []string `json:"headers,omitempty"`
+	} `json:"append,omitempty"`
 }
 
 type Serviceunit struct {
@@ -93,9 +125,8 @@ type Serviceunit struct {
 	Host   string `json:"Host"`
 	Port   int    `json:"Port"`
 	//API的协议从服务单元获取
-	Protocol string `json:"protocol"`
+	Protocol      string `json:"protocol"`
 	FissionFnName string `json:"fissionFnName"`
-
 }
 
 type Traffic struct {
@@ -130,13 +161,13 @@ type User struct {
 type Method string
 
 const (
-	POST   Method = "POST"
-	GET    Method = "GET"
-	DELETE Method = "DELETE"
-	PUT    Method = "PUT"
+	POST    Method = "POST"
+	GET     Method = "GET"
+	DELETE  Method = "DELETE"
+	PUT     Method = "PUT"
 	OPTIONS Method = "OPTIONS"
-	HEAD   Method = "HEAD"
-	PATCH  Method = "PATCH"
+	HEAD    Method = "HEAD"
+	PATCH   Method = "PATCH"
 )
 
 type ApiType string
@@ -192,17 +223,17 @@ type ApiQueryInfo struct {
 }
 
 type RspHandlerInfo struct {
-	FuncName  string `json:"funcName"`
+	FuncName string `json:"funcName"`
 }
 
 //define api
 type ApiDefineInfo struct {
-	Path      string           `json:"path"`
-	MatchMode string           `json:"matchMode"`
-	Method    Method           `json:"method"`
-	Protocol  Protocol         `json:"protocol"` //直接从服务单元里面获取不需要前台传入
-	Cors      string           `json:"cors"`
-	RspHandler RspHandlerInfo  `json:"rspHandler"`
+	Path       string         `json:"path"`
+	MatchMode  string         `json:"matchMode"`
+	Method     Method         `json:"method"`
+	Protocol   Protocol       `json:"protocol"` //直接从服务单元里面获取不需要前台传入
+	Cors       string         `json:"cors"`
+	RspHandler RspHandlerInfo `json:"rspHandler"`
 }
 
 //define api return
@@ -215,22 +246,23 @@ type ApiReturnInfo struct {
 type KongApiInfo struct {
 	//Kong变量
 	//A list of domain names that match this Route. With form-encoded, the notation is hosts[]=example.com&hosts[]=foo.test. With JSON, use an Array.
-	Hosts         []string `json:"hosts"`
-	Paths         []string `json:"paths"` //kong 是数组 界面是字符串
-	Headers       []string `json:"headers"`
-	Methods       []string `json:"methods"`
-	HttpsCode     int      `json:"https_redirect_status_code"`
-	RegexPriority int      `json:"regex_priority"`
-	StripPath     bool     `json:"strip_path"`
-	PreserveHost  bool     `json:"preserve_host"`
-	Snis          []string `json:"snis"`
-	Protocols     []string `json:"protocols"` // 创建api时后端服务协议从服务单元获取
-	KongID        string   `json:"kong_id"`
-	JwtID         string   `json:"jwt_id"`
-	AclID         string   `json:"acl_id"`
-	CorsID        string   `json:"cors_id"`
-	PrometheusID  string   `json:"prometheus_id"`
-	RspHandlerID  string   `json:"rsp_id"`
+	Hosts           []string `json:"hosts"`
+	Paths           []string `json:"paths"` //kong 是数组 界面是字符串
+	Headers         []string `json:"headers"`
+	Methods         []string `json:"methods"`
+	HttpsCode       int      `json:"https_redirect_status_code"`
+	RegexPriority   int      `json:"regex_priority"`
+	StripPath       bool     `json:"strip_path"`
+	PreserveHost    bool     `json:"preserve_host"`
+	Snis            []string `json:"snis"`
+	Protocols       []string `json:"protocols"` // 创建api时后端服务协议从服务单元获取
+	KongID          string   `json:"kong_id"`
+	JwtID           string   `json:"jwt_id"`
+	AclID           string   `json:"acl_id"`
+	CorsID          string   `json:"cors_id"`
+	PrometheusID    string   `json:"prometheus_id"`
+	RspHandlerID    string   `json:"rsp_id"`
+	RspHandlerRoute string   `json:"rsp_route"`
 }
 
 type ApiBind struct {

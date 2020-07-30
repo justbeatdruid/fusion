@@ -423,7 +423,7 @@ func (s *Service) Validate(a *Serviceunit) error {
 		}
 		if a.FissionRefInfo.Language!="nodejs" && a.FissionRefInfo.Language!="python" &&
 			a.FissionRefInfo.Language!="go-1.13" && a.FissionRefInfo.Language!="go-1.12" {
-			return fmt.Errorf("function language is not nodejs or python and go")
+			return fmt.Errorf("function language is not nodejs or python or go-1.13 or go-1.12")
 		}else if a.FissionRefInfo.Language =="python" || a.FissionRefInfo.Language =="go-1.12" || a.FissionRefInfo.Language =="go-1.13" {
 			if len(a.FissionRefInfo.FnCode)==0{
 				if len(a.FissionRefInfo.BuildCmd) ==0 {

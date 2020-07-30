@@ -122,14 +122,13 @@ type EnvReqInfo struct {
 		Resources struct {
 			Limits struct {
 				Cpu string	`json:"cpu"`
-				Memory string `json:"cpu"`
-			}
+				Memory string `json:"memory"`
+			} `json:"limits"`
 			Requests struct {
 				Cpu string `json:"cpu"`
 				Memory string `json:"memory"`
-			}
-		}
-
+			} `json:"requests"`
+		} `json:"resources"`
 		Poolsize int `json:"poolsize"`   //3
 		Keeparchive bool `json:"keeparchive"` //false
 	} `json:"spec"`
@@ -186,7 +185,7 @@ const (
 	PythonImage             ="fission/python-env"
 	PythonBuild             ="fission/python-builder"
 	GoImage13               ="fission/go-env-1.13:1.10.0"
-	GoImage12				="fission/go-env-1.12:1.10.0"
+	GoImage12		="fission/go-env-1.12:1.10.0"
 	GoBuild13               ="fission/go-builder-1.13:1.10.0"
 	GoBuild12               ="fission/go-builder-1.12:1.10.0"
 	Command                 = "build"
@@ -218,7 +217,6 @@ type FunctionReqInfo struct {
 		} `json:"package"`
 		Secrets interface{} `json:"secrets"`
 		Configmaps interface{} `json:"configmaps"`
-		Resources interface{} `json:"resources"`
 		InvokeStrategy struct {
 			ExecutionStrategy struct {
 				ExecutorType string `json:"ExecutorType"`
@@ -230,6 +228,16 @@ type FunctionReqInfo struct {
 			StrategyType string `json:"StrategyType"`
 		} `json:"InvokeStrategy"`
 		FunctionTimeout int `json:"functionTimeout"`
+		Resources struct {
+			Limits struct {
+				Cpu string	`json:"cpu"`
+				Memory string `json:"memory"`
+			} `json:"limits"`
+			Requests struct {
+				Cpu string `json:"cpu"`
+				Memory string `json:"memory"`
+			} `json:"requests"`
+		} `json:"resources"`
 	} `json:"spec"`
 }
 
@@ -479,18 +487,12 @@ func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error)
 	requestBody := &EnvReqInfo{}
 	languageInfo := db.Spec.FissionRefInfo.Language
 	name := fmt.Sprintf("%v-%v", languageInfo, db.ObjectMeta.Name)
-	if languageInfo == "go-1.12" {
-		name = fmt.Sprintf("%v-%v", "go-12", db.ObjectMeta.Name)
-	}
-	if languageInfo == "go-1.13" {
-		name = fmt.Sprintf("%v-%v", "go-13", db.ObjectMeta.Name)
-	}
 	requestBody.Metadata.Name = name
 	requestBody.Metadata.Namespace =  db.ObjectMeta.Namespace
-	requestBody.Spec.Resources.Requests.Cpu = db.Spec.FissionRefInfo.Resource.Mincpu
-	requestBody.Spec.Resources.Requests.Memory = db.Spec.FissionRefInfo.Resource.Minmemory
-	requestBody.Spec.Resources.Limits.Cpu = db.Spec.FissionRefInfo.Resource.Maxcpu
-	requestBody.Spec.Resources.Limits.Memory = db.Spec.FissionRefInfo.Resource.Maxmemory
+	requestBody.Spec.Resources.Requests.Cpu = db.Spec.FissionRefInfo.Resources.Mincpu
+	requestBody.Spec.Resources.Requests.Memory = db.Spec.FissionRefInfo.Resources.Minmemory
+	requestBody.Spec.Resources.Limits.Cpu = db.Spec.FissionRefInfo.Resources.Maxcpu
+	requestBody.Spec.Resources.Limits.Memory = db.Spec.FissionRefInfo.Resources.Maxmemory
 	switch languageInfo  {
 	case NodeJs:
 		requestBody.Spec.Runtime.Image = NodeJsImage
@@ -539,8 +541,12 @@ func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit) (*FissionResInfoRsp, 
 	name := fmt.Sprintf("%v-%v-pkg", db.Spec.FissionRefInfo.FnName, db.ObjectMeta.Name)
 	requestBody.Metadata.Name = name
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
-	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.Language
-	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
+	if db.Spec.FissionRefInfo.Language == db.Spec.FissionRefInfo.EnvName {
+		requestBody.Spec.Environment.Namespace = "default"
+	} else {
+		requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	}
     //判断是否是文件还是在线编辑代码
 	if len(db.Spec.FissionRefInfo.FnFile)>0 {
 		if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
@@ -582,8 +588,16 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResIn
 	requestBody := &FunctionReqInfo{}
 	requestBody.Metadata.Name = db.Spec.FissionRefInfo.FnName
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
-	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.Language
-	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
+	if db.Spec.FissionRefInfo.Language == db.Spec.FissionRefInfo.EnvName {
+		requestBody.Spec.Environment.Namespace = "default"
+	} else {
+		requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+		requestBody.Spec.Resources.Requests.Cpu = db.Spec.FissionRefInfo.Resources.Mincpu
+		requestBody.Spec.Resources.Requests.Memory = db.Spec.FissionRefInfo.Resources.Minmemory
+		requestBody.Spec.Resources.Limits.Cpu = db.Spec.FissionRefInfo.Resources.Maxcpu
+		requestBody.Spec.Resources.Limits.Memory = db.Spec.FissionRefInfo.Resources.Maxmemory
+	}
 	requestBody.Spec.Package.Packageref.Namespace = pkg.Namespace
 	requestBody.Spec.Package.Packageref.Name = pkg.Name
 	requestBody.Spec.Package.Packageref.Resourceversion = pkg.ResourceVersion
@@ -629,15 +643,9 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResIn
 
 func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error){
 	klog.Infof("Enter CreateFunction :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
-	if len(db.Spec.FissionRefInfo.Resource.Maxcpu) == 0 && len(db.Spec.FissionRefInfo.Resource.Mincpu) == 0 &&
-		len(db.Spec.FissionRefInfo.Resource.Maxmemory) == 0 && len(db.Spec.FissionRefInfo.Resource.Minmemory) == 0 {
+	if len(db.Spec.FissionRefInfo.Resources.Maxcpu) == 0 && len(db.Spec.FissionRefInfo.Resources.Mincpu) == 0 &&
+		len(db.Spec.FissionRefInfo.Resources.Maxmemory) == 0 && len(db.Spec.FissionRefInfo.Resources.Minmemory) == 0 {
 		(*db).Spec.FissionRefInfo.EnvName = db.Spec.FissionRefInfo.Language
-		if db.Spec.FissionRefInfo.Language == "go-1.12" {
-			(*db).Spec.FissionRefInfo.EnvName = "go-12"
-		}
-		if db.Spec.FissionRefInfo.Language == "go-1.13" {
-			(*db).Spec.FissionRefInfo.EnvName = "go-13"
-		}
 	} else {
 		env, err := r.CreateEnv(db)
 		if err != nil {
@@ -696,7 +704,11 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 	requestBody.Metadata.Name = db.Spec.FissionRefInfo.PkgName
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
-	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	if db.Spec.FissionRefInfo.Language == db.Spec.FissionRefInfo.EnvName {
+		requestBody.Spec.Environment.Namespace = "default"
+	} else {
+		requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	}
 	requestBody.Metadata.ResourceVersion = Pkg.Metadata.ResourceVersion
 	//判断是否是文件还是在线编辑
 	if len(db.Spec.FissionRefInfo.FnFile)>0{
@@ -740,7 +752,15 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	requestBody.Metadata.Name = db.Spec.FissionRefInfo.FnName
 	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Environment.Name = db.Spec.FissionRefInfo.EnvName
-	requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+	if db.Spec.FissionRefInfo.Language == db.Spec.FissionRefInfo.EnvName {
+		requestBody.Spec.Environment.Namespace = "default"
+	} else {
+		requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
+		requestBody.Spec.Resources.Requests.Cpu = db.Spec.FissionRefInfo.Resources.Mincpu
+		requestBody.Spec.Resources.Requests.Memory = db.Spec.FissionRefInfo.Resources.Minmemory
+		requestBody.Spec.Resources.Limits.Cpu = db.Spec.FissionRefInfo.Resources.Maxcpu
+		requestBody.Spec.Resources.Limits.Memory = db.Spec.FissionRefInfo.Resources.Maxmemory
+	}
 	requestBody.Spec.Package.Packageref.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Package.Packageref.Name = db.Spec.FissionRefInfo.PkgName
 	//函数入口
@@ -831,8 +851,8 @@ func (r *Operator) DeleteFunction(db *nlptv1.Serviceunit)error{
 	if err != nil{
 		return fmt.Errorf("request for delete package error: %+v", err)
 	}
-	if len(db.Spec.FissionRefInfo.Resource.Maxmemory) != 0 || len(db.Spec.FissionRefInfo.Resource.Minmemory) != 0 ||
-		len(db.Spec.FissionRefInfo.Resource.Maxcpu) != 0 || len(db.Spec.FissionRefInfo.Resource.Mincpu) != 0 {
+	if len(db.Spec.FissionRefInfo.Resources.Maxmemory) != 0 || len(db.Spec.FissionRefInfo.Resources.Minmemory) != 0 ||
+		len(db.Spec.FissionRefInfo.Resources.Maxcpu) != 0 || len(db.Spec.FissionRefInfo.Resources.Mincpu) != 0 {
 		err = r.DeleteEnv(db)
 		if err != nil{
 			return fmt.Errorf("request for delete env error: %+v", err)
