@@ -23,11 +23,11 @@ var headers = map[string]string{
 var retryStatus = []int{http.StatusBadRequest, http.StatusInternalServerError}
 
 type Operator struct {
-	Host   string
-	Port   int
+	Host        string
+	Port        int
 	FissionHost string
 	FissionPort int
-	CAFile string
+	CAFile      string
 }
 
 type RequestBody struct {
@@ -104,10 +104,9 @@ type requestLogger struct {
 	prefix string
 }
 
-
 type EnvReqInfo struct {
 	Metadata struct {
-		Name string `json:"name"`
+		Name      string `json:"name"`
 		Namespace string `json:"namespace"`
 	} `json:"metadata"`
 	Spec struct {
@@ -116,43 +115,43 @@ type EnvReqInfo struct {
 			Image string `json:"image"`
 		} `json:"runtime"`
 		Builder struct {
-			Image string `json:"image"`
+			Image   string `json:"image"`
 			Command string `json:"command"`
 		} `json:"builder"`
 		Resources struct {
 			Limits struct {
-				Cpu string	`json:"cpu,omitempty"`
+				Cpu    string `json:"cpu,omitempty"`
 				Memory string `json:"memory,omitempty"`
 			} `json:"limits,omitempty"`
 			Requests struct {
-				Cpu string `json:"cpu,omitempty"`
+				Cpu    string `json:"cpu,omitempty"`
 				Memory string `json:"memory,omitempty"`
 			} `json:"requests,omitempty"`
 		} `json:"resources,omitempty"`
-		Poolsize int `json:"poolsize"`   //3
+		Poolsize    int  `json:"poolsize"`    //3
 		Keeparchive bool `json:"keeparchive"` //false
 	} `json:"spec"`
 }
 type PkgRefInfoReq struct {
 	Metadata struct {
-		Name string `json:"name"`
-		Namespace string `json:"namespace"`
+		Name            string `json:"name"`
+		Namespace       string `json:"namespace"`
 		ResourceVersion string `json:"resourceVersion"`
 	} `json:"metadata"`
 	Spec struct {
 		Environment struct {
 			Namespace string `json:"namespace"`
-			Name string `json:"name"`
+			Name      string `json:"name"`
 		} `json:"environment"`
 		Source struct {
-			Type string `json:"type"`
-			Literal []byte  `json:"literal"`
+			Type     string `json:"type"`
+			Literal  []byte `json:"literal"`
 			Checksum struct {
 			} `json:"checksum"`
 		} `json:"source"`
 		Deployment struct {
-			Type string `json:"type"`
-			Literal []byte  `json:"literal"`
+			Type     string `json:"type"`
+			Literal  []byte `json:"literal"`
 			Checksum struct {
 			} `json:"checksum"`
 		} `json:"deployment"`
@@ -160,81 +159,83 @@ type PkgRefInfoReq struct {
 	} `json:"spec"`
 	Status struct {
 		BuildStatus string `json:"buildstatus"`
-		BuildLog string `json:"buildlog"`
+		BuildLog    string `json:"buildlog"`
 	} `json:"status"`
 }
 
 type FissionResInfoRsp struct {
-	Name string `json:"name"`
-	Namespace string `json:"namespace"`
-	SelfLink string `json:"selfLink"`
-	UID string `json:"uid"`
-	ResourceVersion string `json:"resourceVersion"`
-	Generation int `json:"generation"`
+	Name              string    `json:"name"`
+	Namespace         string    `json:"namespace"`
+	SelfLink          string    `json:"selfLink"`
+	UID               string    `json:"uid"`
+	ResourceVersion   string    `json:"resourceVersion"`
+	Generation        int       `json:"generation"`
 	CreationTimestamp time.Time `json:"creationTimestamp"`
 }
 
 const (
-	FissionRouterPort       = 80
-	FissionRouter           = "router.fission"
-	EnvUrl                  = "/v2/environments"         //成功
-	PkgUrl                  = "/v2/packages" //读取消息体失败
-	FunctionUrl             = "/v2/functions" //创建Topic失败
-	NodeJsImage             ="fission/node-env"
-	NodeJsBuild             ="fission/node-builder"
-	PythonImage             ="fission/python-env"
-	PythonBuild             ="fission/python-builder"
-	GoImage13               ="fission/go-env-1.13:1.10.0"
-	GoImage12		="fission/go-env-1.12:1.10.0"
-	GoBuild13               ="fission/go-builder-1.13:1.10.0"
-	GoBuild12               ="fission/go-builder-1.12:1.10.0"
-	Command                 = "build"
-	NodeJs                  = "nodejs"
-	Python                  = "python"
-	Go13                    = "go-1.13"
-	Go12                    = "go-1.12"
-	Zip                     = ".zip"
+	FissionRouterPort = 80
+	FissionRouter     = "router.fission"
+	EnvUrl            = "/v2/environments" //成功
+	PkgUrl            = "/v2/packages"     //读取消息体失败
+	FunctionUrl       = "/v2/functions"    //创建Topic失败
+	NodeJsImage       = "fission/node-env"
+	NodeJsBuild       = "fission/node-builder"
+	PythonImage       = "fission/python-env"
+	PythonBuild       = "fission/python-builder"
+	GoImage13         = "fission/go-env-1.13:1.10.0"
+	GoImage12         = "fission/go-env-1.12:1.10.0"
+	GoBuild13         = "fission/go-builder-1.13:1.10.0"
+	GoBuild12         = "fission/go-builder-1.12:1.10.0"
+	Command           = "build"
+	NodeJs            = "nodejs"
+	Python            = "python"
+	Go13              = "go-1.13"
+	Go12              = "go-1.12"
+	Zip               = ".zip"
+	EntryGo           = "Handler"
+	EntryPy           = "main"
 )
 
 type FunctionReqInfo struct {
 	Metadata struct {
-		Name string `json:"name"`
-		Namespace string `json:"namespace"`
+		Name            string `json:"name"`
+		Namespace       string `json:"namespace"`
 		ResourceVersion string `json:"resourceVersion"`
 	} `json:"metadata"`
 	Spec struct {
 		Environment struct {
 			Namespace string `json:"namespace"`
-			Name string `json:"name"`
+			Name      string `json:"name"`
 		} `json:"environment"`
 		Package struct {
 			Packageref struct {
-				Namespace string `json:"namespace"`
-				Name string `json:"name"`
+				Namespace       string `json:"namespace"`
+				Name            string `json:"name"`
 				Resourceversion string `json:"resourceversion"`
 			} `json:"packageref"`
-			FunctionName string `json:"functionName"`
+			FunctionName string `json:"functionName,omitempty"`
 		} `json:"package"`
-		Secrets interface{} `json:"secrets"`
-		Configmaps interface{} `json:"configmaps"`
+		Secrets        interface{} `json:"secrets"`
+		Configmaps     interface{} `json:"configmaps"`
 		InvokeStrategy struct {
 			ExecutionStrategy struct {
-				ExecutorType string `json:"ExecutorType"`
-				MinScale int `json:"MinScale"`
-				MaxScale int `json:"MaxScale"`
-				TargetCPUPercent int `json:"TargetCPUPercent"`
-				SpecializationTimeout int `json:"SpecializationTimeout"`
+				ExecutorType          string `json:"ExecutorType"`
+				MinScale              int    `json:"MinScale"`
+				MaxScale              int    `json:"MaxScale"`
+				TargetCPUPercent      int    `json:"TargetCPUPercent"`
+				SpecializationTimeout int    `json:"SpecializationTimeout"`
 			} `json:"ExecutionStrategy"`
 			StrategyType string `json:"StrategyType"`
 		} `json:"InvokeStrategy"`
 		FunctionTimeout int `json:"functionTimeout"`
-		Resources struct {
+		Resources       struct {
 			Limits struct {
-				Cpu string	`json:"cpu,omitempty"`
+				Cpu    string `json:"cpu,omitempty"`
 				Memory string `json:"memory,omitempty"`
 			} `json:"limits,omitempty"`
 			Requests struct {
-				Cpu string `json:"cpu,omitempty"`
+				Cpu    string `json:"cpu,omitempty"`
 				Memory string `json:"memory,omitempty"`
 			} `json:"requests,omitempty"`
 		} `json:"resources,omitempty"`
@@ -258,11 +259,11 @@ func (r *requestLogger) Println(v ...interface{}) {
 func NewOperator(host string, port int, fissionHost string, fissionPort int, cafile string) (*Operator, error) {
 	klog.Infof("NewOperator  event:%s %d %s", host, port, cafile)
 	return &Operator{
-		Host:   host,
-		Port:   port,
-		FissionHost:   fissionHost,
-		FissionPort:   fissionPort,
-		CAFile: cafile,
+		Host:        host,
+		Port:        port,
+		FissionHost: fissionHost,
+		FissionPort: fissionPort,
+		CAFile:      cafile,
 	}, nil
 }
 
@@ -308,7 +309,7 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 		if requestBody.ReadOut == 0 {
 			requestBody.ReadOut = 60000
 		}
-	case nlptv1.FunctionService :
+	case nlptv1.FunctionService:
 		requestBody = &RequestBody{
 			Name:     db.ObjectMeta.Name,
 			Protocol: "http",
@@ -321,7 +322,7 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	}
 	if db.Spec.Type == nlptv1.FunctionService {
 		fn, err := r.CreateFunction(db)
-		if err != nil{
+		if err != nil {
 			return fmt.Errorf("create function error: %+v", err)
 		}
 		klog.V(5).Infof("create function result fn: %+v", fn)
@@ -352,7 +353,7 @@ func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	//删除函数api
 	err = r.DeleteFunction(db)
 	if err != nil {
-		return fmt.Errorf("delete function error: %+v",err)
+		return fmt.Errorf("delete function error: %+v", err)
 	}
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -431,8 +432,8 @@ func (r *Operator) UpdateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 			ReadOut:  db.Spec.KongService.ReadOut,
 		}
 		fn, err := r.UpdateFunction(db)
-		if err != nil{
-			return fmt.Errorf("update function error: %+v ",err)
+		if err != nil {
+			return fmt.Errorf("update function error: %+v ", err)
 		}
 		klog.V(5).Infof("update function result fn: %+v", fn)
 	}
@@ -462,7 +463,7 @@ func GetContentsPkg(filePath string) ([]byte, error) {
 	return code, nil
 }
 func GetLanguage(lan string) string {
-	switch  lan {
+	switch lan {
 	case NodeJs:
 		return NodeJs
 	case Python:
@@ -488,12 +489,12 @@ func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error)
 	languageInfo := db.Spec.FissionRefInfo.Language
 	name := fmt.Sprintf("%v-%v", languageInfo, db.ObjectMeta.Name)
 	requestBody.Metadata.Name = name
-	requestBody.Metadata.Namespace =  db.ObjectMeta.Namespace
+	requestBody.Metadata.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Resources.Requests.Cpu = db.Spec.FissionRefInfo.Resources.Mincpu
 	requestBody.Spec.Resources.Requests.Memory = db.Spec.FissionRefInfo.Resources.Minmemory
 	requestBody.Spec.Resources.Limits.Cpu = db.Spec.FissionRefInfo.Resources.Maxcpu
 	requestBody.Spec.Resources.Limits.Memory = db.Spec.FissionRefInfo.Resources.Maxmemory
-	switch languageInfo  {
+	switch languageInfo {
 	case NodeJs:
 		requestBody.Spec.Runtime.Image = NodeJsImage
 		requestBody.Spec.Builder.Image = NodeJsBuild
@@ -527,8 +528,7 @@ func (r *Operator) CreateEnv(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error)
 	return responseBody, nil
 }
 
-
-func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error){
+func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error) {
 	klog.Infof("Enter CreatePkgByFile :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -547,17 +547,17 @@ func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit) (*FissionResInfoRsp, 
 	} else {
 		requestBody.Spec.Environment.Namespace = db.ObjectMeta.Namespace
 	}
-    //判断是否是文件还是在线编辑代码
-	if len(db.Spec.FissionRefInfo.FnFile)>0 {
-		if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
+	//判断是否是文件还是在线编辑代码
+	if len(db.Spec.FissionRefInfo.FnFile) > 0 {
+		if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip) {
 			requestBody.Spec.Source.Type = "literal"
 			requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
 			requestBody.Spec.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
-		}else {
+		} else {
 			requestBody.Spec.Deployment.Type = "literal"
 			requestBody.Spec.Deployment.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
 		}
-	}else {
+	} else {
 		requestBody.Spec.Deployment.Type = "literal"
 		requestBody.Spec.Deployment.Literal = []byte(db.Spec.FissionRefInfo.FnCode)
 	}
@@ -573,10 +573,10 @@ func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit) (*FissionResInfoRsp, 
 		return nil, fmt.Errorf("request for create rate error: receive wrong status code: %s", string(body))
 	}
 	klog.V(5).Infof("create pkg name: %s\n", responseBody.Name)
-	return  responseBody, nil
+	return responseBody, nil
 }
 
-func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResInfoRsp) (*FissionResInfoRsp, error){
+func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResInfoRsp) (*FissionResInfoRsp, error) {
 	klog.Infof("Enter CreateFnByEnvAndPkg :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
@@ -602,30 +602,50 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResIn
 	requestBody.Spec.Package.Packageref.Name = pkg.Name
 	requestBody.Spec.Package.Packageref.Resourceversion = pkg.ResourceVersion
 	//函数入口
-	requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint
+	//压缩包时传入的函数入口
+	if strings.HasSuffix(db.Spec.FissionRefInfo.FnFile, ".zip") {
+		switch db.Spec.FissionRefInfo.Language {
+		case NodeJs:
+			requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint
+		case Python:
+			requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint + "." + EntryPy
+		case Go13, Go12:
+			requestBody.Spec.Package.FunctionName = EntryGo
+		}
+	}
+	//单个文件或者在先编辑时go python传入 Handler main，nodejs不需要传入
+	if strings.HasSuffix(db.Spec.FissionRefInfo.FnFile, ".go") ||
+		strings.HasSuffix(db.Spec.FissionRefInfo.FnFile, ".py") {
+		switch db.Spec.FissionRefInfo.Language {
+		case Python:
+			requestBody.Spec.Package.FunctionName = EntryPy
+		case Go13, Go12:
+			requestBody.Spec.Package.FunctionName = EntryGo
+		}
+	}
 	requestBody.Spec.InvokeStrategy.ExecutionStrategy.ExecutorType = "poolmgr"
 	requestBody.Spec.InvokeStrategy.StrategyType = "execution"
 	requestBody.Spec.FunctionTimeout = 120
-	
+
 	responseBody := &FissionResInfoRsp{}
 	//判断package的状态是否完成
-	for i:=1;i<15;i++{
-		time.Sleep(time.Duration(i)*time.Second)
-		Pkg,err := r.getPkgVersion(db)
-		if err!=nil {
-			return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+	for i := 1; i < 15; i++ {
+		time.Sleep(time.Duration(i) * time.Second)
+		Pkg, err := r.getPkgVersion(db)
+		if err != nil {
+			return nil, fmt.Errorf("get pkgResourceVersion error: %v", err)
 		}
 		//单文件成功状态是none,zip包成功状态是succeeded
-		if Pkg.Status.BuildStatus=="none"||Pkg.Status.BuildStatus=="succeeded"{
+		if Pkg.Status.BuildStatus == "none" || Pkg.Status.BuildStatus == "succeeded" {
 			break
 		}
 	}
-	Pkg,err := r.getPkgVersion(db)
-	if err!=nil {
-		return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+	Pkg, err := r.getPkgVersion(db)
+	if err != nil {
+		return nil, fmt.Errorf("get pkgResourceVersion error: %v", err)
 	}
-	if Pkg.Status.BuildStatus=="failed"{
-		return nil, fmt.Errorf("create function error: +%v",Pkg.Status.BuildLog)
+	if Pkg.Status.BuildStatus == "failed" {
+		return nil, fmt.Errorf("create function error: +%v", Pkg.Status.BuildLog)
 	}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
@@ -638,10 +658,10 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResIn
 		return nil, fmt.Errorf("request for create rate error: receive wrong status code: %s", string(body))
 	}
 	klog.V(5).Infof("create function name: %s\n", responseBody.Name)
-	return  responseBody, nil
+	return responseBody, nil
 }
 
-func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error){
+func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error) {
 	klog.Infof("Enter CreateFunction :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	if len(db.Spec.FissionRefInfo.Resources.Maxcpu) == 0 && len(db.Spec.FissionRefInfo.Resources.Mincpu) == 0 &&
 		len(db.Spec.FissionRefInfo.Resources.Maxmemory) == 0 && len(db.Spec.FissionRefInfo.Resources.Minmemory) == 0 {
@@ -653,7 +673,7 @@ func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, e
 		}
 		(*db).Spec.FissionRefInfo.EnvName = env.Name
 	}
-	time.Sleep(5*time.Second)
+	time.Sleep(5 * time.Second)
 	pkg, err := r.CreatePkgByFile(db)
 	if err != nil {
 		return nil, fmt.Errorf("request for create pkg error: %+v", err)
@@ -666,36 +686,36 @@ func (r *Operator) CreateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, e
 	}
 	(*db).Spec.FissionRefInfo.FnResourceVersion = fn.ResourceVersion
 	klog.V(5).Infof("create function name: %s\n", fn.Name)
-	return  fn, nil
+	return fn, nil
 }
 
-func (r *Operator) UpdateFunction(db *nlptv1.Serviceunit)(*FissionResInfoRsp,error){
+func (r *Operator) UpdateFunction(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error) {
 	klog.Infof("Enter UpdateFunction :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	pkg, err := r.UpdatePkgByFile(db)
-	if err!=nil{
+	if err != nil {
 		return nil, fmt.Errorf("request for update pkg error: %+v", err)
 	}
-	(*db).Spec.FissionRefInfo.PkgResourceVersion=pkg.ResourceVersion
-	(*db).Spec.FissionRefInfo.PkgName=pkg.Name
-    fn, err := r.UpdateFnByEnvAndPkg(db,pkg)
-    if err != nil {
-    	return nil, fmt.Errorf("request for update function error: %+v", err)
+	(*db).Spec.FissionRefInfo.PkgResourceVersion = pkg.ResourceVersion
+	(*db).Spec.FissionRefInfo.PkgName = pkg.Name
+	fn, err := r.UpdateFnByEnvAndPkg(db, pkg)
+	if err != nil {
+		return nil, fmt.Errorf("request for update function error: %+v", err)
 	}
-	(*db).Spec.FissionRefInfo.FnResourceVersion=fn.ResourceVersion
+	(*db).Spec.FissionRefInfo.FnResourceVersion = fn.ResourceVersion
 	klog.V(5).Infof("update function name: %s\n", fn.Name)
-	return  fn, nil
+	return fn, nil
 }
 
-func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,error)  {
+func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit) (*FissionResInfoRsp, error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	//查询package的resourceversion
-	Pkg,err:=r.getPkgVersion(db)
-	if err!=nil{
-		return nil,fmt.Errorf("get pkgResourceVersion error: %v",err)
+	Pkg, err := r.getPkgVersion(db)
+	if err != nil {
+		return nil, fmt.Errorf("get pkgResourceVersion error: %v", err)
 	}
 	//更新package的url
-	request = request.Put(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, PkgUrl,db.Spec.FissionRefInfo.PkgName))
+	request = request.Put(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, PkgUrl, db.Spec.FissionRefInfo.PkgName))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -711,16 +731,16 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 	}
 	requestBody.Metadata.ResourceVersion = Pkg.Metadata.ResourceVersion
 	//判断是否是文件还是在线编辑
-	if len(db.Spec.FissionRefInfo.FnFile)>0{
-		if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip){
+	if len(db.Spec.FissionRefInfo.FnFile) > 0 {
+		if strings.Contains(db.Spec.FissionRefInfo.FnFile, Zip) {
 			requestBody.Spec.Source.Type = "literal"
 			requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
 			requestBody.Spec.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
-		}else {
+		} else {
 			requestBody.Spec.Deployment.Type = "literal"
 			requestBody.Spec.Deployment.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
 		}
-	}else {
+	} else {
 		requestBody.Spec.Deployment.Type = "literal"
 		requestBody.Spec.Deployment.Literal = []byte(db.Spec.FissionRefInfo.FnCode)
 	}
@@ -736,14 +756,14 @@ func (r *Operator) UpdatePkgByFile(db *nlptv1.Serviceunit)(*FissionResInfoRsp,er
 		return nil, fmt.Errorf("request for update rate error: receive wrong status code: %s", string(body))
 	}
 	klog.V(5).Infof("update pkg name: %s\n", responseBody.Name)
-	return  responseBody, nil
+	return responseBody, nil
 }
 
-func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInfoRsp)(*FissionResInfoRsp, error){
+func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResInfoRsp) (*FissionResInfoRsp, error) {
 	klog.Infof("Enter UpdateFnByEnvAndPkg :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Put(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, FunctionUrl,db.Spec.FissionRefInfo.FnName))
+	request = request.Put(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, FunctionUrl, db.Spec.FissionRefInfo.FnName))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -764,7 +784,27 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	requestBody.Spec.Package.Packageref.Namespace = db.ObjectMeta.Namespace
 	requestBody.Spec.Package.Packageref.Name = db.Spec.FissionRefInfo.PkgName
 	//函数入口
-	requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint
+	//压缩包时传入的函数入口
+	if strings.HasSuffix(db.Spec.FissionRefInfo.FnFile, ".zip") {
+		switch db.Spec.FissionRefInfo.Language {
+		case NodeJs:
+			requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint
+		case Python:
+			requestBody.Spec.Package.FunctionName = db.Spec.FissionRefInfo.Entrypoint + "." + EntryPy
+		case Go13, Go12:
+			requestBody.Spec.Package.FunctionName = EntryGo
+		}
+	}
+	//单个文件或者在先编辑时go python传入 Handler main，nodejs不需要传入
+	if strings.HasSuffix(db.Spec.FissionRefInfo.FnFile, ".go") ||
+		strings.HasSuffix(db.Spec.FissionRefInfo.FnFile, ".py") {
+		switch db.Spec.FissionRefInfo.Language {
+		case Python:
+			requestBody.Spec.Package.FunctionName = EntryPy
+		case Go13, Go12:
+			requestBody.Spec.Package.FunctionName = EntryGo
+		}
+	}
 	requestBody.Spec.InvokeStrategy.ExecutionStrategy.ExecutorType = "poolmgr"
 	requestBody.Spec.InvokeStrategy.StrategyType = "execution"
 	requestBody.Spec.FunctionTimeout = 120
@@ -772,29 +812,29 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 	responseBody := &FissionResInfoRsp{}
 
 	//判断package的状态是否完成
-	for i:=1;i<15;i++{
-		time.Sleep(time.Duration(i)*time.Second)
-		Pkg,err := r.getPkgVersion(db)
-		if err!=nil {
-			return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+	for i := 1; i < 15; i++ {
+		time.Sleep(time.Duration(i) * time.Second)
+		Pkg, err := r.getPkgVersion(db)
+		if err != nil {
+			return nil, fmt.Errorf("get pkgResourceVersion error: %v", err)
 		}
 		//单文件成功状态是none,zip包成功状态是succeeded
-		if Pkg.Status.BuildStatus=="none"||Pkg.Status.BuildStatus=="succeeded"{
+		if Pkg.Status.BuildStatus == "none" || Pkg.Status.BuildStatus == "succeeded" {
 			requestBody.Spec.Package.Packageref.Resourceversion = Pkg.Metadata.ResourceVersion
 			break
 		}
 	}
-	Pkg,err := r.getPkgVersion(db)
-	if err!=nil {
-		return nil,fmt.Errorf("get pkgResourceVersion error: %v",err )
+	Pkg, err := r.getPkgVersion(db)
+	if err != nil {
+		return nil, fmt.Errorf("get pkgResourceVersion error: %v", err)
 	}
-	if Pkg.Status.BuildStatus=="failed"{
-		return nil, fmt.Errorf("update function error: +%v",Pkg.Status.BuildLog)
+	if Pkg.Status.BuildStatus == "failed" {
+		return nil, fmt.Errorf("update function error: +%v", Pkg.Status.BuildLog)
 	}
 	//查询function的resourceversion
-	Fn,err:=r.getFnVersion(db)
-	if err!=nil{
-		return nil,fmt.Errorf("get FnResourceVersion error: %v",err)
+	Fn, err := r.getFnVersion(db)
+	if err != nil {
+		return nil, fmt.Errorf("get FnResourceVersion error: %v", err)
 	}
 	requestBody.Metadata.ResourceVersion = Fn.Metadata.ResourceVersion
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
@@ -809,70 +849,71 @@ func (r *Operator) UpdateFnByEnvAndPkg(db *nlptv1.Serviceunit,pkg *FissionResInf
 		return nil, fmt.Errorf("request for update function error: receive wrong status code: %s", string(body))
 	}
 	klog.V(5).Infof("update function name: %s\n", responseBody.Name)
-	return  responseBody, nil
+	return responseBody, nil
 
 }
+
 //获取pkg的信息
-func (r *Operator) getPkgVersion(db *nlptv1.Serviceunit)(*PkgRefInfoReq,error){
+func (r *Operator) getPkgVersion(db *nlptv1.Serviceunit) (*PkgRefInfoReq, error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	//查询package的resourceversion
-	request = request.Get(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, PkgUrl,db.Spec.FissionRefInfo.PkgName)).Query("namespace="+db.Namespace)
+	request = request.Get(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, PkgUrl, db.Spec.FissionRefInfo.PkgName)).Query("namespace=" + db.Namespace)
 	responseBody := &PkgRefInfoReq{}
 	_, _, errs := request.Send("").EndStruct(responseBody)
 	if len(errs) > 0 {
 		klog.Errorf("request for get pkg error %+v", errs)
 		return nil, fmt.Errorf("request for get pkg error: %+v", errs)
 	}
-	return  responseBody,nil
+	return responseBody, nil
 }
 
 //获取function的信息
-func (r *Operator) getFnVersion(db *nlptv1.Serviceunit)(*FunctionReqInfo,error){
+func (r *Operator) getFnVersion(db *nlptv1.Serviceunit) (*FunctionReqInfo, error) {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	//查询function的resourceversion
-	request = request.Get(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, FunctionUrl,db.Spec.FissionRefInfo.FnName)).Query("namespace="+db.Namespace)
+	request = request.Get(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, FunctionUrl, db.Spec.FissionRefInfo.FnName)).Query("namespace=" + db.Namespace)
 	responseBody := &FunctionReqInfo{}
 	_, _, errs := request.Send("").EndStruct(responseBody)
 	if len(errs) > 0 {
 		klog.Errorf("request for get function error %+v", errs)
 		return nil, fmt.Errorf("request for get function error: %+v", errs)
 	}
-	return  responseBody,nil
+	return responseBody, nil
 }
-func (r *Operator) DeleteFunction(db *nlptv1.Serviceunit)error{
+func (r *Operator) DeleteFunction(db *nlptv1.Serviceunit) error {
 	klog.Infof("Enter CreateFunction :%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	err := r.DeleteFn(db)
 	if err != nil {
-		return  fmt.Errorf("request for delete function error: %+v", err)
+		return fmt.Errorf("request for delete function error: %+v", err)
 	}
 	err = r.DeletePkg(db)
-	if err != nil{
+	if err != nil {
 		return fmt.Errorf("request for delete package error: %+v", err)
 	}
 	if len(db.Spec.FissionRefInfo.Resources.Maxmemory) != 0 || len(db.Spec.FissionRefInfo.Resources.Minmemory) != 0 ||
 		len(db.Spec.FissionRefInfo.Resources.Maxcpu) != 0 || len(db.Spec.FissionRefInfo.Resources.Mincpu) != 0 {
 		err = r.DeleteEnv(db)
-		if err != nil{
+		if err != nil {
 			return fmt.Errorf("request for delete env error: %+v", err)
 		}
 	}
 	return nil
 }
 
-func (r *Operator) DeleteFn(db *nlptv1.Serviceunit)error{
+func (r *Operator) DeleteFn(db *nlptv1.Serviceunit) error {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort,FunctionUrl,db.Spec.FissionRefInfo.FnName)).Query("namespace="+db.Namespace)
+	request = request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, FunctionUrl, db.Spec.FissionRefInfo.FnName)).Query("namespace=" + db.Namespace)
 	response, body, errs := request.Send("").End()
 	if len(errs) > 0 {
 		klog.Errorf("request for delete function error %+v", errs)
 		return fmt.Errorf("request for delete function error: %+v", errs)
 	}
-	klog.V(5).Infof("delete function code: %d %s\n", response.StatusCode,body)
+	klog.V(5).Infof("delete function code: %d %s\n", response.StatusCode, body)
 	//function不存在，返回404
-	if response.StatusCode ==404{
+	if response.StatusCode == 404 {
 		return nil
 	}
 	if response.StatusCode != 200 {
@@ -884,15 +925,15 @@ func (r *Operator) DeleteFn(db *nlptv1.Serviceunit)error{
 func (r *Operator) DeletePkg(db *nlptv1.Serviceunit) error {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort,PkgUrl,db.Spec.FissionRefInfo.PkgName)).Query("namespace="+db.Namespace)
+	request = request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, PkgUrl, db.Spec.FissionRefInfo.PkgName)).Query("namespace=" + db.Namespace)
 	response, body, errs := request.Send("").End()
 	if len(errs) > 0 {
 		klog.Errorf("request for delete package error %+v", errs)
 		return fmt.Errorf("request for delete package error: %+v", errs)
 	}
-	klog.V(5).Infof("delete package code: %d %s\n", response.StatusCode,body)
+	klog.V(5).Infof("delete package code: %d %s\n", response.StatusCode, body)
 	//package不存在，返回404
-	if response.StatusCode ==404{
+	if response.StatusCode == 404 {
 		return nil
 	}
 	if response.StatusCode != 200 {
@@ -904,15 +945,15 @@ func (r *Operator) DeletePkg(db *nlptv1.Serviceunit) error {
 func (r *Operator) DeleteEnv(db *nlptv1.Serviceunit) error {
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort,EnvUrl,db.Spec.FissionRefInfo.EnvName)).Query("namespace="+db.Namespace)
+	request = request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.FissionHost, r.FissionPort, EnvUrl, db.Spec.FissionRefInfo.EnvName)).Query("namespace=" + db.Namespace)
 	response, body, errs := request.Send("").End()
 	if len(errs) > 0 {
 		klog.Errorf("request for delete environment error %+v", errs)
 		return fmt.Errorf("request for delete environment error: %+v", errs)
 	}
-	klog.V(5).Infof("delete environment code: %d %s\n", response.StatusCode,body)
+	klog.V(5).Infof("delete environment code: %d %s\n", response.StatusCode, body)
 	//env不存在，返回404
-	if response.StatusCode ==404{
+	if response.StatusCode == 404 {
 		return nil
 	}
 	if response.StatusCode != 200 {
