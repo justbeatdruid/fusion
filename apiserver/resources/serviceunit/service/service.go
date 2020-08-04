@@ -608,8 +608,16 @@ func (s *Service) GetLogs(fnName, namespace string) (string, error) {
 
 func (s *Service) TestFn(data *TestFunction, namespace string) (string, error) {
 	var cmd *exec.Cmd
-	if len(data.Header) > 0 && len(data.Body) > 0 {
+	if len(data.Header) > 0 && len(data.Body) > 0 && len(data.Query) > 0 {
+		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --body=`+data.Body+` --method `+data.Method+` --header `+data.Header+` --query`+data.Query)
+	} else if  len(data.Header) > 0 && len(data.Body) > 0 {
 		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --body=`+data.Body+` --method `+data.Method+` --header `+data.Header)
+	} else if len(data.Header) > 0 && len(data.Query) > 0 {
+		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --method `+data.Method+` --header `+data.Header+` --query`+data.Query)
+	} else if len(data.Body) > 0 && len(data.Query) > 0 {
+		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --body=`+data.Body+` --method `+data.Method+` --query`+data.Query)
+	} else if len(data.Query) > 0 {
+		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --method `+data.Method+` --query`+data.Query)
 	} else if len(data.Header) > 0 {
 		cmd = exec.Command("/bin/bash", "-c", `fission fn test --name `+data.FnName+` --fns=`+namespace+` --method `+data.Method+` --header `+data.Header)
 	} else if len(data.Body) > 0 {
