@@ -55,6 +55,7 @@ type TestFunction struct {
 	Method string `json:"method"`
 	Body string `json:"body"`
 	Header string `json:"header"`
+	Query string `json:"query"`
 }
 
 // only used in creation options
