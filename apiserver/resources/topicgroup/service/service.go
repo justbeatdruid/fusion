@@ -352,36 +352,33 @@ func (s *Service) MergePolicies(req *Policies, db *v1.Policies) *v1.Policies {
 
 func (s *Service) IsTopicgroupExist(tp *v1.Topicgroup) (bool, error) {
 	//判断是否已存在
-	var options metav1.ListOptions
-	options.LabelSelector = fmt.Sprintf("%s=%s", LabelTenant, tp.ObjectMeta.Namespace)
-	tpList, err := s.ListWithOptions(options, util.WithNamespace(tp.Namespace))
+	//var options metav1.ListOptions
+	//options.LabelSelector = fmt.Sprintf("%s=%s", LabelTenant, tp.ObjectMeta.Namespace)
+
+	tpList, err := s.List(util.WithNamespace(tp.Namespace), util.WithNameLike(tp.Spec.Name))
 	if err != nil {
 		return false, err
 	}
 
 	if len(tpList.Items) > 0 {
-		for _, t := range tpList.Items {
-			if t.Spec.Name == tp.Spec.Name {
-				return true, nil
-			}
-		}
+		return true, nil
 	}
 	return false, nil
 
 }
-func (s *Service) ListWithOptions(options metav1.ListOptions, opts ...util.OpOption) (*v1.TopicgroupList, error) {
-	op := util.OpList(opts...)
-	crd, err := s.client.Namespace(op.Namespace()).List(options)
-	if err != nil {
-		return nil, fmt.Errorf("error list crd: %+v", err)
-	}
-	tps := &v1.TopicgroupList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
-	}
-	//klog.V(5).Infof("get v1.topicgroupList: %+v", tps)
-	return tps, nil
-}
+//func (s *Service) ListWithOptions(options metav1.ListOptions, opts ...util.OpOption) (*v1.TopicgroupList, error) {
+//	op := util.OpList(opts...)
+//	crd, err := s.client.Namespace(op.Namespace()).List(options)
+//	if err != nil {
+//		return nil, fmt.Errorf("error list crd: %+v", err)
+//	}
+//	tps := &v1.TopicgroupList{}
+//	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), tps); err != nil {
+//		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+//	}
+//	//klog.V(5).Infof("get v1.topicgroupList: %+v", tps)
+//	return tps, nil
+//}
 func (s *Service) Create(tp *v1.Topicgroup) (*v1.Topicgroup, tgerror.TopicgroupError) {
 	//判断是否已存在
 	isExist, err := s.IsTopicgroupExist(tp)

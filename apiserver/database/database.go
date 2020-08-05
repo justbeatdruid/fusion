@@ -77,6 +77,7 @@ func newDatabaseConnection(cfg DatabaseConfig) (*DatabaseConnection, error) {
 	if err != nil {
 		return nil, fmt.Errorf("cannot register database: %+v", err)
 	}
+
 	orm.RegisterModel(new(model.Application), new(model.UserRelation), new(model.Task), new(model.TbDagRun), new(model.TbMetadata),
 		new(model.Relation), new(model.Api), new(model.Serviceunit), new(model.Topic), new(model.TopicGroup),new(model.Product), new(model.Scenario))
 	if err = orm.RunSyncdb("default", false, true); err != nil {

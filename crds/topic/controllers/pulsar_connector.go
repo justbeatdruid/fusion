@@ -105,7 +105,7 @@ type ConsumerStat struct {
 }
 
 //CreateTopic 调用Pulsar的Restful Admin API，创建Topic
-func (r *Connector) CreateTopic(topic *nlptv1.Topic) (err error) {
+func (r *Connector) CreateTopic(topic *nlptv1.Topic) error{
 	if topic.Spec.Partitioned {
 		return r.CreatePartitionedTopic(topic)
 	}
@@ -114,6 +114,9 @@ func (r *Connector) CreateTopic(topic *nlptv1.Topic) (err error) {
 	//klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl := r.getUrl(topic)
 	response, _, errs := request.Put(topicUrl).Send("").EndStruct("")
+	if errs != nil {
+		return fmt.Errorf("create topic error: %+v, response: %+v", errs, response)
+	}
 	if response.StatusCode == 204 {
 		stats, err := r.GetStats(*topic)
 		if err != nil {
@@ -135,6 +138,9 @@ func (r *Connector) CreatePartitionedTopic(topic *nlptv1.Topic) (err error) {
 	topicUrl := r.getUrl(topic)
 
 	response, _, errs := request.Put(topicUrl).Send(topic.Spec.PartitionNum).EndStruct("")
+	if errs != nil {
+		return fmt.Errorf("create partitioned topic error: %+v, response: %+v", errs, response)
+	}
 	if response.StatusCode == 204 {
 		return nil
 	} else {

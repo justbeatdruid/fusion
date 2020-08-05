@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
+	"github.com/chinamobile/nlpt/apiserver/database"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
@@ -53,6 +54,7 @@ type Service struct {
 	httpPort          int
 	authEnable        bool
 	adminToken        string
+	db                *database.DatabaseConnection
 }
 
 const (
@@ -82,7 +84,7 @@ func (s *Service) GetClient() dynamic.NamespaceableResourceInterface {
 	return s.client
 }
 
-func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topConfig *config.TopicConfig, errMsg config.ErrorConfig) *Service {
+func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topConfig *config.TopicConfig, errMsg config.ErrorConfig, db *database.DatabaseConnection) *Service {
 	return &Service{client: client.Resource(oofsGVR),
 		clientAuthClient:  client.Resource(clientauthv1.GetOOFSGVR()),
 		topicGroupClient:  client.Resource(topicgroupv1.GetOOFSGVR()),
@@ -94,6 +96,7 @@ func NewService(client dynamic.Interface, kubeClient *clientset.Clientset, topCo
 		authEnable:        topConfig.AuthEnable,
 		adminToken:        topConfig.AdminToken,
 		kubeClient:        kubeClient,
+		db: db,
 	}
 }
 
@@ -127,6 +130,7 @@ func (s *Service) ListTopic(opts ...util.OpOption) ([]*Topic, error) {
 	return ToListModel(tps), nil
 }
 
+//
 func (s *Service) GetTopic(id string, opts ...util.OpOption) (*Topic, error) {
 	tp, err := s.Get(id, opts...)
 	if err != nil {
@@ -666,7 +670,7 @@ func (s *Service) ModifyApplicationPermissions(topicId string, appId string, act
 		return nil, "授权应用不存在", fmt.Errorf("grant permission error:%+v", err)
 	}
 
-	for k, v := range tp.Spec.Applications{
+	for k, v := range tp.Spec.Applications {
 		if k == appId {
 			v.Actions = actions
 			v.Status = v1.UpdatingAuthorization

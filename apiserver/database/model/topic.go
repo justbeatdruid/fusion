@@ -3,8 +3,9 @@ package model
 import (
 	"encoding/json"
 	"fmt"
-
+	"github.com/astaxie/beego/orm"
 	"github.com/chinamobile/nlpt/crds/topic/api/v1"
+	"k8s.io/klog"
 
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -14,7 +15,8 @@ type Topic struct {
 	Id         string `orm:"pk;unique"`
 	Namespace  string
 	Name       string
-	TopicGroup string
+	TopicGroup *TopicGroup `orm:"rel(fk)"`
+	TopicGroupName string
 	Status     string
 	Raw        string `orm:"type(text)"`
 }
@@ -41,12 +43,22 @@ func TopicFromTopic(api *v1.Topic) (Topic, []UserRelation, error) {
 	if api.ObjectMeta.Labels == nil {
 		return Topic{}, nil, fmt.Errorf("topic labels is null")
 	}
+
+
 	rls := FromUser(topicType, api.ObjectMeta.Name, api.ObjectMeta.Labels)
+	o := orm.NewOrm()
+
+	tg := &TopicGroup{}
+	err = o.QueryTable("topicgroup").Filter("name",api.Spec.TopicGroup).Filter("namespace", api.Namespace).One(tg)
+	if err != nil {
+		klog.Error("Query from topicgroup error: %+v", err)
+	}
 	return Topic{
 		Id:         api.ObjectMeta.Name,
 		Namespace:  api.ObjectMeta.Namespace,
 		Name:       api.Spec.Name,
-		TopicGroup: api.Spec.TopicGroup,
+		TopicGroup: tg,
+		TopicGroupName: api.Spec.TopicGroup,
 		Status:     string(api.Status.Status),
 
 		Raw: string(raw),
