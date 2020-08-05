@@ -12,13 +12,14 @@ import (
 )
 
 type Topic struct {
-	Id         string `orm:"pk;unique"`
-	Namespace  string
-	Name       string
-	TopicGroup *TopicGroup `orm:"rel(fk)"`
+	Id             string `orm:"pk;unique"`
+	Namespace      string
+	Name           string
+	TopicGroup     *TopicGroup `orm:"rel(fk)"`
 	TopicGroupName string
-	Status     string
-	Raw        string `orm:"type(text)"`
+	Status         string
+	Raw            string `orm:"type(text)"`
+	CreatedAt      int64
 }
 
 func (*Topic) TableName() string {
@@ -44,24 +45,23 @@ func TopicFromTopic(api *v1.Topic) (Topic, []UserRelation, error) {
 		return Topic{}, nil, fmt.Errorf("topic labels is null")
 	}
 
-
 	rls := FromUser(topicType, api.ObjectMeta.Name, api.ObjectMeta.Labels)
 	o := orm.NewOrm()
 
 	tg := &TopicGroup{}
-	err = o.QueryTable("topicgroup").Filter("name",api.Spec.TopicGroup).Filter("namespace", api.Namespace).One(tg)
+	err = o.QueryTable("topicgroup").Filter("name", api.Spec.TopicGroup).Filter("namespace", api.Namespace).One(tg)
 	if err != nil {
 		klog.Error("Query from topicgroup error: %+v", err)
 	}
 	return Topic{
-		Id:         api.ObjectMeta.Name,
-		Namespace:  api.ObjectMeta.Namespace,
-		Name:       api.Spec.Name,
-		TopicGroup: tg,
+		Id:             api.ObjectMeta.Name,
+		Namespace:      api.ObjectMeta.Namespace,
+		Name:           api.Spec.Name,
+		TopicGroup:     tg,
 		TopicGroupName: api.Spec.TopicGroup,
-		Status:     string(api.Status.Status),
-
-		Raw: string(raw),
+		Status:         string(api.Status.Status),
+		CreatedAt:      api.CreationTimestamp.Unix(),
+		Raw:            string(raw),
 	}, rls, nil
 }
 
