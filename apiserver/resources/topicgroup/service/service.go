@@ -85,7 +85,7 @@ func (s *Service) ToListModel(items *v1.TopicgroupList) []*Topicgroup {
 	var app = make([]*Topicgroup, len(items.Items))
 	for i := range items.Items {
 		app[i] = ToModel(&items.Items[i])
-		app[i].TopicCount = s.GetTopicCountOfTopicgroup(app[i].Name, util.WithNamespace(app[i].Namespace))
+		//app[i].TopicCount = s.GetTopicCountOfTopicgroup(app[i].Name, util.WithNamespace(app[i].Namespace))
 	}
 	return app
 }

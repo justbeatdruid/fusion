@@ -16,8 +16,10 @@ type TopicGroup struct {
 	Available  string
 	Status     string
 	Raw        string `orm:"type(text)"`
-	TopicsCount int
+	TopicsCount string
 }
+
+
 
 func (*TopicGroup) TableName() string {
 	return "topicgroup"
@@ -60,6 +62,9 @@ func TopicgroupToApi(a TopicGroup) (*v1.Topicgroup, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unmarshal crd v1.application error: %+v", err)
 	}
+
+	count, _ := strconv.Atoi(a.TopicsCount)
+	api.Spec.TopicsCount = count
 	return api, nil
 }
 

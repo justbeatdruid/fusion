@@ -509,24 +509,47 @@ func (d *DatabaseConnection) QueryTopicgroup(uid string, md *model.TopicGroup) (
 		conditions = append(conditions, model.Condition{"available", model.Equals, md.Available})
 	}
 
-	err = d.queryWithJoin(uid, md, conditions, &result)
+	var maps []orm.Params
+	err = d.queryWithJoin(uid, md, conditions, &maps)
+	for _, m := range maps {
+		tp := model.TopicGroup{}
+		for k,v := range m {
+			switch k{
+			case "id":
+				tp.Id = fmt.Sprint("", v.(string))
+			case "namespace":
+				tp.Namespace = fmt.Sprint("", v.(string))
+			case "name":
+				tp.Name = fmt.Sprint("", v.(string))
+			case "status":
+				tp.Status = fmt.Sprint("", v.(string))
+			case "available":
+				tp.Available = fmt.Sprint("", v.(string))
+			case "topicsCount":
+				tp.TopicsCount = fmt.Sprint("", v.(string))
+			case "raw":
+				tp.Raw = fmt.Sprint("", v.(string))
+			}
+		}
+		result = append(result, tp)
+	}
 
 
 	return
 }
 
 
-func (d *DatabaseConnection) queryWithJoin(uid string, md model.Table, conditions []model.Condition, result interface{}) (err error) {
+func (d *DatabaseConnection) queryWithJoin(uid string, md model.Table, conditions []model.Condition, maps *[]orm.Params) (err error) {
 	var sql string
 	var values []interface{}
 	and := false
 	if len(uid) > 0 {
-		sqlTpl := `SELECT topicgroup.*, count(topic.id) as topics_count FROM %s LEFT JOIN topic ON topicgroup.id = topic.topic_group_id WHERE topicgroup.id IN (SELECT resource_id FROM user_relation WHERE resource_type = "%s" AND user_id = "%s")`
+		sqlTpl := `SELECT topicgroup.*, count(topic.id) as topicsCount FROM %s LEFT JOIN topic ON topicgroup.id = topic.topic_group_id WHERE topicgroup.id IN (SELECT resource_id FROM user_relation WHERE resource_type = "%s" AND user_id = "%s")`
 		sql = fmt.Sprintf(sqlTpl, md.TableName(), md.ResourceType(), uid)
 		//sql = fmt.Sprintf(sqlTpl, md.TableName())
 		and = true
 	} else {
-		sql = `SELECT topicgroup.*, count(topic.id) as topics_count FROM ` + md.TableName() + ` LEFT JOIN topic ON topicgroup.id = topic.topic_group_id`
+		sql = `SELECT topicgroup.*, count(topic.id) as topicsCount FROM ` + md.TableName() + ` LEFT JOIN topic ON topicgroup.id = topic.topic_group_id`
 		values = make([]interface{}, len(conditions))
 	}
 	for i, c := range conditions {
@@ -568,6 +591,7 @@ func (d *DatabaseConnection) queryWithJoin(uid string, md model.Table, condition
 	sql = sql +  ` GROUP BY(id)`
 
 	klog.Error("topicgroup sql:", sql)
-	_, err = d.Raw(sql, values...).QueryRows(result)
+
+	_, err = d.Raw(sql, values...).Values(maps)
 	return
 }
