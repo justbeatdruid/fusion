@@ -357,6 +357,7 @@ func (d *DatabaseConnection) QueryServiceunit(uid string, md *model.Serviceunit)
 		conditions = append(conditions, model.Condition{"type", model.Equals, md.Type})
 	}
 
+
 	err = d.query(uid, md, conditions, &result)
 	return
 }
@@ -507,7 +508,66 @@ func (d *DatabaseConnection) QueryTopicgroup(uid string, md *model.TopicGroup) (
 	if len(md.Available) > 0 {
 		conditions = append(conditions, model.Condition{"available", model.Equals, md.Available})
 	}
-	//TopicName怎么搜索
-	err = d.query(uid, md, conditions, &result)
+
+	err = d.queryWithJoin(uid, md, conditions, &result)
+
+
+	return
+}
+
+
+func (d *DatabaseConnection) queryWithJoin(uid string, md model.Table, conditions []model.Condition, result interface{}) (err error) {
+	var sql string
+	var values []interface{}
+	and := false
+	if len(uid) > 0 {
+		sqlTpl := `SELECT topicgroup.*, count(topic.id) as topics_count FROM %s LEFT JOIN topic ON topicgroup.id = topic.topic_group_id WHERE topicgroup.id IN (SELECT resource_id FROM user_relation WHERE resource_type = "%s" AND user_id = "%s")`
+		sql = fmt.Sprintf(sqlTpl, md.TableName(), md.ResourceType(), uid)
+		//sql = fmt.Sprintf(sqlTpl, md.TableName())
+		and = true
+	} else {
+		sql = `SELECT topicgroup.*, count(topic.id) as topics_count FROM ` + md.TableName() + ` LEFT JOIN topic ON topicgroup.id = topic.topic_group_id`
+		values = make([]interface{}, len(conditions))
+	}
+	for i, c := range conditions {
+		var k, o, v string
+		k = c.Field
+		v = c.Value
+		switch c.Operator {
+		case model.Equals:
+			o = "="
+		case model.LessThan:
+			o = "<"
+		case model.NotLessThan:
+			o = ">="
+		case model.MoreThan:
+			o = ">"
+		case model.NotMoreThan:
+			o = "<="
+		case model.Like:
+			o = "LIKE"
+			v = `%%` + v + `%%`
+		case model.In:
+			o = "IN"
+			v = `(` + v + `)`
+		}
+
+		if and {
+			sql = sql + " AND "
+		} else {
+			sql = sql + " WHERE "
+		}
+		if len(uid) > 0 {
+			sql = sql + "topicgroup." + k + " " + o + " \"" + v + "\""
+		} else {
+			sql = sql + "topicgroup."+ k + " " + o + " ?"
+			values[i] = v
+		}
+		and = true
+	}
+	sql = sql +  ` GROUP BY(id)`
+
+	klog.Error("topicgroup sql:", sql)
+	_, err = d.Raw(sql, values...).QueryRows(result)
 	return
 }
