@@ -70,7 +70,7 @@ type Api struct {
 	PublishInfo v1.PublishInfo
 
 	ApplicationBindStatus *v1.ApiApplicationStatus `json:"applicationBindStatus"`
-	ResTransformer v1.ResponseTransformer `json:"resTransformer"`
+	ResTransformer        v1.ResponseTransformer   `json:"resTransformer"`
 }
 
 type Statistics struct {
@@ -90,27 +90,27 @@ func ToAPI(api *Api) *v1.Api {
 	crd.ObjectMeta.Labels = make(map[string]string)
 	crd.ObjectMeta.Labels[v1.ServiceunitLabel] = api.Serviceunit.ID
 	crd.Spec = v1.ApiSpec{
-		Name:               api.Name,
-		Description:        api.Description,
-		Serviceunit:        api.Serviceunit,
-		Applications:       api.Applications,
-		Frequency:          api.Frequency,
-		ApiType:            api.ApiType,
-		AuthType:           api.AuthType,
-		Tags:               api.Tags,
-		ApiBackendType:     api.Serviceunit.Type,
-		Method:             api.Method,
-		Protocol:           api.Protocol,
-		ReturnType:         api.ReturnType,
-		RDBQuery:           api.RDBQuery,
-		DataWarehouseQuery: api.DataWarehouseQuery,
-		ApiDefineInfo:      api.ApiDefineInfo,
-		KongApi:            api.KongApi,
-		ApiQueryInfo:       api.ApiQueryInfo,
-		ApiReturnInfo:      api.ApiReturnInfo,
-		Traffic:            api.Traffic,
-		Restriction:        api.Restriction,
-		PublishInfo:        api.PublishInfo,
+		Name:                api.Name,
+		Description:         api.Description,
+		Serviceunit:         api.Serviceunit,
+		Applications:        api.Applications,
+		Frequency:           api.Frequency,
+		ApiType:             api.ApiType,
+		AuthType:            api.AuthType,
+		Tags:                api.Tags,
+		ApiBackendType:      api.Serviceunit.Type,
+		Method:              api.Method,
+		Protocol:            api.Protocol,
+		ReturnType:          api.ReturnType,
+		RDBQuery:            api.RDBQuery,
+		DataWarehouseQuery:  api.DataWarehouseQuery,
+		ApiDefineInfo:       api.ApiDefineInfo,
+		KongApi:             api.KongApi,
+		ApiQueryInfo:        api.ApiQueryInfo,
+		ApiReturnInfo:       api.ApiReturnInfo,
+		Traffic:             api.Traffic,
+		Restriction:         api.Restriction,
+		PublishInfo:         api.PublishInfo,
 		ResponseTransformer: api.ResTransformer,
 	}
 
@@ -170,7 +170,7 @@ func ToModel(obj *v1.Api) *Api {
 		FailedCount:      obj.Status.FailedCount,
 		LatencyCount:     obj.Status.LatencyCount,
 		CallFrequency:    obj.Status.CallFrequency,
-		ResTransformer:	obj.Spec.ResponseTransformer,
+		ResTransformer:   obj.Spec.ResponseTransformer,
 	}
 
 	if len(model.Method) == 0 {
@@ -620,6 +620,32 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	}
 
 	target.Status.UpdatedAt = metav1.Now()
+	return nil
+}
+
+func (s *Service) assignmentConfig(target *v1.Api, name string, reqData interface{}) error {
+	klog.Infof("enter assignmentConfig name %s, config %+v", name, reqData)
+	data, ok := reqData.(map[string]interface{})
+	if !ok {
+		return fmt.Errorf("reqData type is error,req data: %v", reqData)
+	}
+	b, err := json.Marshal(data)
+	if err != nil {
+		return fmt.Errorf("json.Marshal error,: %v", err)
+	}
+
+	switch name {
+	case "response-transformer":
+		var source v1.ResTransformerConfig
+		if err = json.Unmarshal(b, &source); err != nil {
+			return fmt.Errorf("json.Unmarshal error,: %v", err)
+		}
+		target.Spec.ResponseTransformer.Name = name
+		target.Spec.ResponseTransformer.Config = source
+	}
+
+	target.Status.UpdatedAt = metav1.Now()
+	klog.V(5).Infof("assignmentConfig target %+v", target)
 	return nil
 }
 

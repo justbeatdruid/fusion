@@ -28,6 +28,7 @@ type controller struct {
 	errMsg  config.ErrorConfig
 	lock    concurrency.Mutex
 }
+
 func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient(), cfg.DataserviceConnector, cfg.GetKubeClient(), cfg.TenantEnabled, cfg.LocalConfig, cfg.Database),
@@ -99,6 +100,13 @@ type ExportRequest = struct {
 	Message   string         `json:"message"`
 	Data      service.Export `json:"data"`
 	Detail    string         `json:"detail"`
+}
+
+type AddPluginsRequest struct {
+	Data struct {
+		Name   string      `json:"name"`
+		Config interface{} `json:"config"`
+	} `json:"data,omitempty"`
 }
 
 func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
@@ -429,6 +437,55 @@ func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 			Code:      0,
 			ErrorCode: "0",
 			Data:      data,
+		}
+	}
+}
+
+func (c *controller) AddApiPlugins(req *restful.Request) (int, interface{}) {
+	unlock, err := c.lock.Lock("api")
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   2,
+			Detail: fmt.Sprintf("lock error: %+v", err),
+		}
+	}
+	defer func() {
+		_ = unlock()
+	}()
+
+	reqBody := &AddPluginsRequest{}
+	if err := req.ReadEntity(&reqBody); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "001000001",
+			Message:   c.errMsg.Api["001000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "001000003",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
+		}
+	}
+	klog.V(5).Infof("AddApiPlugins name config %s, %+v", reqBody.Data.Name, reqBody.Data.Config)
+	if api, err := c.service.AddApiPlugins(req.PathParameter("id"), reqBody.Data.Name, reqBody.Data.Config, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		code := "001000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      2,
+			ErrorCode: code,
+			Message:   c.errMsg.Api[code],
+			Detail:    fmt.Errorf("patch api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
+			Code:      0,
+			ErrorCode: "0",
+			Data:      api,
 		}
 	}
 }
@@ -783,8 +840,9 @@ func (c *controller) ExportApis(req *restful.Request) (int, *ExportRequest) {
 		Message:   "",
 	}
 }
+
 //ImportApis import apis
-func (c*controller)ImportApis(req *restful.Request, response *restful.Response)(int,*ImportResponse) {
+func (c *controller) ImportApis(req *restful.Request, response *restful.Response) (int, *ImportResponse) {
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		return http.StatusInternalServerError, &ImportResponse{
@@ -821,30 +879,30 @@ func (c*controller)ImportApis(req *restful.Request, response *restful.Response)(
 	var faildata []service.Api
 
 	for _, ap := range apis.ParseData {
-		api:=&service.Api{
-			Namespace:             nameSpace,
-			Name:                  ap[0],
-			Description:           ap[4],
-			Serviceunit:           v1.Serviceunit{
-				ID:"696825d137ed8321",
-				Group:"kong",
+		api := &service.Api{
+			Namespace:   nameSpace,
+			Name:        ap[0],
+			Description: ap[4],
+			Serviceunit: v1.Serviceunit{
+				ID:    "696825d137ed8321",
+				Group: "kong",
 			},
-			Users:               authuserName,
-			ApiType:               v1.ApiType(ap[1]),
-			AuthType:              v1.AuthType(ap[2]),
-			Tags:                  ap[3],
-			ApiDefineInfo:         v1.ApiDefineInfo{
-				Path:ap[7],
-				Protocol:v1.Protocol(ap[8]),
-				Method:v1.Method(ap[10]),
-				Cors:ap[11],
+			Users:    authuserName,
+			ApiType:  v1.ApiType(ap[1]),
+			AuthType: v1.AuthType(ap[2]),
+			Tags:     ap[3],
+			ApiDefineInfo: v1.ApiDefineInfo{
+				Path:     ap[7],
+				Protocol: v1.Protocol(ap[8]),
+				Method:   v1.Method(ap[10]),
+				Cors:     ap[11],
 			},
-			KongApi:               v1.KongApiInfo{
-				Paths:[]string{ap[14]},
+			KongApi: v1.KongApiInfo{
+				Paths: []string{ap[14]},
 			},
-			ApiReturnInfo:         v1.ApiReturnInfo{
-				NormalExample:ap[15],
-				FailureExample:ap[16],
+			ApiReturnInfo: v1.ApiReturnInfo{
+				NormalExample:  ap[15],
+				FailureExample: ap[16],
 			},
 		}
 

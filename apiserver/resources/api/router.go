@@ -15,12 +15,13 @@ type router struct {
 	controller *controller
 }
 type ImportResponse struct {
-	Code      int             `json:"code"`
-	ErrorCode string          `json:"errorCode"`
-	Message   string          `json:"message"`
-	Data      []service.Api   `json:"data"`
-	Detail    string          `json:"detail"`
+	Code      int           `json:"code"`
+	ErrorCode string        `json:"errorCode"`
+	Message   string        `json:"message"`
+	Data      []service.Api `json:"data"`
+	Detail    string        `json:"detail"`
 }
+
 func NewRouter(cfg *config.Config) *router {
 	return &router{newController(cfg)}
 }
@@ -172,7 +173,15 @@ func (r *router) Install(ws *restful.WebService) {
 		Produces(restful.MIME_JSON).
 		Doc("import apis from excel files").
 		To(r.importApis).
-		Do(returns200,returns500))
+		Do(returns200, returns500))
+	// add plugins
+	ws.Route(ws.POST("/apis/{id}/plugins").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("add an api plugins").
+		To(r.addApiPlugins).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func process(f func(*restful.Request) (int, interface{}), request *restful.Request, response *restful.Response) {
@@ -248,7 +257,11 @@ func (r *router) exportApis(request *restful.Request, response *restful.Response
 	http.ServeFile(response.ResponseWriter, request.Request, "./tmp/api.xlsx")
 	defer os.Remove("./tmp/api.xlsx")
 }
-func (r *router) importApis(request *restful.Request,response *restful.Response){
-	code,result:=r.controller.ImportApis(request,response)
-	response.WriteHeaderAndEntity(code,result)
+func (r *router) importApis(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ImportApis(request, response)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) addApiPlugins(request *restful.Request, response *restful.Response) {
+	process(r.controller.AddApiPlugins, request, response)
 }
