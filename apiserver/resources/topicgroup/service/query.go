@@ -10,6 +10,7 @@ import (
 	"k8s.io/klog"
 )
 
+
 func (s *Service) ListFromDatabase(opts ...util.OpOption) (*v1.TopicgroupList, error) {
 	op := util.OpList(opts...)
 	md := &model.TopicGroup{

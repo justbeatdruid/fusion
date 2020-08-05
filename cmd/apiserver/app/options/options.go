@@ -137,7 +137,7 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 		if s.TenantEnabled {
 			casType = "tenant"
 		} else {
-			cache.SetGVs([]string{"apis", "applications", "applicationgroups", "applies", "datasources", "serviceunits", "serviceunitgroups"})
+			cache.SetGVs([]string{"apis", "applications", "applicationgroups", "applies", "datasources", "serviceunits", "serviceunitgroups", "topics", "topicgroups"})
 		}
 		cas.SetConnectionInfo(casType, s.Cas.Host, s.Cas.Port)
 		return &appconfig.Config{
@@ -193,7 +193,7 @@ func (s *ServerRunOptions) Config() (*appconfig.Config, error) {
 	if s.TenantEnabled {
 		casType = "tenant"
 	} else {
-		cache.SetGVs([]string{"apis", "applications", "applicationgroups", "applies", "datasources", "serviceunits", "serviceunitgroups"})
+		cache.SetGVs([]string{"apis", "applications", "applicationgroups", "applies", "datasources", "serviceunits", "serviceunitgroups", "topics", "topicgroups"})
 	}
 	cas.SetConnectionInfo(casType, s.Cas.Host, s.Cas.Port)
 	return c, nil

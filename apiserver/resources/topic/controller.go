@@ -43,7 +43,7 @@ select * From subquery_1, subquery_2`
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TopicConfig, cfg.LocalConfig),
+		service.NewService(cfg.GetDynamicClient(), cfg.GetKubeClient(), cfg.TopicConfig, cfg.LocalConfig, cfg.Database),
 		cfg.LocalConfig,
 		cfg.TopicConfig,
 	}
