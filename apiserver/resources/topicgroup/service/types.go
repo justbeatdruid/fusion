@@ -166,6 +166,7 @@ func ToModel(obj *v1.Topicgroup) *Topicgroup {
 		Available:   obj.Spec.Available,
 		Description: obj.Spec.Description,
 		ShowStatus:  v1.ShowStatusMap[obj.Status.Status],
+		TopicCount:  obj.Spec.TopicsCount,
 	}
 }
 
