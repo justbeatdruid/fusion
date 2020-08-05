@@ -489,6 +489,29 @@ func (d *DatabaseConnection) DeleteTopicgroup(obj interface{}) error {
 	}
 	return d.DeleteObject(&o)
 }
+
+func (d *DatabaseConnection) QueryTopic(uid string, md *model.Topic) (result []model.Topic, err error) {
+	o := orm.NewOrm()
+	qs := o.QueryTable("topic")
+
+	cond := orm.NewCondition()
+
+	if len(md.Name) > 0 {
+		cond.And("name", md.Name)
+	}
+
+	if len(md.TopicGroupName) > 0 {
+		cond.And("topic_group_name", md.TopicGroupName)
+	}
+
+	tps := []model.Topic{}
+	//应用搜索怎么实现？
+	qs.SetCond(cond)
+	qs.OrderBy("-create_time")
+	_ , err = qs.All(&tps)
+
+	return tps, err
+}
 func (d *DatabaseConnection) QueryTopicgroup(uid string, md *model.TopicGroup) (result []model.TopicGroup, err error) {
 	conditions := make([]model.Condition, 0)
 	if md == nil {

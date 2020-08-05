@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/apache/pulsar-client-go/pulsar"
 	"github.com/chinamobile/nlpt/apiserver/database"
+	"github.com/chinamobile/nlpt/apiserver/database/model"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/names"
@@ -312,6 +313,9 @@ func (s *Service) Create(tp *v1.Topic) (*v1.Topic, tperror.TopicError) {
 }
 
 func (s *Service) List(opts ...util.OpOption) (*v1.TopicList, error) {
+	if s.db.Enabled() {
+		return s.ListFromDatabase(opts...)
+	}
 	op := util.OpList(opts...)
 	crd, err := s.client.Namespace(op.Namespace()).List(metav1.ListOptions{})
 	if err != nil {
@@ -1035,4 +1039,29 @@ func (s *Service) ImportTopicgroup(name string, authuser auth.AuthUser) error {
 
 	return nil
 
+}
+
+func (s *Service) ListFromDatabase(opts ...util.OpOption) (*v1.TopicList, error) {
+	op := util.OpList(opts...)
+	md := &model.Topic{
+		Namespace: op.Namespace(),
+		Name:      op.NameLike(),
+		TopicGroupName: op.TopicgroupName(),
+	}
+	uid := op.User()
+
+	mapps, err := s.db.QueryTopic(uid, md)
+	if err != nil {
+		return nil, fmt.Errorf("query topicgroup from database error: %+v", err)
+	}
+	tps := []v1.Topic{}
+	for _, mapp := range mapps {
+		tg, e := model.TopicToTopic(mapp)
+		if err != nil {
+			klog.Errorf("get topicgroup error: %+v", e)
+			continue
+		}
+		tps = append(tps, *tg)
+	}
+	return &v1.TopicList{Items: tps}, nil
 }
