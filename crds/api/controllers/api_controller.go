@@ -194,10 +194,6 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		klog.Infof("new api: %s:%s %s", api.Spec.KongApi.PrometheusID, api.Spec.KongApi.AclID, api.Spec.KongApi.JwtID)
 		api.Status.Status = nlptv1.Success
 		api.Status.PublishStatus = nlptv1.Released
-		if err := r.Operator.AddResTransformerByKong(api); err != nil {
-			klog.Errorf("xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx: %+v", err)
-			return ctrl.Result{}, nil
-		}
 		r.AddApiToServiceUnit(ctx, su, api)
 		api.Status.AccessLink = nlptv1.AccessLink(fmt.Sprintf("%s://%s:%d%s",
 			strings.ToLower(string(api.Spec.ApiDefineInfo.Protocol)),
@@ -302,6 +298,13 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		klog.Infof("delete api unreleased: %s %s", api.Spec.Name, api.ObjectMeta.Name)
 		r.Delete(ctx, api)
 		return ctrl.Result{}, nil
+	}
+
+	if api.Status.Action == nlptv1.AddPlugins {
+		if err := r.Operator.AddResTransformerByKong(api); err != nil {
+			klog.Errorf("add rsp transformer by kong err : %+v", err)
+			return ctrl.Result{}, nil
+		}
 	}
 
 	/*if api.Status.Status == nlptv1.Error {
