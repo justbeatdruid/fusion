@@ -393,6 +393,12 @@ const (
 	Bind    Action = "bind"    //unbind api
 )
 
+const (
+	AddPlugins    Action = "addPlu"    //create api
+	UpdatePlugins Action = "updatePlu" //update api
+	DeletePlugins Action = "deletePlu" //delete api
+)
+
 type PublishStatus string
 
 // only update when exec publish or exec offline

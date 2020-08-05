@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-
 	"github.com/chinamobile/nlpt/apiserver/database"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb/driver"
 	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
@@ -134,7 +133,8 @@ func CanExeAction(api *v1.Api, action v1.Action) error {
 			return fmt.Errorf("api has published and cannot exec")
 		}
 	//只有API发布后才允许执行API下线 发布后才可以绑定
-	case v1.Offline, v1.Bind:
+	//添加、更新、删除插件时api必选是发布状态
+	case v1.Offline, v1.Bind, v1.AddPlugins, v1.UpdatePlugins, v1.DeletePlugins:
 		if api.Status.PublishStatus != v1.Released {
 			klog.Infof("api status is not ok %s", api.Status.PublishStatus)
 			return fmt.Errorf("api has not published and cannot exec")
@@ -142,6 +142,7 @@ func CanExeAction(api *v1.Api, action v1.Action) error {
 	default:
 		klog.V(5).Infof("default api status is ok: %+v", api)
 	}
+
 	klog.Infof("api status is ok %+v", api)
 	return nil
 }
@@ -166,6 +167,42 @@ func (s *Service) PatchApi(id string, data interface{}, opts ...util.OpOption) (
 	//更新API
 	api.Status.Status = v1.Init
 	api.Status.Action = v1.Update
+
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	crd, err = s.client.Namespace(api.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd: %+v", err)
+	}
+	return ToModel(api), err
+}
+
+func (s *Service) AddApiPlugins(id string, name string, config interface{}, opts ...util.OpOption) (*Api, error) {
+	api, err := s.Get(id, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	err = CanExeAction(api, v1.AddPlugins)
+	if err != nil {
+		return nil, fmt.Errorf("cannot exec: %+v", err)
+	}
+	if ok, err := s.writable(api, opts...); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, fmt.Errorf("user has no write permission for api")
+	}
+	if err = s.assignmentConfig(api, name, config); err != nil {
+		return nil, err
+	}
+	//更新API
+	api.Status.Status = v1.Init
+	api.Status.Action = v1.AddPlugins
+
+	klog.V(5).Infof("api plugins details %+v", api)
 
 	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
 	if err != nil {
