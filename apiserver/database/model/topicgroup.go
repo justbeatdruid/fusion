@@ -10,12 +10,13 @@ import (
 )
 
 type TopicGroup struct {
-	Id        string `orm:"pk;unique"`
-	Namespace string
-	Name      string
-	Available string
-	Status    string
-	Raw       string `orm:"type(text)"`
+	Id         string `orm:"pk;unique"`
+	Namespace  string
+	Name       string
+	Available  string
+	Status     string
+	Raw        string `orm:"type(text)"`
+	TopicsCount int
 }
 
 func (*TopicGroup) TableName() string {
@@ -49,7 +50,7 @@ func TopicgroupFromApi(api *v1.Topicgroup) (TopicGroup, []UserRelation, []Relati
 		Name:      api.Spec.Name,
 		Status:    string(api.Status.Status),
 		Available: strconv.FormatBool(api.Spec.Available),
-		Raw: string(raw),
+		Raw:       string(raw),
 	}, rls, nil, nil
 }
 
