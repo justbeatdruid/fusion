@@ -113,7 +113,7 @@ func (r *Connector) CreateTopic(topic *nlptv1.Topic) error{
 	request := r.GetHttpRequest()
 	//klog.Infof("Param: tenant:%s, namespace:%s, topicName:%s", topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl := r.getUrl(topic)
-	response, _, errs := request.Put(topicUrl).Send("").EndStruct("")
+	response, _, errs := request.Put(topicUrl).Send("").End()
 	if errs != nil {
 		return fmt.Errorf("create topic error: %+v, response: %+v", errs, response)
 	}
@@ -137,7 +137,8 @@ func (r *Connector) CreatePartitionedTopic(topic *nlptv1.Topic) (err error) {
 	klog.Infof("CreatePartitionedTopic Param: tenant:%s, namespace:%s, topicName:%s", topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl := r.getUrl(topic)
 
-	response, _, errs := request.Put(topicUrl).Send(topic.Spec.PartitionNum).EndStruct("")
+	//TODO errs报错，但是response.StatusCode是204？？？
+	response, _, errs := request.Put(topicUrl).Send(topic.Spec.PartitionNum).End()
 	if errs != nil {
 		return fmt.Errorf("create partitioned topic error: %+v, response: %+v", errs, response)
 	}
@@ -241,7 +242,7 @@ func (r *Connector) DeletePer(topic *nlptv1.Topic, P *nlptv1.Permission) (err er
 
 	topicUrl := fmt.Sprintf(url, topic.Namespace, topic.Spec.TopicGroup, topic.Spec.Name)
 	topicUrl = fmt.Sprintf("%s://%s:%d%s/%s/%s", protocol, r.Host, r.Port, topicUrl, "permissions", P.AuthUserName)
-	response, _, errs := request.Delete(topicUrl).Retry(3, 5*time.Second).Send("").EndStruct("")
+	response, _, errs := request.Delete(topicUrl).Retry(3, 5*time.Second).Send("").End()
 
 	if err != nil {
 		return fmt.Errorf("revoke permission error,  topic(%+v) error: %+v", topic.Spec.Url, errs)
