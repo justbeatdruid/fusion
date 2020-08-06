@@ -492,23 +492,24 @@ func (d *DatabaseConnection) DeleteTopicgroup(obj interface{}) error {
 
 func (d *DatabaseConnection) QueryTopic(uid string, md *model.Topic) (result []model.Topic, err error) {
 	o := orm.NewOrm()
-	qs := o.QueryTable("topic")
 
 	cond := orm.NewCondition()
 
 	if len(md.Name) > 0 {
-		cond.And("name", md.Name)
+		cond = cond.And("name", md.Name)
 	}
 
 	if len(md.TopicGroupName) > 0 {
-		cond.And("topic_group_name", md.TopicGroupName)
+		cond = cond.And("topic_group_name", md.TopicGroupName)
+	}
+
+	if len(md.Namespace) > 0 {
+		cond = cond.And("namespace", md.Namespace)
 	}
 
 	tps := []model.Topic{}
 	//应用搜索怎么实现？
-	qs.SetCond(cond)
-	qs.OrderBy("-create_time")
-	_ , err = qs.All(&tps)
+	_ , err = o.QueryTable("topic").SetCond(cond).OrderBy("-created_at").All(&tps)
 
 	return tps, err
 }
