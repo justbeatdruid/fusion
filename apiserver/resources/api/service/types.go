@@ -79,6 +79,37 @@ type Statistics struct {
 	TotalCalled int `json:"totalCalled"`
 }
 
+type FieldValue struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+}
+
+type FieldDetailInfo struct {
+	Key   string `json:"key"`
+	Value string `json:"value"`
+	Type  string `json:"type"`
+}
+
+type InputResTransformerConfig struct {
+	Remove struct {
+		Json    []string `json:"json,omitempty"`
+		Headers []string `json:"headers,omitempty"`
+	} `json:"remove,omitempty"`
+	Rename struct {
+		Headers []FieldValue `json:"headers,omitempty"`
+	} `json:"rename,omitempty"`
+	Replace struct {
+		Json    []FieldDetailInfo `json:"json,omitempty"`
+		Headers []FieldDetailInfo `json:"headers,omitempty"`
+	} `json:"replace,omitempty"`
+	Add struct {
+		Json    []FieldDetailInfo `json:"json,omitempty"`
+		Headers []FieldDetailInfo `json:"headers,omitempty"`
+	} `json:"add,omitempty"`
+	Append struct {
+	} `json:"append,omitempty"`
+}
+
 // only used in creation
 func ToAPI(api *Api) *v1.Api {
 	crd := &v1.Api{}
@@ -585,6 +616,12 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 			if _, ok = config["cors"]; ok {
 				target.Spec.ApiDefineInfo.Cors = source.ApiDefineInfo.Cors
 			}
+			if _, ok = config["rspHandler"]; ok {
+				target.Spec.ApiDefineInfo.RspHandler.FuncName = source.ApiDefineInfo.RspHandler.FuncName
+			} else {
+				target.Spec.ApiDefineInfo.RspHandler.FuncName = ""
+			}
+
 		}
 	}
 
@@ -636,12 +673,36 @@ func (s *Service) assignmentConfig(target *v1.Api, name string, reqData interfac
 
 	switch name {
 	case "response-transformer":
-		var source v1.ResTransformerConfig
-		if err = json.Unmarshal(b, &source); err != nil {
+		var input InputResTransformerConfig
+		if err = json.Unmarshal(b, &input); err != nil {
 			return fmt.Errorf("json.Unmarshal error,: %v", err)
 		}
 		target.Spec.ResponseTransformer.Name = name
-		target.Spec.ResponseTransformer.Config = source
+		target.Spec.ResponseTransformer.Config.Remove = input.Remove
+		for i := 0; i < len(input.Rename.Headers); i++ {
+			target.Spec.ResponseTransformer.Config.Rename.Headers = append(target.Spec.ResponseTransformer.Config.Rename.Headers,
+				input.Rename.Headers[i].Key+":"+input.Rename.Headers[i].Value)
+		}
+		for i := 0; i < len(input.Replace.Headers); i++ {
+			target.Spec.ResponseTransformer.Config.Replace.Headers = append(target.Spec.ResponseTransformer.Config.Replace.Headers,
+				input.Replace.Headers[i].Key+":"+input.Replace.Headers[i].Value)
+		}
+		for i := 0; i < len(input.Replace.Json); i++ {
+			target.Spec.ResponseTransformer.Config.Replace.Json = append(target.Spec.ResponseTransformer.Config.Replace.Json,
+				input.Replace.Json[i].Key+":"+input.Replace.Json[i].Value)
+			target.Spec.ResponseTransformer.Config.Replace.Json_types = append(
+				target.Spec.ResponseTransformer.Config.Replace.Json_types, input.Replace.Json[i].Type)
+		}
+		for i := 0; i < len(input.Add.Headers); i++ {
+			target.Spec.ResponseTransformer.Config.Add.Headers = append(target.Spec.ResponseTransformer.Config.Add.Headers,
+				input.Add.Headers[i].Key+":"+input.Add.Headers[i].Value)
+		}
+		for i := 0; i < len(input.Add.Json); i++ {
+			target.Spec.ResponseTransformer.Config.Add.Json = append(target.Spec.ResponseTransformer.Config.Add.Json,
+				input.Add.Json[i].Key+":"+input.Add.Json[i].Value)
+			target.Spec.ResponseTransformer.Config.Add.Json_types = append(target.Spec.ResponseTransformer.Config.Add.Json_types,
+				input.Add.Json[i].Type)
+		}
 	}
 
 	target.Status.UpdatedAt = metav1.Now()
