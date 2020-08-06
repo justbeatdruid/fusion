@@ -877,6 +877,26 @@ func (r *Operator) UpdateRouteByKong(db *nlptv1.Api) (err error) {
 			return fmt.Errorf("request for get route info error: %+v", errs)
 		}
 	}
+	//判断是否需要更新自定义函数，若函数更新需要移除老的route 创建新route
+	if len(db.Spec.KongApi.RspHandlerID) != 0 && len(db.Spec.ApiDefineInfo.RspHandler.FuncName) != 0 {
+		if err := r.DeleteRouteForFunction(db); err != nil {
+			klog.Infof("request for delete route for function by fission error: %+v", err)
+			return fmt.Errorf("request for delete route for function by fission error: %+v", err)
+		}
+
+		if err := r.DeletePluginByKong(db.Spec.KongApi.RspHandlerID); err != nil {
+			klog.Infof("request for delete route rsp handler error: %+v", err)
+			return fmt.Errorf("request for delete route rsp handler error: %+v", err)
+		}
+
+		if err := r.CreateRouteForFunction(db); err != nil {
+			return fmt.Errorf("update request for create route for function error: %+v", err)
+		}
+
+		if err := r.AddRouteRspHandlerByKong(db); err != nil {
+			return fmt.Errorf("update request for add route rsp handler error: %+v", err)
+		}
+	}
 	//更新鉴权方式 无鉴权到APP鉴权 添加插件
 	if len(db.Spec.KongApi.JwtID) == 0 && db.Spec.AuthType == nlptv1.APPAUTH {
 		if err := r.AddRouteJwtByKong(db); err != nil {
