@@ -677,7 +677,9 @@ func (s *Service) assignmentConfig(target *v1.Api, name string, reqData interfac
 		if err = json.Unmarshal(b, &input); err != nil {
 			return fmt.Errorf("json.Unmarshal error,: %v", err)
 		}
+		target.Spec.ResponseTransformer = v1.ResponseTransformer{}
 		target.Spec.ResponseTransformer.Name = name
+
 		target.Spec.ResponseTransformer.Config.Remove = input.Remove
 		for i := 0; i < len(input.Rename.Headers); i++ {
 			target.Spec.ResponseTransformer.Config.Rename.Headers = append(target.Spec.ResponseTransformer.Config.Rename.Headers,

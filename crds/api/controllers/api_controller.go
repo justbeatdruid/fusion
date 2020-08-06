@@ -307,6 +307,19 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 		}
 	}
 
+	if api.Status.Action == nlptv1.UpdatePlugins {
+		if err := r.Operator.UpdateResTransformerByKong(api); err != nil {
+			klog.Errorf("update rsp transformer by kong err : %+v", err)
+			return ctrl.Result{}, nil
+		}
+	}
+
+	if api.Status.Action == nlptv1.DeletePlugins {
+		if err := r.Operator.DeleteResTransformerByKong(api); err != nil {
+			klog.Errorf("delete rsp transformer by kong err : %+v", err)
+			return ctrl.Result{}, nil
+		}
+	}
 	/*if api.Status.Status == nlptv1.Error {
 		// call kong api create
 		api.Status.Status = nlptv1.Creating

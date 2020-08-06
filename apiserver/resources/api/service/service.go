@@ -217,6 +217,80 @@ func (s *Service) AddApiPlugins(id string, name string, config interface{}, opts
 	return ToModel(api), err
 }
 
+func (s *Service) DeleteApiPlugins(api_id string, plugin_id string, opts ...util.OpOption) (*Api, error) {
+	api, err := s.Get(api_id, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	err = CanExeAction(api, v1.DeletePlugins)
+	if err != nil {
+		return nil, fmt.Errorf("cannot exec: %+v", err)
+	}
+	if ok, err := s.writable(api, opts...); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, fmt.Errorf("user has no write permission for api")
+	}
+	/*
+	if err = s.assignmentConfig(api, name, config); err != nil {
+		return nil, err
+	}
+	 */
+	//更新API
+	api.Status.Status = v1.Init
+	api.Status.Action = v1.DeletePlugins
+
+	klog.V(5).Infof("api plugins details %+v", api)
+
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	crd, err = s.client.Namespace(api.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd: %+v", err)
+	}
+	return ToModel(api), err
+}
+
+func (s *Service) PatchApiPlugins(api_id string, plugin_id string, config interface{}, opts ...util.OpOption) (*Api, error) {
+	api, err := s.Get(api_id, opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get object: %+v", err)
+	}
+	err = CanExeAction(api, v1.UpdatePlugins)
+	if err != nil {
+		return nil, fmt.Errorf("cannot exec: %+v", err)
+	}
+	if ok, err := s.writable(api, opts...); err != nil {
+		return nil, err
+	} else if !ok {
+		return nil, fmt.Errorf("user has no write permission for api")
+	}
+	if err = s.assignmentConfig(api, api.Spec.ResponseTransformer.Name, config); err != nil {
+		return nil, err
+	}
+	//更新API
+	api.Status.Status = v1.Init
+	api.Status.Action = v1.UpdatePlugins
+
+	klog.V(5).Infof("api plugins details %+v", api)
+
+	content, err := runtime.DefaultUnstructuredConverter.ToUnstructured(api)
+	if err != nil {
+		return nil, fmt.Errorf("convert crd to unstructured error: %+v", err)
+	}
+	crd := &unstructured.Unstructured{}
+	crd.SetUnstructuredContent(content)
+	crd, err = s.client.Namespace(api.ObjectMeta.Namespace).Update(crd, metav1.UpdateOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error update crd: %+v", err)
+	}
+	return ToModel(api), err
+}
+
 func (s *Service) ListApi(suid, appid, status string, opts ...util.OpOption) ([]*Api, error) {
 	if len(suid) > 0 && len(appid) > 0 {
 		return nil, fmt.Errorf("i am not sure if it is suitable to get api with application id and service unit id, but it make no sense")

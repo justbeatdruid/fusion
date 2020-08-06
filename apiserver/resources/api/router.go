@@ -182,6 +182,22 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.addApiPlugins).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+	//delete plugins
+	ws.Route(ws.DELETE("/apis/{api_id}/plugins/{plugin_id}").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("delete an api plugins").
+		To(r.deleteApiPlugins).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+	//update plugins
+	ws.Route(ws.PATCH("/apis/{api_id}/plugins/{plugin_id}").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("delete an api plugins").
+		To(r.patchApiPlugins).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func process(f func(*restful.Request) (int, interface{}), request *restful.Request, response *restful.Response) {
@@ -264,4 +280,12 @@ func (r *router) importApis(request *restful.Request, response *restful.Response
 
 func (r *router) addApiPlugins(request *restful.Request, response *restful.Response) {
 	process(r.controller.AddApiPlugins, request, response)
+}
+
+func (r *router) deleteApiPlugins(request *restful.Request, response *restful.Response) {
+	process(r.controller.DeleteApiPlugins, request, response)
+}
+
+func (r *router) patchApiPlugins(request *restful.Request, response *restful.Response) {
+	process(r.controller.PatchApiPlugins, request, response)
 }

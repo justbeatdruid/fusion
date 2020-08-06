@@ -109,6 +109,12 @@ type AddPluginsRequest struct {
 	} `json:"data,omitempty"`
 }
 
+type PatchPluginsRequest struct {
+	Data struct {
+		Config interface{} `json:"config"`
+	} `json:"data,omitempty"`
+}
+
 func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 	unlock, err := c.lock.Lock("api")
 	if err != nil {
@@ -474,6 +480,97 @@ func (c *controller) AddApiPlugins(req *restful.Request) (int, interface{}) {
 	}
 	klog.V(5).Infof("AddApiPlugins name config %s, %+v", reqBody.Data.Name, reqBody.Data.Config)
 	if api, err := c.service.AddApiPlugins(req.PathParameter("id"), reqBody.Data.Name, reqBody.Data.Config, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		code := "001000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      2,
+			ErrorCode: code,
+			Message:   c.errMsg.Api[code],
+			Detail:    fmt.Errorf("patch api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
+			Code:      0,
+			ErrorCode: "0",
+			Data:      api,
+		}
+	}
+}
+
+func (c *controller) DeleteApiPlugins(req *restful.Request) (int, interface{}) {
+	unlock, err := c.lock.Lock("api")
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   2,
+			Detail: fmt.Sprintf("lock error: %+v", err),
+		}
+	}
+	defer func() {
+		_ = unlock()
+	}()
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "001000003",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
+		}
+	}
+	api_id := req.PathParameter("api_id")
+	plugin_id := req.PathParameter("plugin_id")
+	klog.V(5).Infof("DeleteApiPlugins id is %s", plugin_id)
+	if api, err := c.service.DeleteApiPlugins(api_id, plugin_id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		code := "001000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      2,
+			ErrorCode: code,
+			Message:   c.errMsg.Api[code],
+			Detail:    fmt.Errorf("patch api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
+			Code:      0,
+			ErrorCode: "0",
+			Data:      api,
+		}
+	}
+}
+
+func (c *controller) PatchApiPlugins(req *restful.Request) (int, interface{}) {
+	unlock, err := c.lock.Lock("api")
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   2,
+			Detail: fmt.Sprintf("lock error: %+v", err),
+		}
+	}
+	defer func() {
+		_ = unlock()
+	}()
+
+	reqBody := &PatchPluginsRequest{}
+	if err := req.ReadEntity(&reqBody); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "001000001",
+			Message:   c.errMsg.Api["001000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: "001000003",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
+		}
+	}
+	api_id := req.PathParameter("api_id")
+	plugin_id := req.PathParameter("plugin_id")
+	klog.V(5).Infof("PatchApiPlugins api_id plugin_id config %s, %s, %+v", api_id, plugin_id, reqBody.Data.Config)
+	if api, err := c.service.PatchApiPlugins(api_id, plugin_id, reqBody.Data.Config, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		code := "001000005"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,

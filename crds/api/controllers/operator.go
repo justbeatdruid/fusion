@@ -327,6 +327,7 @@ type ResTransformerRequestBody struct {
 	ConsumerId string               `json:"consumerId,omitempty"`
 	Name       string               `json:"name"`
 	Config     ConfigResTransformer `json:"config"`
+	//Config    nlptv1.ResTransformerConfig `json:"config"`
 }
 type ConfigResTransformer struct {
 	Remove struct {
@@ -355,7 +356,8 @@ type ConfigResTransformer struct {
 
 type ResTransformerResponseBody struct {
 	CreatedAt int                  `json:"created_at"`
-	Config    ConfigResTransformer `json:"config"`
+	Config ConfigResTransformer	`json:"config"`
+	//Config    nlptv1.ResTransformerConfig `json:"config"`
 	ID        string               `json:"id"`
 	Service   interface{}          `json:"service"`
 	Name      string               `json:"name"`
@@ -1348,10 +1350,11 @@ func (r *Operator) DeleteResTransformerByKong(db *nlptv1.Api) (err error) {
 	if response.StatusCode != 204 {
 		return fmt.Errorf("request for delete response transformer error: receive wrong status code: %d", response.StatusCode)
 	}
+	db.Spec.ResponseTransformer = nlptv1.ResponseTransformer{}
 	return nil
 }
 
-func (r *Operator) UpdateTransformerByKong(db *nlptv1.Api) (err error) {
+func (r *Operator) UpdateResTransformerByKong(db *nlptv1.Api) (err error) {
 	klog.Infof("Enter route id is:%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
