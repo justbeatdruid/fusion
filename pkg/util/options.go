@@ -15,6 +15,7 @@ type Op struct {
 	authType       string
 	apiBackendType string
 	topicGroupName string
+	status         string
 }
 
 func (o Op) NameLike() string       { return o.nameLike }
@@ -30,7 +31,8 @@ func (o Op) Stype() string          { return o.stype }
 func (o Op) Id() string             { return o.id }
 func (o Op) AuthType() string       { return o.authType }
 func (o Op) ApiBackendType() string { return o.apiBackendType }
-func (o Op) TopicgroupName() string { return o.topicGroupName}
+func (o Op) TopicgroupName() string { return o.topicGroupName }
+func (o Op) Status() string         { return o.status }
 
 type OpOption func(*Op)
 
@@ -47,7 +49,8 @@ func WithStype(s string) OpOption          { return func(op *Op) { op.stype = s 
 func WithId(s string) OpOption             { return func(op *Op) { op.id = s } }
 func WithAuthType(s string) OpOption       { return func(op *Op) { op.authType = s } }
 func WithApiBackendType(s string) OpOption { return func(op *Op) { op.apiBackendType = s } }
-func WithTopicgroupName(s string) OpOption { return func(op *Op) { op.topicGroupName = s}}
+func WithTopicgroupName(s string) OpOption { return func(op *Op) { op.topicGroupName = s } }
+func WithStatus(s string) OpOption         { return func(op *Op) { op.status = s } }
 
 func OpList(opts ...OpOption) Op {
 	ret := Op{}

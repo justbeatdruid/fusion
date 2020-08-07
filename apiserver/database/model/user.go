@@ -20,6 +20,10 @@ const (
 	member  = "member"
 )
 
+func GetOwner(labels map[string]string) string {
+	return user.GetOwner(labels)
+}
+
 func FromUser(rt string, rid string, labels map[string]string) []UserRelation {
 	u := user.GetUsersFromLabels(labels)
 	rls := make([]UserRelation, 1+len(u.Managers)+len(u.Members))

@@ -22,7 +22,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient(), cfg.DatasourceConfig.Supported, cfg.DataserviceConnector, cfg.TenantEnabled),
+		service.NewService(cfg.GetDynamicClient(), cfg.DatasourceConfig.Supported, cfg.DataserviceConnector, cfg.TenantEnabled, cfg.Database),
 		cfg.LocalConfig.DataSource,
 	}
 }
@@ -241,6 +241,7 @@ func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 	size := req.QueryParameter("size")
 	name := req.QueryParameter("name")
 	typpe := req.QueryParameter("type")
+	status := req.QueryParameter("status")
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
 		code := "006000005"
@@ -252,7 +253,8 @@ func (c *controller) ListDatasource(req *restful.Request) (int, *ListResponse) {
 		}
 	}
 	if db, err := c.service.ListDatasource(util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace),
-		util.WithNameLike(name), util.WithType(typpe)); err != nil {
+		util.WithNameLike(name), util.WithType(typpe),
+		util.WithStatus(status)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:   1,
 			Detail: fmt.Errorf("list database error: %+v", err).Error(),

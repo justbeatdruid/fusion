@@ -5,6 +5,7 @@ import (
 	"net"
 	"strings"
 
+	"github.com/chinamobile/nlpt/apiserver/database"
 	dwtype "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
 	mongodriver "github.com/chinamobile/nlpt/apiserver/resources/datasource/mongo/driver"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
@@ -32,9 +33,11 @@ type Service struct {
 
 	tenantEnabled bool
 	dataService   dw.Connector
+
+	db *database.DatabaseConnection
 }
 
-func NewService(client dynamic.Interface, supported []string, dsConnector dw.Connector, tenantEnabled bool) *Service {
+func NewService(client dynamic.Interface, supported []string, dsConnector dw.Connector, tenantEnabled bool, db *database.DatabaseConnection) *Service {
 	Supported = supported
 	return &Service{
 		client:   client.Resource(v1.GetOOFSGVR()),
@@ -42,6 +45,8 @@ func NewService(client dynamic.Interface, supported []string, dsConnector dw.Con
 
 		tenantEnabled: tenantEnabled,
 		dataService:   dsConnector,
+
+		db: db,
 	}
 }
 
@@ -82,6 +87,9 @@ func (s *Service) UpdateDatasource(model *Datasource, opts ...util.OpOption) (*D
 	return ToModel(ds), nil
 }
 func (s *Service) ListDatasource(opts ...util.OpOption) ([]*Datasource, error) {
+	if s.tenantEnabled {
+		return s.ListDatasourceFromDatabase(opts...)
+	}
 	dss, err := s.List(opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot list object: %+v", err)

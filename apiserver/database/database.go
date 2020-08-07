@@ -78,8 +78,8 @@ func newDatabaseConnection(cfg DatabaseConfig) (*DatabaseConnection, error) {
 		return nil, fmt.Errorf("cannot register database: %+v", err)
 	}
 
-	orm.RegisterModel(new(model.Application), new(model.UserRelation), new(model.Task), new(model.TbDagRun), new(model.TbMetadata),
-		new(model.Relation), new(model.Api), new(model.Serviceunit), new(model.Topic), new(model.TopicGroup),new(model.Product), new(model.Scenario))
+	orm.RegisterModel(new(model.Application), new(model.UserRelation), new(model.Task), new(model.TbDagRun), new(model.TbMetadata), new(model.Datasource),
+		new(model.Relation), new(model.Api), new(model.Serviceunit), new(model.Topic), new(model.TopicGroup), new(model.Product), new(model.Scenario))
 	if err = orm.RunSyncdb("default", false, true); err != nil {
 		return nil, fmt.Errorf("cannot sync database: %+v", err)
 	}
@@ -357,7 +357,6 @@ func (d *DatabaseConnection) QueryServiceunit(uid string, md *model.Serviceunit)
 		conditions = append(conditions, model.Condition{"type", model.Equals, md.Type})
 	}
 
-
 	err = d.query(uid, md, conditions, &result)
 	return
 }
@@ -509,7 +508,7 @@ func (d *DatabaseConnection) QueryTopic(uid string, md *model.Topic) (result []m
 
 	tps := []model.Topic{}
 	//应用搜索怎么实现？
-	_ , err = o.QueryTable("topic").SetCond(cond).OrderBy("-created_at").All(&tps)
+	_, err = o.QueryTable("topic").SetCond(cond).OrderBy("-created_at").All(&tps)
 
 	return tps, err
 }
@@ -537,8 +536,8 @@ func (d *DatabaseConnection) QueryTopicgroup(uid string, md *model.TopicGroup) (
 	err = d.queryWithJoin(uid, md, conditions, &maps)
 	for _, m := range maps {
 		tp := model.TopicGroup{}
-		for k,v := range m {
-			switch k{
+		for k, v := range m {
+			switch k {
 			case "id":
 				tp.Id = fmt.Sprint("", v.(string))
 			case "namespace":
@@ -558,10 +557,8 @@ func (d *DatabaseConnection) QueryTopicgroup(uid string, md *model.TopicGroup) (
 		result = append(result, tp)
 	}
 
-
 	return
 }
-
 
 func (d *DatabaseConnection) queryWithJoin(uid string, md model.Table, conditions []model.Condition, maps *[]orm.Params) (err error) {
 	var sql string
@@ -607,12 +604,12 @@ func (d *DatabaseConnection) queryWithJoin(uid string, md model.Table, condition
 		if len(uid) > 0 {
 			sql = sql + "topicgroup." + k + " " + o + " \"" + v + "\""
 		} else {
-			sql = sql + "topicgroup."+ k + " " + o + " ?"
+			sql = sql + "topicgroup." + k + " " + o + " ?"
 			values[i] = v
 		}
 		and = true
 	}
-	sql = sql +  ` GROUP BY(id)`
+	sql = sql + ` GROUP BY(id)`
 
 	klog.Error("topicgroup sql:", sql)
 
