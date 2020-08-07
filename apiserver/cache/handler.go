@@ -38,6 +38,11 @@ func initGVM(db *database.DatabaseConnection) {
 			addFunc = db.AddTopicgroup
 			updateFunc = db.UpdateTopicgroup
 			deleteFunc = db.DeleteTopicgroup
+		case "datasources":
+			klog.Infof("add datasource func")
+			addFunc = db.AddDatasource
+			updateFunc = db.UpdateDatasource
+			deleteFunc = db.DeleteDatasource
 		default:
 			goto next
 		}
