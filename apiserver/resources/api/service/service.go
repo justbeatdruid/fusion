@@ -232,10 +232,10 @@ func (s *Service) DeleteApiPlugins(api_id string, plugin_id string, opts ...util
 		return nil, fmt.Errorf("user has no write permission for api")
 	}
 	/*
-	if err = s.assignmentConfig(api, name, config); err != nil {
-		return nil, err
-	}
-	 */
+		if err = s.assignmentConfig(api, name, config); err != nil {
+			return nil, err
+		}
+	*/
 	//更新API
 	api.Status.Status = v1.Init
 	api.Status.Action = v1.DeletePlugins
@@ -745,16 +745,24 @@ func (s *Service) BatchBindApi(appid string, apis []v1.ApiBind, opts ...util.OpO
 		if err != nil {
 			return fmt.Errorf("cannot get api: %+v", err)
 		}
-		//绑定API
+		//检测是否已经绑定，已经绑定的api跳过
+		isBind := false
 		for _, existedapp := range api.Spec.Applications {
-			if existedapp.ID != appid {
-				api.Status.Status = v1.Init
-				api.Status.Action = v1.Bind
-				api.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "true"
-				api.Spec.Applications = append(api.Spec.Applications, v1.Application{
-					ID: appid,
-				})
+			if existedapp.ID == appid {
+				isBind = true
+				klog.Infof("application alrady bound to api and no need update status %+v", api)
+				break
 			}
+		}
+		if !isBind {
+			//绑定API
+			api.Status.Status = v1.Init
+			api.Status.Action = v1.Bind
+			api.ObjectMeta.Labels[v1.ApplicationLabel(appid)] = "true"
+			api.Spec.Applications = append(api.Spec.Applications, v1.Application{
+				ID: appid,
+			})
+			klog.Infof("application no bound to api and need update status %+v", api)
 		}
 
 		api, err = s.UpdateSpec(api)
