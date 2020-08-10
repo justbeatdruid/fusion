@@ -16,7 +16,7 @@ func GetRDBData(ds *v1.Datasource, querySql string) ([]map[string]string, error)
 	if ds == nil || ds.Spec.RDB == nil {
 		return nil, fmt.Errorf("datasource connect info is null")
 	}
-	db, err := getConnection(ds, time.Duration(5*time.Second))
+	db, err := getConnection(ds.Spec.RDB, time.Duration(5*time.Second))
 	if err != nil || db == nil {
 		return nil, fmt.Errorf("cannot connect to database: %+v", err)
 	}
@@ -25,10 +25,17 @@ func GetRDBData(ds *v1.Datasource, querySql string) ([]map[string]string, error)
 }
 
 func PingRDB(ds *v1.Datasource) error {
-	if ds == nil || ds.Spec.RDB == nil {
+	if ds == nil {
+		return fmt.Errorf("datasource is null")
+	}
+	return PingRDBDatabase(ds.Spec.RDB)
+}
+
+func PingRDBDatabase(r *v1.RDB) error {
+	if r == nil {
 		return fmt.Errorf("datasource connect info is null")
 	}
-	db, err := getConnection(ds, time.Duration(5*time.Second))
+	db, err := getConnection(r, time.Duration(5*time.Second))
 	if err != nil || db == nil {
 		return fmt.Errorf("cannot connect to database: %+v", err)
 	}
@@ -36,14 +43,14 @@ func PingRDB(ds *v1.Datasource) error {
 	return PingDatabase(db, time.Duration(5*time.Second))
 }
 
-func getConnection(ds *v1.Datasource, timeout time.Duration) (db *sql.DB, err error) {
-	switch strings.ToLower(ds.Spec.RDB.Type) {
+func getConnection(r *v1.RDB, timeout time.Duration) (db *sql.DB, err error) {
+	switch strings.ToLower(r.Type) {
 	case "mysql":
-		db, err = GetMysqlConnection(ds)
+		db, err = GetMysqlConnection(r)
 	case "postgres", "postgresql":
-		db, err = GetPostgresqlConnection(ds)
+		db, err = GetPostgresqlConnection(r)
 	default:
-		err = fmt.Errorf("unsupported rdb type %s", ds.Spec.RDB.Type)
+		err = fmt.Errorf("unsupported rdb type %s", r.Type)
 	}
 	return
 }

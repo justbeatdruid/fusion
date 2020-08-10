@@ -13,20 +13,20 @@ import (
 	"k8s.io/klog"
 )
 
-func GetMysqlConnection(ds *v1.Datasource) (*sql.DB, error) {
-	if ds == nil || ds.Spec.RDB == nil {
+func GetMysqlConnection(r *v1.RDB) (*sql.DB, error) {
+	if r == nil {
 		return nil, fmt.Errorf("datasource connect info is null")
 	}
 	buildPath := strings.Builder{}
-	buildPath.WriteString(ds.Spec.RDB.Connect.Username)
+	buildPath.WriteString(r.Connect.Username)
 	buildPath.WriteString(":")
-	buildPath.WriteString(ds.Spec.RDB.Connect.Password)
+	buildPath.WriteString(r.Connect.Password)
 	buildPath.WriteString("@tcp(")
-	buildPath.WriteString(ds.Spec.RDB.Connect.Host)
+	buildPath.WriteString(r.Connect.Host)
 	buildPath.WriteString(":")
-	buildPath.WriteString(strconv.Itoa(ds.Spec.RDB.Connect.Port))
+	buildPath.WriteString(strconv.Itoa(r.Connect.Port))
 	buildPath.WriteString(")/")
-	buildPath.WriteString(ds.Spec.RDB.Database)
+	buildPath.WriteString(r.Database)
 	path := buildPath.String()
 	klog.V(5).Infof("connection: %s", path)
 	db, err := sql.Open("mysql", path)

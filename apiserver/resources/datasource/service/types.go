@@ -31,7 +31,7 @@ type Datasource struct {
 
 	Mongo *v1.Mongo `json:"mongo,omitempty"`
 
-	Hive *v1.Hive `json:"hive"`
+	Hive *v1.Hive `json:"hive,omitempty"`
 
 	Status    string    `json:"status"`
 	UpdatedAt util.Time `json:"updatedAt"`

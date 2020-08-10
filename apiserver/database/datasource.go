@@ -43,9 +43,11 @@ func (d *DatabaseConnection) QueryDatasource(md *model.Datasource) ([]model.Data
 		return nil, fmt.Errorf("namespace not set in model")
 	}
 	conditions = append(conditions, model.Condition{"namespace", model.Equals, md.Namespace})
-	if len(md.User) > 0 {
-		conditions = append(conditions, model.Condition{"user", model.Equals, md.User})
-	}
+	/*
+		if len(md.User) > 0 {
+			conditions = append(conditions, model.Condition{"user", model.Equals, md.User})
+		}
+	*/
 	if len(md.Name) > 0 {
 		conditions = append(conditions, model.Condition{"name", model.Like, md.Name})
 	}
