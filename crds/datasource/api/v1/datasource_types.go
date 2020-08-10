@@ -168,12 +168,13 @@ type Mongo struct {
 }
 
 type Hive struct {
-	Host      string `json:"host"`
-	Port      int    `json:"port"`
-	Database  string `json:"database"`
-	HDFSPath  string `json:"hdfsPath"`
-	DefaultFs string `json:"defaultFs"`
-	JDBCUrl   string `json:"jdbcUrl"`
+	Host          string `json:"host"`
+	Port          int    `json:"port"`
+	Database      string `json:"database"`
+	HDFSPath      string `json:"hdfsPath"`
+	DefaultFs     string `json:"defaultFs"`
+	JDBCUrl       string `json:"jdbcUrl"`
+	MetadataStore RDB    `json:"metadataStore"`
 }
 
 // +kubebuilder:object:root=true

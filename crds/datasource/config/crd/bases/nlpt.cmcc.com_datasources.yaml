@@ -182,8 +182,129 @@ spec:
               - subjectId
               - subjectName
               type: object
+            hive:
+              properties:
+                database:
+                  type: string
+                defaultFs:
+                  type: string
+                hdfsPath:
+                  type: string
+                host:
+                  type: string
+                jdbcUrl:
+                  type: string
+                metadataStore:
+                  properties:
+                    connect:
+                      properties:
+                        host:
+                          type: string
+                        password:
+                          type: string
+                        port:
+                          type: integer
+                        username:
+                          type: string
+                      required:
+                      - host
+                      - password
+                      - port
+                      - username
+                      type: object
+                    createdBy:
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - id
+                      - name
+                      type: object
+                    database:
+                      type: string
+                    schema:
+                      type: string
+                    type:
+                      type: string
+                    updatedBy:
+                      properties:
+                        id:
+                          type: string
+                        name:
+                          type: string
+                      required:
+                      - id
+                      - name
+                      type: object
+                  required:
+                  - connect
+                  - createdBy
+                  - database
+                  - type
+                  - updatedBy
+                  type: object
+                port:
+                  type: integer
+              required:
+              - database
+              - defaultFs
+              - hdfsPath
+              - host
+              - jdbcUrl
+              - metadataStore
+              - port
+              type: object
             localtion:
               type: string
+            mongo:
+              properties:
+                database:
+                  type: string
+                host:
+                  type: string
+                password:
+                  type: string
+                port:
+                  type: integer
+                username:
+                  type: string
+              required:
+              - database
+              - host
+              - password
+              - port
+              - username
+              type: object
+            mq:
+              properties:
+                innerId:
+                  type: string
+                mqConnection:
+                  properties:
+                    address:
+                      type: string
+                    authEnabled:
+                      type: boolean
+                    insecure:
+                      type: boolean
+                    namespace:
+                      type: string
+                    token:
+                      type: string
+                  required:
+                  - address
+                  - authEnabled
+                  - insecure
+                  - namespace
+                  - token
+                  type: object
+                type:
+                  type: string
+              required:
+              - type
+              type: object
             name:
               description: Foo is an example field of Datasource. Edit Datasource_types.go
                 to remove/update
@@ -265,6 +386,7 @@ spec:
               type: string
           required:
           - createdAt
+          - detail
           - status
           - updatedAt
           type: object

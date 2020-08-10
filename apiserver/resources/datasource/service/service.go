@@ -683,5 +683,5 @@ func (s *Service) CheckHive(h *v1.Hive) error {
 	if len(h.Database) == 0 {
 		return fmt.Errorf("database is null")
 	}
-	return nil
+	return driver.PingRDBDatabase(&h.MetadataStore)
 }
