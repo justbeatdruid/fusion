@@ -15,4 +15,5 @@ type Field struct {
 	IsNullAble  bool   `json:"IsNullAble"`
 	Description string `json:"desc"`
 	PrimaryKey  bool   `json:"primaryKey"`
+	Index       int    `json:"index"`
 }
