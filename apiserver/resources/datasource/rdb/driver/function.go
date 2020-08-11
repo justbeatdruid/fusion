@@ -16,7 +16,14 @@ func GetRDBData(ds *v1.Datasource, querySql string) ([]map[string]string, error)
 	if ds == nil || ds.Spec.RDB == nil {
 		return nil, fmt.Errorf("datasource connect info is null")
 	}
-	db, err := getConnection(ds.Spec.RDB, time.Duration(5*time.Second))
+	return GetRDBDatabaseData(ds.Spec.RDB, querySql)
+}
+
+func GetRDBDatabaseData(rdb *v1.RDB, querySql string) ([]map[string]string, error) {
+	if rdb == nil {
+		return nil, fmt.Errorf("rdb is null")
+	}
+	db, err := getConnection(rdb, time.Duration(5*time.Second))
 	if err != nil || db == nil {
 		return nil, fmt.Errorf("cannot connect to database: %+v", err)
 	}

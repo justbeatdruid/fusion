@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"net"
+	"strconv"
 	"strings"
 
 	"github.com/chinamobile/nlpt/apiserver/database"
@@ -297,7 +298,7 @@ func (s *Service) GetTables(id, associationID string, opts ...util.OpOption) (*T
 			if ds.Spec.RDB.Schema == "" {
 				ds.Spec.RDB.Schema = "public"
 			}
-			querySql := "select * from pg_tables where schemaname = '" + ds.Spec.RDB.Schema + "'"
+			querySql := "SELECT * FROM pg_tables WHERE schemaname = '" + ds.Spec.RDB.Schema + "'"
 			mysqlData, err := driver.GetRDBData(ds, querySql)
 			if err != nil {
 				return nil, err
@@ -321,6 +322,21 @@ func (s *Service) GetTables(id, associationID string, opts ...util.OpOption) (*T
 		result.DataWarehouseTables = make([]dwtype.Table, 0)
 		for _, t := range ts {
 			result.DataWarehouseTables = append(result.DataWarehouseTables, dwtype.FromApiTable(t))
+		}
+	case v1.HiveType:
+		if ds.Spec.Hive == nil || ds.Spec.Hive.MetadataStore.Validate() != nil {
+			return nil, fmt.Errorf("hive metadata store information invalid")
+		}
+		querySql := "SELECT `TBL_NAME`, `TBL_TYPE` FROM `TBLS` WHERE `DB_ID` = (SELECT `DB_ID` FROM `DBS` WHERE `NAME` = '" + ds.Spec.Hive.Database + "');"
+		mysqlData, err := driver.GetRDBDatabaseData(&ds.Spec.Hive.MetadataStore, querySql)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range mysqlData {
+			table := rdb.Table{}
+			table.Name = v["TBL_NAME"]
+			table.Type = v["TBL_TYPE"]
+			result.RDBTables = append(result.RDBTables, table)
 		}
 	default:
 		return nil, fmt.Errorf("wrong datasource type: %s", ds.Spec.Type)
@@ -379,7 +395,7 @@ func (s *Service) GetFields(id, table string, opts ...util.OpOption) (*Fields, e
     COLUMN_COMMENT 'description' 
 FROM information_schema.columns
 WHERE table_name='%s'
-    AND table_schema='%s'`
+    AND table_schema='%s';`
 			querySql = fmt.Sprintf(querySql, table, ds.Spec.RDB.Database)
 			mysqlData, err := driver.GetRDBData(ds, querySql)
 			if err != nil {
@@ -466,6 +482,22 @@ WHERE
 			}
 		}
 		return nil, fmt.Errorf("cannot find table %s in datasource %s", table, ds.ObjectMeta.Name)
+	case v1.HiveType:
+		if ds.Spec.Hive == nil || ds.Spec.Hive.MetadataStore.Validate() != nil {
+			return nil, fmt.Errorf("hive metadata store information invalid")
+		}
+		querySql := "SELECT `COLUMN_NAME`, `TYPE_NAME`, `INTEGER_IDX` FROM `COLUMNS_V2` WHERE `CD_ID` = (SELECT `TBL_ID` FROM `TBLS` WHERE `DB_ID` = (SELECT `DB_ID` FROM `DBS` WHERE `NAME` = '" + ds.Spec.Hive.Database + "') AND `TBL_NAME` = '" + table + "');"
+		mysqlData, err := driver.GetRDBDatabaseData(&ds.Spec.Hive.MetadataStore, querySql)
+		if err != nil {
+			return nil, err
+		}
+		for _, v := range mysqlData {
+			field := rdb.Field{}
+			field.Name = v["COLUMN_NAME"]
+			field.DataType = v["TYPE_NAME"]
+			field.Index, _ = strconv.Atoi(v["INTEGER_IDX"])
+			result.RDBFields = append(result.RDBFields, field)
+		}
 	default:
 		return nil, fmt.Errorf("wrong datasource type: %s", ds.Spec.Type)
 	}
