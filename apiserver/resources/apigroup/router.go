@@ -63,6 +63,14 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.POST("/apigroups/{id}/apis").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("bind or unbind apis to apigroup").
+		To(r.bindOrUnbindApis).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 }
 
 func (r *router) createApiGroup(request *restful.Request, response *restful.Response) {
@@ -92,5 +100,10 @@ func (r *router) updateApiGroup(request *restful.Request, response *restful.Resp
 
 func (r *router) updateApiGroupStatus(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.UpdateApiGroupStatus(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) bindOrUnbindApis(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.BindOrUnbindApis(request)
 	response.WriteHeaderAndEntity(code, result)
 }
