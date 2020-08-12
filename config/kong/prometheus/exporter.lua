@@ -80,10 +80,11 @@ local function log(message)
     route_name = message.route.name or message.route.id
   end
 
+  local EMPTY = {}
   local consumer_id
   consumer_id = (kong.client.get_consumer() or
                   kong.client.get_credential() or
-                  EMPTY).id
+                  EMPTY).id or "noconsumer"
   kong.log("get consumer id is ==================:", consumer_id)
 
   metrics.status:inc(1, { message.response.status, service_name, route_name })
