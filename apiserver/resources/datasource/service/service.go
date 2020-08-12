@@ -338,6 +338,15 @@ func (s *Service) GetTables(id, associationID string, opts ...util.OpOption) (*T
 			table.Type = v["TBL_TYPE"]
 			result.RDBTables = append(result.RDBTables, table)
 		}
+	case v1.MongoType:
+		if ds.Spec.Mongo == nil {
+			return nil, fmt.Errorf("mongo is null")
+		}
+		cols, err := mongodriver.FindCollections(ds.Spec.Mongo)
+		if err != nil {
+			return nil, fmt.Errorf("cannot find mongo collections: %+v", err)
+		}
+		result.MongoCollections = cols
 	default:
 		return nil, fmt.Errorf("wrong datasource type: %s", ds.Spec.Type)
 	}
@@ -498,6 +507,15 @@ WHERE
 			field.Index, _ = strconv.Atoi(v["INTEGER_IDX"])
 			result.RDBFields = append(result.RDBFields, field)
 		}
+	case v1.MongoType:
+		if ds.Spec.Mongo == nil {
+			return nil, fmt.Errorf("mongo is null")
+		}
+		fields, err := mongodriver.FindFields(ds.Spec.Mongo, table)
+		if err != nil {
+			return nil, fmt.Errorf("cannot find mongo collections: %+v", err)
+		}
+		result.MongoFields = fields
 	default:
 		return nil, fmt.Errorf("wrong datasource type: %s", ds.Spec.Type)
 	}
