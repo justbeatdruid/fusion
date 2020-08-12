@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	dw "github.com/chinamobile/nlpt/apiserver/resources/datasource/datawarehouse"
+	"github.com/chinamobile/nlpt/apiserver/resources/datasource/mongo"
 	rdb "github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb"
 	"github.com/chinamobile/nlpt/crds/datasource/api/v1"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
@@ -23,8 +24,7 @@ type Datasource struct {
 
 	Users user.Users `json:"users"`
 
-	RDB *v1.RDB `json:"rdb,omitempty"`
-
+	RDB           *v1.RDB      `json:"rdb,omitempty"`
 	DataWarehouse *dw.Database `json:"datawarehouse,omitempty"`
 
 	MessageQueue *v1.MessageQueue `json:"mq,omitempty"`
@@ -39,17 +39,19 @@ type Datasource struct {
 }
 
 type Tables struct {
-	RDBTables           []rdb.Table `json:"rdbTables,omitempty"`
-	DataWarehouseTables []dw.Table  `json:"tables,omitempry"`
+	RDBTables           []rdb.Table        `json:"rdbTables,omitempty"`
+	MongoCollections    []mongo.Collection `json:"mongoCollections,omitempty"`
+	DataWarehouseTables []dw.Table         `json:"tables,omitempty"`
 }
 
 type Table struct {
 	RDBTable           *rdb.Table    `json:"rdbTable,omitempty"`
-	DataWarehouseTable *dw.TableInfo `json:"table,omitempry"`
+	DataWarehouseTable *dw.TableInfo `json:"table,omitempty"`
 }
 
 type Fields struct {
 	RDBFields           []rdb.Field   `json:"rdbFields,omitempty"`
+	MongoFields         []mongo.Field `json:"mongoFields,omitempty"`
 	DataWarehouseFields []dw.Property `json:"properties,omitempty"`
 }
 
