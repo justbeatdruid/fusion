@@ -32,6 +32,10 @@ type ApiRelation struct {
 	ApiId      string `json:"apiId"`
 }
 
+type ApiBind struct {
+	ID string `json:"id"`
+}
+
 func FromModel(m model.ApiGroup, ss []model.ApiRelation) (ApiGroup, error) {
 	result := ApiGroup{
 		Id:                  m.Id,

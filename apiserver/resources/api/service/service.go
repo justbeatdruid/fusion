@@ -53,8 +53,8 @@ func NewService(client dynamic.Interface, dsConnector dw.Connector, kubeClient *
 		applicationClient: client.Resource(appv1.GetOOFSGVR()),
 		datasourceClient:  client.Resource(dsv1.GetOOFSGVR()),
 
-		dataService: dsConnector,
-
+		dataService:   dsConnector,
+		db:            db,
 		tenantEnabled: tenantEnabled,
 		localConfig:   localConfig,
 	}
@@ -1109,4 +1109,11 @@ func (s *Service) ListAllApplicationApis(opts ...util.OpOption) ([]*ApplicationS
 		}
 	}
 	return result, nil
+}
+
+func (s *Service) ListApisByApiGroup(id string, opts ...util.OpOption) ([]*Api, error) {
+	if !s.db.Enabled() {
+		return nil, fmt.Errorf("not support if database disabled")
+	}
+	return s.ListByApiRelationFromDatabase(id, opts...)
 }

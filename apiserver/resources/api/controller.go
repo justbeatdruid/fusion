@@ -1085,6 +1085,46 @@ func (c *controller) ListAllApplicationApis(req *restful.Request) (int, interfac
 	}
 }
 
+func (c *controller) ListApisByApiGroup(req *restful.Request) (int, *ListResponse) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	id := req.PathParameter("id")
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      1,
+			Detail:    "auth model error",
+			ErrorCode: "",
+			Message:   "",
+		}
+	}
+	if api, err := c.service.ListApisByApiGroup(id, util.WithUser(authuser.Name),
+		util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      2,
+			Detail:    fmt.Errorf("list api error: %+v", err).Error(),
+			ErrorCode: "",
+			Message:   "",
+		}
+	} else {
+		var apis ApiList = api
+		data, err := util.PageWrap(apis, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:      1,
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
+				ErrorCode: "",
+				Message:   "",
+			}
+		}
+		return http.StatusOK, &ListResponse{
+			Code:      0,
+			ErrorCode: "0",
+			Data:      data,
+		}
+	}
+}
+
 type ApplicationScopedApiList []*service.ApplicationScopedApi
 
 func (apis ApplicationScopedApiList) Len() int {

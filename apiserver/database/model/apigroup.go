@@ -19,7 +19,7 @@ type ApiGroup struct {
 	Status string `orm:"size(16)"`
 }
 type ApiRelation struct {
-	Id         int `orm:"pk;unique"`
+	Id         int `orm:"pk;unique;auto"`
 	ApiGroupId string
 	ApiId      string
 }

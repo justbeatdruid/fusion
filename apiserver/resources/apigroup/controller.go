@@ -21,7 +21,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.TenantEnabled, cfg.Database),
+		service.NewService(cfg.GetDynamicClient(), cfg.TenantEnabled, cfg.Database),
 	}
 }
 
@@ -48,6 +48,13 @@ type ListResponse = struct {
 	Message   string      `json:"message"`
 	Detail    string      `json:"detail"`
 	Data      interface{} `json:"data"`
+}
+
+type BindRequest struct {
+	Data struct {
+		Operation string            `json:"operation"`
+		Apis      []service.ApiBind `json:"apis"`
+	} `json:"data"`
 }
 
 func (c *controller) CreateApiGroup(req *restful.Request) (int, *CreateResponse) {
@@ -267,6 +274,51 @@ func (c *controller) UpdateApiGroupStatus(req *restful.Request) (int, *CreateRes
 		return http.StatusOK, &CreateResponse{
 			Code: 0,
 			Data: apl,
+		}
+	}
+}
+
+func (c *controller) BindOrUnbindApis(req *restful.Request) (int, *CreateResponse) {
+	body := &BindRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		code := "000000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   "",
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data.Operation != "bind" && body.Data.Operation != "unbind" {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   1,
+			Detail: "read entity error: data operation is invaild",
+		}
+	}
+
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "000000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   "",
+			Detail:    "auth model error",
+		}
+	}
+	groupID := req.PathParameter("id")
+	if err := c.service.BatchBindOrRelease(groupID, body.Data.Operation, body.Data.Apis, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      2,
+			ErrorCode: "001000013",
+			Message:   "",
+			Detail:    fmt.Errorf("bind api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
+			Code:      0,
+			ErrorCode: "0",
+			//Data:      api,
 		}
 	}
 }

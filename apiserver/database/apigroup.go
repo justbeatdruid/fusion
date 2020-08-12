@@ -28,6 +28,67 @@ func (d *DatabaseConnection) AddApiGroup(p model.ApiGroup, ss []model.ApiRelatio
 	return nil
 }
 
+func (d *DatabaseConnection) AddApiRelation(ss []model.ApiRelation) (err error) {
+	if err = d.Begin(); err != nil {
+		return fmt.Errorf("begin txn error: %+v", err)
+	}
+	for _, s := range ss {
+		_, err = d.Insert(&s)
+		if err != nil {
+			d.Rollback()
+			return err
+		}
+	}
+	if err = d.Commit(); err != nil {
+		return fmt.Errorf("commit txn error: %+v", err)
+	}
+	return nil
+}
+
+//需要关联关系表
+func (d *DatabaseConnection) RemoveApiRelation(ss []model.ApiRelation) (err error) {
+	if err = d.Begin(); err != nil {
+		return fmt.Errorf("begin txn error: %+v", err)
+	}
+	for _, s := range ss {
+		if _, err := d.Delete(&s); err != nil {
+			d.Rollback()
+			return err
+		}
+	}
+	if err = d.Commit(); err != nil {
+		return fmt.Errorf("commit txn error: %+v", err)
+	}
+	return nil
+}
+
+func (d *DatabaseConnection) QueryApiRelation(p model.ApiGroup) ([]model.ApiRelation, error) {
+	if err := d.Begin(); err != nil {
+		return nil, fmt.Errorf("begin txn error: %+v", err)
+	}
+
+	ss := []model.ApiRelation{}
+	if _, err := d.QueryTable("ApiRelation").Filter("ApiGroupId", p.Id).All(&ss); err != nil {
+		d.Rollback()
+		return nil, err
+	}
+
+	return ss, nil
+}
+
+func (d *DatabaseConnection) QueryApiRelationByApi(p model.ApiGroup, apiId string) ([]model.ApiRelation, error) {
+	if err := d.Begin(); err != nil {
+		return nil, fmt.Errorf("begin txn error: %+v", err)
+	}
+
+	ss := []model.ApiRelation{}
+	if _, err := d.QueryTable("ApiRelation").Filter("ApiGroupId", p.Id).Filter("ApiId", apiId).All(&ss); err != nil {
+		d.Rollback()
+		return nil, err
+	}
+	return ss, nil
+}
+
 //删除apigroup时，需要关联删除 api关系表
 func (d *DatabaseConnection) RemoveApiGroup(id string) (err error) {
 	if err = d.Begin(); err != nil {
