@@ -1324,7 +1324,7 @@ func (r *Operator) AddResTransformerByKong(db *nlptv1.Api) (err error) {
 		klog.V(5).Infof("create response transformer failed msg: %s\n", responseBody.Message)
 		return fmt.Errorf("request for create response transformer error: receive wrong status code: %s", string(body))
 	}
-	(*db).Spec.KongApi.ResponseTransformerId = responseBody.ID
+	(*db).Spec.ResponseTransformer.Id = responseBody.ID
 	if err != nil {
 		return fmt.Errorf("create response transformer error %s", responseBody.Message)
 	}
@@ -1332,13 +1332,13 @@ func (r *Operator) AddResTransformerByKong(db *nlptv1.Api) (err error) {
 }
 
 func (r *Operator) DeleteResTransformerByKong(db *nlptv1.Api) (err error) {
-	klog.Infof("delete response transformer the id of api is %s,the kong_id of response transformer %s", db.ObjectMeta.Name, db.Spec.KongApi.ResponseTransformerId)
+	klog.Infof("delete response transformer the id of api is %s,the kong_id of response transformer %s", db.ObjectMeta.Name, db.Spec.ResponseTransformer.Id)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
-	id := db.Spec.KongApi.ResponseTransformerId
+	id := db.Spec.ResponseTransformer.Id
 
 	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", id))
 	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", id)).End()
@@ -1358,9 +1358,12 @@ func (r *Operator) UpdateResTransformerByKong(db *nlptv1.Api) (err error) {
 	klog.Infof("Enter route id is:%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	id := db.Spec.KongApi.ResponseTransformerId
-	klog.Infof("update response transformer id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", id))
-	request = request.Patch(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", id))
+	id := db.Spec.ResponseTransformer.Id
+
+	klog.Infof("xxxxxxxxxx  db.Spec.ResponseTransformer.Id", db.Spec.ResponseTransformer.Id)
+	klog.Infof("xxxxxxxxxx  Id", id)
+	klog.Infof("update response transformer id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", db.Spec.ResponseTransformer.Id))
+	request = request.Patch(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", db.Spec.ResponseTransformer.Id))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -1368,69 +1371,81 @@ func (r *Operator) UpdateResTransformerByKong(db *nlptv1.Api) (err error) {
 	requestBody := &ResTransformerRequestBody{}
 	requestBody.ConsumerId = db.Spec.ResponseTransformer.ConsumerId
 	requestBody.Name = "response-transformer"
-	requestBody.ConsumerId = db.Spec.ResponseTransformer.ConsumerId
+	//requestBody.ConsumerId = db.Spec.ResponseTransformer.ConsumerId
 	//remove
 	if len(db.Spec.ResponseTransformer.Config.Remove.Json) != 0 {
 		for _, j := range db.Spec.ResponseTransformer.Config.Remove.Json {
+			requestBody.Config.Remove.Json = requestBody.Config.Remove.Json[:0]
 			requestBody.Config.Remove.Json = append(requestBody.Config.Remove.Json, j)
 		}
 	}
 	if len(db.Spec.ResponseTransformer.Config.Remove.Headers) != 0 {
 		for _, h := range db.Spec.ResponseTransformer.Config.Remove.Headers {
+			requestBody.Config.Remove.Headers = requestBody.Config.Remove.Headers[:0]
 			requestBody.Config.Remove.Headers = append(requestBody.Config.Remove.Headers, h)
 		}
 	}
 	//rename
 	if len(db.Spec.ResponseTransformer.Config.Rename.Headers) != 0 {
 		for _, h := range db.Spec.ResponseTransformer.Config.Rename.Headers {
+			requestBody.Config.Rename.Headers = requestBody.Config.Rename.Headers[:0]
 			requestBody.Config.Rename.Headers = append(requestBody.Config.Rename.Headers, h)
 		}
 	}
 	//replace
 	if len(db.Spec.ResponseTransformer.Config.Replace.Json) != 0 {
 		for _, j := range db.Spec.ResponseTransformer.Config.Replace.Json {
+			requestBody.Config.Replace.Json = requestBody.Config.Replace.Json[:0]
 			requestBody.Config.Replace.Json = append(requestBody.Config.Replace.Json, j)
 		}
 	}
 	if len(db.Spec.ResponseTransformer.Config.Replace.Json_types) != 0 {
 		for _, jt := range db.Spec.ResponseTransformer.Config.Replace.Json_types {
+			requestBody.Config.Replace.Json_types = requestBody.Config.Replace.Json_types[:0]
 			requestBody.Config.Replace.Json_types = append(requestBody.Config.Replace.Json_types, jt)
 		}
 	}
 	if len(db.Spec.ResponseTransformer.Config.Replace.Headers) != 0 {
 		for _, h := range db.Spec.ResponseTransformer.Config.Replace.Headers {
+			requestBody.Config.Replace.Headers = requestBody.Config.Replace.Headers[:0]
 			requestBody.Config.Replace.Headers = append(requestBody.Config.Replace.Headers, h)
 		}
 	}
 	//add
 	if len(db.Spec.ResponseTransformer.Config.Add.Json) != 0 {
 		for _, j := range db.Spec.ResponseTransformer.Config.Add.Json {
+			requestBody.Config.Add.Json = requestBody.Config.Add.Json[:0]
 			requestBody.Config.Add.Json = append(requestBody.Config.Add.Json, j)
 		}
 	}
 	if len(db.Spec.ResponseTransformer.Config.Add.Json_types) != 0 {
 		for _, jt := range db.Spec.ResponseTransformer.Config.Add.Json_types {
+			requestBody.Config.Add.Json_types = requestBody.Config.Add.Json_types[:0]
 			requestBody.Config.Add.Json_types = append(requestBody.Config.Add.Json_types, jt)
 		}
 	}
 	if len(db.Spec.ResponseTransformer.Config.Add.Headers) != 0 {
 		for _, h := range db.Spec.ResponseTransformer.Config.Add.Headers {
+			requestBody.Config.Add.Headers = requestBody.Config.Add.Headers[:0]
 			requestBody.Config.Add.Headers = append(requestBody.Config.Add.Headers, h)
 		}
 	}
 	//append
 	if len(db.Spec.ResponseTransformer.Config.Append.Json) != 0 {
 		for _, j := range db.Spec.ResponseTransformer.Config.Append.Json {
+			requestBody.Config.Append.Json = requestBody.Config.Append.Json[:0]
 			requestBody.Config.Append.Json = append(requestBody.Config.Append.Json, j)
 		}
 	}
 	if len(db.Spec.ResponseTransformer.Config.Append.Json_types) != 0 {
 		for _, jt := range db.Spec.ResponseTransformer.Config.Append.Json_types {
+			requestBody.Config.Append.Json_types = requestBody.Config.Append.Json_types[:0]
 			requestBody.Config.Append.Json_types = append(requestBody.Config.Append.Json_types, jt)
 		}
 	}
 	if len(db.Spec.ResponseTransformer.Config.Append.Headers) != 0 {
 		for _, h := range db.Spec.ResponseTransformer.Config.Append.Headers {
+			requestBody.Config.Append.Headers = requestBody.Config.Append.Headers[:0]
 			requestBody.Config.Append.Headers = append(requestBody.Config.Append.Headers, h)
 		}
 	}

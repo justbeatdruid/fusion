@@ -307,7 +307,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, nil
 		}
 		api.Status.Status = nlptv1.Success
-		klog.Infof("add plugins : %s %s, status", api.Spec.ResponseTransformer.Name, api.Spec.KongApi.ResponseTransformerId, api.Status.PublishStatus)
+		klog.Infof("add plugins : %s %s, status", api.Spec.ResponseTransformer.Name, api.Spec.ResponseTransformer.Id, api.Status.PublishStatus)
 		r.Update(ctx, api)
 		return ctrl.Result{}, nil
 	}
@@ -319,7 +319,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, nil
 		}
 		api.Status.Status = nlptv1.Success
-		klog.Infof("add plugins : %s %s, status", api.Spec.ResponseTransformer.Name, api.Spec.KongApi.ResponseTransformerId, api.Status.PublishStatus)
+		klog.Infof("add plugins : %s %s, status", api.Spec.ResponseTransformer.Name, api.Spec.ResponseTransformer.Id, api.Status.PublishStatus)
 		r.Update(ctx, api)
 		return ctrl.Result{}, nil
 	}
@@ -331,7 +331,7 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 			return ctrl.Result{}, nil
 		}
 		api.Status.Status = nlptv1.Success
-		klog.Infof("add plugins : %s %s, status", api.Spec.ResponseTransformer.Name, api.Spec.KongApi.ResponseTransformerId, api.Status.PublishStatus)
+		klog.Infof("add plugins : %s %s, status", api.Spec.ResponseTransformer.Name, api.Spec.ResponseTransformer.Id, api.Status.PublishStatus)
 		r.Update(ctx, api)
 		return ctrl.Result{}, nil
 	}

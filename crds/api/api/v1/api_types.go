@@ -86,7 +86,7 @@ type ApiSpec struct {
 }
 
 type ResponseTransformer struct {
-	//Id         string               `json:"id"`
+	Id         string               `json:"id"`
 	ConsumerId string               `json:"consumerId,omitempty"`
 	Name       string               `json:"name"`
 	Config     ResTransformerConfig `json:"config,omitempty"`
@@ -262,7 +262,7 @@ type KongApiInfo struct {
 	CorsID          string   `json:"cors_id"`
 	PrometheusID    string   `json:"prometheus_id"`
 	RspHandlerID    string   `json:"rsp_id"`
-	ResponseTransformerId string `json:"respT_Id"`   //ResponseTransformerId
+	//ResponseTransformerId string `json:"respT_Id"`   //ResponseTransformerId
 	RspHandlerRoute string   `json:"rsp_route"`
 }
 
