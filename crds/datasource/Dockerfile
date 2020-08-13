@@ -5,7 +5,7 @@ WORKDIR /go/src/github.com/chinamobile/nlpt/
 # Copy the Go Modules manifests
 COPY cmd/ cmd/
 COPY apiserver/resources/datasource/rdb/driver/ apiserver/resources/datasource/rdb/driver/
-COPY apiserver/resources/datasource/mongo/driver/ apiserver/resources/datasource/mongo/driver/
+COPY apiserver/resources/datasource/mongo/ apiserver/resources/datasource/mongo/
 COPY crds/datasource crds/datasource
 COPY pkg/ pkg/
 COPY vendor/ vendor/
