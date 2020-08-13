@@ -414,11 +414,12 @@ func (s *Service) Validate(a *Serviceunit) error {
 			}
 			if len(a.FissionRefInfo.FnCode) !=0{
 				return fmt.Errorf("function file and code can only be one")
+			}
+			if len(a.FissionRefInfo.Entrypoint) == 0 {
+				return fmt.Errorf("function entry point is null")
+			}
 		}
-		}
-		if len(a.FissionRefInfo.Entrypoint) == 0 {
-			return fmt.Errorf("function entry point is null")
-		}
+
 		if len(a.FissionRefInfo.Language) == 0 {
 			return fmt.Errorf("function language is null")
 		}
