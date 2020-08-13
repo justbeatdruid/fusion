@@ -1324,7 +1324,7 @@ func (r *Operator) AddResTransformerByKong(db *nlptv1.Api) (err error) {
 		klog.V(5).Infof("create response transformer failed msg: %s\n", responseBody.Message)
 		return fmt.Errorf("request for create response transformer error: receive wrong status code: %s", string(body))
 	}
-	(*db).Spec.ResponseTransformer.Id = responseBody.ID
+	(*db).Spec.KongApi.ResponseTransformerId = responseBody.ID
 	if err != nil {
 		return fmt.Errorf("create response transformer error %s", responseBody.Message)
 	}
@@ -1332,13 +1332,13 @@ func (r *Operator) AddResTransformerByKong(db *nlptv1.Api) (err error) {
 }
 
 func (r *Operator) DeleteResTransformerByKong(db *nlptv1.Api) (err error) {
-	klog.Infof("delete response transformer the id of api is %s,the kong_id of response transformer %s", db.ObjectMeta.Name, db.Spec.ResponseTransformer.Id)
+	klog.Infof("delete response transformer the id of api is %s,the kong_id of response transformer %s", db.ObjectMeta.Name, db.Spec.KongApi.ResponseTransformerId)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
-	id := db.Spec.ResponseTransformer.Id
+	id := db.Spec.KongApi.ResponseTransformerId
 
 	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", id))
 	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", id)).End()
@@ -1358,7 +1358,7 @@ func (r *Operator) UpdateResTransformerByKong(db *nlptv1.Api) (err error) {
 	klog.Infof("Enter route id is:%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	id := db.Spec.ResponseTransformer.Id
+	id := db.Spec.KongApi.ResponseTransformerId
 	klog.Infof("update response transformer id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", id))
 	request = request.Patch(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", id))
 	for k, v := range headers {

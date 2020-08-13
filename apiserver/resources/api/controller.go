@@ -517,9 +517,7 @@ func (c *controller) DeleteApiPlugins(req *restful.Request) (int, interface{}) {
 		}
 	}
 	api_id := req.PathParameter("api_id")
-	plugin_id := req.PathParameter("plugin_id")
-	klog.V(5).Infof("DeleteApiPlugins id is %s", plugin_id)
-	if api, err := c.service.DeleteApiPlugins(api_id, plugin_id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+	if api, err := c.service.DeleteApiPlugins(api_id, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		code := "001000005"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,

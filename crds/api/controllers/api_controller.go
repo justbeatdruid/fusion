@@ -303,22 +303,37 @@ func (r *ApiReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
 	if api.Status.Action == nlptv1.AddPlugins {
 		if err := r.Operator.AddResTransformerByKong(api); err != nil {
 			klog.Errorf("add rsp transformer by kong err : %+v", err)
+			r.Update(ctx, api)
 			return ctrl.Result{}, nil
 		}
+		api.Status.Status = nlptv1.Success
+		klog.Infof("add plugins : %s %s, status", api.Spec.ResponseTransformer.Name, api.Spec.KongApi.ResponseTransformerId, api.Status.PublishStatus)
+		r.Update(ctx, api)
+		return ctrl.Result{}, nil
 	}
 
 	if api.Status.Action == nlptv1.UpdatePlugins {
 		if err := r.Operator.UpdateResTransformerByKong(api); err != nil {
 			klog.Errorf("update rsp transformer by kong err : %+v", err)
+			r.Update(ctx, api)
 			return ctrl.Result{}, nil
 		}
+		api.Status.Status = nlptv1.Success
+		klog.Infof("add plugins : %s %s, status", api.Spec.ResponseTransformer.Name, api.Spec.KongApi.ResponseTransformerId, api.Status.PublishStatus)
+		r.Update(ctx, api)
+		return ctrl.Result{}, nil
 	}
 
 	if api.Status.Action == nlptv1.DeletePlugins {
 		if err := r.Operator.DeleteResTransformerByKong(api); err != nil {
 			klog.Errorf("delete rsp transformer by kong err : %+v", err)
+			r.Update(ctx, api)
 			return ctrl.Result{}, nil
 		}
+		api.Status.Status = nlptv1.Success
+		klog.Infof("add plugins : %s %s, status", api.Spec.ResponseTransformer.Name, api.Spec.KongApi.ResponseTransformerId, api.Status.PublishStatus)
+		r.Update(ctx, api)
+		return ctrl.Result{}, nil
 	}
 	/*if api.Status.Status == nlptv1.Error {
 		// call kong api create

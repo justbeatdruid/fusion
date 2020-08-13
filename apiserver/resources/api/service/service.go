@@ -217,7 +217,7 @@ func (s *Service) AddApiPlugins(id string, name string, config interface{}, opts
 	return ToModel(api), err
 }
 
-func (s *Service) DeleteApiPlugins(api_id string, plugin_id string, opts ...util.OpOption) (*Api, error) {
+func (s *Service) DeleteApiPlugins(api_id string, opts ...util.OpOption) (*Api, error) {
 	api, err := s.Get(api_id, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get object: %+v", err)

@@ -183,7 +183,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 	//delete plugins
-	ws.Route(ws.DELETE("/apis/{api_id}/plugins/{plugin_id}").
+	ws.Route(ws.DELETE("/apis/{api_id}/plugins").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("delete an api plugins").
@@ -191,7 +191,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 	//update plugins
-	ws.Route(ws.PATCH("/apis/{api_id}/plugins/{plugin_id}").
+	ws.Route(ws.PATCH("/apis/{api_id}/plugins").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("delete an api plugins").
