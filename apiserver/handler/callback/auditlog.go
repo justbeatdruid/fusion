@@ -42,38 +42,50 @@ var accepted = []selector{
 	{"/api/v1/serviceunits/{id}", DELETE, ""},
 
 	//serviceunit
-	{"api/v1/serviceunits/{id}", PATCH, ""},
-	{"api/v1/serviceunits/{id}", POST, ""},
-	{"api/v1/serviceunits/{id}/users", POST, ""},
-	{"api/v1/serviceunits/{id}/users/{userid}", DELETE, ""},
-	{"api/v1/serviceunits/{id}/users/{userid}", PUT, ""},
-	{"api/v1/serviceunits/{id}/owner", PUT, ""},
+	{"/api/v1/serviceunits/{id}", PATCH, ""},
+	{"/api/v1/serviceunits/{id}/users", POST, ""},
+	{"/api/v1/serviceunits/{id}/users/{userid}", DELETE, ""},
+	{"/api/v1/serviceunits/{id}/users/{userid}", PUT, ""},
+	{"/api/v1/serviceunits/{id}/owner", PUT, ""},
+	{"/api/v1/serviceunits/{id}/release","POST",""},
+	{"/api/v1/serviceunits/import","POST",""},
+	{"/api/v1/serviceunits/function/test","POST",""},
 
 	//restriction
-	{"api/v1/restrictions", POST, ""},
-	{"api/v1/restrictions/{id}/apis", POST, ""},
-	{"api/v1/restrictions/{id}", DELETE, ""},
-	{"api/v1/restrictions/{id}", PATCH, ""},
+	{"/api/v1/restrictions", POST, ""},
+	{"/api/v1/restrictions/{id}/apis", POST, ""},
+	{"/api/v1/restrictions/{id}", DELETE, ""},
+	{"/api/v1/restrictions/{id}", PATCH, ""},
+	{"/api/v1/restrictions","PUT",""},
 
 	//application
-	{"api/v1/applications/{id}", PATCH, ""},
-	{"api/v1/applications/{id}/users", POST, ""},
-	{"api/v1/applications/{id}/users/{userid}", DELETE, ""},
-	{"api/v1/applications/{id}/users/{userid}", PUT, ""},
-	{"api/v1/applications/{id}/owner", PUT, ""},
+	{"/api/v1/applications/{id}", PATCH, ""},
+	{"/api/v1/applications/{id}/users", POST, ""},
+	{"/api/v1/applications/{id}/users/{userid}", DELETE, ""},
+	{"/api/v1/applications/{id}/users/{userid}", PUT, ""},
+	{"/api/v1/applications/{id}/owner", PUT, ""},
 
 	//trafficcontrol
-	{"api/v1/trafficcontrols", POST, ""},
-	{"api/v1/trafficcontrols/{id}/apis", POST, ""},
-	{"api/v1/trafficcontrols/{id}", DELETE, ""},
-	{"api/v1/trafficcontrols/{id}", PATCH, ""},
+	{"/api/v1/trafficcontrols", POST, ""},
+	{"/api/v1/trafficcontrols/{id}/apis", POST, ""},
+	{"/api/v1/trafficcontrols/{id}", DELETE, ""},
+	{"/api/v1/trafficcontrols/{id}", PATCH, ""},
+	{"/api/v1/trafficcontrols","PUT",""},
 
 	//apis
-	{"api/v1/apis/{id}", PATCH, ""},
-	{"api/v1/apis/{id}/release", POST, ""},
-	{"api/v1/apis/{id}/release", DELETE, ""},
-	{"api/v1/apis/{id}/applications/{appid}", POST, ""},
-	{"api/v1/api/test", POST, ""},
+	{"/api/v1/apis/{id}", PATCH, ""},
+	{"/api/v1/apis/{id}/release", POST, ""},
+	{"/api/v1/apis/{id}/release", DELETE, ""},
+	{"/api/v1/apis/{id}/applications/{appid}", POST, ""},
+	{"/api/v1/api/test", POST, ""},
+	{"/api/v1/apis","PUT",""},
+	{"/api/v1/apis/applications/{appid}","POST",""},
+	{"/api/v1/apis/{%s}/{%s}/data","POST",""},
+	{"/api/v1/apis/export","POST",""},
+	{"/api/v1/apis/import","POST",""},
+	{"/api/v1/apis/{id}/plugins","POST",""},
+	{"/api/v1/apis/{api_id}/plugins","DELETE",""},
+	{"/api/v1/apis/{api_id}/plugins","PATCH",""},
 
 	//clientauth
 	{"/api/v1/clientauths", POST, ""},
@@ -148,6 +160,10 @@ func getResourceType(path string) string {
 			return "Topic"
 		case "topicgroups":
 			return "Topic分组"
+		case "trafficcontrols":
+			return "流控控制"
+		case "restrictions":
+			return "访问控制"
 
 		}
 	}
