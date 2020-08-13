@@ -69,8 +69,9 @@ type Api struct {
 
 	PublishInfo v1.PublishInfo
 
-	ApplicationBindStatus *v1.ApiApplicationStatus `json:"applicationBindStatus"`
-	ResTransformer        v1.ResponseTransformer   `json:"resTransformer"`
+	ApplicationBindStatus  *v1.ApiApplicationStatus `json:"applicationBindStatus"`
+	ResTransformer         v1.ResponseTransformer   `json:"resTransformer"`
+	OutResponseTransformer OutResponseTransformer   `json:"resTransformerInfo"`
 }
 
 type Statistics struct {
@@ -100,14 +101,21 @@ type InputResTransformerConfig struct {
 	} `json:"rename,omitempty"`
 	Replace struct {
 		Json    []FieldDetailInfo `json:"json,omitempty"`
-		Headers []FieldDetailInfo `json:"headers,omitempty"`
+		Headers []FieldValue      `json:"headers,omitempty"`
 	} `json:"replace,omitempty"`
 	Add struct {
 		Json    []FieldDetailInfo `json:"json,omitempty"`
-		Headers []FieldDetailInfo `json:"headers,omitempty"`
+		Headers []FieldValue      `json:"headers,omitempty"`
 	} `json:"add,omitempty"`
 	Append struct {
 	} `json:"append,omitempty"`
+}
+
+type OutResponseTransformer struct {
+	Id         string                    `json:"id"`
+	ConsumerId string                    `json:"consumerId,omitempty"`
+	Name       string                    `json:"name"`
+	Config     InputResTransformerConfig `json:"config,omitempty"`
 }
 
 // only used in creation
@@ -164,6 +172,38 @@ func ToAPI(api *Api) *v1.Api {
 	return crd
 }
 
+func ToInputTransformerInfo(info v1.ResponseTransformer) OutResponseTransformer {
+	var output OutResponseTransformer
+	output.Name = info.Name
+	output.Id = info.Id
+	output.ConsumerId = info.ConsumerId
+	output.Config.Remove = info.Config.Remove
+
+	for i := 0; i < len(info.Config.Rename.Headers); i++ {
+		arr := strings.Split(info.Config.Rename.Headers[i], ":")
+		output.Config.Rename.Headers = append(output.Config.Rename.Headers, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+	for i := 0; i < len(info.Config.Replace.Headers); i++ {
+		arr := strings.Split(info.Config.Replace.Headers[i], ":")
+		output.Config.Replace.Headers = append(output.Config.Replace.Headers, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+	for i := 0; i < len(info.Config.Replace.Json); i++ {
+		arr := strings.Split(info.Config.Replace.Json[i], ":")
+		output.Config.Replace.Json = append(output.Config.Replace.Json,
+			FieldDetailInfo{Key: arr[0], Value: arr[1], Type: info.Config.Replace.Json_types[i]})
+	}
+	for i := 0; i < len(info.Config.Add.Headers); i++ {
+		arr := strings.Split(info.Config.Add.Headers[i], ":")
+		output.Config.Add.Headers = append(output.Config.Add.Headers, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+	for i := 0; i < len(info.Config.Add.Json); i++ {
+		arr := strings.Split(info.Config.Add.Json[i], ":")
+		output.Config.Add.Json = append(output.Config.Add.Json,
+			FieldDetailInfo{Key: arr[0], Value: arr[1], Type: info.Config.Add.Json_types[i]})
+	}
+	return output
+}
+
 func ToModel(obj *v1.Api) *Api {
 	klog.V(5).Infof("obj to model: %+v", obj)
 	model := &Api{
@@ -190,18 +230,19 @@ func ToModel(obj *v1.Api) *Api {
 		Restriction:    obj.Spec.Restriction,
 		PublishInfo:    obj.Spec.PublishInfo,
 
-		Status:           obj.Status.Status,
-		Action:           obj.Status.Action,
-		PublishStatus:    obj.Status.PublishStatus,
-		AccessLink:       obj.Status.AccessLink,
-		UpdatedAt:        util.NewTime(obj.Status.UpdatedAt.Time),
-		ReleasedAt:       util.NewTime(obj.Status.ReleasedAt.Time),
-		ApplicationCount: 0,
-		CalledCount:      obj.Status.CalledCount,
-		FailedCount:      obj.Status.FailedCount,
-		LatencyCount:     obj.Status.LatencyCount,
-		CallFrequency:    obj.Status.CallFrequency,
-		ResTransformer:   obj.Spec.ResponseTransformer,
+		Status:                 obj.Status.Status,
+		Action:                 obj.Status.Action,
+		PublishStatus:          obj.Status.PublishStatus,
+		AccessLink:             obj.Status.AccessLink,
+		UpdatedAt:              util.NewTime(obj.Status.UpdatedAt.Time),
+		ReleasedAt:             util.NewTime(obj.Status.ReleasedAt.Time),
+		ApplicationCount:       0,
+		CalledCount:            obj.Status.CalledCount,
+		FailedCount:            obj.Status.FailedCount,
+		LatencyCount:           obj.Status.LatencyCount,
+		CallFrequency:          obj.Status.CallFrequency,
+		ResTransformer:         obj.Spec.ResponseTransformer,
+		OutResponseTransformer: ToInputTransformerInfo(obj.Spec.ResponseTransformer),
 	}
 
 	if len(model.Method) == 0 {
