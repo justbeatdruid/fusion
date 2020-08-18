@@ -80,7 +80,7 @@ func newDatabaseConnection(cfg DatabaseConfig) (*DatabaseConnection, error) {
 
 	orm.RegisterModel(new(model.Application), new(model.UserRelation), new(model.Task), new(model.TbDagRun), new(model.TbMetadata), new(model.Datasource),
 		new(model.Relation), new(model.Api), new(model.Serviceunit), new(model.Topic), new(model.TopicGroup), new(model.Product), new(model.Scenario),
-		new(model.ApiGroup), new(model.ApiRelation))
+		new(model.ApiGroup), new(model.ApiRelation), new(model.ApiPlugin), new(model.ApiPluginRelation))
 	if err = orm.RunSyncdb("default", false, true); err != nil {
 		return nil, fmt.Errorf("cannot sync database: %+v", err)
 	}
