@@ -21,15 +21,15 @@ const (
 )
 
 type Serviceunit struct {
-	ID           string             `json:"id"`
-	Name         string             `json:"name"`
-	Namespace    string             `json:"namespace"`
-	Type         v1.ServiceType     `json:"type"`
-	DatasourceID *v1.Datasource     `json:"datasources,omitempty"`
-	KongSevice   v1.KongServiceInfo `json:"kongService"`
-	FissionRefInfo v1.FissionRefInfo `json:"fissionRefInfo"`
-	Users        user.Users         `json:"users"`
-	Description  string             `json:"description"`
+	ID             string             `json:"id"`
+	Name           string             `json:"name"`
+	Namespace      string             `json:"namespace"`
+	Type           v1.ServiceType     `json:"type"`
+	DatasourceID   *v1.Datasource     `json:"datasources,omitempty"`
+	KongSevice     v1.KongServiceInfo `json:"kongService"`
+	FissionRefInfo v1.FissionRefInfo  `json:"fissionRefInfo"`
+	Users          user.Users         `json:"users"`
+	Description    string             `json:"description"`
 
 	Status    v1.Status `json:"status"`
 	UpdatedAt util.Time `json:"time"`
@@ -53,9 +53,9 @@ type SuFission struct {
 type TestFunction struct {
 	FnName string `json:"fnName"`
 	Method string `json:"method"`
-	Body string `json:"body"`
+	Body   string `json:"body"`
 	Header string `json:"header"`
-	Query string `json:"query"`
+	Query  string `json:"query"`
 }
 
 // only used in creation options
@@ -71,13 +71,19 @@ func ToAPI(app *Serviceunit) *v1.Serviceunit {
 		Type:         app.Type,
 		DatasourceID: app.DatasourceID,
 		//Datasource:   app.Datasource,
-		KongService:   app.KongSevice,
+		KongService:    app.KongSevice,
 		FissionRefInfo: app.FissionRefInfo,
-		Description:   app.Description,
-		Result:        app.Result,
-		DisplayStatus: app.DisplayStatus,
+		Description:    app.Description,
+		Result:         app.Result,
+		DisplayStatus:  app.DisplayStatus,
 	}
 	crd.Spec.FissionRefInfo.SuId = crd.ObjectMeta.Name
+	switch crd.Spec.FissionRefInfo.Language {
+	case "go-1.12":
+		crd.Spec.FissionRefInfo.Language = "go12"
+	case "go-1.13":
+		crd.Spec.FissionRefInfo.Language = "go13"
+	}
 	status := app.Status
 	if len(status) == 0 {
 		status = v1.Init
@@ -150,14 +156,14 @@ func ToModel(obj *v1.Serviceunit, opts ...util.OpOption) *Serviceunit {
 		(*obj).Spec.DisplayStatus = v1.DeleteFailed
 	}
 	su := &Serviceunit{
-		ID:           obj.ObjectMeta.Name,
-		Name:         obj.Spec.Name,
-		Namespace:    obj.ObjectMeta.Namespace,
-		Type:         obj.Spec.Type,
-		DatasourceID: obj.Spec.DatasourceID,
-		KongSevice:   obj.Spec.KongService,
+		ID:             obj.ObjectMeta.Name,
+		Name:           obj.Spec.Name,
+		Namespace:      obj.ObjectMeta.Namespace,
+		Type:           obj.Spec.Type,
+		DatasourceID:   obj.Spec.DatasourceID,
+		KongSevice:     obj.Spec.KongService,
 		FissionRefInfo: obj.Spec.FissionRefInfo,
-		Description:  obj.Spec.Description,
+		Description:    obj.Spec.Description,
 
 		Status:        obj.Status.Status,
 		CreatedAt:     util.NewTime(obj.ObjectMeta.CreationTimestamp.Time),
@@ -167,6 +173,7 @@ func ToModel(obj *v1.Serviceunit, opts ...util.OpOption) *Serviceunit {
 		Result:        obj.Spec.Result,
 		DisplayStatus: obj.Spec.DisplayStatus,
 	}
+
 	u := util.OpList(opts...).User()
 	if len(u) > 0 {
 		su.Writable = user.WritePermitted(u, obj.ObjectMeta.Labels)
@@ -389,30 +396,30 @@ func (s *Service) Validate(a *Serviceunit) error {
 	case v1.FunctionService:
 		if len(a.FissionRefInfo.FnName) == 0 {
 			return fmt.Errorf("function name is null")
-		}else {
+		} else {
 			if ok, _ := regexp.MatchString(NameReg, a.FissionRefInfo.FnName); !ok {
 				return fmt.Errorf("functionname is illegal: %v", a.FissionRefInfo.FnName)
 			}
-			for _, p := range suList.Items{
-				if a.FissionRefInfo.FnName == p.Spec.FissionRefInfo.FnName{
+			for _, p := range suList.Items {
+				if a.FissionRefInfo.FnName == p.Spec.FissionRefInfo.FnName {
 					return fmt.Errorf("functionname is duplicated: %v", a.FissionRefInfo.FnName)
 				}
 			}
 		}
 		//TODO FnFile和FnCode中只能有一个有值
 		if len(a.FissionRefInfo.FnFile) == 0 {
-			if len(a.FissionRefInfo.FnCode) == 0{
+			if len(a.FissionRefInfo.FnCode) == 0 {
 				return fmt.Errorf("function file and code is null")
 			}
-		}else {
-			boolean:=strings.HasSuffix(a.FissionRefInfo.FnFile,".js")||
-				strings.HasSuffix(a.FissionRefInfo.FnFile,".py") ||
-				strings.HasSuffix(a.FissionRefInfo.FnFile,".zip") ||
-				strings.HasSuffix(a.FissionRefInfo.FnFile,".go")
-			if !boolean{
+		} else {
+			boolean := strings.HasSuffix(a.FissionRefInfo.FnFile, ".js") ||
+				strings.HasSuffix(a.FissionRefInfo.FnFile, ".py") ||
+				strings.HasSuffix(a.FissionRefInfo.FnFile, ".zip") ||
+				strings.HasSuffix(a.FissionRefInfo.FnFile, ".go")
+			if !boolean {
 				return fmt.Errorf("end of file must be .js or .py or .zip or .go")
 			}
-			if len(a.FissionRefInfo.FnCode) !=0{
+			if len(a.FissionRefInfo.FnCode) != 0 {
 				return fmt.Errorf("function file and code can only be one")
 			}
 			if len(a.FissionRefInfo.Entrypoint) == 0 {
@@ -423,12 +430,12 @@ func (s *Service) Validate(a *Serviceunit) error {
 		if len(a.FissionRefInfo.Language) == 0 {
 			return fmt.Errorf("function language is null")
 		}
-		if a.FissionRefInfo.Language!="nodejs" && a.FissionRefInfo.Language!="python" &&
-			a.FissionRefInfo.Language!="go-1.13" && a.FissionRefInfo.Language!="go-1.12" {
+		if a.FissionRefInfo.Language != "nodejs" && a.FissionRefInfo.Language != "python" &&
+			a.FissionRefInfo.Language != "go-1.13" && a.FissionRefInfo.Language != "go-1.12" {
 			return fmt.Errorf("function language is not nodejs or python or go-1.13 or go-1.12")
-		}else if a.FissionRefInfo.Language =="python" || a.FissionRefInfo.Language =="go-1.12" || a.FissionRefInfo.Language =="go-1.13" {
-			if len(a.FissionRefInfo.FnCode)==0{
-				if len(a.FissionRefInfo.BuildCmd) ==0 {
+		} else if a.FissionRefInfo.Language == "python" || a.FissionRefInfo.Language == "go-1.12" || a.FissionRefInfo.Language == "go-1.13" {
+			if len(a.FissionRefInfo.FnCode) == 0 {
+				if len(a.FissionRefInfo.BuildCmd) == 0 {
 					return fmt.Errorf("function BuildCmd is null")
 				}
 			}
@@ -538,34 +545,34 @@ func (s *Service) assignment(target *v1.Serviceunit, reqData interface{}) error 
 	if target.Spec.APIs == nil {
 		target.Spec.APIs = make([]v1.Api, 0)
 	}
-	if _,ok := data["fissionRefInfo"];ok{
-		if target.Spec.FissionRefInfo.FnName !=source.FissionRefInfo.FnName{
-			return fmt.Errorf("can not be modified this name %v",target.Spec.FissionRefInfo.FnName)
+	if _, ok := data["fissionRefInfo"]; ok {
+		if target.Spec.FissionRefInfo.FnName != source.FissionRefInfo.FnName {
+			return fmt.Errorf("can not be modified this name %v", target.Spec.FissionRefInfo.FnName)
 		}
-		if target.Spec.FissionRefInfo.Language != source.FissionRefInfo.Language{
-			return fmt.Errorf("can not be modified this language %v",target.Spec.FissionRefInfo.Language)
+		if target.Spec.FissionRefInfo.Language != source.FissionRefInfo.Language {
+			return fmt.Errorf("can not be modified this language %v", target.Spec.FissionRefInfo.Language)
 		}
 		if len(source.FissionRefInfo.FnFile) == 0 {
-			if len(source.FissionRefInfo.FnCode) == 0{
+			if len(source.FissionRefInfo.FnCode) == 0 {
 				return fmt.Errorf("function file and code is null")
 			}
-		}else {
-			boolean:=strings.HasSuffix(source.FissionRefInfo.FnFile,".js")||
-				strings.HasSuffix(source.FissionRefInfo.FnFile,".py") ||
-				strings.HasSuffix(source.FissionRefInfo.FnFile,".zip") ||
-				strings.HasSuffix(source.FissionRefInfo.FnFile,".go")
-			if !boolean{
+		} else {
+			boolean := strings.HasSuffix(source.FissionRefInfo.FnFile, ".js") ||
+				strings.HasSuffix(source.FissionRefInfo.FnFile, ".py") ||
+				strings.HasSuffix(source.FissionRefInfo.FnFile, ".zip") ||
+				strings.HasSuffix(source.FissionRefInfo.FnFile, ".go")
+			if !boolean {
 				return fmt.Errorf("end of file must be .js or .py or .zip or .go")
 			}
-			if len(source.FissionRefInfo.FnCode) !=0{
+			if len(source.FissionRefInfo.FnCode) != 0 {
 				return fmt.Errorf("function file and code can only be one")
-		}
+			}
 		}
 
-		target.Spec.FissionRefInfo.FnCode=source.FissionRefInfo.FnCode
-		target.Spec.FissionRefInfo.FnFile=source.FissionRefInfo.FnFile
-		target.Spec.FissionRefInfo.BuildCmd=source.FissionRefInfo.BuildCmd
-		target.Spec.FissionRefInfo.Entrypoint=source.FissionRefInfo.Entrypoint
+		target.Spec.FissionRefInfo.FnCode = source.FissionRefInfo.FnCode
+		target.Spec.FissionRefInfo.FnFile = source.FissionRefInfo.FnFile
+		target.Spec.FissionRefInfo.BuildCmd = source.FissionRefInfo.BuildCmd
+		target.Spec.FissionRefInfo.Entrypoint = source.FissionRefInfo.Entrypoint
 	}
 	return nil
 }

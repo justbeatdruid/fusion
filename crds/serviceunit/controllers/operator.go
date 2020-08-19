@@ -190,8 +190,8 @@ const (
 	Command           = "build"
 	NodeJs            = "nodejs"
 	Python            = "python"
-	Go13              = "go-1.13"
-	Go12              = "go-1.12"
+	Go13              = "go13"
+	Go12              = "go12"
 	Zip               = ".zip"
 	EntryGo           = "Handler"
 	EntryPy           = "main"
@@ -553,13 +553,16 @@ func (r *Operator) CreatePkgByFile(db *nlptv1.Serviceunit) (*FissionResInfoRsp, 
 			requestBody.Spec.Source.Type = "literal"
 			requestBody.Spec.Source.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
 			requestBody.Spec.BuildCommand = db.Spec.FissionRefInfo.BuildCmd
+			klog.Infof("create pkg by zip :%s", requestBody)
 		} else {
 			requestBody.Spec.Deployment.Type = "literal"
 			requestBody.Spec.Deployment.Literal, _ = GetContentsPkg(db.Spec.FissionRefInfo.FnFile)
+			klog.Infof("create pkg by file :%+v", requestBody)
 		}
 	} else {
 		requestBody.Spec.Deployment.Type = "literal"
 		requestBody.Spec.Deployment.Literal = []byte(db.Spec.FissionRefInfo.FnCode)
+		klog.Infof("create pkg by code :%s", requestBody)
 	}
 	responseBody := &FissionResInfoRsp{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
@@ -612,10 +615,7 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResIn
 		case Go13, Go12:
 			requestBody.Spec.Package.FunctionName = EntryGo
 		}
-	}
-	//单个文件或者在先编辑时go python传入 Handler main，nodejs不需要传入
-	if strings.HasSuffix(db.Spec.FissionRefInfo.FnFile, ".go") ||
-		strings.HasSuffix(db.Spec.FissionRefInfo.FnFile, ".py") {
+	} else { //单个文件或者在先编辑时go python传入 Handler main，nodejs不需要传入
 		switch db.Spec.FissionRefInfo.Language {
 		case Python:
 			requestBody.Spec.Package.FunctionName = EntryPy
@@ -623,6 +623,8 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResIn
 			requestBody.Spec.Package.FunctionName = EntryGo
 		}
 	}
+
+	//在线编辑时传入的
 	requestBody.Spec.InvokeStrategy.ExecutionStrategy.ExecutorType = "poolmgr"
 	requestBody.Spec.InvokeStrategy.StrategyType = "execution"
 	requestBody.Spec.FunctionTimeout = 120
@@ -637,6 +639,7 @@ func (r *Operator) CreateFnByEnvAndPkg(db *nlptv1.Serviceunit, pkg *FissionResIn
 		}
 		//单文件成功状态是none,zip包成功状态是succeeded
 		if Pkg.Status.BuildStatus == "none" || Pkg.Status.BuildStatus == "succeeded" {
+			klog.Errorf("create function pkg status is : %s\n", Pkg.Status.BuildStatus)
 			break
 		}
 	}
