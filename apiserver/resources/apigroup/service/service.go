@@ -2,13 +2,12 @@ package service
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/apiserver/database"
 	"github.com/chinamobile/nlpt/apiserver/database/model"
+	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	"github.com/chinamobile/nlpt/pkg/util"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-
-	"github.com/chinamobile/nlpt/apiserver/database"
-	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 	// "k8s.io/klog"
@@ -31,6 +30,9 @@ func NewService(client dynamic.Interface, tenantEnabled bool, db *database.Datab
 }
 
 func (s *Service) CreateApiGroup(model *ApiGroup) (*ApiGroup, error) {
+	if err := s.Validate(model); err != nil {
+		return nil, err
+	}
 	model.Status = "unpublished"
 	p, ss, err := ToModel(*model)
 	if err != nil {
@@ -92,6 +94,10 @@ func (s *Service) UpdateApiGroup(model *ApiGroup, id string) (*ApiGroup, error) 
 	}
 	if existed.Namespace != model.Namespace {
 		return nil, fmt.Errorf("permission denied: wrong tenant")
+	}
+
+	if err = s.assignment(existed, model); err != nil {
+		return nil, err
 	}
 	//当前支持更新名称和描述信息
 	if len(model.Name) != 0 {

@@ -114,6 +114,13 @@ var accepted = []selector{
 	{"/api/v1/topicgroups", POST, ""},
 	{"/api/v1/topicgroups/{id}", DELETE, ""},
 	{"/api/v1/topicgroups/{id}", PUT, "高级配置"},
+
+	//apigroup
+	{"/api/v1/apigroups","POST",""},
+	{"/api/v1/apigroups/{id}","DELETE",""},
+	{"/api/v1/apigroups/{id}","PUT",""},
+	{"/api/v1/apigroups/status","PUT",""},
+	{"/api/v1/apigroups/{id}/apis","POST",""},
 }
 
 // return event, resource and if this request should be uploaded as event
@@ -164,6 +171,8 @@ func getResourceType(path string) string {
 			return "流控控制"
 		case "restrictions":
 			return "访问控制"
+		case "apigroups":
+			return "api分组"
 
 		}
 	}
