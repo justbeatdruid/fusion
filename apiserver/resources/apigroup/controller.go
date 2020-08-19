@@ -2,6 +2,7 @@ package apigroup
 
 import (
 	"fmt"
+	"github.com/chinamobile/nlpt/pkg/errors"
 	"net/http"
 	"time"
 
@@ -17,11 +18,13 @@ import (
 
 type controller struct {
 	service *service.Service
+	errMsg config.ErrorConfig
 }
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
 		service.NewService(cfg.GetDynamicClient(), cfg.TenantEnabled, cfg.Database),
+		cfg.LocalConfig,
 	}
 }
 
@@ -60,27 +63,30 @@ type BindRequest struct {
 func (c *controller) CreateApiGroup(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
-		code := "000000005"
+		code := "014000001"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: code,
-			Message:   "",
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
+		code := "014000002"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:   1,
+			ErrorCode: code,
+			Message: c.errMsg.ApiGroup[code],
 			Detail: "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
-		code := "000000005"
+		code := "014000003"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: code,
-			Message:   "",
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    "auth model error",
 		}
 	}
@@ -90,15 +96,20 @@ func (c *controller) CreateApiGroup(req *restful.Request) (int, *CreateResponse)
 	body.Data.CreatedAt = time.Now()
 	body.Data.ReleasedAt = time.Now()
 	if apl, err := c.service.CreateApiGroup(body.Data); err != nil {
+		var code string
+		if errors.IsNameDuplicated(err) {
+			code = "014000004"
+		}
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
-			ErrorCode: "",
-			Message:   "",
+			ErrorCode: code,
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    fmt.Errorf("create apigroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
 			Code: 0,
+			ErrorCode: "0",
 			Data: apl,
 		}
 	}
@@ -107,16 +118,17 @@ func (c *controller) CreateApiGroup(req *restful.Request) (int, *CreateResponse)
 func (c *controller) GetApiGroup(req *restful.Request) (int, *GetResponse) {
 	id := req.PathParameter("id")
 	if apl, err := c.service.GetApiGroup(id); err != nil {
-		code := "000000007"
+		code := "014000005"
 		return http.StatusInternalServerError, &GetResponse{
 			Code:      1,
 			ErrorCode: code,
-			Message:   "",
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    fmt.Errorf("get apigroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
 			Code: 0,
+			ErrorCode: "0",
 			Data: apl,
 		}
 	}
@@ -125,16 +137,17 @@ func (c *controller) GetApiGroup(req *restful.Request) (int, *GetResponse) {
 func (c *controller) DeleteApiGroup(req *restful.Request) (int, *DeleteResponse) {
 	id := req.PathParameter("id")
 	if err := c.service.DeleteApiGroup(id); err != nil {
-		code := "000000002"
+		code := "014000006"
 		return http.StatusInternalServerError, &DeleteResponse{
 			Code:      1,
 			ErrorCode: code,
-			Message:   "",
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    fmt.Errorf("delete apigroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
 			Code:   0,
+			ErrorCode: "0",
 			Detail: "",
 		}
 	}
@@ -154,36 +167,37 @@ func (c *controller) ListApiGroup(req *restful.Request) (int, *ListResponse) {
 	//查询某个租户下的api分组，当前不需要提供接口查询所有
 	condition.Namespace = authuser.Namespace
 	if err != nil {
-		code := "000000006"
+		code := "014000007"
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      1,
 			ErrorCode: code,
-			Message:   "",
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    "auth model error",
 		}
 	}
 	if pl, err := c.service.ListApiGroup(condition); err != nil {
-		code := "000000002"
+		code := "014000008"
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      1,
 			ErrorCode: code,
-			Message:   "",
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    fmt.Errorf("list apigroups error: %+v", err).Error(),
 		}
 	} else {
 		var pls ProductList = pl
 		data, err := util.PageWrap(pls, page, size)
 		if err != nil {
-			code := "000000005"
+			code := "014000009"
 			return http.StatusInternalServerError, &ListResponse{
 				Code:      1,
 				ErrorCode: code,
-				Message:   "",
+				Message:   c.errMsg.ApiGroup[code],
 				Detail:    fmt.Sprintf("page parameter error: %+v", err),
 			}
 		}
 		return http.StatusOK, &ListResponse{
 			Code: 0,
+			ErrorCode: "0",
 			Data: data,
 		}
 	}
@@ -192,27 +206,29 @@ func (c *controller) ListApiGroup(req *restful.Request) (int, *ListResponse) {
 func (c *controller) UpdateApiGroup(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
-		code := "000000005"
+		code := "014000010"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: code,
-			Message:   "",
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:   1,
+			ErrorCode: "014000010",
+			Message:   c.errMsg.ApiGroup["014000010"],
 			Detail: "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
-		code := "000000005"
+		code := "014000011"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: code,
-			Message:   "",
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    "auth model error",
 		}
 	}
@@ -220,15 +236,17 @@ func (c *controller) UpdateApiGroup(req *restful.Request) (int, *CreateResponse)
 	body.Data.User = authuser.Name
 	id := req.PathParameter("id")
 	if apl, err := c.service.UpdateApiGroup(body.Data, id); err != nil {
+		code := "014000012"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
-			ErrorCode: "",
-			Message:   "",
+			ErrorCode: code,
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    fmt.Errorf("update apigroup error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
 			Code: 0,
+			ErrorCode: "0",
 			Data: apl,
 		}
 	}
@@ -237,42 +255,47 @@ func (c *controller) UpdateApiGroup(req *restful.Request) (int, *CreateResponse)
 func (c *controller) UpdateApiGroupStatus(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
-		code := "000000005"
+		code := "014000010"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: code,
-			Message:   "",
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data == nil {
+		code := "014000010"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:   1,
+			ErrorCode: code,
+			Message: c.errMsg.ApiGroup[code],
 			Detail: "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
-		code := "000000005"
+		code := "014000011"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: code,
-			Message:   "",
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    "auth model error",
 		}
 	}
 	body.Data.Namespace = authuser.Namespace
 	body.Data.User = authuser.Name
 	if apl, err := c.service.UpdateApiGroupStatus(body.Data); err != nil {
+		code := "014000013"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
-			ErrorCode: "",
-			Message:   "",
-			Detail:    fmt.Errorf("update apigroup error: %+v", err).Error(),
+			ErrorCode: code,
+			Message:   c.errMsg.ApiGroup[code],
+			Detail:    fmt.Errorf("update apigroup status error: %+v", err).Error(),
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
 			Code: 0,
+			ErrorCode: "0",
 			Data: apl,
 		}
 	}
@@ -281,37 +304,41 @@ func (c *controller) UpdateApiGroupStatus(req *restful.Request) (int, *CreateRes
 func (c *controller) BindOrUnbindApis(req *restful.Request) (int, *CreateResponse) {
 	body := &BindRequest{}
 	if err := req.ReadEntity(body); err != nil {
-		code := "000000005"
+		code := "014000010"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: code,
-			Message:   "",
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
 		}
 	}
 	if body.Data.Operation != "bind" && body.Data.Operation != "unbind" {
+		code := "014000014"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:   1,
+			ErrorCode: "014000014",
+			Message: c.errMsg.ApiGroup[code],
 			Detail: "read entity error: data operation is invaild",
 		}
 	}
 
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
-		code := "000000005"
+		code := "014000011"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      1,
 			ErrorCode: code,
-			Message:   "",
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    "auth model error",
 		}
 	}
 	groupID := req.PathParameter("id")
 	if err := c.service.BatchBindOrRelease(groupID, body.Data.Operation, body.Data.Apis, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		code := "014000015"
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
-			ErrorCode: "001000013",
-			Message:   "",
+			ErrorCode: code,
+			Message:   c.errMsg.ApiGroup[code],
 			Detail:    fmt.Errorf("bind api error: %+v", err).Error(),
 		}
 	} else {

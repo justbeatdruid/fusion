@@ -27,6 +27,7 @@ type ErrorConfig struct {
 	TopicGroup       map[string]string `json:"topicGroup"`
 	Trafficcontrol   map[string]string `json:"trafficcontrol"`
 	ClientAuth       map[string]string `json:"clientAuth"`
+	ApiGroup	 map[string]string `json:"apiGroup"`
 }
 type Config struct {
 	SecureServing   *apiserver.SecureServingInfo
