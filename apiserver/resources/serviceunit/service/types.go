@@ -17,7 +17,8 @@ import (
 )
 
 const (
-	NameReg = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]{2,64}$"
+	NameReg     = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]{2,64}$"
+	FuncNameReg = "^[a-z0-9][a-zA-Z0-9-]{2,60}$" //可包含小写字母、数字、中划线，以小写字母或者数字开头，长度不超过60个字
 )
 
 type Serviceunit struct {
@@ -397,7 +398,7 @@ func (s *Service) Validate(a *Serviceunit) error {
 		if len(a.FissionRefInfo.FnName) == 0 {
 			return fmt.Errorf("function name is null")
 		} else {
-			if ok, _ := regexp.MatchString(NameReg, a.FissionRefInfo.FnName); !ok {
+			if ok, _ := regexp.MatchString(FuncNameReg, a.FissionRefInfo.FnName); !ok {
 				return fmt.Errorf("functionname is illegal: %v", a.FissionRefInfo.FnName)
 			}
 			for _, p := range suList.Items {
