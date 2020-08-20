@@ -926,7 +926,9 @@ func (c *controller) ListUsers(req *restful.Request) (int, *ListResponse) {
 		p.Token = ca.Spec.Token
 		p.IssuedAt = ca.Spec.IssuedAt
 		p.ExpireAt = ca.Spec.ExipreAt
-		if ca.Spec.ExipreAt > util.Now().Unix() {
+		p.IsPermanent = ca.Spec.IsPermanent
+
+		if ca.Spec.ExipreAt > util.Now().Unix() || p.IsPermanent{
 			p.Effective = true
 		} else {
 			p.Effective = false

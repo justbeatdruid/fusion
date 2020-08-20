@@ -168,6 +168,7 @@ type Permission struct {
 	IssuedAt     int64         `json:"issuedAt"`
 	ExpireAt     int64         `json:"expireAt"`
 	ShowStatus   v1.ShowStatus `json:"showStatus"`
+	IsPermanent   bool           `json:"isPermanent"` //token是否永久有效
 }
 
 type Statistics struct {
