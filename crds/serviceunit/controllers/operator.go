@@ -350,11 +350,15 @@ func (r *Operator) CreateServiceByKong(db *nlptv1.Serviceunit) (err error) {
 
 func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	klog.Infof("delete service %s %s", db.ObjectMeta.Name, db.Spec.KongService.ID)
-	//删除函数api
-	err = r.DeleteFunction(db)
-	if err != nil {
-		return fmt.Errorf("delete function error: %+v", err)
+	//只有函数类型服务单元需要删除函数
+	if db.Spec.Type == nlptv1.FunctionService {
+		//删除函数api
+		err = r.DeleteFunction(db)
+		if err != nil {
+			return fmt.Errorf("delete function error: %+v", err)
+		}
 	}
+
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	for k, v := range headers {
@@ -362,17 +366,23 @@ func (r *Operator) DeleteServiceByKong(db *nlptv1.Serviceunit) (err error) {
 	}
 	id := db.Spec.KongService.ID
 	klog.Infof("delete service id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
-	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id)).End()
-	request = request.Retry(3, 5*time.Second, retryStatus...)
+	//只有Kong上创建成功时需要删除，否则直接返回成功
+	if len(id) != 0 {
+		response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id)).End()
+		request = request.Retry(3, 5*time.Second, retryStatus...)
 
-	if len(errs) > 0 {
-		return fmt.Errorf("request for delete service error: %+v", errs)
+		if len(errs) > 0 {
+			return fmt.Errorf("request for delete service error: %+v", errs)
+		}
+
+		klog.V(5).Infof("delete service response code: %d%s", response.StatusCode, string(body))
+		if response.StatusCode != 204 {
+			return fmt.Errorf("request for delete service error: receive wrong status code: %d", response.StatusCode)
+		}
+	} else {
+		klog.Infof("delete service name %s id %s no need delete from by kong", db.Spec.Name, db.ObjectMeta.Name)
 	}
 
-	klog.V(5).Infof("delete service response code: %d%s", response.StatusCode, string(body))
-	if response.StatusCode != 204 {
-		return fmt.Errorf("request for delete service error: receive wrong status code: %d", response.StatusCode)
-	}
 	return nil
 }
 
