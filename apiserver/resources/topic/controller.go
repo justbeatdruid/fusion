@@ -14,6 +14,7 @@ import (
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/go-restful"
 	"github.com/chinamobile/nlpt/pkg/util"
+	"k8s.io/klog"
 	"net/http"
 	"regexp"
 	"sort"
@@ -484,8 +485,9 @@ func (c *controller) ImportTopics(req *restful.Request, response *restful.Respon
 		MultiPartFileKey: "uploadfile",
 		TitleRowSpecList: []string{"topic租户名称", "topic组名称", "topic名称", "多分区", "分区数量", "持久化"},
 	}
-	tps, err := parser.ParseTopicsFromExcel(req, response, spec)
+	tps, err, _ := parser.ParseTopicsFromExcel(req, response, spec)
 	if err != nil {
+		klog.Errorf("Parse topic from excel error: %+v", err)
 		return http.StatusInternalServerError, &ImportResponse{
 			Code:      1,
 			ErrorCode: tperror.ErrorParseImportFile,
