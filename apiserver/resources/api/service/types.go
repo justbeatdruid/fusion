@@ -622,7 +622,7 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	if _, ok = data["returnType"]; ok {
 		target.Spec.ReturnType = source.ReturnType
 	}
-	if _, ok = data["webParams"]; ok {
+	if _, ok = data["apiQueryInfo"]; ok {
 		target.Spec.ApiQueryInfo.WebParams = source.ApiQueryInfo.WebParams
 	}
 	if _, ok = data["apiType"]; ok {
