@@ -1111,6 +1111,50 @@ func (s *Service) ListAllApplicationApis(opts ...util.OpOption) ([]*ApplicationS
 	return result, nil
 }
 
+func (s *Service) listServiceunits(opts ...util.OpOption) ([]suv1.Serviceunit, error) {
+	op := util.OpList(opts...)
+	ns := op.Namespace()
+	u := op.User()
+	var options metav1.ListOptions
+	var labels []string
+	labels = append(labels, user.GetLabelSelector(u))
+	options.LabelSelector = strings.Join(labels, ",")
+	klog.V(5).Infof("list with label selector: %s", options.LabelSelector)
+	crd, err := s.serviceunitClient.Namespace(ns).List(options)
+	if err != nil {
+		return nil, fmt.Errorf("error list crd: %+v", err)
+	}
+	apps := &suv1.ServiceunitList{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apps); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.serviceunitList: %+v", apps)
+	return apps.Items, nil
+}
+
+func (s *Service) ListAllServiceunitApis(opts ...util.OpOption) ([]*ServiceunitScopedApi, error) {
+	sus, err := s.listServiceunits(opts...)
+	if err != nil {
+		return nil, fmt.Errorf("cannot list serviceunit: %+v", err)
+	}
+	klog.V(5).Infof("get %d serviceunits", len(sus))
+	result := make([]*ServiceunitScopedApi, 0)
+	for _, su := range sus {
+		apis, err := s.ListApi(su.ObjectMeta.Name, "", "", opts...)
+		if err != nil {
+			return nil, fmt.Errorf("list api error: %+v", err)
+		}
+		for _, api := range apis {
+			result = append(result, &ServiceunitScopedApi{
+				BoundServiceunitId:   su.ObjectMeta.Name,
+				BoundServiceunitName: su.Spec.Name,
+				Api:                  *api,
+			})
+		}
+	}
+	return result, nil
+}
+
 func (s *Service) ListApisByApiGroup(id string, opts ...util.OpOption) ([]*Api, error) {
 	if !s.db.Enabled() {
 		return nil, fmt.Errorf("not support if database disabled")
