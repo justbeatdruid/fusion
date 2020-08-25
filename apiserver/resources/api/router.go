@@ -102,6 +102,13 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.GET("/apis/serviceunits").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("list all serviceunit apis").
+		To(r.listServiceunitApis).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.POST("/apis/{id}/applications/{appid}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
@@ -270,6 +277,11 @@ func (r *router) doStatisticsOnApis(request *restful.Request, response *restful.
 
 func (r *router) listApplicationApis(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListAllApplicationApis(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) listServiceunitApis(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ListAllServiceunitApis(request)
 	response.WriteHeaderAndEntity(code, result)
 }
 

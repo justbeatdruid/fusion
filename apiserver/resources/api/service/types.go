@@ -727,3 +727,9 @@ type ApplicationScopedApi struct {
 	BoundApplicationName string `json:"boundApplicationName"`
 	Api
 }
+
+type ServiceunitScopedApi struct {
+	BoundServiceunitId   string `json:"boundServiceunitId"`
+	BoundServiceunitName string `json:"boundServiceunitName"`
+	Api
+}
