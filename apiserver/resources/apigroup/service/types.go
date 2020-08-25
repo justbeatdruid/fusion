@@ -25,6 +25,7 @@ type ApiGroup struct {
 	Description string `json:"description"`
 
 	ApiRelation []ApiRelation `json:"apirelation"`
+	ApiCount    int           `json:"apiCount"`
 
 	CreatedAt           time.Time `json:"createdAt"`
 	CreatedAtTimestamp  int64     `json:"createdAtTimestamp"`
@@ -64,6 +65,8 @@ func FromModel(m model.ApiGroup, ss []model.ApiRelation) (ApiGroup, error) {
 		}
 		result.ApiRelation = scenarios
 	}
+
+	result.ApiCount = len(result.ApiRelation)
 
 	username, err := cas.GetUserNameByID(m.User)
 	if err == nil {
@@ -143,6 +146,7 @@ func (s *Service) Validate(a *ApiGroup) error {
 	a.Id = names.NewID()
 	return nil
 }
+
 // target 是原始，  reqData是传进来的
 func (s *Service) assignment(target *ApiGroup, reqData *ApiGroup) error {
 	if len(reqData.Name) == 0 {
