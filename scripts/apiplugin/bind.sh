@@ -9,6 +9,7 @@ curl -XPOST localhost:8001/api/v1/apiplugins/$1/apis -H 'content-type:applicatio
 {
   "data": {
     "operation": "bind",
+    "type": "api",
     "apis": [
     { "id": "04ee972789ea75f6"
    },
