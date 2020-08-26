@@ -9,6 +9,7 @@ import (
 
 	"github.com/chinamobile/nlpt/apiserver/database"
 	apiv1 "github.com/chinamobile/nlpt/crds/api/api/v1"
+	suv1 "github.com/chinamobile/nlpt/crds/serviceunit/api/v1"
 	"k8s.io/client-go/dynamic"
 	"k8s.io/klog"
 	// "k8s.io/klog"
@@ -20,6 +21,7 @@ type Service struct {
 	tenantEnabled bool
 	db            *database.DatabaseConnection
 	apiClient     dynamic.NamespaceableResourceInterface
+	suClient      dynamic.NamespaceableResourceInterface
 }
 
 func NewService(client dynamic.Interface, tenantEnabled bool, db *database.DatabaseConnection) *Service {
@@ -27,6 +29,7 @@ func NewService(client dynamic.Interface, tenantEnabled bool, db *database.Datab
 		tenantEnabled: tenantEnabled,
 		db:            db,
 		apiClient:     client.Resource(apiv1.GetOOFSGVR()),
+		suClient:      client.Resource(suv1.GetOOFSGVR()),
 	}
 }
 
@@ -159,19 +162,32 @@ func (s *Service) getAPi(id string, crdNamespace string) (*apiv1.Api, error) {
 	return su, nil
 }
 
-func (s *Service) BatchBindOrRelease(groupId, operation string, apis []ApiBind, opts ...util.OpOption) error {
-	switch operation {
+func (s *Service) getServiceUnit(id string, crdNamespace string) (*suv1.Serviceunit, error) {
+	crd, err := s.suClient.Namespace(crdNamespace).Get(id, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("error get crd: %+v", err)
+	}
+	su := &suv1.Serviceunit{}
+	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), su); err != nil {
+		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	}
+	klog.V(5).Infof("get v1.serviceunit info: %+v", su)
+	return su, nil
+}
+
+func (s *Service) BatchBindOrRelease(groupId string, data BindReq, opts ...util.OpOption) error {
+	switch data.Operation {
 	case "bind":
-		return s.BatchBindApi(groupId, apis, opts...)
+		return s.BatchBindApi(groupId, data, opts...)
 	case "unbind":
-		return s.BatchUnbindApi(groupId, apis, opts...)
+		return s.BatchUnbindApi(groupId, data, opts...)
 	default:
-		return fmt.Errorf("unknown operation %s, expect bind or unbind", operation)
+		return fmt.Errorf("unknown operation %s, expect bind or unbind", data.Operation)
 	}
 }
 
-func (s *Service) BatchBindApi(groupId string, apis []ApiBind, opts ...util.OpOption) error {
-	if len(apis) == 0 {
+func (s *Service) BatchBindApi(groupId string, body BindReq, opts ...util.OpOption) error {
+	if len(body.Apis) == 0 {
 		return fmt.Errorf("at least one api must select to bind")
 	}
 
@@ -188,17 +204,25 @@ func (s *Service) BatchBindApi(groupId string, apis []ApiBind, opts ...util.OpOp
 
 	//先校验是否所有API满足绑定条件，有一个不满足直接返回错误
 	status := make([]bool, 0)
-	for _, api := range apis {
-		apiSource, err := s.getAPi(api.ID, crdNamespace)
-		if err != nil {
-			return fmt.Errorf("cannot get api: %+v", err)
-		}
-		if apiSource.Status.PublishStatus != apiv1.Released {
-			return fmt.Errorf("api not released: %s", apiSource.Spec.Name)
+	for _, api := range body.Apis {
+		switch body.Type {
+		case ApiType:
+			apiSource, err := s.getAPi(api.ID, crdNamespace)
+			if err != nil {
+				return fmt.Errorf("cannot get api: %+v", err)
+			}
+			if apiSource.Status.PublishStatus != apiv1.Released {
+				return fmt.Errorf("api not released: %s", apiSource.Spec.Name)
+			}
+		case ServiceunitType:
+			_, err := s.getServiceUnit(api.ID, crdNamespace)
+			if err != nil {
+				return fmt.Errorf("cannot get serviceunit: %+v", err)
+			}
 		}
 		isBind := false
 		for _, relation := range existed.ApiRelation {
-			if relation.ApiId == api.ID {
+			if relation.TargetId == api.ID {
 				isBind = true
 				klog.Infof("api %s has bind apiplugin %s ", api.ID, groupId)
 				break
@@ -210,17 +234,14 @@ func (s *Service) BatchBindApi(groupId string, apis []ApiBind, opts ...util.OpOp
 		status = append(status, isBind)
 	}
 	result := make([]model.ApiPluginRelation, 0)
-	for index, value := range apis {
-		api, err := s.getAPi(value.ID, crdNamespace)
-		if err != nil {
-			return fmt.Errorf("cannot get api: %+v", err)
-		}
+	for index, value := range body.Apis {
 		//检测是否已经绑定，已经绑定的api跳过
 		if !status[index] {
-			klog.Infof("apiplugins no bound to api and need bind %+v", api)
+			klog.Infof("apiplugins no bound to target and need bind %+v", value)
 			result = append(result, model.ApiPluginRelation{
 				ApiPluginId: groupId,
-				ApiId:       value.ID,
+				TargetId:    value.ID,
+				TargetType:  body.Type,
 			})
 		}
 	}
@@ -232,8 +253,8 @@ func (s *Service) BatchBindApi(groupId string, apis []ApiBind, opts ...util.OpOp
 	return nil
 }
 
-func (s *Service) BatchUnbindApi(groupId string, apis []ApiBind, opts ...util.OpOption) error {
-	if len(apis) == 0 {
+func (s *Service) BatchUnbindApi(groupId string, body BindReq, opts ...util.OpOption) error {
+	if len(body.Apis) == 0 {
 		return fmt.Errorf("at least one api must select to unbind")
 	}
 
@@ -251,14 +272,22 @@ func (s *Service) BatchUnbindApi(groupId string, apis []ApiBind, opts ...util.Op
 	status := make([]bool, 0)
 	relationIds := make([]int, 0)
 	//先校验是否所有API满足绑定条件，有一个不满足直接返回错误
-	for _, api := range apis {
-		_, err := s.getAPi(api.ID, crdNamespace)
-		if err != nil {
-			return fmt.Errorf("cannot get api: %+v", err)
+	for _, api := range body.Apis {
+		switch body.Type {
+		case ApiType:
+			_, err := s.getAPi(api.ID, crdNamespace)
+			if err != nil {
+				return fmt.Errorf("cannot get api: %+v", err)
+			}
+		case ServiceunitType:
+			_, err := s.getServiceUnit(api.ID, crdNamespace)
+			if err != nil {
+				return fmt.Errorf("cannot get serviceunit: %+v", err)
+			}
 		}
 		isBind := false
 		for _, relation := range existed.ApiRelation {
-			if relation.ApiId == api.ID {
+			if relation.TargetId == api.ID {
 				isBind = true
 				relationIds = append(relationIds, relation.Id)
 				klog.Infof("api %s has bind apiplugin %s ", api.ID, groupId)
@@ -272,18 +301,15 @@ func (s *Service) BatchUnbindApi(groupId string, apis []ApiBind, opts ...util.Op
 		status = append(status, isBind)
 	}
 	result := make([]model.ApiPluginRelation, 0)
-	for index, value := range apis {
-		api, err := s.getAPi(value.ID, crdNamespace)
-		if err != nil {
-			return fmt.Errorf("cannot get api: %+v", err)
-		}
+	for index, value := range body.Apis {
 		//已经检测是否绑定 只有都绑定才需要解绑
 		if status[index] {
-			klog.Infof("apiplugins has bound to api and need unbind %+v", api)
+			klog.Infof("apiplugins has bound to api and need unbind %+v", value)
 			result = append(result, model.ApiPluginRelation{
 				Id:          relationIds[index],
 				ApiPluginId: groupId,
-				ApiId:       value.ID,
+				TargetId:    value.ID,
+				TargetType:  body.Type,
 			})
 		}
 

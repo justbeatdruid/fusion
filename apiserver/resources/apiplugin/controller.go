@@ -51,10 +51,7 @@ type ListResponse = struct {
 }
 
 type BindRequest struct {
-	Data struct {
-		Operation string            `json:"operation"`
-		Apis      []service.ApiBind `json:"apis"`
-	} `json:"data"`
+	Data service.BindReq `json:"data"`
 }
 
 func (c *controller) CreateApiPlugin(req *restful.Request) (int, *CreateResponse) {
@@ -295,6 +292,12 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, *CreateRespons
 			Detail: "read entity error: data operation is invaild",
 		}
 	}
+	if body.Data.Type != service.ApiType && body.Data.Type != service.ServiceunitType {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   1,
+			Detail: "read entity error: data type is invaild",
+		}
+	}
 
 	authuser, err := auth.GetAuthUser(req)
 	if err != nil {
@@ -307,7 +310,7 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, *CreateRespons
 		}
 	}
 	groupID := req.PathParameter("id")
-	if err := c.service.BatchBindOrRelease(groupID, body.Data.Operation, body.Data.Apis, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+	if err := c.service.BatchBindOrRelease(groupID, body.Data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &CreateResponse{
 			Code:      2,
 			ErrorCode: "001000013",

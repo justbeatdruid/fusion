@@ -208,8 +208,15 @@ func (r *router) Install(ws *restful.WebService) {
 
 	ws.Route(ws.GET("/apis/apigroups/{id}").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
-		Doc("list all apis").
+		Doc("list all apis by apigropus").
 		To(r.listApisByApiGroup).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
+	ws.Route(ws.GET("/apis/apiplugins/{id}").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("list all apis by apiplugins").
+		To(r.listApisByApiPlugin).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 }
@@ -311,5 +318,10 @@ func (r *router) patchApiPlugins(request *restful.Request, response *restful.Res
 
 func (r *router) listApisByApiGroup(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListApisByApiGroup(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) listApisByApiPlugin(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ListApisByApiPlugin(request)
 	response.WriteHeaderAndEntity(code, result)
 }
