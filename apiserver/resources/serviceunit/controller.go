@@ -44,6 +44,23 @@ type RequestWrapped struct {
 	Data *service.Serviceunit `json:"data,omitempty"`
 }
 
+func (RequestWrapped) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":     "Application Doc",
+		"data": "Request data",
+	}
+}
+
+func (Wrapped) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":        "Application Doc",
+		"data":    "Response data",
+		"code":    "code",
+		"message": "message",
+		"detail":  "detail",
+	}
+}
+
 type CreateResponse = Wrapped
 type CreateRequest = RequestWrapped
 type DeleteResponse = Wrapped
@@ -327,19 +344,19 @@ func (c *controller) ListSuFission(req *restful.Request) (int, *ListSuFissionRes
 			Detail:    fmt.Errorf("list serviceunit error: %+v", err).Error(),
 		}
 	} else {
-/*
-		var sufissions SuFissionList = sufission
-		//var sus ServiceunitList = sufission
-		data, err := util.PageWrap(sufissions, page, size)
-		if err != nil {
-			return http.StatusInternalServerError, &ListSuFissionResponse{
-				Code:      3,
-				ErrorCode: "008000009",
-				Message:   c.errMsg.Serviceunit["008000009"],
-				Detail:    fmt.Sprintf("page parameter error: %+v", err),
+		/*
+			var sufissions SuFissionList = sufission
+			//var sus ServiceunitList = sufission
+			data, err := util.PageWrap(sufissions, page, size)
+			if err != nil {
+				return http.StatusInternalServerError, &ListSuFissionResponse{
+					Code:      3,
+					ErrorCode: "008000009",
+					Message:   c.errMsg.Serviceunit["008000009"],
+					Detail:    fmt.Sprintf("page parameter error: %+v", err),
+				}
 			}
-		}
-*/
+		*/
 		return http.StatusOK, &ListSuFissionResponse{
 			Code:      0,
 			ErrorCode: "0",
