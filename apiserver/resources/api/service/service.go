@@ -1161,3 +1161,10 @@ func (s *Service) ListApisByApiGroup(id string, opts ...util.OpOption) ([]*Api, 
 	}
 	return s.ListByApiRelationFromDatabase(id, opts...)
 }
+
+func (s *Service) ListApisByApiPlugin(id string, opts ...util.OpOption) ([]*Api, error) {
+	if !s.db.Enabled() {
+		return nil, fmt.Errorf("not support if database disabled")
+	}
+	return s.ListByApiPluginRelationFromDatabase(id, opts...)
+}

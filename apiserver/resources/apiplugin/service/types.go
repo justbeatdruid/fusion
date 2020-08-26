@@ -36,12 +36,19 @@ type ApiPlugin struct {
 type ApiPluginRelation struct {
 	Id           int    `json:"id"`
 	ApiPluginId  string `json:"apiGroupId"`
-	ApiId        string `json:"apiId"`
+	TargetId     string `json:"targetId"`
+	TargetType   string `json:"targetType"`
 	KongPluginId string
 }
 
 type ApiBind struct {
 	ID string `json:"id"`
+}
+
+type BindReq struct {
+	Operation string    `json:"operation"`
+	Type      string    `json:"type"`
+	Apis      []ApiBind `json:"apis"`
 }
 
 type FieldValue struct {
@@ -107,6 +114,9 @@ type ResTransformerConfig struct {
 		Headers    []string `json:"headers,omitempty"`
 	} `json:"append,omitempty"`
 }
+
+const ApiType = "api"
+const ServiceunitType = "serviceunit"
 
 func ToInputTransformerInfo(info ResTransformerConfig) InputResTransformerConfig {
 	var output InputResTransformerConfig
@@ -227,7 +237,8 @@ func FromModelScenario(m model.ApiPluginRelation) ApiPluginRelation {
 	return ApiPluginRelation{
 		Id:           m.Id,
 		ApiPluginId:  m.ApiPluginId,
-		ApiId:        m.ApiId,
+		TargetId:     m.TargetId,
+		TargetType:   m.TargetType,
 		KongPluginId: m.KongPluginId,
 	}
 }
@@ -236,7 +247,8 @@ func ToModelScenario(a ApiPluginRelation, productId string, apiId string) model.
 	return model.ApiPluginRelation{
 		Id:          a.Id,
 		ApiPluginId: productId,
-		ApiId:       apiId,
+		TargetId:    a.TargetId,
+		TargetType:  a.TargetType,
 		//KongPluginId:
 	}
 }
