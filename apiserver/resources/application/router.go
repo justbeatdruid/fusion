@@ -1,6 +1,7 @@
 package application
 
 import (
+	"github.com/chinamobile/nlpt/apiserver/resources/application/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 
 	"github.com/chinamobile/nlpt/pkg/go-restful"
@@ -18,6 +19,8 @@ func (r *router) Install(ws *restful.WebService) {
 	ws.Route(ws.POST("/applications").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
+		Reads(service.Application{}).
+		Writes(service.Application{}).
 		Doc("create new app").
 		To(r.createApplication).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).

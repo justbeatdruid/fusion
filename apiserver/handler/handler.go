@@ -1,14 +1,14 @@
 package handler
 
 import (
-	"github.com/chinamobile/nlpt/apiserver/resources/apigroup"
-	"github.com/chinamobile/nlpt/apiserver/resources/apiplugin"
 	"net/http"
 
 	"github.com/chinamobile/nlpt/apiserver/cache"
 	"github.com/chinamobile/nlpt/apiserver/handler/callback"
 	"github.com/chinamobile/nlpt/apiserver/handler/filter"
 	"github.com/chinamobile/nlpt/apiserver/resources/api"
+	"github.com/chinamobile/nlpt/apiserver/resources/apigroup"
+	"github.com/chinamobile/nlpt/apiserver/resources/apiplugin"
 	"github.com/chinamobile/nlpt/apiserver/resources/application"
 	"github.com/chinamobile/nlpt/apiserver/resources/applicationgroup"
 	"github.com/chinamobile/nlpt/apiserver/resources/apply"
@@ -24,6 +24,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/go-restful"
+	swagger "github.com/chinamobile/nlpt/pkg/go-restful-swagger12"
 
 	"k8s.io/apiserver/pkg/server/healthz"
 )
@@ -103,6 +104,13 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 		To(NewMetricsHandler(h.config, lister)))
 
 	wsContainer.Add(metricsWs)
+
+	config := swagger.Config{
+		WebServices:     []*restful.WebService{apiV1Ws, metricsWs},
+		ApiPath:         "/api/v1/apidocs.json",
+		SwaggerPath:     "/api/v1/apidocs/",
+		SwaggerFilePath: "/data/web/swagger-ui/dist"}
+	swagger.RegisterSwaggerService(config, wsContainer)
 
 	return wsContainer, nil
 }
