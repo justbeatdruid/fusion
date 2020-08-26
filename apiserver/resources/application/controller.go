@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/chinamobile/nlpt/apiserver/concurrency"
+	aperror "github.com/chinamobile/nlpt/apiserver/resources/application/error"
 	"github.com/chinamobile/nlpt/apiserver/resources/application/service"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	v1 "github.com/chinamobile/nlpt/crds/application/api/v1"
-	aperror "github.com/chinamobile/nlpt/apiserver/resources/application/error"
 	"github.com/chinamobile/nlpt/pkg/auth"
 	"github.com/chinamobile/nlpt/pkg/auth/user"
 	"github.com/chinamobile/nlpt/pkg/errors"
@@ -42,6 +42,23 @@ type Wrapped struct {
 
 type RequestWrapped struct {
 	Data *service.Application `json:"data,omitempty"`
+}
+
+func (RequestWrapped) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":     "Application Doc",
+		"data": "Request data",
+	}
+}
+
+func (Wrapped) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":        "Application Doc",
+		"data":    "Response data",
+		"code":    "code",
+		"message": "message",
+		"detail":  "detail",
+	}
 }
 
 type CreateRequest = RequestWrapped
@@ -258,7 +275,7 @@ func (c *controller) ListApplication(req *restful.Request) (int, *ListResponse) 
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
 			Detail:    fmt.Errorf("list application error: %+v", err).Error(),
-			ErrorCode:aperror.QueryApplicationListFailed,
+			ErrorCode: aperror.QueryApplicationListFailed,
 			Message:   c.errMsg.Application[aperror.QueryApplicationListFailed],
 		}
 	} else {
@@ -398,7 +415,7 @@ func (c *controller) AddUser(req *restful.Request) (int, *user.UserResponse) {
 	} else {
 		return http.StatusOK, &user.UserResponse{
 			Code:      0,
-			ErrorCode:aperror.Success,
+			ErrorCode: aperror.Success,
 		}
 	}
 }
