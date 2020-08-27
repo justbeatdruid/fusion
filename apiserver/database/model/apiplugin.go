@@ -22,8 +22,9 @@ type ApiPlugin struct {
 	Status string `orm:"size(16)"`
 }
 type ApiPluginRelation struct {
-	Id           int `orm:"pk;unique;auto"`
-	ApiPluginId  string
-	ApiId        string
-	KongPluginId string
+	Id           int    `orm:"pk;unique;auto"`
+	ApiPluginId  string `orm:"size(64)"`
+	TargetId     string `orm:"size(32)"`
+	TargetType   string `orm:"size(32)"`
+	KongPluginId string `orm:"size(64)"`
 }

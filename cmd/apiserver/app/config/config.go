@@ -6,6 +6,7 @@ import (
 	clientset "k8s.io/client-go/kubernetes"
 	restclient "k8s.io/client-go/rest"
 
+	"github.com/chinamobile/nlpt/apiserver/cache"
 	"github.com/chinamobile/nlpt/apiserver/concurrency"
 	"github.com/chinamobile/nlpt/apiserver/database"
 	"github.com/chinamobile/nlpt/pkg/audit"
@@ -27,7 +28,7 @@ type ErrorConfig struct {
 	TopicGroup       map[string]string `json:"topicGroup"`
 	Trafficcontrol   map[string]string `json:"trafficcontrol"`
 	ClientAuth       map[string]string `json:"clientAuth"`
-	ApiGroup	 map[string]string `json:"apiGroup"`
+	ApiGroup         map[string]string `json:"apiGroup"`
 }
 type Config struct {
 	SecureServing   *apiserver.SecureServingInfo
@@ -57,6 +58,8 @@ type Config struct {
 	Mutex   concurrency.Mutex
 	Elector concurrency.Elector
 
+	Listers *cache.Listers
+
 	Database *database.DatabaseConnection
 }
 
@@ -66,4 +69,8 @@ func (c *Config) GetKubeClient() *clientset.Clientset {
 
 func (c *Config) GetDynamicClient() dynamicclient.Interface {
 	return c.Dynamic
+}
+
+func (c *Config) GetListers() *cache.Listers {
+	return c.Listers
 }

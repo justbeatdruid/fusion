@@ -31,7 +31,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient(), cfg.DataserviceConnector, cfg.GetKubeClient(), cfg.TenantEnabled, cfg.LocalConfig, cfg.Database),
+		service.NewService(cfg.GetDynamicClient(), cfg.DataserviceConnector, cfg.GetKubeClient(), cfg.GetListers().ApiLister(), cfg.TenantEnabled, cfg.LocalConfig, cfg.Database),
 		cfg.LocalConfig,
 		cfg.Mutex,
 	}
@@ -419,7 +419,7 @@ func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 		}
 	}
 	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application),
-		req.QueryParameter(publishstatus), util.WithNameLike(name), util.WithUser(authuser.Name),
+		req.QueryParameter(publishstatus), true, util.WithNameLike(name), util.WithUser(authuser.Name),
 		util.WithNamespace(authuser.Namespace), util.WithRestriction(res), util.WithTrafficcontrol(traff),
 		util.WithAuthType(authType), util.WithApiBackendType(apiBackendType)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
@@ -1083,6 +1083,47 @@ func (c *controller) ListAllApplicationApis(req *restful.Request) (int, interfac
 	}
 }
 
+func (c *controller) ListAllServiceunitApis(req *restful.Request) (int, interface{}) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	name := req.QueryParameter("name")
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      1,
+			ErrorCode: "001000003",
+			Message:   c.errMsg.Api["001000003"],
+			Detail:    "auth model error",
+		}
+	}
+	if api, err := c.service.ListAllServiceunitApis(
+		util.WithNameLike(name), util.WithUser(authuser.Name),
+		util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      2,
+			ErrorCode: "001000010",
+			Message:   c.errMsg.Api["001000010"],
+			Detail:    fmt.Errorf("list api error: %+v", err).Error(),
+		}
+	} else {
+		var apis ServiceunitScopedApiList = api
+		data, err := util.PageWrap(apis, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:      3,
+				ErrorCode: "001000011",
+				Message:   c.errMsg.Api["001000011"],
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
+			}
+		}
+		return http.StatusOK, &ListResponse{
+			Code:      0,
+			ErrorCode: "0",
+			Data:      data,
+		}
+	}
+}
+
 func (c *controller) ListApisByApiGroup(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
@@ -1097,6 +1138,46 @@ func (c *controller) ListApisByApiGroup(req *restful.Request) (int, *ListRespons
 		}
 	}
 	if api, err := c.service.ListApisByApiGroup(id, util.WithUser(authuser.Name),
+		util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      2,
+			Detail:    fmt.Errorf("list api error: %+v", err).Error(),
+			ErrorCode: "",
+			Message:   "",
+		}
+	} else {
+		var apis ApiList = api
+		data, err := util.PageWrap(apis, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:      1,
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
+				ErrorCode: "",
+				Message:   "",
+			}
+		}
+		return http.StatusOK, &ListResponse{
+			Code:      0,
+			ErrorCode: "0",
+			Data:      data,
+		}
+	}
+}
+
+func (c *controller) ListApisByApiPlugin(req *restful.Request) (int, *ListResponse) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	id := req.PathParameter("id")
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      1,
+			Detail:    "auth model error",
+			ErrorCode: "",
+			Message:   "",
+		}
+	}
+	if api, err := c.service.ListApisByApiPlugin(id, util.WithUser(authuser.Name),
 		util.WithNamespace(authuser.Namespace)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
 			Code:      2,
@@ -1141,5 +1222,26 @@ func (apis ApplicationScopedApiList) Less(i, j int) bool {
 }
 
 func (apis ApplicationScopedApiList) Swap(i, j int) {
+	apis[i], apis[j] = apis[j], apis[i]
+}
+
+type ServiceunitScopedApiList []*service.ServiceunitScopedApi
+
+func (apis ServiceunitScopedApiList) Len() int {
+	return len(apis)
+}
+
+func (apis ServiceunitScopedApiList) GetItem(i int) (interface{}, error) {
+	if i >= len(apis) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return apis[i], nil
+}
+
+func (apis ServiceunitScopedApiList) Less(i, j int) bool {
+	return apis[i].ReleasedAt.Time.After(apis[j].ReleasedAt.Time)
+}
+
+func (apis ServiceunitScopedApiList) Swap(i, j int) {
 	apis[i], apis[j] = apis[j], apis[i]
 }

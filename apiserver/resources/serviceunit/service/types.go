@@ -22,21 +22,23 @@ const (
 )
 
 type Serviceunit struct {
-	ID             string             `json:"id"`
-	Name           string             `json:"name"`
-	Namespace      string             `json:"namespace"`
-	Type           v1.ServiceType     `json:"type"`
+	ID          string         `json:"id"`
+	Name        string         `json:"name"`
+	Namespace   string         `json:"namespace"`
+	Type        v1.ServiceType `json:"type"`
+	Users       user.Users     `json:"users"`
+	Description string         `json:"description"`
+
 	DatasourceID   *v1.Datasource     `json:"datasources,omitempty"`
 	KongSevice     v1.KongServiceInfo `json:"kongService"`
 	FissionRefInfo v1.FissionRefInfo  `json:"fissionRefInfo"`
-	Users          user.Users         `json:"users"`
-	Description    string             `json:"description"`
+
+	APICount  int  `json:"apiCount"`
+	Published bool `json:"published"`
 
 	Status    v1.Status `json:"status"`
-	UpdatedAt util.Time `json:"time"`
-	APICount  int       `json:"apiCount"`
-	Published bool      `json:"published"`
 	CreatedAt util.Time `json:"createdAt"`
+	UpdatedAt util.Time `json:"time"`
 
 	Writable bool `json:"writable"`
 
@@ -45,6 +47,30 @@ type Serviceunit struct {
 	//sunyu+
 	Result        v1.Result    `json:"result"`
 	DisplayStatus v1.DisStatus `json:"disStatus"`
+}
+
+func (Serviceunit) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":               "Serviceunit doc",
+		"id":             "Unique id of serviceunit",
+		"name":           "Serviceunit Name",
+		"Namespace":      "Serviceunit tenant id",
+		"users":          "Serviceunit users",
+		"description":    "Serviceunit description",
+		"datasources":    "Datasource id of serviceunit",
+		"kongService":    "Serviceunit Kong information",
+		"fissionRefInfo": "Serviceunit Fission information",
+		"status":         "Serviceunit status",
+		"apiCount":       "Number of api",
+		"published":      "If serviceunit is published",
+		"writable":       "If serviceunit writable",
+		"createdAt":      "Creatation time of serviceunit",
+		"updateddAt":     "Update time of serviceunit",
+		"group":          "Serviceunit group",
+		"groupName":      "Name of serviceunit group",
+		"result":         "result",
+		"disStatus":      "display status",
+	}
 }
 
 type SuFission struct {
