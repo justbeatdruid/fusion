@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"github.com/chinamobile/nlpt/apiserver/cache"
 	"github.com/chinamobile/nlpt/apiserver/metrics/api"
 	"github.com/chinamobile/nlpt/apiserver/metrics/datasource"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
@@ -19,11 +18,11 @@ func (*promLogger) Println(v ...interface{}) {
 	klog.Errorf("Prometheus: %+v", v...)
 }
 
-func NewMetricsHandler(cfg *config.Config, lister *cache.Listers) restful.RouteFunction {
+func NewMetricsHandler(cfg *config.Config) restful.RouteFunction {
 	return func(req *restful.Request, resp *restful.Response) {
 		collectors := []prometheus.Collector{
-			api.InitMetrics(lister, cfg.GetKubeClient()),
-			datasource.InitMetrics(lister, cfg.GetKubeClient()),
+			api.InitMetrics(cfg.GetListers(), cfg.GetKubeClient()),
+			datasource.InitMetrics(cfg.GetListers(), cfg.GetKubeClient()),
 		}
 		reg := prometheus.NewPedanticRegistry()
 		reg.MustRegister(collectors...)

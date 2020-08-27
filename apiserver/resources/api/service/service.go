@@ -4,6 +4,13 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strconv"
+	"strings"
+	"sync"
+
+	"github.com/chinamobile/nlpt/apiserver/cache"
 	"github.com/chinamobile/nlpt/apiserver/database"
 	"github.com/chinamobile/nlpt/apiserver/resources/datasource/rdb/driver"
 	appconfig "github.com/chinamobile/nlpt/cmd/apiserver/app/config"
@@ -15,10 +22,6 @@ import (
 	dw "github.com/chinamobile/nlpt/pkg/datawarehouse"
 	"github.com/chinamobile/nlpt/pkg/names"
 	"github.com/chinamobile/nlpt/pkg/util"
-	"io/ioutil"
-	"net/http"
-	"strconv"
-	"strings"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -37,6 +40,8 @@ type Service struct {
 	applicationClient dynamic.NamespaceableResourceInterface
 	datasourceClient  dynamic.NamespaceableResourceInterface
 
+	lister *cache.ApiLister
+
 	tenantEnabled bool
 
 	db *database.DatabaseConnection
@@ -45,13 +50,15 @@ type Service struct {
 	localConfig appconfig.ErrorConfig
 }
 
-func NewService(client dynamic.Interface, dsConnector dw.Connector, kubeClient *clientset.Clientset, tenantEnabled bool, localConfig appconfig.ErrorConfig, db *database.DatabaseConnection) *Service {
+func NewService(client dynamic.Interface, dsConnector dw.Connector, kubeClient *clientset.Clientset, lister *cache.ApiLister, tenantEnabled bool, localConfig appconfig.ErrorConfig, db *database.DatabaseConnection) *Service {
 	return &Service{
 		kubeClient:        kubeClient,
 		client:            client.Resource(v1.GetOOFSGVR()),
 		serviceunitClient: client.Resource(suv1.GetOOFSGVR()),
 		applicationClient: client.Resource(appv1.GetOOFSGVR()),
 		datasourceClient:  client.Resource(dsv1.GetOOFSGVR()),
+
+		lister: lister,
 
 		dataService:   dsConnector,
 		db:            db,
@@ -291,12 +298,12 @@ func (s *Service) PatchApiPlugins(api_id string, plugin_id string, config interf
 	return ToModel(api), err
 }
 
-func (s *Service) ListApi(suid, appid, status string, opts ...util.OpOption) ([]*Api, error) {
+func (s *Service) ListApi(suid, appid, status string, validate bool, opts ...util.OpOption) ([]*Api, error) {
 	if len(suid) > 0 && len(appid) > 0 {
 		return nil, fmt.Errorf("i am not sure if it is suitable to get api with application id and service unit id, but it make no sense")
 	}
 	// check opts.user is permitted for application and serviceunit
-	if !s.tenantEnabled {
+	if !s.tenantEnabled && validate {
 		op := util.OpList(opts...)
 		userid := op.User()
 		ns := defaultNamespace
@@ -524,18 +531,34 @@ func (s *Service) List(suid, appid string, opts ...util.OpOption) (*v1.ApiList, 
 	if len(appid) > 0 {
 		conditions = append(conditions, fmt.Sprintf("%s=%s", v1.ApplicationLabel(appid), "true"))
 	}
-	crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{
+	apiPtList, err := s.lister.List(crdNamespace, metav1.ListOptions{
 		LabelSelector: strings.Join(conditions, ","),
 	})
 	if err != nil {
 		return nil, fmt.Errorf("error list crd: %+v", err)
 	}
-	apis := &v1.ApiList{}
-	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apis); err != nil {
-		return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+	apiList := make([]v1.Api, len(apiPtList))
+	for i := range apiPtList {
+		apiList[i] = *apiPtList[i]
 	}
-	klog.V(5).Infof("get v1.apiList: %+v", apis)
-	return apis, nil
+	return &v1.ApiList{Items: apiList}, nil
+	/*
+		crd, err := s.client.Namespace(crdNamespace).List(metav1.ListOptions{
+			LabelSelector: strings.Join(conditions, ","),
+		})
+		crd, err := s.lister.List(crdNamespace, metav1.ListOptions{
+			LabelSelector: strings.Join(conditions, ","),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("error list crd: %+v", err)
+		}
+		apis := &v1.ApiList{}
+		if err := runtime.DefaultUnstructuredConverter.FromUnstructured(crd.UnstructuredContent(), apis); err != nil {
+			return nil, fmt.Errorf("convert unstructured to crd error: %+v", err)
+		}
+		klog.V(5).Infof("get v1.apiList: %+v", apis)
+		return apis, nil
+	*/
 }
 
 func (s *Service) ListApis(crdNamespace string) (*v1.ApiList, error) {
@@ -1095,18 +1118,32 @@ func (s *Service) ListAllApplicationApis(opts ...util.OpOption) ([]*ApplicationS
 	}
 	klog.V(5).Infof("get %d applications", len(apps))
 	result := make([]*ApplicationScopedApi, 0)
+	var errs []error = make([]error, 0)
+	wg := sync.WaitGroup{}
+	l := &sync.Mutex{}
+	wg.Add(len(apps))
 	for _, app := range apps {
-		apis, err := s.ListApi("", app.ObjectMeta.Name, "", opts...)
-		if err != nil {
-			return nil, fmt.Errorf("list api error: %+v", err)
-		}
-		for _, api := range apis {
-			result = append(result, &ApplicationScopedApi{
-				BoundApplicationId:   app.ObjectMeta.Name,
-				BoundApplicationName: app.Spec.Name,
-				Api:                  *api,
-			})
-		}
+		go func(iapp appv1.Application) {
+			defer wg.Done()
+			apis, err := s.ListApi("", iapp.ObjectMeta.Name, "", false, opts...)
+			if err != nil {
+				errs = append(errs, err)
+				return
+			}
+			for _, api := range apis {
+				l.Lock()
+				result = append(result, &ApplicationScopedApi{
+					BoundApplicationId:   iapp.ObjectMeta.Name,
+					BoundApplicationName: iapp.Spec.Name,
+					Api:                  *api,
+				})
+				l.Unlock()
+			}
+		}(app)
+	}
+	wg.Wait()
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("list api error: %+v", errs)
 	}
 	return result, nil
 }
@@ -1139,18 +1176,32 @@ func (s *Service) ListAllServiceunitApis(opts ...util.OpOption) ([]*ServiceunitS
 	}
 	klog.V(5).Infof("get %d serviceunits", len(sus))
 	result := make([]*ServiceunitScopedApi, 0)
+	var errs []error = make([]error, 0)
+	wg := sync.WaitGroup{}
+	l := &sync.Mutex{}
+	wg.Add(len(sus))
 	for _, su := range sus {
-		apis, err := s.ListApi(su.ObjectMeta.Name, "", "", opts...)
-		if err != nil {
-			return nil, fmt.Errorf("list api error: %+v", err)
-		}
-		for _, api := range apis {
-			result = append(result, &ServiceunitScopedApi{
-				BoundServiceunitId:   su.ObjectMeta.Name,
-				BoundServiceunitName: su.Spec.Name,
-				Api:                  *api,
-			})
-		}
+		go func(isu suv1.Serviceunit) {
+			defer wg.Done()
+			apis, err := s.ListApi(isu.ObjectMeta.Name, "", "", false, opts...)
+			if err != nil {
+				errs = append(errs, err)
+				return
+			}
+			for _, api := range apis {
+				l.Lock()
+				result = append(result, &ServiceunitScopedApi{
+					BoundServiceunitId:   isu.ObjectMeta.Name,
+					BoundServiceunitName: isu.Spec.Name,
+					Api:                  *api,
+				})
+				l.Unlock()
+			}
+		}(su)
+	}
+	wg.Wait()
+	if len(errs) > 0 {
+		return nil, fmt.Errorf("list api error: %+v", errs)
 	}
 	return result, nil
 }

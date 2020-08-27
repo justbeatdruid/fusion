@@ -31,7 +31,7 @@ type controller struct {
 
 func newController(cfg *config.Config) *controller {
 	return &controller{
-		service.NewService(cfg.GetDynamicClient(), cfg.DataserviceConnector, cfg.GetKubeClient(), cfg.TenantEnabled, cfg.LocalConfig, cfg.Database),
+		service.NewService(cfg.GetDynamicClient(), cfg.DataserviceConnector, cfg.GetKubeClient(), cfg.GetListers().ApiLister(), cfg.TenantEnabled, cfg.LocalConfig, cfg.Database),
 		cfg.LocalConfig,
 		cfg.Mutex,
 	}
@@ -419,7 +419,7 @@ func (c *controller) ListApi(req *restful.Request) (int, interface{}) {
 		}
 	}
 	if api, err := c.service.ListApi(req.QueryParameter(serviceunit), req.QueryParameter(application),
-		req.QueryParameter(publishstatus), util.WithNameLike(name), util.WithUser(authuser.Name),
+		req.QueryParameter(publishstatus), true, util.WithNameLike(name), util.WithUser(authuser.Name),
 		util.WithNamespace(authuser.Namespace), util.WithRestriction(res), util.WithTrafficcontrol(traff),
 		util.WithAuthType(authType), util.WithApiBackendType(apiBackendType)); err != nil {
 		return http.StatusInternalServerError, &ListResponse{
