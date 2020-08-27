@@ -191,7 +191,7 @@ func (d *DatabaseConnection) AddObject(o model.Table, us []model.UserRelation, c
 	return nil
 }
 
-func (d *DatabaseConnection) UpdateObject(o model.Table, us []model.UserRelation, count int, rl []model.Relation, rcount int) (err error) {
+func (d *DatabaseConnection) UpdateObject(o model.Table, us []model.UserRelation, count int, rs []model.Relation, rcount int) (err error) {
 	if err := d.Begin(); err != nil {
 		return fmt.Errorf("begin txn error: %+v", err)
 	}
@@ -217,7 +217,7 @@ func (d *DatabaseConnection) UpdateObject(o model.Table, us []model.UserRelation
 			return err
 		}
 	}
-	if rl != nil && len(rl) > 0 {
+	if rs != nil && len(rs) > 0 {
 		rl := []model.Relation{}
 		if _, err := d.QueryTable("Relation").Filter("SourceId", o.ResourceType()).Filter("SourceType", o.ResourceType()).All(&rl); err != nil {
 			d.Rollback()
@@ -229,7 +229,7 @@ func (d *DatabaseConnection) UpdateObject(o model.Table, us []model.UserRelation
 				return err
 			}
 		}
-		_, err = d.InsertMulti(count, us)
+		_, err = d.InsertMulti(rcount, rs)
 		if err != nil {
 			d.Rollback()
 			return err
