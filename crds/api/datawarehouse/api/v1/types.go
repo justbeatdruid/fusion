@@ -290,11 +290,15 @@ func (dq *DataWarehouseQuery) RefillWhereFields(typesMap map[string]string, para
 		if len(ss) != 2 {
 			return fmt.Errorf("Query parameter %s is wrong. expect format is {tableName}.{propertyName}", pk)
 		}
+		operator := "equal"
+		if len(pv) > 1 {
+			operator = "betweenAnd"
+		}
 		if tv, ok := typesMap[pk]; ok {
 			dq.Query.WhereFieldInfo = append(dq.Query.WhereFieldInfo, v1.WhereField{
 				TableName:    ss[0],
 				PropertyName: ss[1],
-				Operator:     "equal",
+				Operator:     operator,
 				DataType:     tv,
 				Values:       pv,
 			})
