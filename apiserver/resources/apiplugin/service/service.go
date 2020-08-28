@@ -112,6 +112,23 @@ func (s *Service) UpdateApiPlugin(model *ApiPlugin, id string) (*ApiPlugin, erro
 	klog.Infof("get existed.Config config %+v", existed.Config)
 	existed.Config = model.Config
 	klog.Infof("update existed.Config config %+v", existed.Config)
+	//
+
+
+	var kongPluginId string
+	for _, value := range existed.ApiRelation {
+		kongPluginId = value.KongPluginId
+	}
+	switch model.Type {
+	case "response-transformer":
+		if err := s.UpdateResponseTransformerByKong(kongPluginId,existed); err != nil {
+			klog.Errorf("patch response transformer by kong err : %+v", err)
+		}
+	case "request-transformer":
+		if err := s.UpdateRequestTransformerByKong(kongPluginId,existed); err != nil {
+			klog.Errorf("patch response transformer by kong err : %+v", err)
+		}
+	}
 
 	//p, _, err := ToModel(*model)
 	p, _, err := ToModel(*existed)
@@ -465,8 +482,7 @@ func (s *Service) AddResponseTransformerByKong(apiId string, existed *ApiPlugin)
 	}
 	return kongPluginId, nil
 }
-//add response transformer by kong
-//to do
+//add request transformer by kong
 func (s *Service) AddRequestTransformerByKong(apiId string, existed *ApiPlugin) (kongPluginId string,err error) {
 	//id := db.Spec.KongApi.KongID
 	klog.Infof("begin create reqest transformer,the route id is %s", apiId)
@@ -610,3 +626,235 @@ func (s *Service) DeleteTransformerByKong(apiId string, kongPluginId string) (er
 	}
 	return nil
 }
+
+//update response transformer
+func (s *Service) UpdateResponseTransformerByKong(kongPluginId string, existed *ApiPlugin) (err error) {
+	klog.Infof("update kongPluginId is:%s, Host:%s, Port:%d", kongPluginId, "kong-kong-admin", 8001)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	klog.Infof("update response transformer id %s %s", kongPluginId, fmt.Sprintf("%s://%s:%d%s/%s", schema, "kong-kong-admin", 8001, "/plugins", kongPluginId))
+	request = request.Patch(fmt.Sprintf("%s://%s:%d%s/%s", schema, "kong-kong-admin", 8001, "/plugins", kongPluginId))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &ResTransformerRequestBody{}
+	requestBody.Name = "response-transformer"
+	if len(existed.ConsumerId) != 0 {
+		requestBody.ConsumerId = existed.ConsumerId
+	}
+	econfig, err := json.Marshal(existed.Config)
+	if err != nil {
+		return fmt.Errorf("json.Marshal error,: %v", err)
+	}
+	var config ResTransformerConfig
+	if err = json.Unmarshal(econfig, &config); err != nil {
+		return fmt.Errorf("json.Unmarshal error,: %v", err)
+	}
+
+	//remove
+	if len(config.Remove.Json) != 0 {
+		for _, j := range config.Remove.Json {
+			requestBody.Config.Remove.Json = append(requestBody.Config.Remove.Json, j)
+		}
+	}
+	if len(config.Remove.Headers) != 0 {
+		for _, h := range config.Remove.Headers {
+			requestBody.Config.Remove.Headers = append(requestBody.Config.Remove.Headers, h)
+		}
+	}
+	//rename
+	if len(config.Rename.Headers) != 0 {
+		for _, h := range config.Rename.Headers {
+			requestBody.Config.Rename.Headers = append(requestBody.Config.Rename.Headers, h)
+		}
+	}
+	//replace
+	if len(config.Replace.Json) != 0 {
+		for _, j := range config.Replace.Json {
+			requestBody.Config.Replace.Json = append(requestBody.Config.Replace.Json, j)
+		}
+	}
+	if len(config.Replace.Json_types) != 0 {
+		for _, jt := range config.Replace.Json_types {
+			requestBody.Config.Replace.Json_types = append(requestBody.Config.Replace.Json_types, jt)
+		}
+	}
+	if len(config.Replace.Headers) != 0 {
+		for _, h := range config.Replace.Headers {
+			requestBody.Config.Replace.Headers = append(requestBody.Config.Replace.Headers, h)
+		}
+	}
+	//add
+	if len(config.Add.Json) != 0 {
+		for _, j := range config.Add.Json {
+			requestBody.Config.Add.Json = append(requestBody.Config.Add.Json, j)
+		}
+	}
+	if len(config.Add.Json_types) != 0 {
+		for _, jt := range config.Add.Json_types {
+			requestBody.Config.Add.Json_types = append(requestBody.Config.Add.Json_types, jt)
+		}
+	}
+	if len(config.Add.Headers) != 0 {
+		for _, h := range config.Add.Headers {
+			requestBody.Config.Add.Headers = append(requestBody.Config.Add.Headers, h)
+		}
+	}
+	//append
+	if len(config.Append.Json) != 0 {
+		for _, j := range config.Append.Json {
+			requestBody.Config.Append.Json = append(requestBody.Config.Append.Json, j)
+		}
+	}
+	if len(config.Append.Json_types) != 0 {
+		for _, jt := range config.Append.Json_types {
+			requestBody.Config.Append.Json_types = append(requestBody.Config.Append.Json_types, jt)
+		}
+	}
+	if len(config.Append.Headers) != 0 {
+		for _, h := range config.Append.Headers {
+			requestBody.Config.Append.Headers = append(requestBody.Config.Append.Headers, h)
+		}
+	}
+	responseBody := &ResTransformerResponseBody{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return fmt.Errorf("request for update response transformer error: %+v", errs)
+	}
+	klog.V(5).Infof("update response transformer code: %d, body: %s ", response.StatusCode, string(body))
+	if response.StatusCode != 200 {
+		klog.V(5).Infof("update response transformer failed msg: %s\n", responseBody.Message)
+		return fmt.Errorf("request for update response transformer error: receive wrong status code: %s", string(body))
+	}
+	if err != nil {
+		return fmt.Errorf("create response transformer error %s", responseBody.Message)
+	}
+	return nil
+}
+
+//update request transformer
+func (s *Service) UpdateRequestTransformerByKong(kongPluginId string, existed *ApiPlugin) (err error) {
+	klog.Infof("update kongPluginId is:%s, Host:%s, Port:%d", kongPluginId, "kong-kong-admin", 8001)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	klog.Infof("update request transformer id %s %s", kongPluginId, fmt.Sprintf("%s://%s:%d%s/%s", schema, "kong-kong-admin", 8001, "/plugins", kongPluginId))
+	request = request.Patch(fmt.Sprintf("%s://%s:%d%s/%s", schema, "kong-kong-admin", 8001, "/plugins", kongPluginId))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &ReqTransformerRequestBody{}
+	requestBody.Name = "request-transformer"
+	if len(existed.ConsumerId) != 0 {
+		requestBody.ConsumerId = existed.ConsumerId
+	}
+	econfig, err := json.Marshal(existed.Config)
+	if err != nil {
+		return fmt.Errorf("json.Marshal error,: %v", err)
+	}
+	var config ReqTransformerConfig
+	if err = json.Unmarshal(econfig, &config); err != nil {
+		return fmt.Errorf("json.Unmarshal error,: %v", err)
+	}
+
+	//remove
+	if len(config.Remove.Body) != 0 {
+		for _, j := range config.Remove.Body {
+			requestBody.Config.Remove.Body = append(requestBody.Config.Remove.Body, j)
+		}
+	}
+	if len(config.Remove.Headers) != 0 {
+		for _, j := range config.Remove.Headers {
+			requestBody.Config.Remove.Headers = append(requestBody.Config.Remove.Headers, j)
+		}
+	}
+	if len(config.Remove.Querystring) != 0 {
+		for _, j := range config.Remove.Querystring {
+			requestBody.Config.Remove.Querystring = append(requestBody.Config.Remove.Querystring, j)
+		}
+	}
+
+	//rename
+	if len(config.Rename.Body) != 0 {
+		for _, h := range config.Rename.Body {
+			requestBody.Config.Rename.Body = append(requestBody.Config.Rename.Body, h)
+		}
+	}
+	if len(config.Rename.Headers) != 0 {
+		for _, h := range config.Rename.Headers {
+			requestBody.Config.Rename.Headers = append(requestBody.Config.Rename.Headers, h)
+		}
+	}
+	if len(config.Rename.Querystring) != 0 {
+		for _, h := range config.Rename.Querystring {
+			requestBody.Config.Rename.Querystring = append(requestBody.Config.Rename.Querystring, h)
+		}
+	}
+	//replace
+	if len(config.Replace.Body) != 0 {
+		for _, h := range config.Replace.Body {
+			requestBody.Config.Replace.Body = append(requestBody.Config.Replace.Body, h)
+		}
+	}
+	if len(config.Replace.Headers) != 0 {
+		for _, h := range config.Replace.Headers {
+			requestBody.Config.Replace.Headers = append(requestBody.Config.Replace.Headers, h)
+		}
+	}
+	if len(config.Replace.Querystring) != 0 {
+		for _, h := range config.Replace.Querystring {
+			requestBody.Config.Replace.Querystring = append(requestBody.Config.Replace.Querystring, h)
+		}
+	}
+	requestBody.Config.Replace.Uri = config.Replace.Uri
+
+	//add
+	if len(config.Add.Body) != 0 {
+		for _, h := range config.Add.Body {
+			requestBody.Config.Add.Body = append(requestBody.Config.Add.Body, h)
+		}
+	}
+	if len(config.Add.Headers) != 0 {
+		for _, h := range config.Add.Headers {
+			requestBody.Config.Add.Headers = append(requestBody.Config.Add.Headers, h)
+		}
+	}
+	if len(config.Add.Querystring) != 0 {
+		for _, h := range config.Add.Querystring {
+			requestBody.Config.Add.Querystring = append(requestBody.Config.Add.Querystring, h)
+		}
+	}
+	//append
+	if len(config.Append.Body) != 0 {
+		for _, h := range config.Append.Body {
+			requestBody.Config.Append.Body = append(requestBody.Config.Append.Body, h)
+		}
+	}
+	if len(config.Append.Headers) != 0 {
+		for _, h := range config.Append.Headers {
+			requestBody.Config.Append.Headers = append(requestBody.Config.Append.Headers, h)
+		}
+	}
+	if len(config.Append.Querystring) != 0 {
+		for _, h := range config.Append.Querystring {
+			requestBody.Config.Append.Querystring = append(requestBody.Config.Append.Querystring, h)
+		}
+	}
+
+	responseBody := &ReqTransformerResponseBody{}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return fmt.Errorf("request for update request transformer error: %+v", errs)
+	}
+	klog.V(5).Infof("update request transformer code: %d, body: %s ", response.StatusCode, string(body))
+	if response.StatusCode != 201 {
+		klog.V(5).Infof("update request transformer failed msg: %s\n", responseBody.Message)
+		return fmt.Errorf("request for update request transformer error: receive wrong status code: %s", string(body))
+	}
+	if err != nil {
+		return fmt.Errorf("create request transformer error %s", responseBody.Message)
+	}
+	return nil
+}
+
