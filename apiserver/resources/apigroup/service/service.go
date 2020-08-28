@@ -56,7 +56,8 @@ func (s *Service) ListApiGroup(p ApiGroup) ([]*ApiGroup, error) {
 	}
 	result := make([]*ApiGroup, len(apigroups))
 	for i := range apigroups {
-		apigroup, err := FromModel(apigroups[i], nil)
+		p, ss, err := s.db.GetApiGroup(apigroups[i].Id)
+		apigroup, err := FromModel(p, ss)
 		if err != nil {
 			return nil, fmt.Errorf("cannot get model: %+v", err)
 		}
