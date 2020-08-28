@@ -9,25 +9,24 @@ curl localhost:8001/api/v1/apiplugins -H 'content-type:application/json' \
     "type": "response-transformer",
     "config":{
        "remove":{
-        "json":["code"],
-        "headers":["xxxx"]
-        },
-      "rename":{
-    "headers":[
-    {"key":"xxxx", "value":"yyyy"}
-    ]
-    },
-    "replace":{
-      "json":[
-      {"key":"code", "value":"300", "type":"string"}
-        ],
-    "headers":[
-    {"key":"wwww", "value":"zzzzzzzz"}
-     ]
-     },
+         "json":["code"],
+         "headers":["xxxx"]
+       },
+       "rename":{
+         "headers":[
+         {"key":"xxxx", "value":"yyyy"}
+         ]
+       },
+       "replace":{
+         "json":[
+           {"key":"code", "value":"300", "type":"string"}
+         ],
+         "headers":[
+           {"key":"wwww", "value":"zzzzzzzz"}
+         ]
+       },
        "append":{}
        }
-
   },
   "description": "测试api分组创建"
 

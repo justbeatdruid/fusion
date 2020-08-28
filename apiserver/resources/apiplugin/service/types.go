@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"k8s.io/klog"
+	"net/http"
 	"strings"
 	"time"
 
@@ -38,7 +39,7 @@ type ApiPluginRelation struct {
 	ApiPluginId  string `json:"apiGroupId"`
 	TargetId     string `json:"targetId"`
 	TargetType   string `json:"targetType"`
-	KongPluginId string
+	KongPluginId string `json:"kongPluginId"`
 }
 
 type ApiBind struct {
@@ -201,7 +202,6 @@ func ToModel(a ApiPlugin) (model.ApiPlugin, []model.ApiPluginRelation, error) {
 	for i := range a.ApiRelation {
 		apis[i] = ToModelScenario(a.ApiRelation[i], a.Id, "")
 	}
-
 	result := model.ApiPlugin{
 		Id:          a.Id,
 		Name:        a.Name,
@@ -212,7 +212,6 @@ func ToModel(a ApiPlugin) (model.ApiPlugin, []model.ApiPluginRelation, error) {
 		CreatedAt:   a.CreatedAt,
 		ReleasedAt:  a.ReleasedAt,
 		ConsumerId:  a.ConsumerId,
-
 		Status: a.Status,
 	}
 	if a.Config != nil {
@@ -220,16 +219,38 @@ func ToModel(a ApiPlugin) (model.ApiPlugin, []model.ApiPluginRelation, error) {
 		if err != nil {
 			return result, apis, fmt.Errorf("assignnmentConfig is error,req data: %v", err)
 		}
-
-		configJson, err := json.Marshal(config)
+		//**
+		b, err := json.Marshal(config)
 		if err != nil {
-			return result, apis, fmt.Errorf("json.Marshal config error,: %v", err)
+			return result, apis, fmt.Errorf("json.Marshal error,: %v", err)
 		}
-
-		result.Raw = string(configJson)
-		klog.Infof("get result raw config %+v, raw %s", config, result.Raw)
+		switch a.Type {
+		case "response-transformer":
+			//ResponseTransformer
+			var resConfig ResponseTransformer
+			if err = json.Unmarshal(b, &resConfig); err != nil {
+				return result, apis, fmt.Errorf("json.Unmarshal error,: %v", err)
+			}
+			configJson, err := json.Marshal(resConfig)
+			if err != nil {
+				return result, apis, fmt.Errorf("json.Marshal resConfig error,: %v", err)
+			}
+			result.Raw = string(configJson)
+			klog.Infof("get result raw resConfig %+v, raw %s", resConfig, result.Raw)
+		case "request-transformer":
+			//ResponseTransformer
+			var reqConfig ResponseTransformer
+			if err = json.Unmarshal(b, &reqConfig); err != nil {
+				return result, apis, fmt.Errorf("json.Unmarshal error,: %v", err)
+			}
+			configJson, err := json.Marshal(reqConfig)
+			if err != nil {
+				return result, apis, fmt.Errorf("json.Marshal reqConfig error,: %v", err)
+			}
+			result.Raw = string(configJson)
+			klog.Infof("get result raw reqConfig %+v, raw %s", reqConfig, result.Raw)
+		}
 	}
-
 	return result, apis, nil
 }
 
@@ -252,7 +273,7 @@ func ToModelScenario(a ApiPluginRelation, productId string, apiId string) model.
 		//KongPluginId:
 	}
 }
-func assignmentConfig(name string, reqData interface{}) (error, *ResponseTransformer) {
+func assignmentConfig(name string, reqData interface{}) (error, interface{}) {
 	klog.Infof("enter assignmentConfig name %s, config %+v", name, reqData)
 	data, ok := reqData.(map[string]interface{})
 	if !ok {
@@ -299,7 +320,223 @@ func assignmentConfig(name string, reqData interface{}) (error, *ResponseTransfo
 		}
 		klog.V(5).Infof("assignmentConfig target responseTransformer %+v", *responseTransformer)
 		return nil, responseTransformer
+	case "request-transformer":
+		var input InputReqTransformerConfig
+		if err = json.Unmarshal(b, &input); err != nil {
+			return fmt.Errorf("json.Unmarshal error,: %v", err), nil
+		}
+		requestTransformer := &RequestTransformer{}
+		requestTransformer.Name = name
+
+		//requestTransformer.Config.Remove = input.Remove
+		for i,_ := range input.Remove.Body {
+			requestTransformer.Config.Remove.Body = append(requestTransformer.Config.Remove.Body, input.Remove.Body[i])
+		}
+		for i,_ := range input.Remove.Headers {
+			requestTransformer.Config.Remove.Headers = append(requestTransformer.Config.Remove.Headers, input.Remove.Headers[i])
+		}
+		for i,_ := range input.Remove.Querystring {
+			requestTransformer.Config.Remove.Querystring = append(requestTransformer.Config.Remove.Querystring,
+				input.Remove.Querystring[i].Key+":"+input.Remove.Querystring[i].Value)
+		}
+
+		for i,_ := range input.Rename.Body {
+			requestTransformer.Config.Rename.Body = append(requestTransformer.Config.Rename.Body,
+				input.Rename.Body[i].Key+":"+input.Rename.Body[i].Value)
+		}
+		for i,_ := range input.Rename.Headers {
+			requestTransformer.Config.Rename.Headers = append(requestTransformer.Config.Rename.Headers,
+				input.Rename.Headers[i].Key+":"+input.Rename.Headers[i].Value)
+		}
+		for i,_ := range input.Rename.Querystring {
+			requestTransformer.Config.Rename.Querystring = append(requestTransformer.Config.Rename.Querystring,
+				input.Rename.Querystring[i].Key+":"+input.Rename.Querystring[i].Value)
+		}
+
+		for i,_ := range input.Replace.Body {
+			requestTransformer.Config.Replace.Body = append(requestTransformer.Config.Replace.Body,
+				input.Replace.Body[i].Key+":"+input.Replace.Body[i].Value)
+		}
+		for i,_ := range input.Replace.Headers {
+			requestTransformer.Config.Replace.Headers = append(requestTransformer.Config.Replace.Headers,
+				input.Replace.Headers[i].Key+":"+input.Replace.Headers[i].Value)
+		}
+		for i,_ := range input.Replace.Querystring {
+			requestTransformer.Config.Replace.Querystring = append(requestTransformer.Config.Replace.Querystring,
+				input.Replace.Querystring[i].Key+":"+input.Replace.Querystring[i].Value)
+		}
+		requestTransformer.Config.Replace.Uri = input.Replace.Urls
+
+		for i,_ := range input.Add.Body {
+			requestTransformer.Config.Add.Body = append(requestTransformer.Config.Add.Body,
+				input.Add.Body[i].Key+":"+input.Add.Body[i].Value)
+		}
+		for i,_ := range input.Add.Headers {
+			requestTransformer.Config.Add.Headers = append(requestTransformer.Config.Add.Headers,
+				input.Add.Headers[i].Key+":"+input.Add.Headers[i].Value)
+		}
+		for i,_ := range input.Add.Querystring {
+			requestTransformer.Config.Add.Querystring = append(requestTransformer.Config.Add.Querystring,
+				input.Add.Querystring[i].Key+":"+input.Add.Querystring[i].Value)
+		}
+
+		for i,_ := range input.Append.Body {
+			requestTransformer.Config.Append.Body = append(requestTransformer.Config.Append.Body,
+				input.Append.Body[i].Key+":"+input.Append.Body[i].Value)
+		}
+		for i,_ := range input.Append.Headers {
+			requestTransformer.Config.Append.Headers = append(requestTransformer.Config.Append.Headers,
+				input.Append.Headers[i].Key+":"+input.Append.Headers[i].Value)
+		}
+		for i,_ := range input.Append.Querystring {
+			requestTransformer.Config.Append.Querystring = append(requestTransformer.Config.Append.Querystring,
+				input.Append.Querystring[i].Key+":"+input.Append.Querystring[i].Value)
+		}
+		klog.V(5).Infof("assignmentConfig target responseTransformer %+v", *requestTransformer)
+		return nil, requestTransformer
 	}
 	klog.V(5).Infof("assignmentConfig target error")
 	return nil, nil
+}
+/////////////////////
+type requestLogger struct {
+	prefix string
+}
+var logger = &requestLogger{}
+func (r *requestLogger) SetPrefix(prefix string) {
+	r.prefix = prefix
+}
+func (r *requestLogger) Printf(format string, v ...interface{}) {
+	klog.V(4).Infof(format, v...)
+}
+func (r *requestLogger) Println(v ...interface{}) {
+	klog.V(4).Infof("%+v", v)
+}
+var headers = map[string]string{
+	"Content-Type": "application/json",
+}
+var retryStatus = []int{http.StatusBadRequest, http.StatusInternalServerError}
+
+type ResTransformerRequestBody struct {
+	ConsumerId string               `json:"consumerId,omitempty"`
+	Name       string               `json:"name"`
+	Config     ResTransformerConfig `json:"config"`
+}
+type ResTransformerResponseBody struct {
+	CreatedAt int                  `json:"created_at"`
+	Config ResTransformerConfig	   `json:"config"`
+	ID        string               `json:"id"`
+	Service   interface{}          `json:"service"`
+	Name      string               `json:"name"`
+	Protocols []string             `json:"protocols"`
+	Enabled   bool                 `json:"enabled"`
+	RunOn     string               `json:"run_on"`
+	Consumer  interface{}          `json:"consumer"`
+	Route     struct {
+		ID string `json:"id"`
+	} `json:"route"`
+	Tags    interface{} `json:"tags"`
+	Message string      `json:"message"`
+	Code    int         `json:"code"`
+	Fields  interface{} `json:"fields"`
+}
+
+
+type InputReqTransformerConfig struct {
+	Remove struct {
+		Body    []string `json:"json,omitempty"`
+		Headers []string `json:"headers,omitempty"`
+		Querystring []FieldValue `json:"querystring,omitempty"`
+	} `json:"remove,omitempty"`
+	Rename struct {
+		Body    []FieldValue `json:"json,omitempty"`
+		Headers []FieldValue `json:"headers,omitempty"`
+		Querystring []FieldValue `json:"querystring,omitempty"`
+	} `json:"rename,omitempty"`
+	Replace struct {
+		Body    []FieldValue `json:"json,omitempty"`
+		Headers []FieldValue `json:"headers,omitempty"`
+		Querystring []FieldValue `json:"querystring,omitempty"`
+		Urls string	`json:"urls,omitempty"`
+	} `json:"replace,omitempty"`
+	Add struct {
+		Body    []FieldValue `json:"json,omitempty"`
+		Headers []FieldValue `json:"headers,omitempty"`
+		Querystring []FieldValue `json:"querystring,omitempty"`
+	} `json:"add,omitempty"`
+	Append struct {
+		Body    []FieldValue `json:"json,omitempty"`
+		Headers []FieldValue `json:"headers,omitempty"`
+		Querystring []FieldValue `json:"querystring,omitempty"`
+	} `json:"append,omitempty"`
+}
+type OutReqponseTransformer struct {
+	Name   string                    `json:"name"`
+	Config InputReqTransformerConfig `json:"config,omitempty"`
+}
+
+type RequestTransformer struct {
+	Name   string               `json:"name"`
+	Config ReqTransformerConfig `json:"config,omitempty"`
+}
+
+type ReqTransformerConfig struct {
+	Remove struct {
+		Body    []string `json:"json,omitempty"`
+		Headers []string `json:"headers,omitempty"`
+		Querystring []string `json:"querystring,omitempty"`
+	} `json:"remove,omitempty"`
+	Rename struct {
+		Body    []string `json:"json,omitempty"`
+		Headers []string `json:"headers,omitempty"`
+		Querystring []string `json:"querystring,omitempty"`
+	} `json:"rename,omitempty"`
+	Replace struct {
+		Body    []string `json:"json,omitempty"`
+		Headers []string `json:"headers,omitempty"`
+		Querystring []string `json:"querystring,omitempty"`
+		Uri string	`json:"urls,omitempty"`
+	} `json:"replace,omitempty"`
+	Add struct {
+		Body    []string `json:"json,omitempty"`
+		Headers []string `json:"headers,omitempty"`
+		Querystring []string `json:"querystring,omitempty"`
+	} `json:"add,omitempty"`
+	Append struct {
+		Body    []string `json:"json,omitempty"`
+		Headers []string `json:"headers,omitempty"`
+		Querystring []string `json:"querystring,omitempty"`
+	} `json:"append,omitempty"`
+}
+
+
+// kong
+type ReqTransformerRequestBody struct {
+	ConsumerId string               `json:"consumerId,omitempty"`
+	HttpMethod string				`json:"httpMethod,omitempty"`
+	Name       string               `json:"name"`
+	Config     ReqTransformerConfig `json:"config"`
+}
+type ReqTransformerResponseBody struct {
+	CreatedAt int                  `json:"created_at"`
+	Config ResTransformerConfig	   `json:"config"`
+	ID        string               `json:"id"`
+	Service   interface{}          `json:"service"`
+	Name      string               `json:"name"`
+	Protocols []string             `json:"protocols"`
+	Enabled   bool                 `json:"enabled"`
+	RunOn     string               `json:"run_on"`
+	Consumer  interface{}          `json:"consumer"`
+	Route     struct {
+		ID string `json:"id"`
+	} `json:"route"`
+	Tags    interface{} `json:"tags"`
+	Message string      `json:"message"`
+	Code    int         `json:"code"`
+	Fields  interface{} `json:"fields"`
+}
+
+type Transformer struct {
+	Name   string               `json:"name"`
+	Config interface{} `json:"config,omitempty"`
 }
