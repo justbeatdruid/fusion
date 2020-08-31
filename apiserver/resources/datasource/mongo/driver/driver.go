@@ -18,12 +18,18 @@ func Connect(m *v1.Mongo) (*mongo.Client, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	opts := options.Client()
+	uri := ""
+	// standard mongo uri
+	//mongodb://[username:password@]host1[:port1][,...hostN[:portN]]][/[database][?options]]
 	if len(m.Username) > 0 || len(m.Password) > 0 {
-		opts = opts.ApplyURI(fmt.Sprintf("%s:%s@mongodb://%s:%d", m.Username, m.Password, m.Host, m.Port))
+		uri = fmt.Sprintf("mongodb://%s:%s@%s:%d/", m.Username, m.Password, m.Host, m.Port)
 	} else {
-		opts = opts.ApplyURI(fmt.Sprintf("mongodb://%s:%d", m.Host, m.Port))
-
+		uri = fmt.Sprintf("mongodb://%s:%d/", m.Host, m.Port)
 	}
+	if len(m.Database) > 0 {
+		uri = uri + m.Database
+	}
+	opts = opts.ApplyURI(uri)
 	if err := opts.Validate(); err != nil {
 		return nil, err
 	}
