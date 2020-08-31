@@ -24,6 +24,8 @@ type Task struct {
 	Job              string
 	StartTime        time.Time
 	CreatedTime      time.Time
+	SourceId         string
+	TargetId         string
 }
 
 //TbDagRun ...

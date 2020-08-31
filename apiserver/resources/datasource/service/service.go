@@ -116,6 +116,11 @@ func (s *Service) DeleteDatasource(id string, opts ...util.OpOption) error {
 			return fmt.Errorf("cannot delete datawarehouse datasource")
 		}
 	}
+	if ok, err := s.db.DatasourceOccupiedByTask(id); err != nil {
+		return fmt.Errorf("cannot check if datasource is occupied: %+v", err)
+	} else if ok {
+		return fmt.Errorf("cannot delete datasource with data-intergration task")
+	}
 	return s.Delete(id, opts...)
 }
 
