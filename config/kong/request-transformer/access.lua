@@ -176,13 +176,6 @@ end
 local function transform_headers(conf)
   local headers = get_headers()
   local headers_to_remove = {}
-  local body = get_raw_body()
-  kong.log("============body=================", body)
-  local strr = body .. "4f207b9ac13baff6ff2d44ddc111f38c"
-  kong.log("============body=================", strr) 
-  headers.host = nil
-  kong.log("============nginx=================", ngx.md5(strr))
-  headers["witsky-signature"] = ngx.md5(strr) 
   
   -- Remove header(s)
   for _, name, value in iter(conf.remove.headers) do
@@ -265,6 +258,26 @@ local function transform_headers_sign(conf)
   kong.log("=======transform_headers_sign end headers=======", headers)
   set_headers(headers)
   
+end
+
+local function transform_headers_witsky(conf)
+  local headers = get_headers()
+  -- Add header(s)
+  kong.log("======transform_headers_witsky start headers=======", headers)
+  for _, name, value in iter(conf.add.headers) do
+    name = name:lower()
+    if headers["witsky-appkey"] then
+	    local body = get_raw_body()
+        kong.log("======transform_headers_witsky body======", body)
+        local strr = body .. headers["witsky-appkey"]
+        kong.log("======transform_headers_witsky body strr======", strr) 
+        kong.log("======transform_headers_witsky body md5======", ngx.md5(strr))
+        headers["witsky-signature"] = ngx.md5(strr) 
+        kong.log("=======transform_headers_witsky witsky-signature=======", headers["witsky-signature"])
+    end
+  end
+  kong.log("=======transform_headers_witsky end headers=======", headers)
+  set_headers(headers) 
 end
 
 local function transform_body_base64(conf)
@@ -566,6 +579,7 @@ function _M.execute(conf)
   transform_method(conf)
   transform_headers(conf)
   transform_headers_sign(conf)
+  transform_headers_witsky(conf)
   transform_body(conf)
   transform_body_base64(conf)
   transform_querystrings(conf)
