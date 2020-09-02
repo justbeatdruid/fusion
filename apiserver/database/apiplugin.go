@@ -62,6 +62,22 @@ func (d *DatabaseConnection) RemoveApiPluginRelation(ss []model.ApiPluginRelatio
 	return nil
 }
 
+func (d *DatabaseConnection) UpdateApiPluginRelation(ss []model.ApiPluginRelation) (err error) {
+	if err = d.Begin(); err != nil {
+		return fmt.Errorf("begin txn error: %+v", err)
+	}
+	for _, s := range ss {
+		if _, err := d.Update(&s); err != nil {
+			d.Rollback()
+			return err
+		}
+	}
+	if err = d.Commit(); err != nil {
+		return fmt.Errorf("commit txn error: %+v", err)
+	}
+	return nil
+}
+
 func (d *DatabaseConnection) QueryApiPluginRelation(p model.ApiPlugin) ([]model.ApiPluginRelation, error) {
 	if err := d.Begin(); err != nil {
 		return nil, fmt.Errorf("begin txn error: %+v", err)

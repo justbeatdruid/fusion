@@ -52,26 +52,19 @@ func (s *Service) ListByApiRelationFromDatabase(id string, opts ...util.OpOption
 	return apis, nil
 }
 
-func (s *Service) ListByApiPluginRelationFromDatabase(id string, opts ...util.OpOption) ([]*Api, error) {
+func (s *Service) ListByApiPluginRelationFromDatabase(id string, opts ...util.OpOption) ([]*ApiRes, error) {
 	if !s.tenantEnabled {
 		return nil, fmt.Errorf("unspported for apiserver with tenant disabled")
 	}
-	m := &model.Api{}
-	sqlTpl := `SELECT * FROM %s WHERE namespace = "%s" AND id IN (SELECT target_id FROM api_plugin_relation WHERE api_plugin_id = "%s" AND target_type = "api" )`
-	sql := fmt.Sprintf(sqlTpl, m.TableName(), util.OpList(opts...).Namespace(), id)
+
+	//sqlTpl := `SELECT * FROM %s WHERE namespace = "%s" AND id IN (SELECT target_id FROM api_plugin_relation WHERE api_plugin_id = "%s" AND target_type = "api" )`
+	sqlTpl := `SELECT api.id, api.name, api_plugin_relation.status, api_plugin_relation.detail, api_plugin_relation.enable FROM api_plugin_relation LEFT JOIN api on api.id = api_plugin_relation.target_id where api_plugin_relation.api_plugin_id="%s" and api.namespace="%s"`
+	sql := fmt.Sprintf(sqlTpl, id, util.OpList(opts...).Namespace())
 	klog.Infof("query api sql: %s", sql)
-	mResult := make([]model.Api, 0)
+	mResult := make([]*ApiRes, 0)
 	_, err := s.db.Raw(sql).QueryRows(&mResult)
 	if err != nil {
 		return nil, fmt.Errorf("query from database error: %+v", err)
 	}
-	apis := make([]*Api, len(mResult))
-	for i := range mResult {
-		v1api, err := model.ApiToApi(mResult[i])
-		if err != nil {
-			return nil, fmt.Errorf("get application from model error: %+v", err)
-		}
-		apis[i] = ToModel(v1api)
-	}
-	return apis, nil
+	return mResult, nil
 }
