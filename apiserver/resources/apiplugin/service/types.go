@@ -91,6 +91,7 @@ type ResponseTransformer struct {
 	Name   string               `json:"name"`
 	Config ResTransformerConfig `json:"config,omitempty"`
 }
+
 type ResTransformerConfig struct {
 	Remove struct {
 		Json    []string `json:"json,omitempty"`
@@ -116,8 +117,132 @@ type ResTransformerConfig struct {
 	} `json:"append,omitempty"`
 }
 
+type ResTransformerRequestBody struct {
+	ConsumerId string               `json:"consumerId,omitempty"`
+	Name       string               `json:"name"`
+	Config     ResTransformerConfig `json:"config"`
+}
+type ResTransformerResponseBody struct {
+	CreatedAt int                  `json:"created_at"`
+	Config    ResTransformerConfig `json:"config"`
+	ID        string               `json:"id"`
+	Service   interface{}          `json:"service"`
+	Name      string               `json:"name"`
+	Protocols []string             `json:"protocols"`
+	Enabled   bool                 `json:"enabled"`
+	RunOn     string               `json:"run_on"`
+	Consumer  interface{}          `json:"consumer"`
+	Route     struct {
+		ID string `json:"id"`
+	} `json:"route"`
+	Tags    interface{} `json:"tags"`
+	Message string      `json:"message"`
+	Code    int         `json:"code"`
+	Fields  interface{} `json:"fields"`
+}
+
+type InputReqTransformerConfig struct {
+	Remove struct {
+		Body        []string     `json:"json,omitempty"`
+		Headers     []string     `json:"headers,omitempty"`
+		Querystring []FieldValue `json:"querystring,omitempty"`
+	} `json:"remove,omitempty"`
+	Rename struct {
+		Body        []FieldValue `json:"json,omitempty"`
+		Headers     []FieldValue `json:"headers,omitempty"`
+		Querystring []FieldValue `json:"querystring,omitempty"`
+	} `json:"rename,omitempty"`
+	Replace struct {
+		Body        []FieldValue `json:"json,omitempty"`
+		Headers     []FieldValue `json:"headers,omitempty"`
+		Querystring []FieldValue `json:"querystring,omitempty"`
+		Urls        string       `json:"urls,omitempty"`
+	} `json:"replace,omitempty"`
+	Add struct {
+		Body        []FieldValue `json:"json,omitempty"`
+		Headers     []FieldValue `json:"headers,omitempty"`
+		Querystring []FieldValue `json:"querystring,omitempty"`
+	} `json:"add,omitempty"`
+	Append struct {
+		Body        []FieldValue `json:"json,omitempty"`
+		Headers     []FieldValue `json:"headers,omitempty"`
+		Querystring []FieldValue `json:"querystring,omitempty"`
+	} `json:"append,omitempty"`
+}
+type OutRequestTransformer struct {
+	Name   string                    `json:"name"`
+	Config InputReqTransformerConfig `json:"config,omitempty"`
+}
+
+type RequestTransformer struct {
+	Name   string               `json:"name"`
+	Config ReqTransformerConfig `json:"config,omitempty"`
+}
+
+type ReqTransformerConfig struct {
+	Remove struct {
+		Body        []string `json:"json,omitempty"`
+		Headers     []string `json:"headers,omitempty"`
+		Querystring []string `json:"querystring,omitempty"`
+	} `json:"remove,omitempty"`
+	Rename struct {
+		Body        []string `json:"json,omitempty"`
+		Headers     []string `json:"headers,omitempty"`
+		Querystring []string `json:"querystring,omitempty"`
+	} `json:"rename,omitempty"`
+	Replace struct {
+		Body        []string `json:"json,omitempty"`
+		Headers     []string `json:"headers,omitempty"`
+		Querystring []string `json:"querystring,omitempty"`
+		Uri         string   `json:"urls,omitempty"`
+	} `json:"replace,omitempty"`
+	Add struct {
+		Body        []string `json:"json,omitempty"`
+		Headers     []string `json:"headers,omitempty"`
+		Querystring []string `json:"querystring,omitempty"`
+	} `json:"add,omitempty"`
+	Append struct {
+		Body        []string `json:"json,omitempty"`
+		Headers     []string `json:"headers,omitempty"`
+		Querystring []string `json:"querystring,omitempty"`
+	} `json:"append,omitempty"`
+}
+
+// kong
+type ReqTransformerRequestBody struct {
+	ConsumerId string               `json:"consumerId,omitempty"`
+	HttpMethod string               `json:"httpMethod,omitempty"`
+	Name       string               `json:"name"`
+	Config     ReqTransformerConfig `json:"config"`
+}
+type ReqTransformerResponseBody struct {
+	CreatedAt int                  `json:"created_at"`
+	Config    ResTransformerConfig `json:"config"`
+	ID        string               `json:"id"`
+	Service   interface{}          `json:"service"`
+	Name      string               `json:"name"`
+	Protocols []string             `json:"protocols"`
+	Enabled   bool                 `json:"enabled"`
+	RunOn     string               `json:"run_on"`
+	Consumer  interface{}          `json:"consumer"`
+	Route     struct {
+		ID string `json:"id"`
+	} `json:"route"`
+	Tags    interface{} `json:"tags"`
+	Message string      `json:"message"`
+	Code    int         `json:"code"`
+	Fields  interface{} `json:"fields"`
+}
+
+type Transformer struct {
+	Name   string      `json:"name"`
+	Config interface{} `json:"config,omitempty"`
+}
+
 const ApiType = "api"
 const ServiceunitType = "serviceunit"
+const RequestTransType string = "request-transformer"
+const ResponseTransType string = "response-transformer"
 
 func ToInputTransformerInfo(info ResTransformerConfig) InputResTransformerConfig {
 	var output InputResTransformerConfig
@@ -148,6 +273,71 @@ func ToInputTransformerInfo(info ResTransformerConfig) InputResTransformerConfig
 	return output
 }
 
+func ToInputReqTransformerInfo(info ReqTransformerConfig) InputReqTransformerConfig {
+	var output InputReqTransformerConfig
+	output.Remove.Headers = info.Remove.Headers
+	output.Remove.Body = info.Remove.Body
+
+	for i := 0; i < len(info.Remove.Querystring); i++ {
+		arr := strings.Split(info.Remove.Headers[i], ":")
+		output.Remove.Querystring = append(output.Remove.Querystring, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+
+	for i := 0; i < len(info.Rename.Headers); i++ {
+		arr := strings.Split(info.Rename.Headers[i], ":")
+		output.Rename.Headers = append(output.Rename.Headers, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+	for i := 0; i < len(info.Rename.Body); i++ {
+		arr := strings.Split(info.Rename.Body[i], ":")
+		output.Rename.Body = append(output.Rename.Body, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+	for i := 0; i < len(info.Rename.Querystring); i++ {
+		arr := strings.Split(info.Rename.Querystring[i], ":")
+		output.Rename.Querystring = append(output.Rename.Querystring, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+
+	for i := 0; i < len(info.Replace.Headers); i++ {
+		arr := strings.Split(info.Replace.Headers[i], ":")
+		output.Replace.Headers = append(output.Replace.Headers, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+	for i := 0; i < len(info.Replace.Body); i++ {
+		arr := strings.Split(info.Replace.Body[i], ":")
+		output.Replace.Body = append(output.Replace.Body, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+	for i := 0; i < len(info.Replace.Querystring); i++ {
+		arr := strings.Split(info.Replace.Querystring[i], ":")
+		output.Replace.Querystring = append(output.Replace.Querystring, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+	output.Replace.Urls = info.Replace.Uri
+	for i := 0; i < len(info.Add.Headers); i++ {
+		arr := strings.Split(info.Add.Headers[i], ":")
+		output.Add.Headers = append(output.Add.Headers, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+	for i := 0; i < len(info.Add.Body); i++ {
+		arr := strings.Split(info.Add.Body[i], ":")
+		output.Add.Body = append(output.Add.Body, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+	for i := 0; i < len(info.Add.Querystring); i++ {
+		arr := strings.Split(info.Add.Querystring[i], ":")
+		output.Add.Querystring = append(output.Add.Querystring, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+
+	for i := 0; i < len(info.Append.Headers); i++ {
+		arr := strings.Split(info.Append.Headers[i], ":")
+		output.Append.Headers = append(output.Append.Headers, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+	for i := 0; i < len(info.Append.Body); i++ {
+		arr := strings.Split(info.Append.Body[i], ":")
+		output.Append.Body = append(output.Append.Body, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+	for i := 0; i < len(info.Append.Querystring); i++ {
+		arr := strings.Split(info.Append.Querystring[i], ":")
+		output.Append.Querystring = append(output.Append.Querystring, FieldValue{Key: arr[0], Value: arr[1]})
+	}
+
+	return output
+}
+
 func FromModel(m model.ApiPlugin, ss []model.ApiPluginRelation) (ApiPlugin, error) {
 	result := ApiPlugin{
 		Id:                  m.Id,
@@ -165,7 +355,7 @@ func FromModel(m model.ApiPlugin, ss []model.ApiPluginRelation) (ApiPlugin, erro
 	}
 
 	switch m.Type {
-	case "response-transformer":
+	case ResponseTransType:
 		config := &ResponseTransformer{}
 		err := json.Unmarshal([]byte(m.Raw), config)
 		if err != nil {
@@ -173,6 +363,17 @@ func FromModel(m model.ApiPlugin, ss []model.ApiPluginRelation) (ApiPlugin, erro
 		}
 		inputConfig := ToInputTransformerInfo(config.Config)
 		outConfig := &OutResponseTransformer{}
+		outConfig.Config = inputConfig
+		result.Config = outConfig
+		klog.Infof("get input result config %+v", config)
+	case RequestTransType:
+		config := &RequestTransformer{}
+		err := json.Unmarshal([]byte(m.Raw), config)
+		if err != nil {
+			return result, fmt.Errorf("unmarshal crd v1.api error: %+v", err)
+		}
+		inputConfig := ToInputReqTransformerInfo(config.Config)
+		outConfig := &OutRequestTransformer{}
 		outConfig.Config = inputConfig
 		result.Config = outConfig
 		klog.Infof("get input result config %+v", config)
@@ -212,7 +413,7 @@ func ToModel(a ApiPlugin) (model.ApiPlugin, []model.ApiPluginRelation, error) {
 		CreatedAt:   a.CreatedAt,
 		ReleasedAt:  a.ReleasedAt,
 		ConsumerId:  a.ConsumerId,
-		Status: a.Status,
+		Status:      a.Status,
 	}
 	if a.Config != nil {
 		err, config := assignmentConfig(a.Type, a.Config)
@@ -225,7 +426,7 @@ func ToModel(a ApiPlugin) (model.ApiPlugin, []model.ApiPluginRelation, error) {
 			return result, apis, fmt.Errorf("json.Marshal error,: %v", err)
 		}
 		switch a.Type {
-		case "response-transformer":
+		case ResponseTransType:
 			//ResponseTransformer
 			var resConfig ResponseTransformer
 			if err = json.Unmarshal(b, &resConfig); err != nil {
@@ -237,9 +438,9 @@ func ToModel(a ApiPlugin) (model.ApiPlugin, []model.ApiPluginRelation, error) {
 			}
 			result.Raw = string(configJson)
 			klog.Infof("get result raw resConfig %+v, raw %s", resConfig, result.Raw)
-		case "request-transformer":
+		case RequestTransType:
 			//ResponseTransformer
-			var reqConfig ResponseTransformer
+			var reqConfig RequestTransformer
 			if err = json.Unmarshal(b, &reqConfig); err != nil {
 				return result, apis, fmt.Errorf("json.Unmarshal error,: %v", err)
 			}
@@ -285,7 +486,7 @@ func assignmentConfig(name string, reqData interface{}) (error, interface{}) {
 	}
 
 	switch name {
-	case "response-transformer":
+	case ResponseTransType:
 		var input InputResTransformerConfig
 		if err = json.Unmarshal(b, &input); err != nil {
 			return fmt.Errorf("json.Unmarshal error,: %v", err), nil
@@ -320,7 +521,7 @@ func assignmentConfig(name string, reqData interface{}) (error, interface{}) {
 		}
 		klog.V(5).Infof("assignmentConfig target responseTransformer %+v", *responseTransformer)
 		return nil, responseTransformer
-	case "request-transformer":
+	case RequestTransType:
 		var input InputReqTransformerConfig
 		if err = json.Unmarshal(b, &input); err != nil {
 			return fmt.Errorf("json.Unmarshal error,: %v", err), nil
@@ -329,66 +530,66 @@ func assignmentConfig(name string, reqData interface{}) (error, interface{}) {
 		requestTransformer.Name = name
 
 		//requestTransformer.Config.Remove = input.Remove
-		for i,_ := range input.Remove.Body {
+		for i, _ := range input.Remove.Body {
 			requestTransformer.Config.Remove.Body = append(requestTransformer.Config.Remove.Body, input.Remove.Body[i])
 		}
-		for i,_ := range input.Remove.Headers {
+		for i, _ := range input.Remove.Headers {
 			requestTransformer.Config.Remove.Headers = append(requestTransformer.Config.Remove.Headers, input.Remove.Headers[i])
 		}
-		for i,_ := range input.Remove.Querystring {
+		for i, _ := range input.Remove.Querystring {
 			requestTransformer.Config.Remove.Querystring = append(requestTransformer.Config.Remove.Querystring,
 				input.Remove.Querystring[i].Key+":"+input.Remove.Querystring[i].Value)
 		}
 
-		for i,_ := range input.Rename.Body {
+		for i, _ := range input.Rename.Body {
 			requestTransformer.Config.Rename.Body = append(requestTransformer.Config.Rename.Body,
 				input.Rename.Body[i].Key+":"+input.Rename.Body[i].Value)
 		}
-		for i,_ := range input.Rename.Headers {
+		for i, _ := range input.Rename.Headers {
 			requestTransformer.Config.Rename.Headers = append(requestTransformer.Config.Rename.Headers,
 				input.Rename.Headers[i].Key+":"+input.Rename.Headers[i].Value)
 		}
-		for i,_ := range input.Rename.Querystring {
+		for i, _ := range input.Rename.Querystring {
 			requestTransformer.Config.Rename.Querystring = append(requestTransformer.Config.Rename.Querystring,
 				input.Rename.Querystring[i].Key+":"+input.Rename.Querystring[i].Value)
 		}
 
-		for i,_ := range input.Replace.Body {
+		for i, _ := range input.Replace.Body {
 			requestTransformer.Config.Replace.Body = append(requestTransformer.Config.Replace.Body,
 				input.Replace.Body[i].Key+":"+input.Replace.Body[i].Value)
 		}
-		for i,_ := range input.Replace.Headers {
+		for i, _ := range input.Replace.Headers {
 			requestTransformer.Config.Replace.Headers = append(requestTransformer.Config.Replace.Headers,
 				input.Replace.Headers[i].Key+":"+input.Replace.Headers[i].Value)
 		}
-		for i,_ := range input.Replace.Querystring {
+		for i, _ := range input.Replace.Querystring {
 			requestTransformer.Config.Replace.Querystring = append(requestTransformer.Config.Replace.Querystring,
 				input.Replace.Querystring[i].Key+":"+input.Replace.Querystring[i].Value)
 		}
 		requestTransformer.Config.Replace.Uri = input.Replace.Urls
 
-		for i,_ := range input.Add.Body {
+		for i, _ := range input.Add.Body {
 			requestTransformer.Config.Add.Body = append(requestTransformer.Config.Add.Body,
 				input.Add.Body[i].Key+":"+input.Add.Body[i].Value)
 		}
-		for i,_ := range input.Add.Headers {
+		for i, _ := range input.Add.Headers {
 			requestTransformer.Config.Add.Headers = append(requestTransformer.Config.Add.Headers,
 				input.Add.Headers[i].Key+":"+input.Add.Headers[i].Value)
 		}
-		for i,_ := range input.Add.Querystring {
+		for i, _ := range input.Add.Querystring {
 			requestTransformer.Config.Add.Querystring = append(requestTransformer.Config.Add.Querystring,
 				input.Add.Querystring[i].Key+":"+input.Add.Querystring[i].Value)
 		}
 
-		for i,_ := range input.Append.Body {
+		for i, _ := range input.Append.Body {
 			requestTransformer.Config.Append.Body = append(requestTransformer.Config.Append.Body,
 				input.Append.Body[i].Key+":"+input.Append.Body[i].Value)
 		}
-		for i,_ := range input.Append.Headers {
+		for i, _ := range input.Append.Headers {
 			requestTransformer.Config.Append.Headers = append(requestTransformer.Config.Append.Headers,
 				input.Append.Headers[i].Key+":"+input.Append.Headers[i].Value)
 		}
-		for i,_ := range input.Append.Querystring {
+		for i, _ := range input.Append.Querystring {
 			requestTransformer.Config.Append.Querystring = append(requestTransformer.Config.Append.Querystring,
 				input.Append.Querystring[i].Key+":"+input.Append.Querystring[i].Value)
 		}
@@ -398,11 +599,14 @@ func assignmentConfig(name string, reqData interface{}) (error, interface{}) {
 	klog.V(5).Infof("assignmentConfig target error")
 	return nil, nil
 }
+
 /////////////////////
 type requestLogger struct {
 	prefix string
 }
+
 var logger = &requestLogger{}
+
 func (r *requestLogger) SetPrefix(prefix string) {
 	r.prefix = prefix
 }
@@ -412,131 +616,8 @@ func (r *requestLogger) Printf(format string, v ...interface{}) {
 func (r *requestLogger) Println(v ...interface{}) {
 	klog.V(4).Infof("%+v", v)
 }
+
 var headers = map[string]string{
 	"Content-Type": "application/json",
 }
 var retryStatus = []int{http.StatusBadRequest, http.StatusInternalServerError}
-
-type ResTransformerRequestBody struct {
-	ConsumerId string               `json:"consumerId,omitempty"`
-	Name       string               `json:"name"`
-	Config     ResTransformerConfig `json:"config"`
-}
-type ResTransformerResponseBody struct {
-	CreatedAt int                  `json:"created_at"`
-	Config ResTransformerConfig	   `json:"config"`
-	ID        string               `json:"id"`
-	Service   interface{}          `json:"service"`
-	Name      string               `json:"name"`
-	Protocols []string             `json:"protocols"`
-	Enabled   bool                 `json:"enabled"`
-	RunOn     string               `json:"run_on"`
-	Consumer  interface{}          `json:"consumer"`
-	Route     struct {
-		ID string `json:"id"`
-	} `json:"route"`
-	Tags    interface{} `json:"tags"`
-	Message string      `json:"message"`
-	Code    int         `json:"code"`
-	Fields  interface{} `json:"fields"`
-}
-
-
-type InputReqTransformerConfig struct {
-	Remove struct {
-		Body    []string `json:"json,omitempty"`
-		Headers []string `json:"headers,omitempty"`
-		Querystring []FieldValue `json:"querystring,omitempty"`
-	} `json:"remove,omitempty"`
-	Rename struct {
-		Body    []FieldValue `json:"json,omitempty"`
-		Headers []FieldValue `json:"headers,omitempty"`
-		Querystring []FieldValue `json:"querystring,omitempty"`
-	} `json:"rename,omitempty"`
-	Replace struct {
-		Body    []FieldValue `json:"json,omitempty"`
-		Headers []FieldValue `json:"headers,omitempty"`
-		Querystring []FieldValue `json:"querystring,omitempty"`
-		Urls string	`json:"urls,omitempty"`
-	} `json:"replace,omitempty"`
-	Add struct {
-		Body    []FieldValue `json:"json,omitempty"`
-		Headers []FieldValue `json:"headers,omitempty"`
-		Querystring []FieldValue `json:"querystring,omitempty"`
-	} `json:"add,omitempty"`
-	Append struct {
-		Body    []FieldValue `json:"json,omitempty"`
-		Headers []FieldValue `json:"headers,omitempty"`
-		Querystring []FieldValue `json:"querystring,omitempty"`
-	} `json:"append,omitempty"`
-}
-type OutReqponseTransformer struct {
-	Name   string                    `json:"name"`
-	Config InputReqTransformerConfig `json:"config,omitempty"`
-}
-
-type RequestTransformer struct {
-	Name   string               `json:"name"`
-	Config ReqTransformerConfig `json:"config,omitempty"`
-}
-
-type ReqTransformerConfig struct {
-	Remove struct {
-		Body    []string `json:"json,omitempty"`
-		Headers []string `json:"headers,omitempty"`
-		Querystring []string `json:"querystring,omitempty"`
-	} `json:"remove,omitempty"`
-	Rename struct {
-		Body    []string `json:"json,omitempty"`
-		Headers []string `json:"headers,omitempty"`
-		Querystring []string `json:"querystring,omitempty"`
-	} `json:"rename,omitempty"`
-	Replace struct {
-		Body    []string `json:"json,omitempty"`
-		Headers []string `json:"headers,omitempty"`
-		Querystring []string `json:"querystring,omitempty"`
-		Uri string	`json:"urls,omitempty"`
-	} `json:"replace,omitempty"`
-	Add struct {
-		Body    []string `json:"json,omitempty"`
-		Headers []string `json:"headers,omitempty"`
-		Querystring []string `json:"querystring,omitempty"`
-	} `json:"add,omitempty"`
-	Append struct {
-		Body    []string `json:"json,omitempty"`
-		Headers []string `json:"headers,omitempty"`
-		Querystring []string `json:"querystring,omitempty"`
-	} `json:"append,omitempty"`
-}
-
-
-// kong
-type ReqTransformerRequestBody struct {
-	ConsumerId string               `json:"consumerId,omitempty"`
-	HttpMethod string				`json:"httpMethod,omitempty"`
-	Name       string               `json:"name"`
-	Config     ReqTransformerConfig `json:"config"`
-}
-type ReqTransformerResponseBody struct {
-	CreatedAt int                  `json:"created_at"`
-	Config ResTransformerConfig	   `json:"config"`
-	ID        string               `json:"id"`
-	Service   interface{}          `json:"service"`
-	Name      string               `json:"name"`
-	Protocols []string             `json:"protocols"`
-	Enabled   bool                 `json:"enabled"`
-	RunOn     string               `json:"run_on"`
-	Consumer  interface{}          `json:"consumer"`
-	Route     struct {
-		ID string `json:"id"`
-	} `json:"route"`
-	Tags    interface{} `json:"tags"`
-	Message string      `json:"message"`
-	Code    int         `json:"code"`
-	Fields  interface{} `json:"fields"`
-}
-
-type Transformer struct {
-	Name   string               `json:"name"`
-	Config interface{} `json:"config,omitempty"`
-}
