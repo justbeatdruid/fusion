@@ -5,6 +5,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/database/model"
 	"github.com/chinamobile/nlpt/pkg/util"
 	"k8s.io/klog"
+	"strings"
 
 	_ "k8s.io/klog"
 )
@@ -67,4 +68,29 @@ func (s *Service) ListByApiPluginRelationFromDatabase(id string, opts ...util.Op
 		return nil, fmt.Errorf("query from database error: %+v", err)
 	}
 	return mResult, nil
+}
+
+func (s *Service) ListForCapabilityFromDatabase(ids []string, opts ...util.OpOption) ([]*Api, error) {
+	if !s.tenantEnabled {
+		return nil, fmt.Errorf("unspported for apiserver with tenant disabled")
+	}
+	idStr := strings.Join(ids, "','")
+	m := &model.Api{}
+	sqlTpl := `SELECT * FROM %s WHERE id IN ('%s')`
+	sql := fmt.Sprintf(sqlTpl, m.TableName(), idStr)
+	klog.Infof("query api for capability sql: %s", sql)
+	mResult := make([]model.Api, 0)
+	_, err := s.db.Raw(sql).QueryRows(&mResult)
+	if err != nil {
+		return nil, fmt.Errorf("query from database error: %+v", err)
+	}
+	apis := make([]*Api, len(mResult))
+	for i := range mResult {
+		v1api, err := model.ApiToApi(mResult[i])
+		if err != nil {
+			return nil, fmt.Errorf("get application from model error: %+v", err)
+		}
+		apis[i] = ToModel(v1api)
+	}
+	return apis, nil
 }

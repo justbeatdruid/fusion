@@ -1219,3 +1219,10 @@ func (s *Service) ListApisByApiPlugin(id string, opts ...util.OpOption) ([]*ApiR
 	}
 	return s.ListByApiPluginRelationFromDatabase(id, opts...)
 }
+
+func (s *Service) ListApisForCapability(ids []string, opts ...util.OpOption) ([]*Api, error) {
+	if !s.db.Enabled() {
+		return nil, fmt.Errorf("not support if database disabled")
+	}
+	return s.ListForCapabilityFromDatabase(ids, opts...)
+}

@@ -219,6 +219,13 @@ func (r *router) Install(ws *restful.WebService) {
 		To(r.listApisByApiPlugin).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
+
+	ws.Route(ws.POST("/apis/capabilities").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("list all apis by capabilities").
+		To(r.listApisForCapability).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
 }
 
 func process(f func(*restful.Request) (int, interface{}), request *restful.Request, response *restful.Response) {
@@ -323,5 +330,10 @@ func (r *router) listApisByApiGroup(request *restful.Request, response *restful.
 
 func (r *router) listApisByApiPlugin(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListApisByApiPlugin(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) listApisForCapability(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ListApisForCapability(request)
 	response.WriteHeaderAndEntity(code, result)
 }
