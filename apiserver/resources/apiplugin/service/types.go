@@ -40,6 +40,9 @@ type ApiPluginRelation struct {
 	TargetId     string `json:"targetId"`
 	TargetType   string `json:"targetType"`
 	KongPluginId string `json:"kongPluginId"`
+	Status       string `json:"status"`
+	Detail       string `json:"detail"`
+	Enable       bool   `json:"enable"`
 }
 
 type ApiBind struct {
@@ -243,6 +246,20 @@ const ApiType = "api"
 const ServiceunitType = "serviceunit"
 const RequestTransType string = "request-transformer"
 const ResponseTransType string = "response-transformer"
+const BindSuccess string = "bindSuccess"
+const BindFailed string = "bindFailed"
+const BindInit string = "bindInit"
+const UnbindSuccess string = "unbindSuccess"
+const UnbindFailed string = "unbindFailed"
+const UnbindInit string = "unbindInit"
+
+type ApiRes struct {
+	Id         string
+	Name       string
+	BindStatus string
+	Enable     bool
+	Detail     string
+}
 
 func ToInputTransformerInfo(info ResTransformerConfig) InputResTransformerConfig {
 	var output InputResTransformerConfig
@@ -427,7 +444,6 @@ func ToModel(a ApiPlugin) (model.ApiPlugin, []model.ApiPluginRelation, error) {
 		}
 		switch a.Type {
 		case ResponseTransType:
-			//ResponseTransformer
 			var resConfig ResponseTransformer
 			if err = json.Unmarshal(b, &resConfig); err != nil {
 				return result, apis, fmt.Errorf("json.Unmarshal error,: %v", err)
@@ -439,7 +455,6 @@ func ToModel(a ApiPlugin) (model.ApiPlugin, []model.ApiPluginRelation, error) {
 			result.Raw = string(configJson)
 			klog.Infof("get result raw resConfig %+v, raw %s", resConfig, result.Raw)
 		case RequestTransType:
-			//ResponseTransformer
 			var reqConfig RequestTransformer
 			if err = json.Unmarshal(b, &reqConfig); err != nil {
 				return result, apis, fmt.Errorf("json.Unmarshal error,: %v", err)
@@ -462,16 +477,22 @@ func FromModelScenario(m model.ApiPluginRelation) ApiPluginRelation {
 		TargetId:     m.TargetId,
 		TargetType:   m.TargetType,
 		KongPluginId: m.KongPluginId,
+		Status:       m.Status,
+		Detail:       m.Detail,
+		Enable:       m.Enable,
 	}
 }
 
 func ToModelScenario(a ApiPluginRelation, productId string, apiId string) model.ApiPluginRelation {
 	return model.ApiPluginRelation{
-		Id:          a.Id,
-		ApiPluginId: productId,
-		TargetId:    a.TargetId,
-		TargetType:  a.TargetType,
-		//KongPluginId:
+		Id:           a.Id,
+		ApiPluginId:  productId,
+		TargetId:     a.TargetId,
+		TargetType:   a.TargetType,
+		KongPluginId: a.KongPluginId,
+		Status:       a.Status,
+		Detail:       a.Detail,
+		Enable:       a.Enable,
 	}
 }
 func assignmentConfig(name string, reqData interface{}) (error, interface{}) {

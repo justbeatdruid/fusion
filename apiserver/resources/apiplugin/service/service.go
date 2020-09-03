@@ -114,18 +114,17 @@ func (s *Service) UpdateApiPlugin(model *ApiPlugin, id string) (*ApiPlugin, erro
 	klog.Infof("update existed.Config config %+v", existed.Config)
 	//
 
-
 	var kongPluginId string
 	for _, value := range existed.ApiRelation {
 		kongPluginId = value.KongPluginId
 	}
 	switch model.Type {
 	case "response-transformer":
-		if err := s.UpdateResponseTransformerByKong(kongPluginId,existed); err != nil {
+		if err := s.UpdateResponseTransformerByKong(kongPluginId, existed); err != nil {
 			klog.Errorf("patch response transformer by kong err : %+v", err)
 		}
 	case "request-transformer":
-		if err := s.UpdateRequestTransformerByKong(kongPluginId,existed); err != nil {
+		if err := s.UpdateRequestTransformerByKong(kongPluginId, existed); err != nil {
 			klog.Errorf("patch response transformer by kong err : %+v", err)
 		}
 	}
@@ -255,18 +254,30 @@ func (s *Service) BatchBindApi(groupId string, body BindReq, opts ...util.OpOpti
 	}
 	result := make([]model.ApiPluginRelation, 0)
 	for index, value := range body.Apis {
+		bindStatus := BindInit
+		detail := BindInit
+		enable := false
 		//检测是否已经绑定，已经绑定的api跳过
 		if !status[index] {
 			klog.Infof("apiplugins no bound to target and need bind %+v", value)
 			kongPluginId, err := s.AddTransformerByKong(value.ID, existed)
 			if err != nil {
-				klog.Errorf("add rsp transformer by kong err : %+v", err)
+				klog.Errorf("add transformer by kong err : %+v", err)
+				bindStatus = BindFailed
+				detail = fmt.Sprintf("add transformer by kong err : %+v", err)
+			} else {
+				bindStatus = BindSuccess
+				detail = "bind success"
+				enable = true
 			}
 			result = append(result, model.ApiPluginRelation{
-				ApiPluginId: groupId,
-				TargetId:    value.ID,
-				TargetType:  body.Type,
+				ApiPluginId:  groupId,
+				TargetId:     value.ID,
+				TargetType:   body.Type,
 				KongPluginId: kongPluginId,
+				Status:       bindStatus,
+				Detail:       detail,
+				Enable:       enable,
 			})
 		}
 	}
@@ -326,8 +337,11 @@ func (s *Service) BatchUnbindApi(groupId string, body BindReq, opts ...util.OpOp
 		status = append(status, isBind)
 	}
 	result := make([]model.ApiPluginRelation, 0)
+	updateResult := make([]model.ApiPluginRelation, 0)
 	for index, value := range body.Apis {
 		//已经检测是否绑定 只有都绑定才需要解绑
+		bindStatus := UnbindInit
+		detail := UnbindInit
 		if status[index] {
 			klog.Infof("apiplugins has bound to api and need unbind %+v", value)
 			var kongPluginId string
@@ -339,6 +353,17 @@ func (s *Service) BatchUnbindApi(groupId string, body BindReq, opts ...util.OpOp
 			klog.Infof("apiplugins id %+v", kongPluginId)
 			if err := s.DeleteTransformerByKong(value.ID, kongPluginId); err != nil {
 				klog.Errorf("delete rsp transformer by kong err : %+v", err)
+				bindStatus = UnbindFailed
+				detail = fmt.Sprintf("delete rsp transformer by kong err : %+v", err)
+				updateResult = append(result, model.ApiPluginRelation{
+					Id:          relationIds[index],
+					ApiPluginId: groupId,
+					TargetId:    value.ID,
+					TargetType:  body.Type,
+					Status:      bindStatus,
+					Detail:      detail,
+					Enable:      false,
+				})
 			}
 			result = append(result, model.ApiPluginRelation{
 				Id:          relationIds[index],
@@ -349,7 +374,10 @@ func (s *Service) BatchUnbindApi(groupId string, body BindReq, opts ...util.OpOp
 		}
 	}
 	if err = s.db.RemoveApiPluginRelation(result); err != nil {
-		return fmt.Errorf("cannot write database api relation: %+v", err)
+		return fmt.Errorf("cannot delete database api plugin relation: %+v", err)
+	}
+	if err = s.db.UpdateApiPluginRelation(updateResult); err != nil {
+		return fmt.Errorf("cannot update database api plugin relation: %+v", err)
 	}
 
 	klog.Infof("unbind apis success :%+v", result)
@@ -357,7 +385,7 @@ func (s *Service) BatchUnbindApi(groupId string, body BindReq, opts ...util.OpOp
 }
 
 //add transformer by kong
-func (s *Service) AddTransformerByKong(apiId string, existed *ApiPlugin) (kongPluginId string,err error) {
+func (s *Service) AddTransformerByKong(apiId string, existed *ApiPlugin) (kongPluginId string, err error) {
 	switch existed.Type {
 	case "response-transformer":
 		kongPluginId, err := s.AddResponseTransformerByKong(apiId, existed)
@@ -375,6 +403,7 @@ func (s *Service) AddTransformerByKong(apiId string, existed *ApiPlugin) (kongPl
 		return "", nil
 	}
 }
+
 //add response transformer by kong
 func (s *Service) AddResponseTransformerByKong(apiId string, existed *ApiPlugin) (kongPluginId string, err error) {
 	//id := db.Spec.KongApi.KongID
@@ -482,8 +511,9 @@ func (s *Service) AddResponseTransformerByKong(apiId string, existed *ApiPlugin)
 	}
 	return kongPluginId, nil
 }
+
 //add request transformer by kong
-func (s *Service) AddRequestTransformerByKong(apiId string, existed *ApiPlugin) (kongPluginId string,err error) {
+func (s *Service) AddRequestTransformerByKong(apiId string, existed *ApiPlugin) (kongPluginId string, err error) {
 	//id := db.Spec.KongApi.KongID
 	klog.Infof("begin create reqest transformer,the route id is %s", apiId)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
@@ -858,3 +888,34 @@ func (s *Service) UpdateRequestTransformerByKong(kongPluginId string, existed *A
 	return nil
 }
 
+func (s *Service) ListPluginRelationFromDatabase(id, types string, opts ...util.OpOption) ([]*ApiRes, error) {
+	if !s.tenantEnabled {
+		return nil, fmt.Errorf("unspported for apiserver with tenant disabled")
+	}
+	sql := ""
+	switch types {
+	case ApiType:
+		sqlTpl := `SELECT api.id, api.name, api_plugin_relation.status, api_plugin_relation.detail, api_plugin_relation.enable FROM api_plugin_relation LEFT JOIN api on api.id = api_plugin_relation.target_id 
+              where api_plugin_relation.api_plugin_id="%s" and api.namespace="%s" and api_plugin_relation.target_type="%s"`
+		sql = fmt.Sprintf(sqlTpl, id, util.OpList(opts...).Namespace(), types)
+		klog.Infof("query api sql: %s", sql)
+	case ServiceunitType:
+		sqlTpl := `SELECT serviceunit.id, serviceunit.name, api_plugin_relation.status, api_plugin_relation.detail, api_plugin_relation.enable FROM api_plugin_relation LEFT JOIN serviceunit on serviceunit.id = api_plugin_relation.target_id 
+              where api_plugin_relation.api_plugin_id="%s" and serviceunit.namespace="%s" and api_plugin_relation.target_type="%s"`
+		sql = fmt.Sprintf(sqlTpl, id, util.OpList(opts...).Namespace(), types)
+		klog.Infof("query serviceunit sql: %s", sql)
+	}
+	mResult := make([]*ApiRes, 0)
+	_, err := s.db.Raw(sql).QueryRows(&mResult)
+	if err != nil {
+		return nil, fmt.Errorf("query from database error: %+v", err)
+	}
+	return mResult, nil
+}
+
+func (s *Service) ListRelationsByApiPlugin(id, types string, opts ...util.OpOption) ([]*ApiRes, error) {
+	if !s.db.Enabled() {
+		return nil, fmt.Errorf("not support if database disabled")
+	}
+	return s.ListPluginRelationFromDatabase(id, types, opts...)
+}

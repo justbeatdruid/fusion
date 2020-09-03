@@ -586,6 +586,7 @@ func (c *controller) PatchApiPlugins(req *restful.Request) (int, interface{}) {
 }
 
 type ApiList []*service.Api
+type ApiResList []*service.ApiRes
 
 func (apis ApiList) Len() int {
 	return len(apis)
@@ -603,6 +604,21 @@ func (apis ApiList) Less(i, j int) bool {
 }
 
 func (apis ApiList) Swap(i, j int) {
+	apis[i], apis[j] = apis[j], apis[i]
+}
+
+func (apis ApiResList) Len() int {
+	return len(apis)
+}
+
+func (apis ApiResList) GetItem(i int) (interface{}, error) {
+	if i >= len(apis) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return apis[i], nil
+}
+
+func (apis ApiResList) Swap(i, j int) {
 	apis[i], apis[j] = apis[j], apis[i]
 }
 
@@ -1186,7 +1202,7 @@ func (c *controller) ListApisByApiPlugin(req *restful.Request) (int, *ListRespon
 			Message:   "",
 		}
 	} else {
-		var apis ApiList = api
+		var apis ApiResList = api
 		data, err := util.PageWrap(apis, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{

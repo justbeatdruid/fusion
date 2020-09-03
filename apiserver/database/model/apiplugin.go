@@ -27,4 +27,7 @@ type ApiPluginRelation struct {
 	TargetId     string `orm:"size(32)"`
 	TargetType   string `orm:"size(32)"`
 	KongPluginId string `orm:"size(64)"`
+	Status       string `orm:"size(64)"` //绑定状态 成功失败
+	Detail       string
+	Enable       bool
 }

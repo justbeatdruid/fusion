@@ -118,6 +118,14 @@ type OutResponseTransformer struct {
 	Config     InputResTransformerConfig `json:"config,omitempty"`
 }
 
+type ApiRes struct {
+	Id         string
+	Name       string
+	BindStatus string
+	Enable     bool
+	Detail     string
+}
+
 // only used in creation
 func ToAPI(api *Api) *v1.Api {
 	crd := &v1.Api{}
