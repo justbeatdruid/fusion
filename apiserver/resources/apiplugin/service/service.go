@@ -887,3 +887,35 @@ func (s *Service) UpdateRequestTransformerByKong(kongPluginId string, existed *A
 	}
 	return nil
 }
+
+func (s *Service) ListPluginRelationFromDatabase(id, types string, opts ...util.OpOption) ([]*ApiRes, error) {
+	if !s.tenantEnabled {
+		return nil, fmt.Errorf("unspported for apiserver with tenant disabled")
+	}
+	sql := ""
+	switch types {
+	case ApiType:
+		sqlTpl := `SELECT api.id, api.name, api_plugin_relation.status, api_plugin_relation.detail, api_plugin_relation.enable FROM api_plugin_relation LEFT JOIN api on api.id = api_plugin_relation.target_id 
+              where api_plugin_relation.api_plugin_id="%s" and api.namespace="%s" and api_plugin_relation.target_type="%s"`
+		sql = fmt.Sprintf(sqlTpl, id, util.OpList(opts...).Namespace(), types)
+		klog.Infof("query api sql: %s", sql)
+	case ServiceunitType:
+		sqlTpl := `SELECT serviceunit.id, serviceunit.name, api_plugin_relation.status, api_plugin_relation.detail, api_plugin_relation.enable FROM api_plugin_relation LEFT JOIN serviceunit on serviceunit.id = api_plugin_relation.target_id 
+              where api_plugin_relation.api_plugin_id="%s" and serviceunit.namespace="%s" and api_plugin_relation.target_type="%s"`
+		sql = fmt.Sprintf(sqlTpl, id, util.OpList(opts...).Namespace(), types)
+		klog.Infof("query serviceunit sql: %s", sql)
+	}
+	mResult := make([]*ApiRes, 0)
+	_, err := s.db.Raw(sql).QueryRows(&mResult)
+	if err != nil {
+		return nil, fmt.Errorf("query from database error: %+v", err)
+	}
+	return mResult, nil
+}
+
+func (s *Service) ListRelationsByApiPlugin(id, types string, opts ...util.OpOption) ([]*ApiRes, error) {
+	if !s.db.Enabled() {
+		return nil, fmt.Errorf("not support if database disabled")
+	}
+	return s.ListPluginRelationFromDatabase(id, types, opts...)
+}

@@ -253,6 +253,14 @@ const UnbindSuccess string = "unbindSuccess"
 const UnbindFailed string = "unbindFailed"
 const UnbindInit string = "unbindInit"
 
+type ApiRes struct {
+	Id         string
+	Name       string
+	BindStatus string
+	Enable     bool
+	Detail     string
+}
+
 func ToInputTransformerInfo(info ResTransformerConfig) InputResTransformerConfig {
 	var output InputResTransformerConfig
 	output.Remove = info.Remove

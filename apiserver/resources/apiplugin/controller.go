@@ -325,8 +325,50 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, *CreateRespons
 		}
 	}
 }
+func (c *controller) ListRelationsByApiPlugin(req *restful.Request) (int, *ListResponse) {
+	page := req.QueryParameter("page")
+	size := req.QueryParameter("size")
+	types := req.QueryParameter("type")
+	id := req.PathParameter("id")
+
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      1,
+			Detail:    "auth model error",
+			ErrorCode: "",
+			Message:   "",
+		}
+	}
+	if api, err := c.service.ListRelationsByApiPlugin(id, types, util.WithUser(authuser.Name),
+		util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      2,
+			Detail:    fmt.Errorf("list api error: %+v", err).Error(),
+			ErrorCode: "",
+			Message:   "",
+		}
+	} else {
+		var apis ApiResList = api
+		data, err := util.PageWrap(apis, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:      1,
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
+				ErrorCode: "",
+				Message:   "",
+			}
+		}
+		return http.StatusOK, &ListResponse{
+			Code:      0,
+			ErrorCode: "0",
+			Data:      data,
+		}
+	}
+}
 
 type ProductList []*service.ApiPlugin
+type ApiResList []*service.ApiRes
 
 func (apls ProductList) Len() int {
 	return len(apls)
@@ -345,6 +387,21 @@ func (apls ProductList) Less(i, j int) bool {
 
 func (apls ProductList) Swap(i, j int) {
 	apls[i], apls[j] = apls[j], apls[i]
+}
+
+func (apis ApiResList) Len() int {
+	return len(apis)
+}
+
+func (apis ApiResList) GetItem(i int) (interface{}, error) {
+	if i >= len(apis) {
+		return struct{}{}, fmt.Errorf("index overflow")
+	}
+	return apis[i], nil
+}
+
+func (apis ApiResList) Swap(i, j int) {
+	apis[i], apis[j] = apis[j], apis[i]
 }
 
 func returns200(b *restful.RouteBuilder) {

@@ -71,6 +71,13 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.GET("/apiplugins/{id}/relations").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("list all objects by apiplugins").
+		To(r.listRelationsByApiPlugin).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 }
 
 func (r *router) createApiPlugin(request *restful.Request, response *restful.Response) {
@@ -105,5 +112,9 @@ func (r *router) updateApiPluginStatus(request *restful.Request, response *restf
 
 func (r *router) bindOrUnbindApis(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.BindOrUnbindApis(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+func (r *router) listRelationsByApiPlugin(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.ListRelationsByApiPlugin(request)
 	response.WriteHeaderAndEntity(code, result)
 }
