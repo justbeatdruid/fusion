@@ -64,6 +64,14 @@ type BindRequest struct {
 	} `json:"data,omitempty"`
 }
 
+type QueryRequest struct {
+	Data struct {
+		Page string   `json:"page,omitempty"`
+		Size string   `json:"size,omitempty"`
+		Apis []string `json:"apis"`
+	} `json:"data,omitempty"`
+}
+
 type BindResponse = Wrapped
 type CreateResponse = Wrapped
 type CreateRequest = RequestWrapped
@@ -1203,6 +1211,57 @@ func (c *controller) ListApisByApiPlugin(req *restful.Request) (int, *ListRespon
 		}
 	} else {
 		var apis ApiResList = api
+		data, err := util.PageWrap(apis, page, size)
+		if err != nil {
+			return http.StatusInternalServerError, &ListResponse{
+				Code:      1,
+				Detail:    fmt.Sprintf("page parameter error: %+v", err),
+				ErrorCode: "",
+				Message:   "",
+			}
+		}
+		return http.StatusOK, &ListResponse{
+			Code:      0,
+			ErrorCode: "0",
+			Data:      data,
+		}
+	}
+}
+
+func (c *controller) ListApisForCapability(req *restful.Request) (int, *ListResponse) {
+	body := &QueryRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      1,
+			ErrorCode: "001000001",
+			Message:   c.errMsg.Api["001000001"],
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	page := body.Data.Page
+	size := body.Data.Size
+	if len(size) == 0 {
+		size = "-1"
+	}
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      1,
+			Detail:    "auth model error",
+			ErrorCode: "",
+			Message:   "",
+		}
+	}
+	if api, err := c.service.ListApisForCapability(body.Data.Apis, util.WithUser(authuser.Name),
+		util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &ListResponse{
+			Code:      2,
+			Detail:    fmt.Errorf("list api error: %+v", err).Error(),
+			ErrorCode: "",
+			Message:   "",
+		}
+	} else {
+		var apis ApiList = api
 		data, err := util.PageWrap(apis, page, size)
 		if err != nil {
 			return http.StatusInternalServerError, &ListResponse{
