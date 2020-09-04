@@ -14,16 +14,16 @@ import (
 
 type ApiPlugin struct {
 	// basic information
-	Id          string      `json:"id"`
-	Name        string      `json:"name"`
-	Type        string      `json:"type"`
-	Namespace   string      `json:"namespace"`
-	User        string      `json:"user"`
-	UserName    string      `json:"userName"`
-	Description string      `json:"description"`
-	ConsumerId  string      `json:"consumerId"`
-	Config      interface{} `json:"config"`
-
+	Id          string              `json:"id"`
+	Name        string              `json:"name"`
+	Type        string              `json:"type"`
+	Namespace   string              `json:"namespace"`
+	User        string              `json:"user"`
+	UserName    string              `json:"userName"`
+	Description string              `json:"description"`
+	ConsumerId  string              `json:"consumerId"`
+	Config      interface{}         `json:"config"`
+	ReplaceUri  string              `json:"replace_uri"`
 	ApiRelation []ApiPluginRelation `json:"apirelation"`
 
 	CreatedAt           time.Time `json:"createdAt"`
@@ -121,9 +121,11 @@ type ResTransformerConfig struct {
 }
 
 type ResTransformerRequestBody struct {
-	ConsumerId string               `json:"consumerId,omitempty"`
-	Name       string               `json:"name"`
-	Config     ResTransformerConfig `json:"config"`
+	Consumer struct {
+		Id string `json:"id"`
+	} `json:"consumer,omitempty"`
+	Name   string               `json:"name"`
+	Config ResTransformerConfig `json:"config"`
 }
 type ResTransformerResponseBody struct {
 	CreatedAt int                  `json:"created_at"`
@@ -145,7 +147,8 @@ type ResTransformerResponseBody struct {
 }
 
 type InputReqTransformerConfig struct {
-	Remove struct {
+	HttpMethod string `json:"http_method"`
+	Remove     struct {
 		Body        []string     `json:"json,omitempty"`
 		Headers     []string     `json:"headers,omitempty"`
 		Querystring []FieldValue `json:"querystring,omitempty"`
@@ -159,7 +162,7 @@ type InputReqTransformerConfig struct {
 		Body        []FieldValue `json:"json,omitempty"`
 		Headers     []FieldValue `json:"headers,omitempty"`
 		Querystring []FieldValue `json:"querystring,omitempty"`
-		Urls        string       `json:"urls,omitempty"`
+		//Urls        string       `json:"urls,omitempty"`
 	} `json:"replace,omitempty"`
 	Add struct {
 		Body        []FieldValue `json:"json,omitempty"`
@@ -183,7 +186,8 @@ type RequestTransformer struct {
 }
 
 type ReqTransformerConfig struct {
-	Remove struct {
+	HttpMethod string `json:"http_method,omitempty"`
+	Remove     struct {
 		Body        []string `json:"json,omitempty"`
 		Headers     []string `json:"headers,omitempty"`
 		Querystring []string `json:"querystring,omitempty"`
@@ -213,10 +217,11 @@ type ReqTransformerConfig struct {
 
 // kong
 type ReqTransformerRequestBody struct {
-	ConsumerId string               `json:"consumerId,omitempty"`
-	HttpMethod string               `json:"httpMethod,omitempty"`
-	Name       string               `json:"name"`
-	Config     ReqTransformerConfig `json:"config"`
+	Consumer struct {
+		Id string `json:"id"`
+	} `json:"consumer,omitempty"`
+	Name   string               `json:"name"`
+	Config ReqTransformerConfig `json:"config"`
 }
 type ReqTransformerResponseBody struct {
 	CreatedAt int                  `json:"created_at"`
@@ -292,6 +297,9 @@ func ToInputTransformerInfo(info ResTransformerConfig) InputResTransformerConfig
 
 func ToInputReqTransformerInfo(info ReqTransformerConfig) InputReqTransformerConfig {
 	var output InputReqTransformerConfig
+	if len(info.HttpMethod) != 0 {
+		output.HttpMethod = info.HttpMethod
+	}
 	output.Remove.Headers = info.Remove.Headers
 	output.Remove.Body = info.Remove.Body
 
@@ -325,7 +333,7 @@ func ToInputReqTransformerInfo(info ReqTransformerConfig) InputReqTransformerCon
 		arr := strings.Split(info.Replace.Querystring[i], ":")
 		output.Replace.Querystring = append(output.Replace.Querystring, FieldValue{Key: arr[0], Value: arr[1]})
 	}
-	output.Replace.Urls = info.Replace.Uri
+	//output.Replace.Urls = info.Replace.Uri
 	for i := 0; i < len(info.Add.Headers); i++ {
 		arr := strings.Split(info.Add.Headers[i], ":")
 		output.Add.Headers = append(output.Add.Headers, FieldValue{Key: arr[0], Value: arr[1]})
@@ -367,8 +375,8 @@ func FromModel(m model.ApiPlugin, ss []model.ApiPluginRelation) (ApiPlugin, erro
 		CreatedAtTimestamp:  m.CreatedAt.Unix(),
 		ReleasedAt:          m.ReleasedAt,
 		ReleasedAtTimestamp: m.ReleasedAt.Unix(),
-
-		Status: m.Status,
+		ReplaceUri:          m.ReplaceUri,
+		Status:              m.Status,
 	}
 
 	switch m.Type {
@@ -431,6 +439,7 @@ func ToModel(a ApiPlugin) (model.ApiPlugin, []model.ApiPluginRelation, error) {
 		ReleasedAt:  a.ReleasedAt,
 		ConsumerId:  a.ConsumerId,
 		Status:      a.Status,
+		ReplaceUri:  a.ReplaceUri,
 	}
 	if a.Config != nil {
 		err, config := assignmentConfig(a.Type, a.Config)
@@ -458,6 +467,9 @@ func ToModel(a ApiPlugin) (model.ApiPlugin, []model.ApiPluginRelation, error) {
 			var reqConfig RequestTransformer
 			if err = json.Unmarshal(b, &reqConfig); err != nil {
 				return result, apis, fmt.Errorf("json.Unmarshal error,: %v", err)
+			}
+			if len(a.ReplaceUri) != 0 {
+				reqConfig.Config.Replace.Uri = a.ReplaceUri
 			}
 			configJson, err := json.Marshal(reqConfig)
 			if err != nil {
@@ -551,6 +563,9 @@ func assignmentConfig(name string, reqData interface{}) (error, interface{}) {
 		requestTransformer.Name = name
 
 		//requestTransformer.Config.Remove = input.Remove
+		if len(input.HttpMethod) != 0 {
+			requestTransformer.Config.HttpMethod = input.HttpMethod
+		}
 		for i, _ := range input.Remove.Body {
 			requestTransformer.Config.Remove.Body = append(requestTransformer.Config.Remove.Body, input.Remove.Body[i])
 		}
@@ -587,7 +602,7 @@ func assignmentConfig(name string, reqData interface{}) (error, interface{}) {
 			requestTransformer.Config.Replace.Querystring = append(requestTransformer.Config.Replace.Querystring,
 				input.Replace.Querystring[i].Key+":"+input.Replace.Querystring[i].Value)
 		}
-		requestTransformer.Config.Replace.Uri = input.Replace.Urls
+		//requestTransformer.Config.Replace.Uri = i
 
 		for i, _ := range input.Add.Body {
 			requestTransformer.Config.Add.Body = append(requestTransformer.Config.Add.Body,

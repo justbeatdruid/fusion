@@ -12,6 +12,7 @@ type ApiPlugin struct {
 	Type        string `orm:"size(64)"`
 	Namespace   string `orm:"size(128)"`
 	User        string `orm:"size(64)"`
+	ReplaceUri	string `orm:"size(128)"`
 	Description string `orm:"size(1024)"`
 
 	CreatedAt  time.Time `orm:"auto_now_add;type(datetime)"`

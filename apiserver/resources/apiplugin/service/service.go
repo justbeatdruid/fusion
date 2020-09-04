@@ -418,7 +418,7 @@ func (s *Service) AddResponseTransformerByKong(apiId string, existed *ApiPlugin)
 	requestBody := &ResTransformerRequestBody{}
 	requestBody.Name = "response-transformer"
 	if len(existed.ConsumerId) != 0 {
-		requestBody.ConsumerId = existed.ConsumerId
+		requestBody.Consumer.Id = existed.ConsumerId
 	}
 	econfig, err := json.Marshal(existed.Config)
 	if err != nil {
@@ -526,7 +526,7 @@ func (s *Service) AddRequestTransformerByKong(apiId string, existed *ApiPlugin) 
 	requestBody := &ReqTransformerRequestBody{}
 	requestBody.Name = "request-transformer"
 	if len(existed.ConsumerId) != 0 {
-		requestBody.ConsumerId = existed.ConsumerId
+		requestBody.Consumer.Id = existed.ConsumerId
 	}
 	econfig, err := json.Marshal(existed.Config)
 	if err != nil {
@@ -535,6 +535,10 @@ func (s *Service) AddRequestTransformerByKong(apiId string, existed *ApiPlugin) 
 	var config ReqTransformerConfig
 	if err = json.Unmarshal(econfig, &config); err != nil {
 		return "", fmt.Errorf("json.Unmarshal error,: %v", err)
+	}
+
+	if len(config.HttpMethod) != 0 {
+		requestBody.Config.HttpMethod = config.HttpMethod
 	}
 	//remove
 	if len(config.Remove.Body) != 0 {
@@ -671,7 +675,7 @@ func (s *Service) UpdateResponseTransformerByKong(kongPluginId string, existed *
 	requestBody := &ResTransformerRequestBody{}
 	requestBody.Name = "response-transformer"
 	if len(existed.ConsumerId) != 0 {
-		requestBody.ConsumerId = existed.ConsumerId
+		requestBody.Consumer.Id = existed.ConsumerId
 	}
 	econfig, err := json.Marshal(existed.Config)
 	if err != nil {
@@ -777,7 +781,7 @@ func (s *Service) UpdateRequestTransformerByKong(kongPluginId string, existed *A
 	requestBody := &ReqTransformerRequestBody{}
 	requestBody.Name = "request-transformer"
 	if len(existed.ConsumerId) != 0 {
-		requestBody.ConsumerId = existed.ConsumerId
+		requestBody.Consumer.Id = existed.ConsumerId
 	}
 	econfig, err := json.Marshal(existed.Config)
 	if err != nil {
@@ -787,7 +791,9 @@ func (s *Service) UpdateRequestTransformerByKong(kongPluginId string, existed *A
 	if err = json.Unmarshal(econfig, &config); err != nil {
 		return fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
-
+	if len(config.HttpMethod) != 0 {
+		requestBody.Config.HttpMethod = config.HttpMethod
+	}
 	//remove
 	if len(config.Remove.Body) != 0 {
 		for _, j := range config.Remove.Body {
