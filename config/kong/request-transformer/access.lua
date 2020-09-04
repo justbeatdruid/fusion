@@ -233,27 +233,24 @@ local function transform_headers_sign(conf)
   local headers = get_headers()
   -- Add header(s)
   kong.log("=======transform_headers_sign start headers=======", headers)
-  for _, name, value in iter(conf.add.headers) do
-    name = name:lower()
-    if headers["apikey"] and  headers["secretkey"] then
-	    local times = ngx.time() .."000"
-        local apiKey = headers["apikey"]
-        local secretKey = headers["secretkey"]
-        local sign = apiKey .. secretKey ..  times
-        sign = ngx.md5(sign)
-        kong.log("=======transform_headers_sign sign=======", sign)
-        local auth = {
-            ["apiKey"]=apiKey,
-            ["time"]=times,
-            ["sign"]=sign
-        }
-        auth = cjson.encode(auth)
-        kong.log("=======transform_headers_sign sign=======", auth)
-        auth = ngx.encode_base64(auth)	
-        headers["Authorization"] = auth
-		headers["apikey"] = nil
-		headers["secretkey"] = nil
-    end
+  if headers["apikey"] and  headers["secretkey"] then
+	local times = ngx.time() .."000"
+    local apiKey = headers["apikey"]
+    local secretKey = headers["secretkey"]
+    local sign = apiKey .. secretKey ..  times
+    sign = ngx.md5(sign)
+    kong.log("=======transform_headers_sign sign=======", sign)
+    local auth = {
+        ["apiKey"]=apiKey,
+        ["time"]=times,
+        ["sign"]=sign
+    }
+    auth = cjson.encode(auth)
+    kong.log("=======transform_headers_sign sign=======", auth)
+    auth = ngx.encode_base64(auth)	
+    headers["Authorization"] = auth
+	headers["apikey"] = nil
+	headers["secretkey"] = nil
   end
   kong.log("=======transform_headers_sign end headers=======", headers)
   set_headers(headers)
@@ -264,17 +261,14 @@ local function transform_headers_witsky(conf)
   local headers = get_headers()
   -- Add header(s)
   kong.log("======transform_headers_witsky start headers=======", headers)
-  for _, name, value in iter(conf.add.headers) do
-    name = name:lower()
-    if headers["witsky-appkey"] then
-	    local body = get_raw_body()
-        kong.log("======transform_headers_witsky body======", body)
-        local strr = body .. headers["witsky-appkey"]
-        kong.log("======transform_headers_witsky body strr======", strr) 
-        kong.log("======transform_headers_witsky body md5======", ngx.md5(strr))
-        headers["witsky-signature"] = ngx.md5(strr) 
-        kong.log("=======transform_headers_witsky witsky-signature=======", headers["witsky-signature"])
-    end
+  if headers["witsky-appkey"] then
+	local body = get_raw_body()
+    kong.log("======transform_headers_witsky body======", body)
+    local strr = body .. headers["witsky-appkey"]
+    kong.log("======transform_headers_witsky body strr======", strr) 
+    kong.log("======transform_headers_witsky body md5======", ngx.md5(strr))
+    headers["witsky-signature"] = ngx.md5(strr) 
+    kong.log("=======transform_headers_witsky witsky-signature=======", headers["witsky-signature"])
   end
   kong.log("=======transform_headers_witsky end headers=======", headers)
   set_headers(headers) 
@@ -284,16 +278,27 @@ local function transform_body_base64(conf)
   local headers = get_headers()
   local body = get_raw_body()
   kong.log("====transform_body_base64========body=================", body)
-  
-  -- Replace header(s)
-  for _, name, value in iter(conf.replace.headers) do
-    name = name:lower()
-    if name == "content-type" and value == "text/plain"  then
-	    body = ngx.encode_base64(body)    
-	    kong.log("====transform_body_base64========body base64=================", body)
-        set_raw_body(body)
-        set_header(CONTENT_LENGTH, #body)
+  local parameters = parse_json(body)
+  if parameters == nil then
+    if content_length > 0 then
+      return 
     end
+    parameters = {}
+  end
+  if parameters["cloudmaspass"] then
+	mac = parameters["ecName"] .. parameters["apId"] .. parameters["cloudmaspass"].. parameters["mobiles"] .. parameters["content"] .. parameters["sign"] .. parameters["addserial"]
+	kong.log("====transform_body_base64========mac string=================", mac)
+	mac = ngx.md5(mac)
+	kong.log("====transform_body_base64========mac md5=================", mac)
+	parameters["mac"] = mac
+	parameters["cloudmaspass"] = nil
+	body = cjson.encode(parameters)
+	body = ngx.encode_base64(body)    
+	kong.log("====transform_body_base64========body base64=================", body)
+    set_raw_body(body)
+	headers["content-type"] = "text/plain"
+	set_headers(headers) 
+    set_header(CONTENT_LENGTH, #body)
   end
 end
 
