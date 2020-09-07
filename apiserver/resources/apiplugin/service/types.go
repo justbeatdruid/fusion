@@ -23,7 +23,7 @@ type ApiPlugin struct {
 	Description string              `json:"description"`
 	ConsumerId  string              `json:"consumerId"`
 	Config      interface{}         `json:"config"`
-	ReplaceUri  string              `json:"replace_uri"`
+	ReplaceUri  string              `json:"replaceUri"`
 	ApiRelation []ApiPluginRelation `json:"apirelation"`
 
 	CreatedAt           time.Time `json:"createdAt"`
@@ -119,11 +119,11 @@ type ResTransformerConfig struct {
 		Headers    []string `json:"headers,omitempty"`
 	} `json:"append,omitempty"`
 }
-
+type Consumer struct {
+	Id string `json:"id"`
+}
 type ResTransformerRequestBody struct {
-	Consumer struct {
-		Id string `json:"id"`
-	} `json:"consumer,omitempty"`
+	Consumer *Consumer `json:"consumer,omitempty"`
 	Name   string               `json:"name"`
 	Config ResTransformerConfig `json:"config"`
 }
@@ -151,7 +151,7 @@ type InputReqTransformerConfig struct {
 	Remove     struct {
 		Body        []string     `json:"json,omitempty"`
 		Headers     []string     `json:"headers,omitempty"`
-		Querystring []FieldValue `json:"querystring,omitempty"`
+		Querystring []string `json:"querystring,omitempty"`
 	} `json:"remove,omitempty"`
 	Rename struct {
 		Body        []FieldValue `json:"json,omitempty"`
@@ -201,7 +201,7 @@ type ReqTransformerConfig struct {
 		Body        []string `json:"json,omitempty"`
 		Headers     []string `json:"headers,omitempty"`
 		Querystring []string `json:"querystring,omitempty"`
-		Uri         string   `json:"urls,omitempty"`
+		Uri         string   `json:"uri,omitempty"`
 	} `json:"replace,omitempty"`
 	Add struct {
 		Body        []string `json:"json,omitempty"`
@@ -217,9 +217,7 @@ type ReqTransformerConfig struct {
 
 // kong
 type ReqTransformerRequestBody struct {
-	Consumer struct {
-		Id string `json:"id"`
-	} `json:"consumer,omitempty"`
+	Consumer *Consumer `json:"consumer,omitempty"`
 	Name   string               `json:"name"`
 	Config ReqTransformerConfig `json:"config"`
 }
@@ -302,11 +300,7 @@ func ToInputReqTransformerInfo(info ReqTransformerConfig) InputReqTransformerCon
 	}
 	output.Remove.Headers = info.Remove.Headers
 	output.Remove.Body = info.Remove.Body
-
-	for i := 0; i < len(info.Remove.Querystring); i++ {
-		arr := strings.Split(info.Remove.Headers[i], ":")
-		output.Remove.Querystring = append(output.Remove.Querystring, FieldValue{Key: arr[0], Value: arr[1]})
-	}
+	output.Remove.Querystring = info.Remove.Querystring
 
 	for i := 0; i < len(info.Rename.Headers); i++ {
 		arr := strings.Split(info.Rename.Headers[i], ":")
@@ -573,8 +567,7 @@ func assignmentConfig(name string, reqData interface{}) (error, interface{}) {
 			requestTransformer.Config.Remove.Headers = append(requestTransformer.Config.Remove.Headers, input.Remove.Headers[i])
 		}
 		for i, _ := range input.Remove.Querystring {
-			requestTransformer.Config.Remove.Querystring = append(requestTransformer.Config.Remove.Querystring,
-				input.Remove.Querystring[i].Key+":"+input.Remove.Querystring[i].Value)
+			requestTransformer.Config.Remove.Querystring = append(requestTransformer.Config.Remove.Querystring, input.Remove.Querystring[i])
 		}
 
 		for i, _ := range input.Rename.Body {
