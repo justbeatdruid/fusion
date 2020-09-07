@@ -18,6 +18,8 @@ func (r *router) Install(ws *restful.WebService) {
 	ws.Route(ws.POST("/serviceunits").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
+		Reads(RequestWrapped{}).
+		Writes(Wrapped{}).
 		Doc("create new serviceunit").
 		To(r.createServiceunit).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
@@ -26,6 +28,7 @@ func (r *router) Install(ws *restful.WebService) {
 	ws.Route(ws.GET("/serviceunits/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
+		Writes(Wrapped{}).
 		Doc("get an serviceunit by id").
 		To(r.getServiceunit).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
@@ -42,6 +45,8 @@ func (r *router) Install(ws *restful.WebService) {
 	ws.Route(ws.PATCH("/serviceunits/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
+		Reads(RequestWrapped{}).
+		Writes(Wrapped{}).
 		Doc("patch a serviceunit by id").
 		To(r.patchServiceunit).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
@@ -49,6 +54,7 @@ func (r *router) Install(ws *restful.WebService) {
 
 	ws.Route(ws.GET("/serviceunits").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
+		Writes(ListResponse{}).
 		Doc("list all serviceunits").
 		To(r.listServiceunit).
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).

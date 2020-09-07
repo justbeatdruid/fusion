@@ -44,6 +44,29 @@ type Application struct {
 	DisplayStatus v1.DisStatus `json:"disStatus"`
 }
 
+func (Application) SwaggerDoc() map[string]string {
+	return map[string]string{
+		"":             "Application doc",
+		"id":           "Unique id of application",
+		"name":         "Application Name",
+		"Namespace":    "Application tenant id",
+		"users":        "Application users",
+		"description":  "Application description",
+		"apis":         "APIs bound to application",
+		"consumerInfo": "Application consumer information",
+		"topicAuth":    "Application topic auth information",
+		"status":       "Application status",
+		"userCount":    "Number of users",
+		"apiCount":     "Number of api",
+		"writable":     "If application writable",
+		"createdAt":    "Creatation time of application",
+		"group":        "Application group",
+		"groupName":    "Name of application group",
+		"result":       "result",
+		"disStatus":    "display status",
+	}
+}
+
 type Statistics struct {
 	Total      int    `json:"total"`
 	Increment  int    `json:"increment"`

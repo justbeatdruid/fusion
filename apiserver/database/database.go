@@ -78,9 +78,9 @@ func newDatabaseConnection(cfg DatabaseConfig) (*DatabaseConnection, error) {
 		return nil, fmt.Errorf("cannot register database: %+v", err)
 	}
 
-	orm.RegisterModel(new(model.Application), new(model.UserRelation), new(model.Task), new(model.TbDagRun), new(model.TbMetadata), new(model.Datasource),
+	orm.RegisterModel(new(model.Application), new(model.UserRelation), new(model.Task), new(model.Datasource),
 		new(model.Relation), new(model.Api), new(model.Serviceunit), new(model.Topic), new(model.TopicGroup), new(model.Product), new(model.Scenario),
-		new(model.ApiGroup), new(model.ApiRelation))
+		new(model.ApiGroup), new(model.ApiRelation), new(model.ApiPlugin), new(model.ApiPluginRelation))
 	if err = orm.RunSyncdb("default", false, true); err != nil {
 		return nil, fmt.Errorf("cannot sync database: %+v", err)
 	}
@@ -191,7 +191,7 @@ func (d *DatabaseConnection) AddObject(o model.Table, us []model.UserRelation, c
 	return nil
 }
 
-func (d *DatabaseConnection) UpdateObject(o model.Table, us []model.UserRelation, count int, rl []model.Relation, rcount int) (err error) {
+func (d *DatabaseConnection) UpdateObject(o model.Table, us []model.UserRelation, count int, rs []model.Relation, rcount int) (err error) {
 	if err := d.Begin(); err != nil {
 		return fmt.Errorf("begin txn error: %+v", err)
 	}
@@ -217,7 +217,7 @@ func (d *DatabaseConnection) UpdateObject(o model.Table, us []model.UserRelation
 			return err
 		}
 	}
-	if rl != nil && len(rl) > 0 {
+	if rs != nil && len(rs) > 0 {
 		rl := []model.Relation{}
 		if _, err := d.QueryTable("Relation").Filter("SourceId", o.ResourceType()).Filter("SourceType", o.ResourceType()).All(&rl); err != nil {
 			d.Rollback()
@@ -229,7 +229,7 @@ func (d *DatabaseConnection) UpdateObject(o model.Table, us []model.UserRelation
 				return err
 			}
 		}
-		_, err = d.InsertMulti(count, us)
+		_, err = d.InsertMulti(rcount, rs)
 		if err != nil {
 			d.Rollback()
 			return err

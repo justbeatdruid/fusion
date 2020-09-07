@@ -118,6 +118,14 @@ type OutResponseTransformer struct {
 	Config     InputResTransformerConfig `json:"config,omitempty"`
 }
 
+type ApiRes struct {
+	Id         string
+	Name       string
+	BindStatus string
+	Enable     bool
+	Detail     string
+}
+
 // only used in creation
 func ToAPI(api *Api) *v1.Api {
 	crd := &v1.Api{}
@@ -622,7 +630,7 @@ func (s *Service) assignment(target *v1.Api, reqData interface{}) error {
 	if _, ok = data["returnType"]; ok {
 		target.Spec.ReturnType = source.ReturnType
 	}
-	if _, ok = data["webParams"]; ok {
+	if _, ok = data["apiQueryInfo"]; ok {
 		target.Spec.ApiQueryInfo.WebParams = source.ApiQueryInfo.WebParams
 	}
 	if _, ok = data["apiType"]; ok {
@@ -768,5 +776,11 @@ type Export struct {
 type ApplicationScopedApi struct {
 	BoundApplicationId   string `json:"boundApplicationId"`
 	BoundApplicationName string `json:"boundApplicationName"`
+	Api
+}
+
+type ServiceunitScopedApi struct {
+	BoundServiceunitId   string `json:"boundServiceunitId"`
+	BoundServiceunitName string `json:"boundServiceunitName"`
 	Api
 }

@@ -84,17 +84,31 @@ func (r *ServiceunitReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error)
 		// call kong api update
 		serviceunit.Status.Status = nlptv1.Updating
 		klog.Infof("service unit updatinging: %+v", *serviceunit)
-		if err := r.Operator.UpdateServiceByKong(serviceunit); err != nil {
-			serviceunit.Spec.Result = nlptv1.UPDATEFAILED
-			klog.Infof("serviceunit update error: %+v", *serviceunit)
-			serviceunit.Status.Status = nlptv1.Error
-			serviceunit.Status.Message = err.Error()
+		id := serviceunit.Spec.KongService.ID
+		if len(id) == 0 {
+			klog.Infof("service unit update need create")
+			if err := r.Operator.CreateServiceByKong(serviceunit); err != nil {
+				serviceunit.Spec.Result = nlptv1.UPDATEFAILED
+				klog.Infof("serviceunit update error: %+v", *serviceunit)
+				serviceunit.Status.Status = nlptv1.Error
+				serviceunit.Status.Message = err.Error()
+				r.Update(ctx, serviceunit)
+				return ctrl.Result{}, nil
+			}
 		} else {
-			serviceunit.Spec.Result = nlptv1.UPDATESUCCESS
-			klog.Infof("serviceunit updateded: %+v", *serviceunit)
-			serviceunit.Status.Status = nlptv1.Updated
-			serviceunit.Status.Message = "success"
+			if err := r.Operator.UpdateServiceByKong(serviceunit); err != nil {
+				serviceunit.Spec.Result = nlptv1.UPDATEFAILED
+				klog.Infof("serviceunit update error: %+v", *serviceunit)
+				serviceunit.Status.Status = nlptv1.Error
+				serviceunit.Status.Message = err.Error()
+				r.Update(ctx, serviceunit)
+				return ctrl.Result{}, nil
+			}
 		}
+		serviceunit.Spec.Result = nlptv1.UPDATESUCCESS
+		klog.Infof("serviceunit updateded: %+v", *serviceunit)
+		serviceunit.Status.Status = nlptv1.Updated
+		serviceunit.Status.Message = "success"
 		r.Update(ctx, serviceunit)
 	}
 

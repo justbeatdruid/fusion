@@ -1,10 +1,18 @@
 package service
 
 import (
+	"fmt"
+	"github.com/chinamobile/nlpt/pkg/errors"
+	"github.com/chinamobile/nlpt/pkg/names"
+	"regexp"
 	"time"
 
 	"github.com/chinamobile/nlpt/apiserver/database/model"
 	"github.com/chinamobile/nlpt/pkg/auth/cas"
+)
+
+const (
+	NameReg = "^[a-zA-Z\u4e00-\u9fa5][a-zA-Z0-9_\u4e00-\u9fa5]{2,64}$"
 )
 
 type ApiGroup struct {
@@ -17,6 +25,7 @@ type ApiGroup struct {
 	Description string `json:"description"`
 
 	ApiRelation []ApiRelation `json:"apirelation"`
+	ApiCount    int           `json:"apiCount"`
 
 	CreatedAt           time.Time `json:"createdAt"`
 	CreatedAtTimestamp  int64     `json:"createdAtTimestamp"`
@@ -56,6 +65,8 @@ func FromModel(m model.ApiGroup, ss []model.ApiRelation) (ApiGroup, error) {
 		}
 		result.ApiRelation = scenarios
 	}
+
+	result.ApiCount = len(result.ApiRelation)
 
 	username, err := cas.GetUserNameByID(m.User)
 	if err == nil {
@@ -100,4 +111,69 @@ func ToModelScenario(a ApiRelation, productId string, apiId string) model.ApiRel
 		ApiGroupId: productId,
 		ApiId:      apiId,
 	}
+}
+
+func (s *Service) Validate(a *ApiGroup) error {
+	for k, v := range map[string]string{
+		"name":        a.Name,
+		"description": a.Description,
+	} {
+		if k == "name" {
+			if len(v) == 0 {
+				return fmt.Errorf("%s is null", k)
+			} else if ok, _ := regexp.MatchString(NameReg, v); !ok {
+				return fmt.Errorf("name is illegal: %v", v)
+			}
+		}
+		if k == "description" {
+			if len(v) > 1024 {
+				return fmt.Errorf("%s cannot exceed 1024 characters", k)
+			}
+		}
+	}
+	apiList, errs := s.ListApiGroup(*a)
+	if errs != nil {
+		return fmt.Errorf("cannot list apigroup object: %+v", errs)
+	}
+	for _, p := range apiList {
+		if p.Name == a.Name {
+			return errors.NameDuplicatedError("apigroup name duplicated: %+v", errs)
+		}
+	}
+	if len(a.User) == 0 {
+		return fmt.Errorf("owner not set")
+	}
+	a.Id = names.NewID()
+	return nil
+}
+
+// target 是原始，  reqData是传进来的
+func (s *Service) assignment(target *ApiGroup, reqData *ApiGroup) error {
+	if len(reqData.Name) == 0 {
+		return fmt.Errorf("name is nil")
+	} else {
+		if target.Name != reqData.Name {
+			apiList, errs := s.ListApiGroup(*target)
+			if errs != nil {
+				return fmt.Errorf("cannot list apigroup object: %+v", errs)
+			}
+			for _, p := range apiList {
+				if p.Name == reqData.Name {
+					return errors.NameDuplicatedError("apigroup name duplicated: %+v", errs)
+				}
+			}
+		}
+		target.Name = reqData.Name
+		if ok, _ := regexp.MatchString(NameReg, target.Name); !ok {
+			return fmt.Errorf("name is illegal: %v ", target.Name)
+		}
+	}
+	if len(reqData.Description) != 0 {
+		if len(reqData.Description) > 1024 {
+			return fmt.Errorf("%s Cannot exceed 1024 characters", reqData.Description)
+		}
+		target.Description = reqData.Description
+	}
+	return nil
+
 }

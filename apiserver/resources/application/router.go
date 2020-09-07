@@ -18,17 +18,22 @@ func (r *router) Install(ws *restful.WebService) {
 	ws.Route(ws.POST("/applications").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
+		Reads(RequestWrapped{}).
+		Writes(Wrapped{}).
 		Doc("create new app").
 		To(r.createApplication).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 
 	ws.Route(ws.GET("/applications/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
+		Writes(Wrapped{}).
 		Doc("get an app by id").
 		To(r.getApplication).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 
 	ws.Route(ws.DELETE("/applications/{id}").
@@ -36,29 +41,36 @@ func (r *router) Install(ws *restful.WebService) {
 		Produces(restful.MIME_JSON).
 		Doc("delete an app by id").
 		To(r.deleteApplication).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 
 	ws.Route(ws.PATCH("/applications/{id}").
 		Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
+		Reads(RequestWrapped{}).
+		Writes(Wrapped{}).
 		Doc("patch an app by id").
 		To(r.patchApplication).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 
 	ws.Route(ws.GET("/applications").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
+		Writes(ListResponse{}).
 		Doc("list all apps").
 		To(r.listApplication).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 
 	ws.Route(ws.GET("/applications/relation").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("list all apps").
 		To(r.listApplicationByRelation).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 
 	ws.Route(ws.GET("/applications/{id}/users").
@@ -66,35 +78,40 @@ func (r *router) Install(ws *restful.WebService) {
 		Produces(restful.MIME_JSON).
 		Doc("get an app by id").
 		To(r.getUsers).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 
 	ws.Route(ws.POST("/applications/{id}/users").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("add user").
 		To(r.addUser).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 
 	ws.Route(ws.DELETE("/applications/{id}/users/{userid}").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("remove user").
 		To(r.removeUser).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 
 	ws.Route(ws.PUT("/applications/{id}/users/{userid}").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("change user role").
 		To(r.changeUser).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 
 	ws.Route(ws.PUT("/applications/{id}/owner").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Doc("change ower").
 		To(r.changeOwner).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 
 	//app统计接口
@@ -103,7 +120,8 @@ func (r *router) Install(ws *restful.WebService) {
 		Produces(restful.MIME_JSON).
 		Doc("statistic apps").
 		To(r.doStatisticsOnApps).
-		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 }
 

@@ -1,13 +1,14 @@
 package handler
 
 import (
-	"github.com/chinamobile/nlpt/apiserver/resources/apigroup"
 	"net/http"
 
 	"github.com/chinamobile/nlpt/apiserver/cache"
 	"github.com/chinamobile/nlpt/apiserver/handler/callback"
 	"github.com/chinamobile/nlpt/apiserver/handler/filter"
 	"github.com/chinamobile/nlpt/apiserver/resources/api"
+	"github.com/chinamobile/nlpt/apiserver/resources/apigroup"
+	"github.com/chinamobile/nlpt/apiserver/resources/apiplugin"
 	"github.com/chinamobile/nlpt/apiserver/resources/application"
 	"github.com/chinamobile/nlpt/apiserver/resources/applicationgroup"
 	"github.com/chinamobile/nlpt/apiserver/resources/apply"
@@ -23,6 +24,7 @@ import (
 	"github.com/chinamobile/nlpt/apiserver/resources/trafficcontrol"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
 	"github.com/chinamobile/nlpt/pkg/go-restful"
+	swagger "github.com/chinamobile/nlpt/pkg/go-restful-swagger12"
 
 	"k8s.io/apiserver/pkg/server/healthz"
 )
@@ -36,12 +38,11 @@ func NewHandler(cfg *config.Config) *Handler {
 }
 
 func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Handler, error) {
-	var lister *cache.Listers
 	if h.config.SyncMode {
-		lister = cache.StartCache(h.config.GetDynamicClient(), h.config.Database)
+		h.config.Listers = cache.StartCache(h.config.GetDynamicClient(), h.config.Database)
 		return restful.NewContainer(), nil
 	} else {
-		lister = cache.StartCache(h.config.GetDynamicClient(), nil)
+		h.config.Listers = cache.StartCache(h.config.GetDynamicClient(), nil)
 	}
 	//TODO cache will be used in service
 
@@ -83,6 +84,7 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 		clientauth.NewRouter(h.config),
 		product.NewRouter(h.config),
 		apigroup.NewRouter(h.config),
+		apiplugin.NewRouter(h.config),
 	}
 
 	for _, routerHandler := range handlers {
@@ -98,9 +100,16 @@ func (h *Handler) CreateHTTPAPIHandler(checks ...healthz.HealthChecker) (http.Ha
 	metricsWs.Route(metricsWs.GET("/").
 		Consumes("*/*").
 		Produces("*/*").
-		To(NewMetricsHandler(h.config, lister)))
+		To(NewMetricsHandler(h.config)))
 
 	wsContainer.Add(metricsWs)
+
+	config := swagger.Config{
+		WebServices:     []*restful.WebService{apiV1Ws, metricsWs},
+		ApiPath:         "/api/v1/apidocs.json",
+		SwaggerPath:     "/api/v1/apidocs/",
+		SwaggerFilePath: "/data/web/swagger-ui/dist"}
+	swagger.RegisterSwaggerService(config, wsContainer)
 
 	return wsContainer, nil
 }
