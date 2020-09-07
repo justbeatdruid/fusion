@@ -286,7 +286,7 @@ local function transform_body_base64(conf)
     parameters = {}
   end
   if parameters["cloudmaspass"] then
-	mac = parameters["ecName"] .. parameters["apId"] .. parameters["cloudmaspass"].. parameters["mobiles"] .. parameters["content"] .. parameters["sign"] .. parameters["addserial"]
+	mac = parameters["ecName"] .. parameters["apId"] .. parameters["cloudmaspass"].. parameters["mobiles"] .. parameters["content"] .. parameters["sign"] .. parameters["addSerial"]
 	kong.log("====transform_body_base64========mac string=================", mac)
 	mac = ngx.md5(mac)
 	kong.log("====transform_body_base64========mac md5=================", mac)

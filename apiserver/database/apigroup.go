@@ -128,6 +128,9 @@ func (d *DatabaseConnection) QueryApiGroup(p model.ApiGroup) ([]model.ApiGroup, 
 	if len(p.User) > 0 {
 		q = q.Filter("User", p.User)
 	}
+	if len(p.Name) > 0 {
+		q = q.Filter("Name__icontains", p.Name)
+	}
 	if _, err := q.All(&result); err != nil {
 		return nil, err
 	}
