@@ -46,6 +46,7 @@ func (s *Service) CreateApiGroup(model *ApiGroup) (*ApiGroup, error) {
 }
 
 func (s *Service) ListApiGroup(p ApiGroup) ([]*ApiGroup, error) {
+	klog.Infof("query api group by condition :%+v", p)
 	condition, _, err := ToModel(p)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get model: %+v", err)
