@@ -106,6 +106,7 @@ func (s *Service) UpdateApiPlugin(model *ApiPlugin, id string) (*ApiPlugin, erro
 	if len(model.Description) != 0 {
 		existed.Description = model.Description
 	}
+
 	if len(model.ConsumerId) != 0 {
 		existed.ConsumerId = model.ConsumerId
 	}
@@ -424,76 +425,65 @@ func (s *Service) AddResponseTransformerByKong(apiId string, existed *ApiPlugin)
 	if err != nil {
 		return "", fmt.Errorf("json.Marshal error,: %v", err)
 	}
-	var config ResTransformerConfig
-	if err = json.Unmarshal(econfig, &config); err != nil {
+	klog.Infof("xxxxxxx econfig is %s", string(econfig))
+	var responseTransformer OutResponseTransformer
+	if err = json.Unmarshal(econfig, &responseTransformer); err != nil {
 		return "", fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
+	klog.Infof("xxxxxx config is  %+v", responseTransformer)
 
 	//remove
-	if len(config.Remove.Json) != 0 {
-		for _, j := range config.Remove.Json {
+	if len(responseTransformer.Config.Remove.Json) != 0 {
+		for _, j := range responseTransformer.Config.Remove.Json {
 			requestBody.Config.Remove.Json = append(requestBody.Config.Remove.Json, j)
 		}
 	}
-	if len(config.Remove.Headers) != 0 {
-		for _, h := range config.Remove.Headers {
+	if len(responseTransformer.Config.Remove.Headers) != 0 {
+		for _, h := range responseTransformer.Config.Remove.Headers {
 			requestBody.Config.Remove.Headers = append(requestBody.Config.Remove.Headers, h)
 		}
 	}
 	//rename
-	if len(config.Rename.Headers) != 0 {
-		for _, h := range config.Rename.Headers {
-			requestBody.Config.Rename.Headers = append(requestBody.Config.Rename.Headers, h)
-		}
+	for i, _ := range responseTransformer.Config.Rename.Headers {
+		requestBody.Config.Rename.Headers = append(requestBody.Config.Rename.Headers,
+			responseTransformer.Config.Rename.Headers[i].Key+":"+responseTransformer.Config.Rename.Headers[i].Value)
 	}
 	//replace
-	if len(config.Replace.Json) != 0 {
-		for _, j := range config.Replace.Json {
-			requestBody.Config.Replace.Json = append(requestBody.Config.Replace.Json, j)
-		}
+	for i, _ := range responseTransformer.Config.Replace.Headers {
+		requestBody.Config.Replace.Headers = append(requestBody.Config.Replace.Headers,
+			responseTransformer.Config.Replace.Headers[i].Key+":"+responseTransformer.Config.Replace.Headers[i].Value)
 	}
-	if len(config.Replace.Json_types) != 0 {
-		for _, jt := range config.Replace.Json_types {
-			requestBody.Config.Replace.Json_types = append(requestBody.Config.Replace.Json_types, jt)
-		}
+	for i, _ := range  responseTransformer.Config.Replace.Json {
+		requestBody.Config.Replace.Json = append(requestBody.Config.Replace.Json,
+			responseTransformer.Config.Replace.Json[i].Key+":"+responseTransformer.Config.Replace.Json[i].Value)
+		requestBody.Config.Replace.Json_types = append(
+			requestBody.Config.Replace.Json_types, responseTransformer.Config.Replace.Json[i].Type)
 	}
-	if len(config.Replace.Headers) != 0 {
-		for _, h := range config.Replace.Headers {
-			requestBody.Config.Replace.Headers = append(requestBody.Config.Replace.Headers, h)
-		}
-	}
+
 	//add
-	if len(config.Add.Json) != 0 {
-		for _, j := range config.Add.Json {
-			requestBody.Config.Add.Json = append(requestBody.Config.Add.Json, j)
-		}
+	for i, _ := range responseTransformer.Config.Add.Headers {
+		requestBody.Config.Add.Headers = append(requestBody.Config.Add.Headers,
+			responseTransformer.Config.Add.Headers[i].Key+":"+responseTransformer.Config.Add.Headers[i].Value)
 	}
-	if len(config.Add.Json_types) != 0 {
-		for _, jt := range config.Add.Json_types {
-			requestBody.Config.Add.Json_types = append(requestBody.Config.Add.Json_types, jt)
-		}
-	}
-	if len(config.Add.Headers) != 0 {
-		for _, h := range config.Add.Headers {
-			requestBody.Config.Add.Headers = append(requestBody.Config.Add.Headers, h)
-		}
+	for i, _ := range  responseTransformer.Config.Add.Json {
+		requestBody.Config.Add.Json = append(requestBody.Config.Add.Json,
+			responseTransformer.Config.Add.Json[i].Key+":"+responseTransformer.Config.Add.Json[i].Value)
+		requestBody.Config.Add.Json_types = append(requestBody.Config.Add.Json_types,
+			responseTransformer.Config.Add.Json[i].Type)
 	}
 	//append
-	if len(config.Append.Json) != 0 {
-		for _, j := range config.Append.Json {
-			requestBody.Config.Append.Json = append(requestBody.Config.Append.Json, j)
-		}
+	/*
+	for i, _ := range config.Append.Headers {
+		requestBody.Config.Append.Headers = append(requestBody.Config.Append.Headers,
+			config.Add.Headers[i].Key+":"+config.Add.Headers[i].Value)
 	}
-	if len(config.Append.Json_types) != 0 {
-		for _, jt := range config.Append.Json_types {
-			requestBody.Config.Append.Json_types = append(requestBody.Config.Append.Json_types, jt)
-		}
+	for i, _ := range  config.Append.Json {
+		requestBody.Config.Add.Json = append(requestBody.Config.Add.Json,
+			config.Append.Json[i].Key+":"+config.Append.Json[i].Value)
+		requestBody.Config.Add.Json_types = append(requestBody.Config.Add.Json_types,
+			config.Append.Json[i].Type)
 	}
-	if len(config.Append.Headers) != 0 {
-		for _, h := range config.Append.Headers {
-			requestBody.Config.Append.Headers = append(requestBody.Config.Append.Headers, h)
-		}
-	}
+	 */
 	responseBody := &ResTransformerResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
@@ -532,96 +522,76 @@ func (s *Service) AddRequestTransformerByKong(apiId string, existed *ApiPlugin) 
 	if err != nil {
 		return "", fmt.Errorf("json.Marshal error,: %v", err)
 	}
-	var config ReqTransformerConfig
-	if err = json.Unmarshal(econfig, &config); err != nil {
+	var requestTransformer OutRequestTransformer
+	if err = json.Unmarshal(econfig, &requestTransformer); err != nil {
 		return "", fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
-
-	if len(config.HttpMethod) != 0 {
-		requestBody.Config.HttpMethod = config.HttpMethod
-	}
 	//remove
-	if len(config.Remove.Body) != 0 {
-		for _, j := range config.Remove.Body {
-			requestBody.Config.Remove.Body = append(requestBody.Config.Remove.Body, j)
-		}
+	if len(requestTransformer.Config.HttpMethod) != 0 {
+		requestBody.Config.HttpMethod = requestTransformer.Config.HttpMethod
 	}
-	if len(config.Remove.Headers) != 0 {
-		for _, j := range config.Remove.Headers {
-			requestBody.Config.Remove.Headers = append(requestBody.Config.Remove.Headers, j)
-		}
+	for i, _ := range requestTransformer.Config.Remove.Body {
+		requestBody.Config.Remove.Body = append(requestBody.Config.Remove.Body, requestTransformer.Config.Remove.Body[i])
 	}
-	if len(config.Remove.Querystring) != 0 {
-		for _, j := range config.Remove.Querystring {
-			requestBody.Config.Remove.Querystring = append(requestBody.Config.Remove.Querystring, j)
-		}
+	for i, _ := range requestTransformer.Config.Remove.Headers {
+		requestBody.Config.Remove.Headers = append(requestBody.Config.Remove.Headers, requestTransformer.Config.Remove.Headers[i])
 	}
-
+	for i, _ := range requestTransformer.Config.Remove.Querystring {
+		requestBody.Config.Remove.Querystring = append(requestBody.Config.Remove.Querystring, requestTransformer.Config.Remove.Querystring[i])
+	}
 	//rename
-	if len(config.Rename.Body) != 0 {
-		for _, h := range config.Rename.Body {
-			requestBody.Config.Rename.Body = append(requestBody.Config.Rename.Body, h)
-		}
+	for i, _ := range requestTransformer.Config.Rename.Body {
+		requestBody.Config.Rename.Body = append(requestBody.Config.Rename.Body,
+			requestTransformer.Config.Rename.Body[i].Key+":"+requestTransformer.Config.Rename.Body[i].Value)
 	}
-	if len(config.Rename.Headers) != 0 {
-		for _, h := range config.Rename.Headers {
-			requestBody.Config.Rename.Headers = append(requestBody.Config.Rename.Headers, h)
-		}
+	for i, _ := range requestTransformer.Config.Rename.Headers {
+		requestBody.Config.Rename.Headers = append(requestBody.Config.Rename.Headers,
+			requestTransformer.Config.Rename.Headers[i].Key+":"+requestTransformer.Config.Rename.Headers[i].Value)
 	}
-	if len(config.Rename.Querystring) != 0 {
-		for _, h := range config.Rename.Querystring {
-			requestBody.Config.Rename.Querystring = append(requestBody.Config.Rename.Querystring, h)
-		}
+	for i, _ := range requestTransformer.Config.Rename.Querystring {
+		requestBody.Config.Rename.Querystring = append(requestBody.Config.Rename.Querystring,
+			requestTransformer.Config.Rename.Querystring[i].Key+":"+requestTransformer.Config.Rename.Querystring[i].Value)
 	}
 	//replace
-	if len(config.Replace.Body) != 0 {
-		for _, h := range config.Replace.Body {
-			requestBody.Config.Replace.Body = append(requestBody.Config.Replace.Body, h)
-		}
+	for i, _ := range requestTransformer.Config.Replace.Body {
+		requestBody.Config.Replace.Body = append(requestBody.Config.Replace.Body,
+			requestTransformer.Config.Replace.Body[i].Key+":"+requestTransformer.Config.Replace.Body[i].Value)
 	}
-	if len(config.Replace.Headers) != 0 {
-		for _, h := range config.Replace.Headers {
-			requestBody.Config.Replace.Headers = append(requestBody.Config.Replace.Headers, h)
-		}
+	for i, _ := range requestTransformer.Config.Replace.Headers {
+		requestBody.Config.Replace.Headers = append(requestBody.Config.Replace.Headers,
+			requestTransformer.Config.Replace.Headers[i].Key+":"+requestTransformer.Config.Replace.Headers[i].Value)
 	}
-	if len(config.Replace.Querystring) != 0 {
-		for _, h := range config.Replace.Querystring {
-			requestBody.Config.Replace.Querystring = append(requestBody.Config.Replace.Querystring, h)
-		}
+	for i, _ := range requestTransformer.Config.Replace.Querystring {
+		requestBody.Config.Replace.Querystring = append(requestBody.Config.Replace.Querystring,
+			requestTransformer.Config.Replace.Querystring[i].Key+":"+requestTransformer.Config.Replace.Querystring[i].Value)
 	}
-	requestBody.Config.Replace.Uri = config.Replace.Uri
+	requestBody.Config.Replace.Uri = existed.ReplaceUri
 
 	//add
-	if len(config.Add.Body) != 0 {
-		for _, h := range config.Add.Body {
-			requestBody.Config.Add.Body = append(requestBody.Config.Add.Body, h)
-		}
+	for i, _ := range requestTransformer.Config.Add.Body {
+		requestBody.Config.Add.Body = append(requestBody.Config.Add.Body,
+			requestTransformer.Config.Add.Body[i].Key+":"+requestTransformer.Config.Add.Body[i].Value)
 	}
-	if len(config.Add.Headers) != 0 {
-		for _, h := range config.Add.Headers {
-			requestBody.Config.Add.Headers = append(requestBody.Config.Add.Headers, h)
-		}
+	for i, _ := range requestTransformer.Config.Add.Headers {
+		requestBody.Config.Add.Headers = append(requestBody.Config.Add.Headers,
+			requestTransformer.Config.Add.Headers[i].Key+":"+requestTransformer.Config.Add.Headers[i].Value)
 	}
-	if len(config.Add.Querystring) != 0 {
-		for _, h := range config.Add.Querystring {
-			requestBody.Config.Add.Querystring = append(requestBody.Config.Add.Querystring, h)
-		}
+	for i, _ := range requestTransformer.Config.Add.Querystring {
+		requestBody.Config.Add.Querystring = append(requestBody.Config.Add.Querystring,
+			requestTransformer.Config.Add.Querystring[i].Key+":"+requestTransformer.Config.Add.Querystring[i].Value)
 	}
 	//append
-	if len(config.Append.Body) != 0 {
-		for _, h := range config.Append.Body {
-			requestBody.Config.Append.Body = append(requestBody.Config.Append.Body, h)
-		}
+	for i, _ := range requestTransformer.Config.Append.Body {
+		requestBody.Config.Append.Body = append(requestBody.Config.Append.Body,
+			requestTransformer.Config.Append.Body[i].Key+":"+requestTransformer.Config.Append.Body[i].Value)
 	}
-	if len(config.Append.Headers) != 0 {
-		for _, h := range config.Append.Headers {
-			requestBody.Config.Append.Headers = append(requestBody.Config.Append.Headers, h)
-		}
+	for i, _ := range requestTransformer.Config.Append.Headers {
+		requestBody.Config.Append.Headers = append(requestBody.Config.Append.Headers,
+			requestTransformer.Config.Append.Headers[i].Key+":"+requestTransformer.Config.Append.Headers[i].Value)
 	}
-	if len(config.Append.Querystring) != 0 {
-		for _, h := range config.Append.Querystring {
-			requestBody.Config.Append.Querystring = append(requestBody.Config.Append.Querystring, h)
-		}
+	for i, _ := range requestTransformer.Config.Append.Querystring {
+		requestBody.Config.Append.Querystring = append(requestBody.Config.Append.Querystring,
+			requestTransformer.Config.Append.Querystring[i].Key+":"+requestTransformer.Config.Append.Querystring[i].Value)
 	}
 	responseBody := &ReqTransformerResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
@@ -681,76 +651,63 @@ func (s *Service) UpdateResponseTransformerByKong(kongPluginId string, existed *
 	if err != nil {
 		return fmt.Errorf("json.Marshal error,: %v", err)
 	}
-	var config ResTransformerConfig
-	if err = json.Unmarshal(econfig, &config); err != nil {
+	var responseTransformer OutResponseTransformer
+	if err = json.Unmarshal(econfig, &responseTransformer); err != nil {
 		return fmt.Errorf("json.Unmarshal error,: %v", err)
 	}
 
 	//remove
-	if len(config.Remove.Json) != 0 {
-		for _, j := range config.Remove.Json {
+	if len(responseTransformer.Config.Remove.Json) != 0 {
+		for _, j := range responseTransformer.Config.Remove.Json {
 			requestBody.Config.Remove.Json = append(requestBody.Config.Remove.Json, j)
 		}
 	}
-	if len(config.Remove.Headers) != 0 {
-		for _, h := range config.Remove.Headers {
+	if len(responseTransformer.Config.Remove.Headers) != 0 {
+		for _, h := range responseTransformer.Config.Remove.Headers {
 			requestBody.Config.Remove.Headers = append(requestBody.Config.Remove.Headers, h)
 		}
 	}
 	//rename
-	if len(config.Rename.Headers) != 0 {
-		for _, h := range config.Rename.Headers {
-			requestBody.Config.Rename.Headers = append(requestBody.Config.Rename.Headers, h)
-		}
+	for i, _ := range responseTransformer.Config.Rename.Headers {
+		requestBody.Config.Rename.Headers = append(requestBody.Config.Rename.Headers,
+			responseTransformer.Config.Rename.Headers[i].Key+":"+responseTransformer.Config.Rename.Headers[i].Value)
 	}
 	//replace
-	if len(config.Replace.Json) != 0 {
-		for _, j := range config.Replace.Json {
-			requestBody.Config.Replace.Json = append(requestBody.Config.Replace.Json, j)
-		}
+	for i, _ := range responseTransformer.Config.Replace.Headers {
+		requestBody.Config.Replace.Headers = append(requestBody.Config.Replace.Headers,
+			responseTransformer.Config.Replace.Headers[i].Key+":"+responseTransformer.Config.Replace.Headers[i].Value)
 	}
-	if len(config.Replace.Json_types) != 0 {
-		for _, jt := range config.Replace.Json_types {
-			requestBody.Config.Replace.Json_types = append(requestBody.Config.Replace.Json_types, jt)
-		}
+	for i, _ := range  responseTransformer.Config.Replace.Json {
+		requestBody.Config.Replace.Json = append(requestBody.Config.Replace.Json,
+			responseTransformer.Config.Replace.Json[i].Key+":"+responseTransformer.Config.Replace.Json[i].Value)
+		requestBody.Config.Replace.Json_types = append(
+			requestBody.Config.Replace.Json_types, responseTransformer.Config.Replace.Json[i].Type)
 	}
-	if len(config.Replace.Headers) != 0 {
-		for _, h := range config.Replace.Headers {
-			requestBody.Config.Replace.Headers = append(requestBody.Config.Replace.Headers, h)
-		}
-	}
+
 	//add
-	if len(config.Add.Json) != 0 {
-		for _, j := range config.Add.Json {
-			requestBody.Config.Add.Json = append(requestBody.Config.Add.Json, j)
-		}
+	for i, _ := range responseTransformer.Config.Add.Headers {
+		requestBody.Config.Add.Headers = append(requestBody.Config.Add.Headers,
+			responseTransformer.Config.Add.Headers[i].Key+":"+responseTransformer.Config.Add.Headers[i].Value)
 	}
-	if len(config.Add.Json_types) != 0 {
-		for _, jt := range config.Add.Json_types {
-			requestBody.Config.Add.Json_types = append(requestBody.Config.Add.Json_types, jt)
-		}
-	}
-	if len(config.Add.Headers) != 0 {
-		for _, h := range config.Add.Headers {
-			requestBody.Config.Add.Headers = append(requestBody.Config.Add.Headers, h)
-		}
+	for i, _ := range  responseTransformer.Config.Add.Json {
+		requestBody.Config.Add.Json = append(requestBody.Config.Add.Json,
+			responseTransformer.Config.Add.Json[i].Key+":"+responseTransformer.Config.Add.Json[i].Value)
+		requestBody.Config.Add.Json_types = append(requestBody.Config.Add.Json_types,
+			responseTransformer.Config.Add.Json[i].Type)
 	}
 	//append
-	if len(config.Append.Json) != 0 {
-		for _, j := range config.Append.Json {
-			requestBody.Config.Append.Json = append(requestBody.Config.Append.Json, j)
+	/*
+		for i, _ := range config.Append.Headers {
+			requestBody.Config.Append.Headers = append(requestBody.Config.Append.Headers,
+				config.Add.Headers[i].Key+":"+config.Add.Headers[i].Value)
 		}
-	}
-	if len(config.Append.Json_types) != 0 {
-		for _, jt := range config.Append.Json_types {
-			requestBody.Config.Append.Json_types = append(requestBody.Config.Append.Json_types, jt)
+		for i, _ := range  config.Append.Json {
+			requestBody.Config.Add.Json = append(requestBody.Config.Add.Json,
+				config.Append.Json[i].Key+":"+config.Append.Json[i].Value)
+			requestBody.Config.Add.Json_types = append(requestBody.Config.Add.Json_types,
+				config.Append.Json[i].Type)
 		}
-	}
-	if len(config.Append.Headers) != 0 {
-		for _, h := range config.Append.Headers {
-			requestBody.Config.Append.Headers = append(requestBody.Config.Append.Headers, h)
-		}
-	}
+	*/
 	responseBody := &ResTransformerResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
