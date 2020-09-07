@@ -419,6 +419,7 @@ func (s *Service) AddResponseTransformerByKong(apiId string, existed *ApiPlugin)
 	requestBody := &ResTransformerRequestBody{}
 	requestBody.Name = "response-transformer"
 	if len(existed.ConsumerId) != 0 {
+		requestBody.Consumer = &Consumer{}
 		requestBody.Consumer.Id = existed.ConsumerId
 	}
 	econfig, err := json.Marshal(existed.Config)
@@ -516,6 +517,7 @@ func (s *Service) AddRequestTransformerByKong(apiId string, existed *ApiPlugin) 
 	requestBody := &ReqTransformerRequestBody{}
 	requestBody.Name = "request-transformer"
 	if len(existed.ConsumerId) != 0 {
+		requestBody.Consumer = &Consumer{}
 		requestBody.Consumer.Id = existed.ConsumerId
 	}
 	econfig, err := json.Marshal(existed.Config)
@@ -645,6 +647,7 @@ func (s *Service) UpdateResponseTransformerByKong(kongPluginId string, existed *
 	requestBody := &ResTransformerRequestBody{}
 	requestBody.Name = "response-transformer"
 	if len(existed.ConsumerId) != 0 {
+		requestBody.Consumer = &Consumer{}
 		requestBody.Consumer.Id = existed.ConsumerId
 	}
 	econfig, err := json.Marshal(existed.Config)
@@ -738,6 +741,7 @@ func (s *Service) UpdateRequestTransformerByKong(kongPluginId string, existed *A
 	requestBody := &ReqTransformerRequestBody{}
 	requestBody.Name = "request-transformer"
 	if len(existed.ConsumerId) != 0 {
+		requestBody.Consumer = &Consumer{}
 		requestBody.Consumer.Id = existed.ConsumerId
 	}
 	econfig, err := json.Marshal(existed.Config)
