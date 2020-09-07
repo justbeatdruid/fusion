@@ -18,7 +18,7 @@ import (
 
 type controller struct {
 	service *service.Service
-	errMsg config.ErrorConfig
+	errMsg  config.ErrorConfig
 }
 
 func newController(cfg *config.Config) *controller {
@@ -74,10 +74,10 @@ func (c *controller) CreateApiGroup(req *restful.Request) (int, *CreateResponse)
 	if body.Data == nil {
 		code := "014000002"
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:   1,
+			Code:      1,
 			ErrorCode: code,
-			Message: c.errMsg.ApiGroup[code],
-			Detail: "read entity error: data is null",
+			Message:   c.errMsg.ApiGroup[code],
+			Detail:    "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
@@ -108,9 +108,9 @@ func (c *controller) CreateApiGroup(req *restful.Request) (int, *CreateResponse)
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
-			Code: 0,
+			Code:      0,
 			ErrorCode: "0",
-			Data: apl,
+			Data:      apl,
 		}
 	}
 }
@@ -127,9 +127,9 @@ func (c *controller) GetApiGroup(req *restful.Request) (int, *GetResponse) {
 		}
 	} else {
 		return http.StatusOK, &GetResponse{
-			Code: 0,
+			Code:      0,
 			ErrorCode: "0",
-			Data: apl,
+			Data:      apl,
 		}
 	}
 }
@@ -146,9 +146,9 @@ func (c *controller) DeleteApiGroup(req *restful.Request) (int, *DeleteResponse)
 		}
 	} else {
 		return http.StatusOK, &DeleteResponse{
-			Code:   0,
+			Code:      0,
 			ErrorCode: "0",
-			Detail: "",
+			Detail:    "",
 		}
 	}
 }
@@ -157,6 +157,7 @@ func (c *controller) ListApiGroup(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
 	condition := service.ApiGroup{
+		Name:   req.QueryParameter("name"),
 		Status: req.QueryParameter("status"),
 	}
 
@@ -175,6 +176,7 @@ func (c *controller) ListApiGroup(req *restful.Request) (int, *ListResponse) {
 			Detail:    "auth model error",
 		}
 	}
+
 	if pl, err := c.service.ListApiGroup(condition); err != nil {
 		code := "014000008"
 		return http.StatusInternalServerError, &ListResponse{
@@ -196,9 +198,9 @@ func (c *controller) ListApiGroup(req *restful.Request) (int, *ListResponse) {
 			}
 		}
 		return http.StatusOK, &ListResponse{
-			Code: 0,
+			Code:      0,
 			ErrorCode: "0",
-			Data: data,
+			Data:      data,
 		}
 	}
 }
@@ -216,10 +218,10 @@ func (c *controller) UpdateApiGroup(req *restful.Request) (int, *CreateResponse)
 	}
 	if body.Data == nil {
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:   1,
+			Code:      1,
 			ErrorCode: "014000010",
 			Message:   c.errMsg.ApiGroup["014000010"],
-			Detail: "read entity error: data is null",
+			Detail:    "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
@@ -245,9 +247,9 @@ func (c *controller) UpdateApiGroup(req *restful.Request) (int, *CreateResponse)
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
-			Code: 0,
+			Code:      0,
 			ErrorCode: "0",
-			Data: apl,
+			Data:      apl,
 		}
 	}
 }
@@ -266,10 +268,10 @@ func (c *controller) UpdateApiGroupStatus(req *restful.Request) (int, *CreateRes
 	if body.Data == nil {
 		code := "014000010"
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:   1,
+			Code:      1,
 			ErrorCode: code,
-			Message: c.errMsg.ApiGroup[code],
-			Detail: "read entity error: data is null",
+			Message:   c.errMsg.ApiGroup[code],
+			Detail:    "read entity error: data is null",
 		}
 	}
 	authuser, err := auth.GetAuthUser(req)
@@ -294,9 +296,9 @@ func (c *controller) UpdateApiGroupStatus(req *restful.Request) (int, *CreateRes
 		}
 	} else {
 		return http.StatusOK, &CreateResponse{
-			Code: 0,
+			Code:      0,
 			ErrorCode: "0",
-			Data: apl,
+			Data:      apl,
 		}
 	}
 }
@@ -315,10 +317,10 @@ func (c *controller) BindOrUnbindApis(req *restful.Request) (int, *CreateRespons
 	if body.Data.Operation != "bind" && body.Data.Operation != "unbind" {
 		code := "014000014"
 		return http.StatusInternalServerError, &CreateResponse{
-			Code:   1,
+			Code:      1,
 			ErrorCode: "014000014",
-			Message: c.errMsg.ApiGroup[code],
-			Detail: "read entity error: data operation is invaild",
+			Message:   c.errMsg.ApiGroup[code],
+			Detail:    "read entity error: data operation is invaild",
 		}
 	}
 
