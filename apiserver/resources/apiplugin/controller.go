@@ -141,7 +141,9 @@ func (c *controller) ListApiPlugin(req *restful.Request) (int, *ListResponse) {
 	page := req.QueryParameter("page")
 	size := req.QueryParameter("size")
 	condition := service.ApiPlugin{
+		Name:   req.QueryParameter("name"),
 		Status: req.QueryParameter("status"),
+		Type:   req.QueryParameter("type"),
 	}
 
 	authuser, err := auth.GetAuthUser(req)

@@ -149,28 +149,28 @@ type ResTransformerResponseBody struct {
 type InputReqTransformerConfig struct {
 	HttpMethod string `json:"http_method"`
 	Remove     struct {
-		Body        []string     `json:"json,omitempty"`
+		Body        []string     `json:"body,omitempty"`
 		Headers     []string     `json:"headers,omitempty"`
 		Querystring []string `json:"querystring,omitempty"`
 	} `json:"remove,omitempty"`
 	Rename struct {
-		Body        []FieldValue `json:"json,omitempty"`
+		Body        []FieldValue `json:"body,omitempty"`
 		Headers     []FieldValue `json:"headers,omitempty"`
 		Querystring []FieldValue `json:"querystring,omitempty"`
 	} `json:"rename,omitempty"`
 	Replace struct {
-		Body        []FieldValue `json:"json,omitempty"`
+		Body        []FieldValue `json:"body,omitempty"`
 		Headers     []FieldValue `json:"headers,omitempty"`
 		Querystring []FieldValue `json:"querystring,omitempty"`
 		//Urls        string       `json:"urls,omitempty"`
 	} `json:"replace,omitempty"`
 	Add struct {
-		Body        []FieldValue `json:"json,omitempty"`
+		Body        []FieldValue `json:"body,omitempty"`
 		Headers     []FieldValue `json:"headers,omitempty"`
 		Querystring []FieldValue `json:"querystring,omitempty"`
 	} `json:"add,omitempty"`
 	Append struct {
-		Body        []FieldValue `json:"json,omitempty"`
+		Body        []FieldValue `json:"body,omitempty"`
 		Headers     []FieldValue `json:"headers,omitempty"`
 		Querystring []FieldValue `json:"querystring,omitempty"`
 	} `json:"append,omitempty"`
@@ -440,7 +440,6 @@ func ToModel(a ApiPlugin) (model.ApiPlugin, []model.ApiPluginRelation, error) {
 		if err != nil {
 			return result, apis, fmt.Errorf("assignnmentConfig is error,req data: %v", err)
 		}
-		//**
 		b, err := json.Marshal(config)
 		if err != nil {
 			return result, apis, fmt.Errorf("json.Marshal error,: %v", err)
@@ -555,8 +554,6 @@ func assignmentConfig(name string, reqData interface{}) (error, interface{}) {
 		}
 		requestTransformer := &RequestTransformer{}
 		requestTransformer.Name = name
-
-		//requestTransformer.Config.Remove = input.Remove
 		if len(input.HttpMethod) != 0 {
 			requestTransformer.Config.HttpMethod = input.HttpMethod
 		}
