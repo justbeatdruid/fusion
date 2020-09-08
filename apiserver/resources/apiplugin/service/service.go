@@ -50,6 +50,7 @@ func (s *Service) CreateApiPlugin(model *ApiPlugin) (*ApiPlugin, error) {
 }
 
 func (s *Service) ListApiPlugin(p ApiPlugin) ([]*ApiPlugin, error) {
+	klog.Infof("query api group by condition :%+v", p)
 	condition, _, err := ToModel(p)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get model: %+v", err)
@@ -453,7 +454,7 @@ func (s *Service) AddResponseTransformerByKong(apiId string, existed *ApiPlugin)
 		requestBody.Config.Replace.Headers = append(requestBody.Config.Replace.Headers,
 			responseTransformer.Config.Replace.Headers[i].Key+":"+responseTransformer.Config.Replace.Headers[i].Value)
 	}
-	for i, _ := range  responseTransformer.Config.Replace.Json {
+	for i, _ := range responseTransformer.Config.Replace.Json {
 		requestBody.Config.Replace.Json = append(requestBody.Config.Replace.Json,
 			responseTransformer.Config.Replace.Json[i].Key+":"+responseTransformer.Config.Replace.Json[i].Value)
 		requestBody.Config.Replace.Json_types = append(
@@ -465,7 +466,7 @@ func (s *Service) AddResponseTransformerByKong(apiId string, existed *ApiPlugin)
 		requestBody.Config.Add.Headers = append(requestBody.Config.Add.Headers,
 			responseTransformer.Config.Add.Headers[i].Key+":"+responseTransformer.Config.Add.Headers[i].Value)
 	}
-	for i, _ := range  responseTransformer.Config.Add.Json {
+	for i, _ := range responseTransformer.Config.Add.Json {
 		requestBody.Config.Add.Json = append(requestBody.Config.Add.Json,
 			responseTransformer.Config.Add.Json[i].Key+":"+responseTransformer.Config.Add.Json[i].Value)
 		requestBody.Config.Add.Json_types = append(requestBody.Config.Add.Json_types,
@@ -473,17 +474,17 @@ func (s *Service) AddResponseTransformerByKong(apiId string, existed *ApiPlugin)
 	}
 	//append
 	/*
-	for i, _ := range config.Append.Headers {
-		requestBody.Config.Append.Headers = append(requestBody.Config.Append.Headers,
-			config.Add.Headers[i].Key+":"+config.Add.Headers[i].Value)
-	}
-	for i, _ := range  config.Append.Json {
-		requestBody.Config.Add.Json = append(requestBody.Config.Add.Json,
-			config.Append.Json[i].Key+":"+config.Append.Json[i].Value)
-		requestBody.Config.Add.Json_types = append(requestBody.Config.Add.Json_types,
-			config.Append.Json[i].Type)
-	}
-	 */
+		for i, _ := range config.Append.Headers {
+			requestBody.Config.Append.Headers = append(requestBody.Config.Append.Headers,
+				config.Add.Headers[i].Key+":"+config.Add.Headers[i].Value)
+		}
+		for i, _ := range  config.Append.Json {
+			requestBody.Config.Add.Json = append(requestBody.Config.Add.Json,
+				config.Append.Json[i].Key+":"+config.Append.Json[i].Value)
+			requestBody.Config.Add.Json_types = append(requestBody.Config.Add.Json_types,
+				config.Append.Json[i].Type)
+		}
+	*/
 	responseBody := &ResTransformerResponseBody{}
 	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
 	if len(errs) > 0 {
@@ -677,7 +678,7 @@ func (s *Service) UpdateResponseTransformerByKong(kongPluginId string, existed *
 		requestBody.Config.Replace.Headers = append(requestBody.Config.Replace.Headers,
 			responseTransformer.Config.Replace.Headers[i].Key+":"+responseTransformer.Config.Replace.Headers[i].Value)
 	}
-	for i, _ := range  responseTransformer.Config.Replace.Json {
+	for i, _ := range responseTransformer.Config.Replace.Json {
 		requestBody.Config.Replace.Json = append(requestBody.Config.Replace.Json,
 			responseTransformer.Config.Replace.Json[i].Key+":"+responseTransformer.Config.Replace.Json[i].Value)
 		requestBody.Config.Replace.Json_types = append(
@@ -689,7 +690,7 @@ func (s *Service) UpdateResponseTransformerByKong(kongPluginId string, existed *
 		requestBody.Config.Add.Headers = append(requestBody.Config.Add.Headers,
 			responseTransformer.Config.Add.Headers[i].Key+":"+responseTransformer.Config.Add.Headers[i].Value)
 	}
-	for i, _ := range  responseTransformer.Config.Add.Json {
+	for i, _ := range responseTransformer.Config.Add.Json {
 		requestBody.Config.Add.Json = append(requestBody.Config.Add.Json,
 			responseTransformer.Config.Add.Json[i].Key+":"+responseTransformer.Config.Add.Json[i].Value)
 		requestBody.Config.Add.Json_types = append(requestBody.Config.Add.Json_types,

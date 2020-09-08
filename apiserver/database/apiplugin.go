@@ -144,6 +144,12 @@ func (d *DatabaseConnection) QueryApiPlugin(p model.ApiPlugin) ([]model.ApiPlugi
 	if len(p.User) > 0 {
 		q = q.Filter("User", p.User)
 	}
+	if len(p.Type) > 0 {
+		q = q.Filter("Type", p.Type)
+	}
+	if len(p.Name) > 0 {
+		q = q.Filter("Name__icontains", p.Name)
+	}
 	if _, err := q.All(&result); err != nil {
 		return nil, err
 	}
