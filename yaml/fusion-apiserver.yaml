@@ -70,7 +70,7 @@ spec:
         - --tenant-enabled=true
         - --dataservice-data-host=data-service.data-platform
         - --cas-host=fusion-auth
-        - --cas-port=8091
+        - --cas-port=8092
         - --audit-host=fusion-auditlog
         - --audit-port=6868
         - --pulsar-host=pulsar-proxy.pulsar
