@@ -67,11 +67,9 @@ spec:
       - command:
         - fusion-apiserver
         - --v=5
-        - --dataservice-data-host=10.160.32.5
-        #- --cas-host=10.160.32.30
-        #- --cas-port=8000
         - --tenant-enabled=true
-        - --cas-host=tenant-manager
+        - --dataservice-data-host=data-service.data-platform
+        - --cas-host=fusion-auth
         - --cas-port=8091
         - --audit-host=fusion-auditlog
         - --audit-port=6868

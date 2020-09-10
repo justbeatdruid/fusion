@@ -135,3 +135,11 @@ func (*cas) ListUsers() ([]User, error) {
 	}
 	return FromCasUserList(responseBody.Data), nil
 }
+
+func (*cas) GetTenantByID(id string) (Tenant, error) {
+	return Tenant{}, fmt.Errorf("unspported")
+}
+
+func (*cas) ListTenants() ([]Tenant, error) {
+	return make([]Tenant, 0), nil
+}
