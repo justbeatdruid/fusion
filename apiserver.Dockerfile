@@ -26,9 +26,9 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=off go build -a -o /go/bin
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM ubuntu:18.04
 
-COPY --from=builder /go/bin/fusion-apiserver /usr/local/bin
 COPY fission-cli/   /usr/local/bin
 RUN chmod +x /usr/local/bin/fission
+COPY --from=builder /go/bin/fusion-apiserver /usr/local/bin
 
 EXPOSE 8001
 
