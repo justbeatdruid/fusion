@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/chinamobile/nlpt/apiserver/resources/api/parser"
 	"net/http"
@@ -162,7 +163,6 @@ func (c *controller) CreateApi(req *restful.Request) (int, interface{}) {
 	}
 	body.Data.Users = user.InitWithOwner(authuser.Name)
 	body.Data.Namespace = authuser.Namespace
-	klog.V(5).Infof("body namespace is : %s", body.Data.Namespace)
 	if api, err, code := c.service.CreateApi(body.Data); err != nil {
 		if errors.IsNameDuplicated(err) {
 			code = "001000022"
@@ -916,6 +916,8 @@ func (c *controller) ExportApis(req *restful.Request) (int, *ExportRequest) {
 			klog.Errorf("get Api failed, err: %+v", err)
 			continue
 		}
+		webParams, _ := json.Marshal(api.ApiQueryInfo.WebParams)
+
 		row++
 		file.SetCellValue("apis", string(65)+strconv.Itoa(row), api.ID)
 		file.SetCellValue("apis", string(66)+strconv.Itoa(row), api.Namespace)
@@ -937,7 +939,7 @@ func (c *controller) ExportApis(req *restful.Request) (int, *ExportRequest) {
 		file.SetCellValue("apis", string(82)+strconv.Itoa(row), api.ApiDefineInfo.Method)
 		file.SetCellValue("apis", string(83)+strconv.Itoa(row), api.ApiDefineInfo.Protocol)
 		file.SetCellValue("apis", string(84)+strconv.Itoa(row), api.ApiDefineInfo.Cors)
-		file.SetCellValue("apis", string(85)+strconv.Itoa(row), api.ApiQueryInfo.WebParams)
+		file.SetCellValue("apis", string(85)+strconv.Itoa(row), webParams)
 		file.SetCellValue("apis", string(86)+strconv.Itoa(row), api.PublishStatus)
 		file.SetCellValue("apis", string(87)+strconv.Itoa(row), api.UpdatedAt)
 		file.SetCellValue("apis", string(88)+strconv.Itoa(row), api.ReleasedAt)
@@ -971,18 +973,14 @@ func (c *controller) ImportApis(req *restful.Request, response *restful.Response
 			Detail:    fmt.Sprintf("auth model error: %+v", err),
 		}
 	}
-	// uri中获取参数id和分组
-	//body.Data.Serviceunit.ID = "696825d137ed8321"
-	//body.Data.Serviceunit.Group = "kong"
 	authuserName := user.InitWithOwner(authuser.Name)
 	nameSpace := authuser.Namespace
 
 	spec := &parser.ApiExcelSpec{
 		SheetName:        "apis",
 		MultiPartFileKey: "uploadfile",
-		TitleRowSpecList: []string{"api名称", "api类型", "认证方式", "标签", "描述", "数据跟新频率", "数据表",
-			"请求path", "请求协议", "匹配模式", "Method", "是否跨域", "入参定义", "host头域",
-			"后端请求path", "成功响应示例", "成功响应示例"},
+		TitleRowSpecList: []string{"api名称", "api类型", "认证方式", "标签", "描述",
+			"请求path", "请求协议", "Method", "是否跨域", "后端请求path", "成功响应示例", "成功响应示例", "webParams"},
 	}
 	apis, err := parser.ParseApisFromExcel(req, response, spec)
 	if err != nil {
@@ -993,39 +991,56 @@ func (c *controller) ImportApis(req *restful.Request, response *restful.Response
 			Detail:    fmt.Sprintf("import apis error: %+v", err),
 		}
 	}
-
-	var successdata []service.Api
-	var faildata []service.Api
-
+	successdata := []service.Api{}
+	faildata := []service.Api{}
+	suid := req.PathParameter("suid")
 	for _, ap := range apis.ParseData {
+		if len(ap) < 12 {
+			return http.StatusOK, &ImportResponse{
+				Code:      0,
+				ErrorCode: "0",
+				Data:      successdata,
+			}
+		}
+		webParams := &[]v1.WebParams{}
+		err := json.Unmarshal([]byte(ap12), &webParams)
+		if err != nil {
+			return http.StatusInternalServerError, &ImportResponse{
+				Code:      1,
+				ErrorCode: "000100000sy",
+				Message:   "webParams unmarshal failed",
+				Detail:    fmt.Sprintf("webParams unmarshal failed",err),
+			}
+		}
 		api := &service.Api{
 			Namespace:   nameSpace,
 			Name:        ap[0],
 			Description: ap[4],
-			Serviceunit: v1.Serviceunit{
-				ID:    "696825d137ed8321",
-				Group: "kong",
-			},
 			Users:    authuserName,
 			ApiType:  v1.ApiType(ap[1]),
 			AuthType: v1.AuthType(ap[2]),
 			Tags:     ap[3],
+
+			Serviceunit: v1.Serviceunit{
+				ID:    suid,
+			},
 			ApiDefineInfo: v1.ApiDefineInfo{
-				Path:     ap[7],
-				Protocol: v1.Protocol(ap[8]),
-				Method:   v1.Method(ap[10]),
-				Cors:     ap[11],
+				Path:     ap[5],
+				Protocol: v1.Protocol(ap[6]),
+				Method:   v1.Method(ap[7]),
+				Cors:     ap[8],
 			},
 			KongApi: v1.KongApiInfo{
-				Paths: []string{ap[14]},
+				Paths: []string{ap[9]},
 			},
 			ApiReturnInfo: v1.ApiReturnInfo{
-				NormalExample:  ap[15],
-				FailureExample: ap[16],
+				NormalExample:  ap[10],
+				FailureExample: ap[11],
 			},
+			ApiQueryInfo: v1.ApiQueryInfo{WebParams:*webParams},
 		}
 
-		if api, err, code := c.service.CreateApi(api); err != nil {
+		if apic, err, code := c.service.CreateApi(api); err != nil {
 			if errors.IsNameDuplicated(err) {
 				code = "001000022"
 			} else if errors.IsUnpublished(err) {
@@ -1049,7 +1064,7 @@ func (c *controller) ImportApis(req *restful.Request, response *restful.Response
 				Data:      faildata,
 			}
 		} else {
-			successdata = append(successdata, *api)
+			successdata = append(successdata, *apic)
 		}
 	}
 	return http.StatusOK, &ImportResponse{
