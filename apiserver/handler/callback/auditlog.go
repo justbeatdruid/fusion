@@ -47,16 +47,16 @@ var accepted = []selector{
 	{"/api/v1/serviceunits/{id}/users/{userid}", DELETE, ""},
 	{"/api/v1/serviceunits/{id}/users/{userid}", PUT, ""},
 	{"/api/v1/serviceunits/{id}/owner", PUT, ""},
-	{"/api/v1/serviceunits/{id}/release","POST",""},
-	{"/api/v1/serviceunits/import","POST",""},
-	{"/api/v1/serviceunits/function/test","POST",""},
+	{"/api/v1/serviceunits/{id}/release", "POST", ""},
+	{"/api/v1/serviceunits/import", "POST", ""},
+	{"/api/v1/serviceunits/function/test", "POST", ""},
 
 	//restriction
 	{"/api/v1/restrictions", POST, ""},
 	{"/api/v1/restrictions/{id}/apis", POST, ""},
 	{"/api/v1/restrictions/{id}", DELETE, ""},
 	{"/api/v1/restrictions/{id}", PATCH, ""},
-	{"/api/v1/restrictions","PUT",""},
+	{"/api/v1/restrictions", "PUT", ""},
 
 	//application
 	{"/api/v1/applications/{id}", PATCH, ""},
@@ -70,7 +70,7 @@ var accepted = []selector{
 	{"/api/v1/trafficcontrols/{id}/apis", POST, ""},
 	{"/api/v1/trafficcontrols/{id}", DELETE, ""},
 	{"/api/v1/trafficcontrols/{id}", PATCH, ""},
-	{"/api/v1/trafficcontrols","PUT",""},
+	{"/api/v1/trafficcontrols", "PUT", ""},
 
 	//apis
 	{"/api/v1/apis/{id}", PATCH, ""},
@@ -78,14 +78,14 @@ var accepted = []selector{
 	{"/api/v1/apis/{id}/release", DELETE, ""},
 	{"/api/v1/apis/{id}/applications/{appid}", POST, ""},
 	{"/api/v1/api/test", POST, ""},
-	{"/api/v1/apis","PUT",""},
-	{"/api/v1/apis/applications/{appid}","POST",""},
-	{"/api/v1/apis/{%s}/{%s}/data","POST",""},
-	{"/api/v1/apis/export","POST",""},
-	{"/api/v1/apis/import","POST",""},
-	{"/api/v1/apis/{id}/plugins","POST",""},
-	{"/api/v1/apis/{api_id}/plugins","DELETE",""},
-	{"/api/v1/apis/{api_id}/plugins","PATCH",""},
+	{"/api/v1/apis", "PUT", ""},
+	{"/api/v1/apis/applications/{appid}", "POST", ""},
+	{"/api/v1/apis/{%s}/{%s}/data", "POST", ""},
+	{"/api/v1/apis/export", "POST", ""},
+	{"/api/v1/apis/import", "POST", ""},
+	{"/api/v1/apis/{id}/plugins", "POST", ""},
+	{"/api/v1/apis/{api_id}/plugins", "DELETE", ""},
+	{"/api/v1/apis/{api_id}/plugins", "PATCH", ""},
 
 	//clientauth
 	{"/api/v1/clientauths", POST, ""},
@@ -116,11 +116,19 @@ var accepted = []selector{
 	{"/api/v1/topicgroups/{id}", PUT, "高级配置"},
 
 	//apigroup
-	{"/api/v1/apigroups","POST",""},
-	{"/api/v1/apigroups/{id}","DELETE",""},
-	{"/api/v1/apigroups/{id}","PUT",""},
-	{"/api/v1/apigroups/status","PUT",""},
-	{"/api/v1/apigroups/{id}/apis","POST",""},
+	{"/api/v1/apigroups", "POST", ""},
+	{"/api/v1/apigroups/{id}", "DELETE", ""},
+	{"/api/v1/apigroups/{id}", "PUT", ""},
+	{"/api/v1/apigroups/status", "PUT", ""},
+	{"/api/v1/apigroups/{id}/apis", "POST", ""},
+
+	//apiplugin
+	{"/api/v1/apiplugins", "POST", ""},
+	{"/api/v1/apiplugins/{id}", "DELETE", ""},
+	{"/api/v1/apiplugins/{id}", "PUT", ""},
+	{"/api/v1/apiplugins/status", "PUT", ""},
+	{"/api/v1/apiplugins/{id}/apis", "POST", ""},
+	{"/apiplugins/{id}/relations", "PATCH", ""},
 }
 
 // return event, resource and if this request should be uploaded as event
@@ -173,6 +181,8 @@ func getResourceType(path string) string {
 			return "访问控制"
 		case "apigroups":
 			return "api分组"
+		case "apiplugins":
+			return "api插件"
 
 		}
 	}
