@@ -26,15 +26,22 @@ type FusionUserList struct {
 }
 
 type FusionUser struct {
-	UserID            int    `json:"user_id"`
-	Username          string `json:"username"`
-	Password          string `json:"password"`
-	Email             string `json:"email"`
-	Mobile            string `json:"mobile,omitempty"`
-	Status            int    `json:"status,omitempty"`
 	CreateUserID      int    `json:"create_user_id"`
-	CreateUserAccount string `json:"create_user_account,omitempty"`
+	Salt              string `json:"salt"`
 	CreateTime        string `json:"create_time"`
+	LastLoginTime     string `json:"last_login_time"`
+	Mobile            string `json:"mobile"`
+	LastGroupID       int    `json:"last_group_id"`
+	UUID              string `json:"uuid"`
+	EmployeeCode      string `json:"employee_code"`
+	CreateUserAccount string `json:"create_user_account"`
+	Password          string `json:"password"`
+	AccountID         string `json:"account_id"`
+	UserID            int    `json:"user_id"`
+	Account           string `json:"account"`
+	Email             string `json:"email"`
+	Username          string `json:"username"`
+	Status            int    `json:"status"`
 }
 
 type FusionTenantList struct {
@@ -100,6 +107,9 @@ func NewFusionOperator() Operator {
 }
 
 func (*fusion) GetUserByID(id string) (User, error) {
+	if true {
+		return User{}, fmt.Errorf("unsupported")
+	}
 	request := gorequest.New().SetLogger(logs.GetGoRequestLogger(6)).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	request = request.Get(fmt.Sprintf("%s://%s:%d/%s", schema, casHost, casPort, fmt.Sprintf(getUserPath, id)))
