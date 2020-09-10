@@ -204,3 +204,33 @@ func (d *DatabaseConnection) UpdateApiPlugin(p model.ApiPlugin, ss []model.ApiPl
 	}
 	return nil
 }
+
+func (d *DatabaseConnection) UpdateApiPluginRelationById(id, pluginId string, ss []model.ApiPluginRelation) (err error) {
+	if err = d.Begin(); err != nil {
+		return fmt.Errorf("begin txn error: %+v", err)
+	}
+	if ss != nil {
+		os := []model.ApiPluginRelation{}
+		if _, err := d.QueryTable("ApiPluginRelation").Filter("KongPluginId", pluginId).All(&os); err != nil {
+			d.Rollback()
+			return err
+		}
+		for _, s := range os {
+			if _, err := d.Delete(&s); err != nil {
+				d.Rollback()
+				return err
+			}
+		}
+		for _, s := range ss {
+			_, err = d.Insert(&s)
+			if err != nil {
+				d.Rollback()
+				return err
+			}
+		}
+	}
+	if err = d.Commit(); err != nil {
+		return fmt.Errorf("commit txn error: %+v", err)
+	}
+	return nil
+}

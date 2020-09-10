@@ -54,6 +54,10 @@ type BindRequest struct {
 	Data service.BindReq `json:"data"`
 }
 
+type EnableRequest struct {
+	Data service.EnableReq `json:"data"`
+}
+
 func (c *controller) CreateApiPlugin(req *restful.Request) (int, *CreateResponse) {
 	body := &CreateRequest{}
 	if err := req.ReadEntity(body); err != nil {
@@ -365,6 +369,57 @@ func (c *controller) ListRelationsByApiPlugin(req *restful.Request) (int, *ListR
 			Code:      0,
 			ErrorCode: "0",
 			Data:      data,
+		}
+	}
+}
+
+func (c *controller) UpdatePluginEnableById(req *restful.Request) (int, *CreateResponse) {
+	body := &EnableRequest{}
+	if err := req.ReadEntity(body); err != nil {
+		code := "000000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   "",
+			Detail:    fmt.Errorf("cannot read entity: %+v", err).Error(),
+		}
+	}
+	if body.Data.Enable != false && body.Data.Enable != true {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   1,
+			Detail: "read entity error: data operation is invaild",
+		}
+	}
+	if len(body.Data.Ids) == 0 {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:   1,
+			Detail: "read entity error: ids is null ",
+		}
+	}
+
+	authuser, err := auth.GetAuthUser(req)
+	if err != nil {
+		code := "000000005"
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      1,
+			ErrorCode: code,
+			Message:   "",
+			Detail:    "auth model error",
+		}
+	}
+	pluginID := req.PathParameter("id")
+	if err := c.service.UpdatePluginEnableByKongId(pluginID, body.Data, util.WithUser(authuser.Name), util.WithNamespace(authuser.Namespace)); err != nil {
+		return http.StatusInternalServerError, &CreateResponse{
+			Code:      2,
+			ErrorCode: "001000013",
+			Message:   "",
+			Detail:    fmt.Errorf("bind api error: %+v", err).Error(),
+		}
+	} else {
+		return http.StatusOK, &CreateResponse{
+			Code:      0,
+			ErrorCode: "0",
+			//Data:      api,
 		}
 	}
 }

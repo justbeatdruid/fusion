@@ -78,6 +78,13 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.PATCH("/apiplugins/{id}/relations").Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Doc("update plugin relation status").
+		To(r.updatePluginEnableById).
+		Param(ws.HeaderParameter("content-type", "content-type").DataType("string")).
+		Do(returns200, returns500))
+
 }
 
 func (r *router) createApiPlugin(request *restful.Request, response *restful.Response) {
@@ -114,7 +121,13 @@ func (r *router) bindOrUnbindApis(request *restful.Request, response *restful.Re
 	code, result := r.controller.BindOrUnbindApis(request)
 	response.WriteHeaderAndEntity(code, result)
 }
+
 func (r *router) listRelationsByApiPlugin(request *restful.Request, response *restful.Response) {
 	code, result := r.controller.ListRelationsByApiPlugin(request)
+	response.WriteHeaderAndEntity(code, result)
+}
+
+func (r *router) updatePluginEnableById(request *restful.Request, response *restful.Response) {
+	code, result := r.controller.UpdatePluginEnableById(request)
 	response.WriteHeaderAndEntity(code, result)
 }
