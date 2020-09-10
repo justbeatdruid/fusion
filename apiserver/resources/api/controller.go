@@ -1003,7 +1003,7 @@ func (c *controller) ImportApis(req *restful.Request, response *restful.Response
 			}
 		}
 		webParams := &[]v1.WebParams{}
-		err := json.Unmarshal([]byte(ap12), &webParams)
+		err := json.Unmarshal([]byte(ap[12]), &webParams)
 		if err != nil {
 			return http.StatusInternalServerError, &ImportResponse{
 				Code:      1,
