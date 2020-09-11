@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/chinamobile/nlpt/apiserver/resources/application/mqservice"
 	"github.com/chinamobile/nlpt/cmd/apiserver/app/config"
+	"github.com/parnurzeal/gorequest"
 	"strings"
 
 	"github.com/chinamobile/nlpt/apiserver/database"
@@ -256,24 +257,166 @@ func (s *Service) ForceDelete(id, crdNamespace string) error {
 	return nil
 }
 
+
+/**
+王晓婧更改部分**/
+const (
+	tenantId = "Tenantid"
+)
+
+//curl -i http://10.160.32.24:30800/api/v1/topics?application=cef854c589376a7d -H 'tenantId:148bf93169f7422bbf2e1eee2afa981f'
+type TopicData struct {
+	Page      int         `json:"page"`
+	Size      int         `json:"size"`
+	Content   interface{} `json:"content"`
+	TotalSize int         `json:"totalSize"`
+	TotalPage int         `json:"totalPage"`
+}
+type TopicResponseBody struct {
+	Code      int       `json:"code"`
+	Data      TopicData `json:"data"`
+	ErrorCode string    `json:"errorCode"`
+	Message   string    `json:"message"`
+	Detail    string    `json:"detail"`
+}
+
+func GetTopicByApplication(ID string, opts ...util.OpOption) (rsp int, err error) {
+	klog.Infof("begin get topic from application %s", ID)
+	request := gorequest.New().SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
+
+	klog.Infof("% +v ", request.Header)
+	schema := "http"
+	TopicResponseBody := &TopicResponseBody{}
+	request.Header.Add("tenantId", "148bf93169f7422bbf2e1eee2afa981f")
+	klog.Infof("begin into request.Get ")
+	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s%s", schema, "10.160.32.24", 30800, "/api/v1/topics?application=", ID)).EndStruct(TopicResponseBody)
+	klog.Infof("end request.Get ")
+
+	if len(errs) > 0 {
+		return 0, fmt.Errorf("request for get route info error: %+v", errs)
+
+	}
+	klog.Infof("begin get topic from application %+v", response)
+	if response.StatusCode != 200 {
+		return 0, fmt.Errorf("request for get route error: receive wrong status code: %s", string(body))
+	}
+
+	klog.Infof("application: %+v", response)
+	klog.Infof("TopicResponseBody: %+v", TopicResponseBody)
+	klog.Infof("TotalSize: %d", TopicResponseBody.Data.TotalSize)
+	return TopicResponseBody.Data.TotalSize, nil
+
+}
+
+
+////大数据
+type TopicPage struct{
+	TotalCount   int             `json:"totalCounte"`
+	PageSize     int             `json:"pageSize"`
+	TotalPage    int             `json:"totalPage"`
+	CurrPage     int             `json:"currPage"`
+	List         interface{}     `json:"list"`
+}
+type TopicResponseBodyBigData struct {
+	Code      int         `json:"code"`
+	Msg       string      `json:"msg"`
+	Data      interface{} `json:"data"`
+	Page      TopicPage    `json:"page"`
+
+}
+
+
+
+func GetTopic(ID string) (rsp int, err error) {
+	klog.Infof("begin get topic from application %s", ID)
+	request := gorequest.New().SetDebug(true).SetCurlCommand(true).SetDoNotClearSuperAgent(true)
+
+	klog.Infof("% +v ", request.Header)
+	schema := "http"
+	TopicResponseBodyBigData := &TopicResponseBodyBigData {}
+	//request.Header.Add("tenantId", "148bf93169f7422bbf2e1eee2afa981f")
+	klog.Infof("begin into request.Get ")
+	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s%s%s%s", schema, "10.160.32.24", 30892, "/cmcc/api/top/app/messagetopicapp/queryApp?appId=", ID, "&page=1", "&limit=10")).EndStruct(TopicResponseBodyBigData )
+	klog.Infof("end request.Get ")
+
+	if len(errs) > 0 {
+		return 0, fmt.Errorf("request for get route info error: %+v", errs)
+
+	}
+	klog.Infof("begin get topic from application %+v", response)
+	if response.StatusCode != 200 {
+		return 0, fmt.Errorf("request for get route error: receive wrong status code: %s", string(body))
+	}
+
+	klog.Infof("application: %+v", response)
+	klog.Infof("TopicResponseBody: %+v", TopicResponseBodyBigData)
+	klog.Infof("TotalSize: %d", TopicResponseBodyBigData.Page.TotalCount)
+	return TopicResponseBodyBigData.Page.TotalCount, nil
+
+}
+
+///////////////
+
+
+
+
 func (s *Service) Delete(id string, opts ...util.OpOption) (*v1.Application, error) {
-	app, err := s.Get(id, opts...)
-	if err != nil {
-		return nil, fmt.Errorf("get crd by id error: %+v", err)
-	}
-	if !s.tenantEnabled {
-		u := util.OpList(opts...).User()
-		if !user.WritePermitted(u, app.ObjectMeta.Labels) {
-			return nil, fmt.Errorf("write permission denied")
+	//大数据
+	if !s.tenantEnabled{
+		klog.Infof("GET IN TO BIGDATA ")
+		totalCount, err := GetTopic(id)
+		if err != nil {
+			return nil, fmt.Errorf("get crd by id error TOPIC: %+v", err)
 		}
+
+		app, err := s.Get(id, opts...)
+		if err != nil {
+			return nil, fmt.Errorf("get crd by id error: %+v", err)
+		}
+
+		if totalCount > 0 {
+			return nil, fmt.Errorf("Binding topic,can not delete")
+		}
+		if len(app.Spec.APIs) > 0 {
+			return nil, fmt.Errorf("Binding api,can not delete")
+		}
+		//TODO need check status !!!
+		app.Status.Status = v1.Delete
+		(*app).Spec.Result = v1.DELETING
+		return s.UpdateStatus(app)
+	} else
+	//业务汇聚
+	{
+		klog.Infof("GET IN TO 业务汇聚 ")
+		totalSize, err := GetTopicByApplication(id, opts...)
+		if err != nil {
+			return nil, fmt.Errorf("get crd by id error TOPIC: %+v", err)
+		}
+
+		app, err := s.Get(id, opts...)
+
+		if err != nil {
+			return nil, fmt.Errorf("get crd by id error: %+v", err)
+		}
+
+		if !s.tenantEnabled {
+			u := util.OpList(opts...).User()
+			if !user.WritePermitted(u, app.ObjectMeta.Labels) {
+				return nil, fmt.Errorf("write permission denied")
+			}
+		}
+
+		if totalSize > 0 {
+			return nil, fmt.Errorf("Binding topic,can not delete")
+		}
+		if len(app.Spec.APIs) > 0 {
+			return nil, fmt.Errorf("Binding api,can not delete")
+		}
+		//TODO need check status !!!
+		app.Status.Status = v1.Delete
+		(*app).Spec.Result = v1.DELETING
+		return s.UpdateStatus(app)
 	}
-	if len(app.Spec.APIs) > 0 {
-		return nil, fmt.Errorf("Binding api,can not delete")
-	}
-	//TODO need check status !!!
-	app.Status.Status = v1.Delete
-	(*app).Spec.Result = v1.DELETING
-	return s.UpdateStatus(app)
 }
 
 func (s *Service) UpdateSpec(app *v1.Application) (*v1.Application, error) {
