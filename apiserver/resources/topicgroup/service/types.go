@@ -28,7 +28,7 @@ const (
 	FULL_TRANSITIVE         = "FULL_TRANSITIVE"
 	None                    = "None"
 	Prefix                  = "Prefix"
-	NameReg                 = "^[-=:.\\w]{1,100}$"
+	NameReg                 = "^[-=:.a-z0-9]{1,100}$"
 	MaxDescriptionLen       = 1024
 )
 

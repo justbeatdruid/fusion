@@ -15,7 +15,7 @@ import (
 
 const (
 	Separator         = "/"
-	NameReg           = "^[-=:.\\w]{1,100}$"
+	NameReg           = "^[-=:.a-z0-9]{1,100}$"
 	MaxDescriptionLen = 1024
 )
 
