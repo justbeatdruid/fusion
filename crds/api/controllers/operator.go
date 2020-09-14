@@ -21,6 +21,8 @@ const (
 	HttpTriggerUrl    string = "/v2/triggers/http"
 	FissionRouterPort        = 80
 	FissionRouter            = "router.fission"
+	KongPort                 = 8001
+	KongHost                 = "kong-kong-admin"
 )
 
 var headers = map[string]string{
@@ -356,15 +358,15 @@ type ConfigResTransformer struct {
 
 type ResTransformerResponseBody struct {
 	CreatedAt int                  `json:"created_at"`
-	Config ConfigResTransformer	`json:"config"`
+	Config    ConfigResTransformer `json:"config"`
 	//Config    nlptv1.ResTransformerConfig `json:"config"`
-	ID        string               `json:"id"`
-	Service   interface{}          `json:"service"`
-	Name      string               `json:"name"`
-	Protocols []string             `json:"protocols"`
-	Enabled   bool                 `json:"enabled"`
-	RunOn     string               `json:"run_on"`
-	Consumer  interface{}          `json:"consumer"`
+	ID        string      `json:"id"`
+	Service   interface{} `json:"service"`
+	Name      string      `json:"name"`
+	Protocols []string    `json:"protocols"`
+	Enabled   bool        `json:"enabled"`
+	RunOn     string      `json:"run_on"`
+	Consumer  interface{} `json:"consumer"`
 	Route     struct {
 		ID string `json:"id"`
 	} `json:"route"`
@@ -463,10 +465,10 @@ func NewOperator(host string, port int, portal int, cafile string, prometheusHos
 }
 
 func (r *Operator) CreateRouteByKong(db *nlptv1.Api, su *suv1.Serviceunit) (err error) {
-	klog.Infof("Enter CreateRouteByKong name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
+	klog.Infof("Enter CreateRouteByKong name:%s, Host:%s, Port:%d", db.Name, KongHost, KongPort)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, r.Host, r.Port, path))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, KongHost, KongPort, path))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -565,7 +567,7 @@ func (r *Operator) AddRouteJwtByKong(db *nlptv1.Api) (err error) {
 	klog.Infof("begin create jwt %s", id)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, KongHost, KongPort, "/routes/", id, "/plugins"))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -602,7 +604,7 @@ func (r *Operator) AddRouteAclByKong(db *nlptv1.Api) (err error) {
 	klog.Infof("begin create acl %s", id)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, KongHost, KongPort, "/routes/", id, "/plugins"))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -647,8 +649,8 @@ func (r *Operator) DeleteRouteByKong(db *nlptv1.Api) (err error) {
 			return fmt.Errorf("request for delete route by fission error: %+v", err)
 		}
 	}
-	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id))
-	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, path, id)).End()
+	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, KongHost, KongPort, path, id))
+	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, KongHost, KongPort, path, id)).End()
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 	if len(errs) > 0 {
 		return fmt.Errorf("request for delete api error: %+v", errs)
@@ -668,7 +670,7 @@ func (r *Operator) AddConsumerToAcl(appId string, api *nlptv1.Api) (aclId string
 	klog.Infof("begin add consumer to acl %s", api.ObjectMeta.Name)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/consumers/", appId, "/acls"))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, KongHost, KongPort, "/consumers/", appId, "/acls"))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -702,9 +704,9 @@ func (r *Operator) DeleteConsumerFromAcl(aclId string, comId string) (err error)
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
-	klog.Infof("delete consumer is %s", fmt.Sprintf("%s://%s:%d%s%s%s%s", schema, r.Host, r.Port,
+	klog.Infof("delete consumer is %s", fmt.Sprintf("%s://%s:%d%s%s%s%s", schema, KongHost, KongPort,
 		"/consumers/", comId, "/acls/", aclId))
-	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s%s%s%s", schema, r.Host, r.Port,
+	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s%s%s%s", schema, KongHost, KongPort,
 		"/consumers/", comId, "/acls/", aclId)).End()
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 
@@ -724,7 +726,7 @@ func (r *Operator) AddRouteCorsByKong(db *nlptv1.Api) (err error) {
 	klog.Infof("begin create cors %s", id)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, KongHost, KongPort, "/routes/", id, "/plugins"))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -755,7 +757,7 @@ func (r *Operator) getRouteInfoFromKong(db *nlptv1.Api) (rsp *ResponseBody, err 
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	responseBody := &ResponseBody{}
-	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s%s", schema, r.Host, r.Port, "/routes/", db.Spec.KongApi.KongID)).EndStruct(responseBody)
+	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s%s", schema, KongHost, KongPort, "/routes/", db.Spec.KongApi.KongID)).EndStruct(responseBody)
 	if len(errs) > 0 {
 		return nil, fmt.Errorf("request for get route info error: %+v", errs)
 
@@ -793,7 +795,7 @@ func (r *Operator) UpdateRouteInfoFromKong(db *nlptv1.Api, isOffline bool) (err 
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 
-	request = request.Patch(fmt.Sprintf("%s://%s:%d%s%s", schema, r.Host, r.Port, "/routes/", db.Spec.KongApi.KongID))
+	request = request.Patch(fmt.Sprintf("%s://%s:%d%s%s", schema, KongHost, KongPort, "/routes/", db.Spec.KongApi.KongID))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -852,7 +854,7 @@ func (r *Operator) DeletePluginByKong(pluginId string) (err error) {
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
-	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", pluginId)).End()
+	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, KongHost, KongPort, "/plugins", pluginId)).End()
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 	if len(errs) > 0 {
 		return fmt.Errorf("request for delete plugin error: %+v", errs)
@@ -865,7 +867,7 @@ func (r *Operator) DeletePluginByKong(pluginId string) (err error) {
 }
 
 func (r *Operator) UpdateRouteByKong(db *nlptv1.Api) (err error) {
-	klog.Infof("Enter UpdateRouteByKong name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
+	klog.Infof("Enter UpdateRouteByKong name:%s, Host:%s, Port:%d", db.Name, KongHost, KongPort)
 	rsp, errs := r.getRouteInfoFromKong(db)
 	if errs != nil {
 		return fmt.Errorf("request for get route info error: %+v", errs)
@@ -1084,7 +1086,7 @@ func (r *Operator) syncApiCallFrequencyFromKong(m map[string]int) error {
 }
 
 func (r *Operator) CreateRouteByFission(db *nlptv1.Api, su *suv1.Serviceunit) (err error) {
-	klog.Infof("Enter CreateRouteByFission name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
+	klog.Infof("Enter CreateRouteByFission name:%s, Host:%s, Port:%d", db.Name, KongHost, KongPort)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, r.FissionAddress.ControllerHost, r.FissionAddress.ControllerPort, HttpTriggerUrl))
@@ -1121,7 +1123,7 @@ func (r *Operator) CreateRouteByFission(db *nlptv1.Api, su *suv1.Serviceunit) (e
 }
 
 func (r *Operator) DeleteRouteByFission(db *nlptv1.Api) (err error) {
-	klog.Infof("Enter DeleteRouteByFission name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
+	klog.Infof("Enter DeleteRouteByFission name:%s, Host:%s, Port:%d", db.Name, KongHost, KongPort)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	id := db.ObjectMeta.Name
@@ -1142,7 +1144,7 @@ func (r *Operator) DeleteRouteByFission(db *nlptv1.Api) (err error) {
 }
 
 func (r *Operator) CreateRouteForFunction(db *nlptv1.Api) (err error) {
-	klog.Infof("Enter CreateRouteForFunction name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
+	klog.Infof("Enter CreateRouteForFunction name:%s, Host:%s, Port:%d", db.Name, KongHost, KongPort)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	request = request.Post(fmt.Sprintf("%s://%s:%d%s", schema, r.FissionAddress.ControllerHost, r.FissionAddress.ControllerPort, HttpTriggerUrl))
@@ -1181,7 +1183,7 @@ func (r *Operator) CreateRouteForFunction(db *nlptv1.Api) (err error) {
 }
 
 func (r *Operator) DeleteRouteForFunction(db *nlptv1.Api) (err error) {
-	klog.Infof("Enter DeleteRouteForFunction name:%s, Host:%s, Port:%d", db.Name, r.Host, r.Port)
+	klog.Infof("Enter DeleteRouteForFunction name:%s, Host:%s, Port:%d", db.Name, KongHost, KongPort)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	id := db.Spec.KongApi.RspHandlerRoute
@@ -1206,7 +1208,7 @@ func (r *Operator) AddRouteRspHandlerByKong(db *nlptv1.Api) (err error) {
 	klog.Infof("begin create rsp handler %s", id)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, KongHost, KongPort, "/routes/", id, "/plugins"))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -1241,7 +1243,7 @@ func (r *Operator) AddResTransformerByKong(db *nlptv1.Api) (err error) {
 	klog.Infof("begin create response transformer,the route id is %s", id)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, KongHost, KongPort, "/routes/", id, "/plugins"))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
@@ -1340,8 +1342,8 @@ func (r *Operator) DeleteResTransformerByKong(db *nlptv1.Api) (err error) {
 	}
 	id := db.Spec.ResponseTransformer.Id
 
-	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", id))
-	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", id)).End()
+	klog.Infof("delete api id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, KongHost, KongPort, "/plugins", id))
+	response, body, errs := request.Delete(fmt.Sprintf("%s://%s:%d%s/%s", schema, KongHost, KongPort, "/plugins", id)).End()
 	request = request.Retry(3, 5*time.Second, retryStatus...)
 	if len(errs) > 0 {
 		return fmt.Errorf("request for delete response transformer error: %+v", errs)
@@ -1355,15 +1357,15 @@ func (r *Operator) DeleteResTransformerByKong(db *nlptv1.Api) (err error) {
 }
 
 func (r *Operator) UpdateResTransformerByKong(db *nlptv1.Api) (err error) {
-	klog.Infof("Enter route id is:%s, Host:%s, Port:%d", db.ObjectMeta.Name, r.Host, r.Port)
+	klog.Infof("Enter route id is:%s, Host:%s, Port:%d", db.ObjectMeta.Name, KongHost, KongPort)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
 	id := db.Spec.ResponseTransformer.Id
 
 	klog.Infof("xxxxxxxxxx  db.Spec.ResponseTransformer.Id", db.Spec.ResponseTransformer.Id)
 	klog.Infof("xxxxxxxxxx  Id", id)
-	klog.Infof("update response transformer id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", db.Spec.ResponseTransformer.Id))
-	request = request.Patch(fmt.Sprintf("%s://%s:%d%s/%s", schema, r.Host, r.Port, "/plugins", db.Spec.ResponseTransformer.Id))
+	klog.Infof("update response transformer id %s %s", id, fmt.Sprintf("%s://%s:%d%s/%s", schema, KongHost, KongPort, "/plugins", db.Spec.ResponseTransformer.Id))
+	request = request.Patch(fmt.Sprintf("%s://%s:%d%s/%s", schema, KongHost, KongPort, "/plugins", db.Spec.ResponseTransformer.Id))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}

@@ -57,11 +57,11 @@ spec:
       containers:
       - command:
         - fusion-api-controller-manager
-        - --operator-host=kong-kong-admin
-        - --operator-port=8001
+        - --operator-host=10.160.32.24
+        - --operator-port=80
         - --portal-port=30080
-        - --prometheus-host=10.160.32.31
-        - --prometheus-port=32008
+        - --prometheus-host=prometheus-k8s.monitoring
+        - --prometheus-port=9090
         - -enable-leader-election
         - --v=5
         env:

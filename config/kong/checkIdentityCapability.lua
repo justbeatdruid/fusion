@@ -46,6 +46,10 @@ end
 local userId = decoded.userId
 kong.log("Check identity return userId is:", userId)
 kong.log("Check identity return tenantId is:", tenantId)
-kong.service.request.add_header("userId",  userId)   
-kong.service.request.add_header("tenantId", tenantId) 
+kong.service.request.add_header("userId",  userId)
+if tenantId == nil then
+    kong.log("Check identity tenantId is nil and no need set tenantId")
+else
+    kong.service.request.add_header("tenantId", tenantId)
+end
 kong.log("=======Check identity end=======") 
