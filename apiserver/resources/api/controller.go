@@ -903,7 +903,7 @@ func (c *controller) ExportApis(req *restful.Request) (int, *ExportRequest) {
 	s := []string{"id", "namespace", "name", "description", "serviceunit.id", "serviceunit.name", "users.owner.id",
 		"users.owner.name", "apiType", "authType", "tags", "apiBackendType", "method", "protocol", "returnType",
 		"apiDefineInfo.path", "apiDefineInfo.matchMode", "apiDefineInfo.method", "apiDefineInfo.protocol",
-		"apiDefineInfo.cors", "apiQueryInfo.webParams", "publishStatus", "updatedAt", "releasedAt"}
+		"apiDefineInfo.cors", "apiQueryInfo.webParams", "publishStatus", "updatedAt", "releasedAt", "创建成功返回"}
 
 	for i := range s {
 		file.SetCellValue("apis", string(i+65)+"1", s[i])
@@ -943,6 +943,7 @@ func (c *controller) ExportApis(req *restful.Request) (int, *ExportRequest) {
 		file.SetCellValue("apis", string(86)+strconv.Itoa(row), api.PublishStatus)
 		file.SetCellValue("apis", string(87)+strconv.Itoa(row), api.UpdatedAt)
 		file.SetCellValue("apis", string(88)+strconv.Itoa(row), api.ReleasedAt)
+		file.SetCellValue("apis", string(88)+strconv.Itoa(row), api.ApiReturnInfo.NormalExample)
 	}
 
 	file.SetActiveSheet(index)
@@ -980,7 +981,7 @@ func (c *controller) ImportApis(req *restful.Request, response *restful.Response
 		SheetName:        "apis",
 		MultiPartFileKey: "uploadfile",
 		TitleRowSpecList: []string{"api名称", "api类型", "认证方式", "标签", "描述",
-			"请求path", "请求协议", "Method", "是否跨域", "后端请求path", "成功响应示例", "成功响应示例", "webParams"},
+			"请求path", "请求协议", "Method", "是否跨域", "后端请求path", "成功响应示例", "失败响应示例", "webParams"},
 	}
 	apis, err := parser.ParseApisFromExcel(req, response, spec)
 	if err != nil {
