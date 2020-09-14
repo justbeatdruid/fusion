@@ -56,6 +56,17 @@ func (r *router) Install(ws *restful.WebService) {
 		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
 		Do(returns200, returns500))
 
+	ws.Route(ws.PUT("/applications/{id}").
+		Consumes(restful.MIME_JSON).
+		Produces(restful.MIME_JSON).
+		Reads(RequestWrapped{}).
+		Writes(Wrapped{}).
+		Doc("patch an app by id").
+		To(r.patchApplication).
+		Param(ws.HeaderParameter("tenantId", "tenantId").DataType("string")).
+		Param(ws.HeaderParameter("userId", "userId").DataType("string")).
+		Do(returns200, returns500))
+
 	ws.Route(ws.GET("/applications").Consumes(restful.MIME_JSON).
 		Produces(restful.MIME_JSON).
 		Writes(ListResponse{}).
