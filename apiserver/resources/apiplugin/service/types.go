@@ -55,6 +55,11 @@ type BindReq struct {
 	Apis      []ApiBind `json:"apis"`
 }
 
+type EnableReq struct {
+	Enable bool     `json:"enable"`
+	Ids    []string `json:"ids"`
+}
+
 type FieldValue struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
@@ -123,9 +128,9 @@ type Consumer struct {
 	Id string `json:"id"`
 }
 type ResTransformerRequestBody struct {
-	Consumer *Consumer `json:"consumer,omitempty"`
-	Name   string               `json:"name"`
-	Config ResTransformerConfig `json:"config"`
+	Consumer *Consumer            `json:"consumer,omitempty"`
+	Name     string               `json:"name"`
+	Config   ResTransformerConfig `json:"config"`
 }
 type ResTransformerResponseBody struct {
 	CreatedAt int                  `json:"created_at"`
@@ -149,8 +154,8 @@ type ResTransformerResponseBody struct {
 type InputReqTransformerConfig struct {
 	HttpMethod string `json:"http_method"`
 	Remove     struct {
-		Body        []string     `json:"body,omitempty"`
-		Headers     []string     `json:"headers,omitempty"`
+		Body        []string `json:"body,omitempty"`
+		Headers     []string `json:"headers,omitempty"`
 		Querystring []string `json:"querystring,omitempty"`
 	} `json:"remove,omitempty"`
 	Rename struct {
@@ -217,9 +222,9 @@ type ReqTransformerConfig struct {
 
 // kong
 type ReqTransformerRequestBody struct {
-	Consumer *Consumer `json:"consumer,omitempty"`
-	Name   string               `json:"name"`
-	Config ReqTransformerConfig `json:"config"`
+	Consumer *Consumer            `json:"consumer,omitempty"`
+	Name     string               `json:"name"`
+	Config   ReqTransformerConfig `json:"config"`
 }
 type ReqTransformerResponseBody struct {
 	CreatedAt int                  `json:"created_at"`
@@ -257,11 +262,12 @@ const UnbindFailed string = "unbindFailed"
 const UnbindInit string = "unbindInit"
 
 type ApiRes struct {
-	Id         string
-	Name       string
-	BindStatus string
-	Enable     bool
-	Detail     string
+	Id           string
+	Name         string
+	Status       string
+	Enable       bool
+	Detail       string
+	KongPluginId string
 }
 
 func ToInputTransformerInfo(info ResTransformerConfig) InputResTransformerConfig {

@@ -375,6 +375,7 @@ func (s *Service) BatchUnbindApi(groupId string, body BindReq, opts ...util.OpOp
 			})
 		}
 	}
+	//解绑时分2种情况 解绑成功的需要删除 解绑失败的更新状态为失败不删除
 	if err = s.db.RemoveApiPluginRelation(result); err != nil {
 		return fmt.Errorf("cannot delete database api plugin relation: %+v", err)
 	}
@@ -420,6 +421,7 @@ func (s *Service) AddResponseTransformerByKong(apiId string, existed *ApiPlugin)
 	requestBody := &ResTransformerRequestBody{}
 	requestBody.Name = "response-transformer"
 	if len(existed.ConsumerId) != 0 {
+		requestBody.Consumer = &Consumer{}
 		requestBody.Consumer.Id = existed.ConsumerId
 	}
 	econfig, err := json.Marshal(existed.Config)
@@ -517,6 +519,7 @@ func (s *Service) AddRequestTransformerByKong(apiId string, existed *ApiPlugin) 
 	requestBody := &ReqTransformerRequestBody{}
 	requestBody.Name = "request-transformer"
 	if len(existed.ConsumerId) != 0 {
+		requestBody.Consumer = &Consumer{}
 		requestBody.Consumer.Id = existed.ConsumerId
 	}
 	econfig, err := json.Marshal(existed.Config)
@@ -646,6 +649,7 @@ func (s *Service) UpdateResponseTransformerByKong(kongPluginId string, existed *
 	requestBody := &ResTransformerRequestBody{}
 	requestBody.Name = "response-transformer"
 	if len(existed.ConsumerId) != 0 {
+		requestBody.Consumer = &Consumer{}
 		requestBody.Consumer.Id = existed.ConsumerId
 	}
 	econfig, err := json.Marshal(existed.Config)
@@ -739,6 +743,7 @@ func (s *Service) UpdateRequestTransformerByKong(kongPluginId string, existed *A
 	requestBody := &ReqTransformerRequestBody{}
 	requestBody.Name = "request-transformer"
 	if len(existed.ConsumerId) != 0 {
+		requestBody.Consumer = &Consumer{}
 		requestBody.Consumer.Id = existed.ConsumerId
 	}
 	econfig, err := json.Marshal(existed.Config)
@@ -859,12 +864,12 @@ func (s *Service) ListPluginRelationFromDatabase(id, types string, opts ...util.
 	sql := ""
 	switch types {
 	case ApiType:
-		sqlTpl := `SELECT api.id, api.name, api_plugin_relation.status, api_plugin_relation.detail, api_plugin_relation.enable FROM api_plugin_relation LEFT JOIN api on api.id = api_plugin_relation.target_id 
+		sqlTpl := `SELECT api.id, api.name, api_plugin_relation.status, api_plugin_relation.detail, api_plugin_relation.enable, api_plugin_relation.kong_plugin_id FROM api_plugin_relation LEFT JOIN api on api.id = api_plugin_relation.target_id 
               where api_plugin_relation.api_plugin_id="%s" and api.namespace="%s" and api_plugin_relation.target_type="%s"`
 		sql = fmt.Sprintf(sqlTpl, id, util.OpList(opts...).Namespace(), types)
 		klog.Infof("query api sql: %s", sql)
 	case ServiceunitType:
-		sqlTpl := `SELECT serviceunit.id, serviceunit.name, api_plugin_relation.status, api_plugin_relation.detail, api_plugin_relation.enable FROM api_plugin_relation LEFT JOIN serviceunit on serviceunit.id = api_plugin_relation.target_id 
+		sqlTpl := `SELECT serviceunit.id, serviceunit.name, api_plugin_relation.status, api_plugin_relation.detail, api_plugin_relation.enable, api_plugin_relation.kong_plugin_id FROM api_plugin_relation LEFT JOIN serviceunit on serviceunit.id = api_plugin_relation.target_id 
               where api_plugin_relation.api_plugin_id="%s" and serviceunit.namespace="%s" and api_plugin_relation.target_type="%s"`
 		sql = fmt.Sprintf(sqlTpl, id, util.OpList(opts...).Namespace(), types)
 		klog.Infof("query serviceunit sql: %s", sql)
@@ -882,4 +887,41 @@ func (s *Service) ListRelationsByApiPlugin(id, types string, opts ...util.OpOpti
 		return nil, fmt.Errorf("not support if database disabled")
 	}
 	return s.ListPluginRelationFromDatabase(id, types, opts...)
+}
+
+func (s *Service) UpdatePluginEnableByKongId(pluginId string, data EnableReq, opts ...util.OpOption) error {
+	existed, err := s.GetApiPlugin(pluginId)
+	if err != nil {
+		return fmt.Errorf("cannot find apiplugin with id %s: %+v", pluginId, err)
+	}
+	crdNamespace := util.OpList(opts...).Namespace()
+	if existed.Namespace != crdNamespace {
+		return fmt.Errorf("permission denied: wrong tenant")
+	}
+
+	updateResult := make([]model.ApiPluginRelation, 0)
+	//先校验是否所有API满足绑定条件，有一个不满足直接返回错误
+	for _, kong := range data.Ids {
+		for _, relation := range existed.ApiRelation {
+			if relation.KongPluginId == kong {
+				klog.Infof("kong %s has bind apiplugin %s ", kong, pluginId)
+				//TODO 调用Kong接口生效失效 成功后更新状态，否则不需要更新
+				updateResult = append(updateResult, model.ApiPluginRelation{
+					Id:           relation.Id,
+					ApiPluginId:  pluginId,
+					TargetId:     relation.TargetId,
+					TargetType:   relation.TargetType,
+					Status:       relation.Status,
+					Detail:       relation.Detail,
+					Enable:       data.Enable,
+					KongPluginId: relation.KongPluginId,
+				})
+				break
+			}
+		}
+	}
+	if err = s.db.UpdateApiPluginRelation(updateResult); err != nil {
+		return fmt.Errorf("cannot write database api relation: %+v", err)
+	}
+	return nil
 }

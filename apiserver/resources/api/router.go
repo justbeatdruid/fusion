@@ -175,7 +175,7 @@ func (r *router) Install(ws *restful.WebService) {
 		Do(returns200, returns500))
 
 	//api import
-	ws.Route(ws.POST("/apis/import").
+	ws.Route(ws.POST("/apis/import/{suid}").
 		Consumes("multipart/form-data").
 		Produces(restful.MIME_JSON).
 		Doc("import apis from excel files").
