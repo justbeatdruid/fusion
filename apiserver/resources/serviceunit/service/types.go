@@ -242,51 +242,27 @@ func ToListModel(items *v1.ServiceunitList, groups map[string]string, datas map[
 	if len(opts) > 0 {
 		nameLike := util.OpList(opts...).NameLike()
 		stype := util.OpList(opts...).Stype()
-		/*
-			if len(nameLike) > 0 {
-				var sus []*Serviceunit = make([]*Serviceunit, 0)
-				for _, item := range items.Items {
-					if !strings.Contains(item.Spec.Name, nameLike) {
-						continue
-					}
-					if gid, ok := item.ObjectMeta.Labels[v1.GroupLabel]; ok {
-						item.Spec.Group.ID = gid
-					}
-					if gname, ok := groups[item.Spec.Group.ID]; ok {
-						item.Spec.Group.Name = gname
-					}
-					if item.Spec.Type == v1.DataService && item.Spec.DatasourceID != nil {
-						if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
-							item.Spec.DatasourceID = data
-						}
-					}
-					su := ToModel(&item, opts...)
-					sus = append(sus, su)
-				}
-				return sus
-			}
-		*/
 		var sus []*Serviceunit = make([]*Serviceunit, 0)
 		for _, item := range items.Items {
 			if len(nameLike) > 0 {
 				if !strings.Contains(item.Spec.Name, nameLike) {
 					continue
 				}
-				if gid, ok := item.ObjectMeta.Labels[v1.GroupLabel]; ok {
-					item.Spec.Group.ID = gid
-				}
-				if gname, ok := groups[item.Spec.Group.ID]; ok {
-					item.Spec.Group.Name = gname
-				}
-				if item.Spec.Type == v1.DataService && item.Spec.DatasourceID != nil {
-					if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
-						item.Spec.DatasourceID = data
-					}
-				}
 			}
 			if len(stype) > 0 {
 				if string(item.Spec.Type) != stype {
 					continue
+				}
+			}
+			if gid, ok := item.ObjectMeta.Labels[v1.GroupLabel]; ok {
+				item.Spec.Group.ID = gid
+			}
+			if gname, ok := groups[item.Spec.Group.ID]; ok {
+				item.Spec.Group.Name = gname
+			}
+			if item.Spec.Type == v1.DataService && item.Spec.DatasourceID != nil {
+				if data, ok := datas[item.Spec.DatasourceID.ID]; ok {
+					item.Spec.DatasourceID = data
 				}
 			}
 			su := ToModel(&item, opts...)
