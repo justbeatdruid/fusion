@@ -15,6 +15,13 @@ kong.log("Get request group uuid is:", tenantId)
 local query = string.format("?path=%s&method=%s&isManager=%s", path, orgMethod, isManager)
 local getUrl = "http://fusion-auth:8092/fusion-auth/sys/support/checkIdentity".. query
 kong.log("Check identity url is: ", getUrl)
+if token == nil then
+    kong.log("Check identity token is nil and set tenantId and userId is null")
+    kong.service.request.add_header("userId",  "")
+    kong.service.request.add_header("tenantId", "")
+    return
+end
+
 local _, _, response_headers = http.request{
     url = getUrl,
     method = "GET",

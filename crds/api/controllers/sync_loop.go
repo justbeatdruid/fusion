@@ -48,7 +48,7 @@ func (r *Operator) AddRoutePrometheusByKong(db *nlptv1.Api, id string) error {
 	klog.Infof("begin create prometheus for route %s", id)
 	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
 	schema := "http"
-	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, r.Host, r.Port, "/routes/", id, "/plugins"))
+	request = request.Post(fmt.Sprintf("%s://%s:%d%s%s%s", schema, KongHost, KongPort, "/routes/", id, "/plugins"))
 	for k, v := range headers {
 		request = request.Set(k, v)
 	}
