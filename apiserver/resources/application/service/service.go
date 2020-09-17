@@ -289,7 +289,7 @@ func GetTopicByApplication(ID string, opts ...util.OpOption) (rsp int, err error
 	TopicResponseBody := &TopicResponseBody{}
 	request.Header.Add("tenantId", "148bf93169f7422bbf2e1eee2afa981f")
 	klog.Infof("begin into request.Get ")
-	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s%s", schema, "10.160.32.24", 30800, "/api/v1/topics?application=", ID)).EndStruct(TopicResponseBody)
+	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s%s", schema, "fusion-apiserver", 8001, "/api/v1/topics?application=", ID)).EndStruct(TopicResponseBody)
 	klog.Infof("end request.Get ")
 
 	if len(errs) > 0 {
@@ -336,7 +336,8 @@ func GetTopic(ID string) (rsp int, err error) {
 	TopicResponseBodyBigData := &TopicResponseBodyBigData {}
 	//request.Header.Add("tenantId", "148bf93169f7422bbf2e1eee2afa981f")
 	klog.Infof("begin into request.Get ")
-	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s%s%s%s", schema, "10.160.32.24", 30892, "/cmcc/api/top/app/messagetopicapp/queryApp?appId=", ID, "&page=1", "&limit=10")).EndStruct(TopicResponseBodyBigData )
+	response, body, errs := request.Get(fmt.Sprintf("%s://%s:%d%s%s%s%s", schema, "message-manager", 8092, "/cmcc/api/top/app/messagetopicapp/queryApp?appId=", ID, "&page=1", "&limit=10")).EndStruct(TopicResponseBodyBigData )
+
 	klog.Infof("end request.Get ")
 
 	if len(errs) > 0 {
