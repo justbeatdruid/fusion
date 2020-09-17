@@ -59,7 +59,7 @@ spec:
         - fusion-topic-controller-manager
         - -enable-leader-election
         - --pulsar-host=pulsar-proxy.pulsar
-        - --pulsar-port=8080
+        - --pulsar-port=80
         - --pulsar-auth-enable=true
         - --v=5
         env:
