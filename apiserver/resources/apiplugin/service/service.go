@@ -906,6 +906,10 @@ func (s *Service) UpdatePluginEnableByKongId(pluginId string, data EnableReq, op
 			if relation.KongPluginId == kong {
 				klog.Infof("kong %s has bind apiplugin %s ", kong, pluginId)
 				//TODO 调用Kong接口生效失效 成功后更新状态，否则不需要更新
+				err := s.UpdateEnableByKong(relation.KongPluginId, existed.Type, data.Enable)
+				if err != nil {
+					return fmt.Errorf("update enable transformer failed %+v", err)
+				}
 				updateResult = append(updateResult, model.ApiPluginRelation{
 					Id:           relation.Id,
 					ApiPluginId:  pluginId,
@@ -922,6 +926,42 @@ func (s *Service) UpdatePluginEnableByKongId(pluginId string, data EnableReq, op
 	}
 	if err = s.db.UpdateApiPluginRelation(updateResult); err != nil {
 		return fmt.Errorf("cannot write database api relation: %+v", err)
+	}
+	return nil
+}
+
+func (s *Service) UpdateEnableByKong(pluginId string, transType string, enable bool) (err error) {
+	//id := db.Spec.KongApi.KongID
+	klog.Infof("update enable plugin id is %s", pluginId)
+	request := gorequest.New().SetLogger(logger).SetDebug(true).SetCurlCommand(true)
+	schema := "http"
+	request = request.Patch(fmt.Sprintf("%s://%s:%d%s/%s", schema, "10.160.32.24", 30081, "/plugins", pluginId))
+	//request = request.Patch(fmt.Sprintf("%s://%s:%d%s/%s", schema, "kong-kong-admin", 8001, "/plugins", pluginId))
+	for k, v := range headers {
+		request = request.Set(k, v)
+	}
+	request = request.Retry(3, 5*time.Second, retryStatus...)
+	requestBody := &EnableRequestBody{}
+	requestBody.Enabled = enable
+	var responseBody interface{}
+	switch transType {
+	case "request-transformer":
+		responseBody = &ReqTransformerResponseBody{}
+	case "response-transformer":
+		responseBody = &ResTransformerResponseBody{}
+	}
+	response, body, errs := request.Send(requestBody).EndStruct(responseBody)
+	if len(errs) > 0 {
+		return fmt.Errorf("request for enable transformer error: %+v", errs)
+	}
+	klog.V(5).Infof("enable transformer code: %d, body: %s ", response.StatusCode, string(body))
+	if response.StatusCode != 200 {
+		klog.V(5).Infof("enable transformer failed")
+		return fmt.Errorf("request for enable transformer error: receive wrong status code: %s", string(body))
+	}
+	//(*db).Spec.ResponseTransformer.Id = responseBody.ID
+	if err != nil {
+		return fmt.Errorf("enable transformer error")
 	}
 	return nil
 }
