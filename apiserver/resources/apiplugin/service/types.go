@@ -270,6 +270,10 @@ type ApiRes struct {
 	KongPluginId string
 }
 
+type EnableRequestBody struct {
+	Enabled	 bool            `json:"enabled"`
+}
+
 func ToInputTransformerInfo(info ResTransformerConfig) InputResTransformerConfig {
 	var output InputResTransformerConfig
 	output.Remove = info.Remove
